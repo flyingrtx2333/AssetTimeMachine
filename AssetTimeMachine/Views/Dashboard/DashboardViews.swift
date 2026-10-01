@@ -17,6 +17,8 @@ struct DashboardView: View {
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
+    var onRecord: () -> Void = {}
+    var onHistory: () -> Void = {}
     @State private var cachedAllocationSlices: [DashboardAllocationSlice] = []
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedRecentTrendPoints: [TimeMachineTrendPoint] = []
@@ -31,16 +33,21 @@ struct DashboardView: View {
     @State private var dashboardProjectionGeneration = 0
     @State private var lastLiveMarketCacheToken: Int?
     @State private var showsCloudSyncModal = false
+    @State private var showsMacFreedom = false
     @State private var freedomKeyboardDismissSignal = 0
 
     init(
         marketStore: RemoteMarketStore,
         cloudStore: AssetTimeMachineCloudStore,
-        isActive: Bool
+        isActive: Bool,
+        onRecord: @escaping () -> Void = {},
+        onHistory: @escaping () -> Void = {}
     ) {
         self.marketStore = marketStore
         self.cloudStore = cloudStore
         self.isActive = isActive
+        self.onRecord = onRecord
+        self.onHistory = onHistory
     }
 
     private var totalAssets: Double {
@@ -76,6 +83,20 @@ struct DashboardView: View {
                             if !hasLoadedDashboardData {
                                 LoadingStateCard(title: AppLocalization.string("首页加载中"))
                             } else {
+                                #if targetEnvironment(macCatalyst)
+                                MacDashboardContent(
+                                    totalAssets: totalAssets,
+                                    points: cachedTrendPoints,
+                                    slices: allocationSlices,
+                                    projection: freedomProjection,
+                                    amountsVisible: $amountsVisible,
+                                    cloudStore: cloudStore,
+                                    onRecord: onRecord,
+                                    onHistory: onHistory,
+                                    onCloud: { showsCloudSyncModal = true },
+                                    onFreedom: { showsMacFreedom = true }
+                                )
+                                #else
                                 VStack(alignment: .leading, spacing: 0) {
                                     summaryStrip
                                     freedomSection
@@ -88,6 +109,7 @@ struct DashboardView: View {
                                             freedomKeyboardDismissSignal += 1
                                         }
                                 }
+                                #endif
                             }
                         }
                         .padding(.horizontal, 20)
@@ -97,7 +119,11 @@ struct DashboardView: View {
                     .scrollDismissesKeyboard(.interactively)
                     .task {
                         migrateDashboardDefaultsIfNeeded()
-                        await cloudStore.refreshIfNeeded(from: modelContext)
+                        #if !targetEnvironment(macCatalyst)
+                        if !AppPreviewSession.isActive {
+                            await cloudStore.refreshIfNeeded(from: modelContext)
+                        }
+                        #endif
                     }
                     .onChange(of: hasLoadedDashboardData) { _, hasLoaded in
                         guard hasLoaded else { return }
@@ -114,7 +140,9 @@ struct DashboardView: View {
                 requestDashboardDataRefresh(
                     delayNanoseconds: hasLoadedDashboardData ? 120_000_000 : 0
                 )
+                #if !targetEnvironment(macCatalyst)
                 scheduleCloudAutoSync()
+                #endif
             } else {
                 cancelDashboardWork()
             }
@@ -144,18 +172,32 @@ struct DashboardView: View {
             guard hasLoadedDashboardData else { return }
             requestDashboardDataRefresh(delayNanoseconds: 80_000_000)
         }
+        .sheet(isPresented: $showsMacFreedom) {
+            NavigationStack {
+                ScrollView { freedomSection.padding(24) }
+                    .navigationTitle(AppLocalization.string("财务自由进度"))
+                    .toolbar { ToolbarItem(placement: .confirmationAction) {
+                        Button(AppLocalization.string("完成")) { showsMacFreedom = false }
+                    } }
+            }
+        }
         .sheet(isPresented: $showsCloudSyncModal) {
             NavigationStack {
                 AssetTimeMachineCloudPage(store: cloudStore)
             }
+            #if targetEnvironment(macCatalyst)
+            .frame(width: 470, height: cloudStore.currentUser == nil ? 230 : 400)
+            .presentationSizing(.fitted)
+            #else
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            #endif
         }
     }
 
     @MainActor
     private func scheduleCloudAutoSync(delayNanoseconds: UInt64 = 6_000_000_000) {
-        guard cloudStore.currentUser != nil else { return }
+        guard cloudStore.currentUser != nil, !AppPreviewSession.isActive else { return }
         cloudStore.scheduleAutoSync(
             from: modelContext,
             quietly: true,

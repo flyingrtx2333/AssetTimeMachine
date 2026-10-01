@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -45,6 +46,7 @@ struct TimeMachineView: View {
     @State private var trendVideoExportErrorMessage: String?
     #if DEBUG
     @State private var didOpenDebugTrendVideoPreview = false
+    @State private var didRunMacMutationProbe = false
     #endif
 
     init(marketStore: RemoteMarketStore, isActive: Bool) {
@@ -173,10 +175,12 @@ struct TimeMachineView: View {
         var hasher = Hasher()
         hasher.combine(selectedRange.rawValue)
         hasher.combine(modelSaveRevision)
+        #if !targetEnvironment(macCatalyst)
         hasher.combine(historyCacheToken)
         for seriesID in visibleTrendSeriesIDs.sorted() {
             hasher.combine(seriesID)
         }
+        #endif
         return hasher.finalize()
     }
 
@@ -270,7 +274,13 @@ struct TimeMachineView: View {
     private func refreshVisualizationCache(includeDetailCards: Bool = true, cacheToken: Int? = nil) async {
         guard !Task.isCancelled, isActive else { return }
         let cacheToken = cacheToken ?? snapshotVisualizationCacheToken
+        #if DEBUG
+        if AppPreviewSession.isActive { NSLog("[MacPerf] prepare start token=%ld", cacheToken) }
+        #endif
         guard let projections = await snapshotProjectionsIfNeeded() else { return }
+        #if DEBUG
+        if AppPreviewSession.isActive { NSLog("[MacPerf] fetched projections=%ld", projections.count) }
+        #endif
         let range = selectedRange
         let anchors = liveMarketAnchors
         let processingTask = Task.detached(priority: .userInitiated) {
@@ -287,6 +297,9 @@ struct TimeMachineView: View {
         }
 
         guard !Task.isCancelled, isActive, cacheToken == snapshotVisualizationCacheToken else { return }
+        #if DEBUG
+        if AppPreviewSession.isActive { NSLog("[MacPerf] prepared points=%ld", prepared.filteredTrendPoints.count) }
+        #endif
 
         cachedTrendPoints = prepared.trendPoints
         cachedFilteredTrendPoints = prepared.filteredTrendPoints
@@ -295,6 +308,19 @@ struct TimeMachineView: View {
         cachedSnapshotIDByDay = prepared.snapshotIDByDay
         lastVisualizationCacheToken = cacheToken
         await Task.yield()
+
+        #if targetEnvironment(macCatalyst)
+        // The Mac screen only shows portfolio history. Keep market and detail
+        // series out of memory until a feature that displays them requests them.
+        cachedHistoryPointsBySymbol = [:]
+        cachedFullHistoryPointsBySymbol = [:]
+        cachedFullHistoryCandlesticksBySymbol = [:]
+        cachedDetailTrendCards = []
+        cachedMonthlySurplusPoints = []
+        cachedAnnualSurplusPoints = []
+        deferredDetailCardsTask?.cancel()
+        return
+        #endif
 
         guard !prepared.filteredTrendPoints.isEmpty else {
             cachedHistoryPointsBySymbol = [:]
@@ -342,11 +368,23 @@ struct TimeMachineView: View {
 
         let container = modelContext.container
         do {
+            #if DEBUG
+            if AppPreviewSession.isActive { NSLog("[MacPerf] fetch begin") }
+            #endif
             let projections = try await BackgroundTaskWork.run {
+                #if targetEnvironment(macCatalyst)
+                return try await MacSnapshotSummaryCache.shared.projections(
+                    in: container, revision: ModelStoreRevisionClock.shared.currentRevision()
+                )
+                #else
                 let store = TimeMachineSnapshotProjectionStore(modelContainer: container)
                 return try await store.fetchAll()
+                #endif
             }
             guard !Task.isCancelled, isActive, token == snapshotProjectionCacheToken else { return nil }
+            #if DEBUG
+            if AppPreviewSession.isActive { NSLog("[MacPerf] fetch end count=%ld", projections.count) }
+            #endif
             cachedSnapshotProjections = projections
             lastSnapshotProjectionCacheToken = token
             return projections
@@ -761,6 +799,9 @@ struct TimeMachineView: View {
     }
 
     var body: some View {
+        #if targetEnvironment(macCatalyst)
+        macBody
+        #else
         NavigationStack {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
@@ -882,17 +923,143 @@ struct TimeMachineView: View {
             openTrendVideoPreview()
         }
         #endif
+        #endif
     }
-}
 
-nonisolated struct BacktestSeriesPoint: Identifiable, Sendable {
-    let id: Int
-    let date: Date
-    let portfolioValue: Double
+    #if targetEnvironment(macCatalyst)
+    #if DEBUG
+    @MainActor
+    private func runMacMutationProbeIfRequested() async {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard AppPreviewSession.isActive, !didRunMacMutationProbe,
+              let flag = arguments.firstIndex(of: "-macPerfMutationOutput"),
+              arguments.indices.contains(flag + 1) else { return }
+        didRunMacMutationProbe = true
+        NSLog("[MacPerf] mutation probe started")
+        let output = URL(fileURLWithPath: arguments[flag + 1])
 
-    init(date: Date, portfolioValue: Double, sequence: Int = 0) {
-        self.id = sequence
-        self.date = date
-        self.portfolioValue = portfolioValue
+        func waitFor(_ condition: () -> Bool) async -> Bool {
+            for _ in 0..<80 {
+                if condition() { return true }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            return false
+        }
+
+        guard let lastProjection = cachedSnapshotProjections.last,
+              let baseline = cachedFilteredTrendPoints.last?.mainAssets else { return }
+        let latestID = lastProjection.id
+        var latestDescriptor = FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.id == latestID })
+        latestDescriptor.fetchLimit = 1
+        guard let latest = try? modelContext.fetch(latestDescriptor).first,
+              let entry = latest.entries.first(where: { $0.item?.category?.group != .liability }) else { return }
+        let originalAmount = entry.amount
+        let originalUpdatedAt = latest.updatedAt
+        entry.amount = entry.resolvedAmount + 123.45
+        latest.updatedAt = .now
+        try? modelContext.save()
+        let edited = await waitFor({ abs((cachedFilteredTrendPoints.last?.mainAssets ?? 0) - baseline - 123.45) < 0.01 })
+
+        entry.amount = originalAmount
+        latest.updatedAt = originalUpdatedAt
+        try? modelContext.save()
+        let restored = await waitFor({ abs((cachedFilteredTrendPoints.last?.mainAssets ?? 0) - baseline) < 0.01 })
+
+        let originalCount = cachedFilteredTrendPoints.count
+        let oldestID = cachedSnapshotProjections.first?.id
+        var deleted = false
+        if let oldestID, oldestID != latestID {
+            var descriptor = FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.id == oldestID })
+            descriptor.fetchLimit = 1
+            if let oldest = try? modelContext.fetch(descriptor).first {
+                modelContext.delete(oldest)
+                try? modelContext.save()
+                deleted = await waitFor({ cachedFilteredTrendPoints.count == originalCount - 1 })
+            }
+        }
+        let result: [String: Bool] = [
+            "editInvalidated": edited,
+            "restoreInvalidated": restored,
+            "deleteInvalidated": deleted
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: output, options: .atomic)
+        }
+        NSLog("[MacPerf] mutation probe finished edit=%@ restore=%@ delete=%@", String(edited), String(restored), String(deleted))
     }
+    #endif
+
+    private var macBody: some View {
+        ZStack {
+            AssetTheme.pageGradient.ignoresSafeArea()
+            if lastVisualizationCacheToken == nil {
+                LoadingStateCard(title: AppLocalization.string("时光机加载中"))
+                    .padding(20)
+            } else if filteredTrendPoints.isEmpty {
+                EmptyStateCard(
+                    title: AppLocalization.string("暂无趋势数据"),
+                    message: AppLocalization.string("请先在记录页保存历史资产快照。"),
+                    systemImage: "chart.line.uptrend.xyaxis"
+                )
+                .padding(20)
+            } else {
+                MacTimeMachineContent(
+                    points: filteredTrendPoints,
+                    snapshotIDByDay: cachedSnapshotIDByDay,
+                    cacheToken: lastVisualizationCacheToken ?? 0,
+                    selectedRange: $selectedRange,
+                    amountsVisible: $amountsVisible,
+                    onGenerateVideo: openTrendVideoPreview
+                )
+            }
+        }
+        .task(id: isActive) {
+            if isActive {
+                let storeRevision = ModelStoreRevisionClock.shared.currentRevision()
+                if storeRevision != lastObservedStoreRevision {
+                    lastObservedStoreRevision = storeRevision
+                    modelSaveRevision &+= 1
+                }
+                scheduleVisualizationRefresh(force: lastVisualizationCacheToken == nil, includeDetailCards: false, delayNanoseconds: 0)
+            } else {
+                pendingVisualizationRefreshTask?.cancel()
+                pendingLiveMarketTrendRefreshTask?.cancel()
+                deferredDetailCardsTask?.cancel()
+            }
+        }
+        #if DEBUG
+        .onChange(of: lastVisualizationCacheToken) { _, token in
+            guard token != nil else { return }
+            Task { await runMacMutationProbeIfRequested() }
+        }
+        #endif
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
+            guard isActive, PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
+            lastObservedStoreRevision = ModelStoreRevisionClock.shared.currentRevision()
+            modelSaveRevision &+= 1
+        }
+        .onChange(of: isActive ? snapshotVisualizationCacheToken : (lastVisualizationCacheToken ?? 0)) { _, _ in
+            guard isActive else { return }
+            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 120_000_000)
+        }
+        .onReceive(marketStore.$historySeries.dropFirst()) { _ in
+            #if !targetEnvironment(macCatalyst)
+            guard isActive else { return }
+            scheduleVisualizationRefresh(includeDetailCards: false, delayNanoseconds: 80_000_000)
+            #endif
+        }
+        .sheet(item: $trendVideoPreviewRequest) { request in
+            TrendVideoPreviewSheet(points: request.points, rangeLabel: request.rangeLabel)
+                .presentationDetents([.large])
+        }
+        .alert(AppLocalization.string("视频生成失败"), isPresented: Binding(
+            get: { trendVideoExportErrorMessage != nil },
+            set: { if !$0 { trendVideoExportErrorMessage = nil } }
+        )) {
+            Button(AppLocalization.string("知道了"), role: .cancel) {}
+        } message: {
+            Text(trendVideoExportErrorMessage ?? AppLocalization.string("请稍后再试"))
+        }
+    }
+    #endif
 }

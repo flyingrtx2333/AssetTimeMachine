@@ -1,0 +1,38 @@
+name: AssetTimeMachineNativeMac
+options:
+  bundleIdPrefix: com.flyingrtx
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    MACOSX_DEPLOYMENT_TARGET: 15.0
+    DEVELOPMENT_TEAM: 8BPSC5L74V
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_APP_SANDBOX: YES
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: 资产时光机
+    INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.finance
+    CODE_SIGN_ENTITLEMENTS: ../AssetTimeMachine/AssetTimeMachineMac.entitlements
+    PRODUCT_BUNDLE_IDENTIFIER: com.flyingrtx.AssetTimeMachine.mac
+targets:
+  AssetTimeMachineNativeMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+      - path: ../AssetTimeMachine/Assets.xcassets
+      - path: ../AssetTimeMachine/Models.swift
+      - path: ../AssetTimeMachine/AppLanguage.swift
+      - path: ../AssetTimeMachine/AppPreviewSession.swift
+      - path: ../AssetTimeMachine/Services/BackgroundTaskWork.swift
+      - path: ../AssetTimeMachine/Services/KeychainTokenStore.swift
+      - path: ../AssetTimeMachine/Services/SnapshotService.swift
+      - path: ../AssetTimeMachine/Services/PortfolioCalculator.swift
+      - path: ../AssetTimeMachine/Services/PortfolioMetrics.swift
+      - path: ../AssetTimeMachine/Services/TimeMachineSnapshotProjectionStore.swift
+      - path: ../AssetTimeMachine/ImportExport.swift
+      - path: ../AssetTimeMachine/CloudSync.swift
+    settings:
+      base:
+        PRODUCT_NAME: AssetTimeMachine
+    scheme:
+      testTargets: []

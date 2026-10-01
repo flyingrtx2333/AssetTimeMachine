@@ -7,6 +7,12 @@ App engine plus the durable validation fragment, then replays the same pinned fi
 """
 from __future__ import annotations
 
+if __name__ == "__main__":
+    import sys as _legacy_sys
+    from replay_legacy_research import redirect_historical
+    redirect_historical(__file__, _legacy_sys.argv[1:])
+
+
 import concurrent.futures
 import os
 import re

@@ -125,8 +125,8 @@ final class RecentWindowOverlayStrategyTests: XCTestCase {
     }
 
     func testRecentModesAreExploratoryWithoutChangingDefaults() {
-        XCTAssertEqual(StrategyRebalanceDefaults.defaultTemplateID, "core-gold-satellite-equity-curve-state-gate-momentum")
-        XCTAssertEqual(StrategyRebalanceDefaults.recommendedTemplateID, "gold-nasdaq-dual-trend-barbell")
+        XCTAssertEqual(BacktestCoreStrategyDefaults.defaultTemplateID, "core-gold-satellite-equity-curve-state-gate-momentum")
+        XCTAssertEqual(BacktestCoreStrategyDefaults.recommendedTemplateID, "gold-nasdaq-dual-trend-barbell")
         let recentIDs = Set(BacktestProductStrategyCatalog.experimentalTemplateIDs)
         XCTAssertTrue(recentIDs.isSuperset(of: [
             "recent-volatility-managed-idle-cash",

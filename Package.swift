@@ -4,10 +4,15 @@ import PackageDescription
 let package = Package(
     name: "AssetTimeMachineBacktest",
     platforms: [
+        .iOS(.v18),
         .macOS(.v14)
     ],
     products: [
         .library(name: "AssetTimeMachineBacktestCore", targets: ["AssetTimeMachineBacktestCore"]),
+        .library(name: "AssetTimeMachineResearchSupport", targets: ["AssetTimeMachineResearchSupport"]),
+        .executable(name: "AssetTimeMachineResearch", targets: ["AssetTimeMachineResearch"]),
+        .executable(name: "AssetTimeMachineMetricDump", targets: ["AssetTimeMachineMetricDump"]),
+        .executable(name: "AssetTimeMachineExecutionReassessment", targets: ["AssetTimeMachineExecutionReassessment"]),
         .executable(name: "AssetTimeMachineBacktestWorker", targets: ["AssetTimeMachineBacktestWorker"]),
         .executable(name: "AssetTimeMachineBacktestCompute", targets: ["AssetTimeMachineBacktestCompute"]),
         .executable(name: "RSRangeBreadthFreeze", targets: ["RSRangeBreadthFreeze"]),
@@ -20,52 +25,21 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0")
     ],
     targets: [
-        .target(
-            name: "AssetTimeMachineBacktestCore",
-            path: "AssetTimeMachine/Backtest",
-            exclude: [
-                "AdvancedBacktestDataSupport.swift",
-                "AdvancedBacktestResultContent.swift",
-                "AdvancedBacktestView.swift",
-                "AssetAgnosticBacktestEngine.swift",
-                "BacktestCharts.swift",
-                "BacktestHistoryViews.swift",
-                "BacktestSheets.swift",
-                "BacktestSharePoster.swift",
-                "BacktestView.swift",
-                "StrategyAdviceProjectionStore.swift",
-                "StrategyAdviceService.swift",
-                "TodayPositionAdviceCard.swift"
-            ],
-            sources: [
-                "PublicHistoryModels.swift",
-                "BacktestModels.swift",
-                "BacktestMetricsCalculator.swift",
-                "BacktestSeriesAlignment.swift",
-                "BacktestFXConverter.swift",
-                "BacktestAdvancedSeriesPreparer.swift",
-                "BacktestEngine.swift",
-                "GNR5ReversalStrategy.swift",
-                "GORQREG25263Strategy.swift",
-                "RecentWindowCorrVarSchedule.swift",
-                "RecentWindowFrozenCandidateSchedules.swift",
-                "RecentWindowOverlayStrategy.swift",
-                "RecentWindowProductSeries.swift",
-                "MacroSahmCPIStrategy.swift",
-                "RSRangeBreadthStrategy.swift",
-                "RSRangeBreadthFreezeSupport.swift",
-                "RSRangeBreadthFormalSupport.swift",
-                "IntradayDownsideBreadthStrategy.swift",
-                "IntradayDownsideBreadthFreezeSupport.swift",
-                "IntradayDownsideBreadthFormalSupport.swift",
-                "AssetTimeMachineServerSupport.swift",
-                "PublicBacktestCore.swift"
-            ],
-            resources: [.process("BacktestData/RecentWindow")],
-            swiftSettings: [
-                .define("ATM_SERVER")
-            ]
-        ),
+        .target(name: "AssetTimeMachineBacktestCore",
+                path: "Sources/AssetTimeMachineBacktestCore",
+                resources: [.copy("Resources/RecentWindow")]),
+        .target(name: "AssetTimeMachineResearchSupport",
+                dependencies: ["AssetTimeMachineBacktestCore", .product(name: "Crypto", package: "swift-crypto")],
+                path: "Sources/AssetTimeMachineResearchSupport"),
+        .executableTarget(name: "AssetTimeMachineResearch",
+                          dependencies: ["AssetTimeMachineResearchSupport"],
+                          path: "Server/Sources/ResearchCLI"),
+        .executableTarget(name: "AssetTimeMachineMetricDump",
+                          dependencies: ["AssetTimeMachineResearchSupport"],
+                          path: "Server/Sources/MetricDump"),
+        .executableTarget(name: "AssetTimeMachineExecutionReassessment",
+                          dependencies: ["AssetTimeMachineResearchSupport"],
+                          path: "Server/Sources/ExecutionReassessment"),
         .executableTarget(
             name: "AssetTimeMachineBacktestWorker",
             dependencies: [
@@ -82,27 +56,32 @@ let package = Package(
         ),
         .executableTarget(
             name: "RSRangeBreadthFreeze",
-            dependencies: ["AssetTimeMachineBacktestCore"],
+            dependencies: ["AssetTimeMachineResearchSupport"],
             path: "Server/Sources/RSRangeBreadthFreeze"
         ),
         .executableTarget(
             name: "RSRangeBreadthFormal",
-            dependencies: ["AssetTimeMachineBacktestCore"],
+            dependencies: ["AssetTimeMachineResearchSupport"],
             path: "Server/Sources/RSRangeBreadthFormal"
         ),
         .executableTarget(
             name: "IntradayDownsideBreadthFreeze",
-            dependencies: ["AssetTimeMachineBacktestCore"],
+            dependencies: ["AssetTimeMachineResearchSupport"],
             path: "Server/Sources/IntradayDownsideBreadthFreeze"
         ),
         .executableTarget(
             name: "IntradayDownsideBreadthFormal",
-            dependencies: ["AssetTimeMachineBacktestCore"],
+            dependencies: ["AssetTimeMachineResearchSupport"],
             path: "Server/Sources/IntradayDownsideBreadthFormal"
         ),
         .testTarget(
+            name: "AssetTimeMachineBacktestWorkerTests",
+            dependencies: ["AssetTimeMachineBacktestWorker"],
+            path: "Server/Tests/WorkerTests"
+        ),
+        .testTarget(
             name: "AssetTimeMachineBacktestCoreTests",
-            dependencies: ["AssetTimeMachineBacktestCore"],
+            dependencies: ["AssetTimeMachineBacktestCore", "AssetTimeMachineResearchSupport"],
             path: "Server/Tests/CoreTests"
         )
     ],

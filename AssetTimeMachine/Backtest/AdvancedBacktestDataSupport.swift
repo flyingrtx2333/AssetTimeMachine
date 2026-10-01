@@ -1,3 +1,5 @@
+import AssetTimeMachineBacktestCore
+import CryptoKit
 import Foundation
 
 nonisolated enum StandardBacktestPreparationMode: Sendable {
@@ -259,8 +261,12 @@ enum AdvancedBacktestDataSupport {
         buyDays: Int,
         sellDirection: AdvancedBacktestSignalDirection,
         sellDays: Int,
-        configSummary: String
+        configSummary: String,
+        strategyReference: StrategyReference? = nil
     ) -> AdvancedBacktestRecordDraft {
+        let frozenParameters = strategyReference.flatMap { reference in
+            try? StrategyRegistry.definition(reference: reference).frozenParametersJSON
+        }
         let config = BacktestRecordConfigPayload(
             kind: .advanced,
             selectedAssetSymbol: selectedAssetOptions.first?.symbol,
@@ -288,13 +294,17 @@ enum AdvancedBacktestDataSupport {
             finalCash: report.finalCash,
             finalUnits: report.finalUnits,
             cashYieldSummary: BacktestRecordCodec.cashYieldSummaryPayload(from: report.cashYieldSummary),
-            riskSignalSummary: report.riskSignalSummary.map { BacktestRecordCodec.riskSignalSummaryPayload(from: $0) }
+            riskSignalSummary: report.riskSignalSummary.map { BacktestRecordCodec.riskSignalSummaryPayload(from: $0) },
+            runtimeProvenance: .init(strategy: strategyReference,
+                executionVersion: BacktestEngine.defaultEngineVersion,
+                frozenParametersJSON: frozenParameters,
+                parametersSHA256: frozenParameters.map { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() })
         )
 
         let record = BacktestRecord(
             kindRawValue: BacktestRecordKind.advanced.rawValue,
             title: BacktestRecordKind.advanced.title,
-            subtitle: strategyMode.title,
+            subtitle: strategyMode.localizedTitle,
             configSummary: configSummary,
             startDate: report.points.first?.date,
             endDate: report.points.last?.date,
@@ -327,7 +337,7 @@ enum AdvancedBacktestDataSupport {
     ) -> String {
         BacktestRecordCodec.recordSignature(
             kindRawValue: BacktestRecordKind.advanced.rawValue,
-            subtitle: strategyMode.title,
+            subtitle: strategyMode.localizedTitle,
             configSummary: configSummary,
             startDate: report.points.first?.date,
             endDate: report.points.last?.date,

@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -391,6 +392,9 @@ struct SnapshotListView: View {
                                 editingRecordItem = nil
                             }
                         )
+                        #if targetEnvironment(macCatalyst)
+                        Spacer(minLength: 0)
+                        #endif
                     }
                     .ignoresSafeArea(.container, edges: .bottom)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -1541,7 +1545,7 @@ private struct AddAssetStepIndicator: View {
     let onSelectAssetStep: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: indicatorSpacing) {
             Button(action: onSelectAssetStep) {
                 stepLabel(
                     number: 1,
@@ -1555,7 +1559,7 @@ private struct AddAssetStepIndicator: View {
 
             Rectangle()
                 .fill(step == .details ? AssetTheme.gold.opacity(0.72) : AssetTheme.border.opacity(0.48))
-                .frame(maxWidth: 46, maxHeight: 1)
+                .frame(maxWidth: indicatorLineWidth, maxHeight: 1)
 
             stepLabel(
                 number: 2,
@@ -1569,7 +1573,7 @@ private struct AddAssetStepIndicator: View {
     }
 
     private func stepLabel(number: Int, title: String, isActive: Bool, isCompleted: Bool) -> some View {
-        HStack(spacing: 7) {
+        HStack(spacing: indicatorLabelSpacing) {
             ZStack {
                 Circle()
                     .fill(isActive || isCompleted ? AssetTheme.gold : AssetTheme.overlaySubtle)
@@ -1583,7 +1587,7 @@ private struct AddAssetStepIndicator: View {
                         .foregroundStyle(isActive ? Color.black.opacity(0.76) : AssetTheme.textSecondary)
                 }
             }
-            .frame(width: 24, height: 24)
+            .frame(width: indicatorCircleSize, height: indicatorCircleSize)
 
             Text(title)
                 .font(AppTypography.captionStrong)
@@ -1592,6 +1596,38 @@ private struct AddAssetStepIndicator: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(AppLocalization.format("步骤 %d：%@", number, title))
+    }
+
+    private var indicatorSpacing: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        7
+        #else
+        10
+        #endif
+    }
+
+    private var indicatorLineWidth: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        30
+        #else
+        46
+        #endif
+    }
+
+    private var indicatorLabelSpacing: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        5
+        #else
+        7
+        #endif
+    }
+
+    private var indicatorCircleSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        20
+        #else
+        24
+        #endif
     }
 }
 
@@ -1833,13 +1869,47 @@ struct AssetItemEditorSheet: View {
         }
     }
 
+    private var editorTitle: String {
+        AppLocalization.string(isEditing ? "编辑资产类型" : (isOnboarding ? "添加第一项资产" : "添加资产类型"))
+    }
+
+    private var editorContentSpacing: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        12
+        #else
+        18
+        #endif
+    }
+
+    private var editorKeyboardSpacer: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        16
+        #else
+        TabScrollLayout.formKeyboardDismissSpacer
+        #endif
+    }
+
+    private var editorBottomPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        12
+        #else
+        TabScrollLayout.sheetBottomPadding
+        #endif
+    }
+
+    #if targetEnvironment(macCatalyst)
+    private var macEditorHeight: CGFloat {
+        isOnboarding && step == .asset && !showsOnboardingFullCatalog ? 430 : 540
+    }
+    #endif
+
     var body: some View {
         NavigationStack {
             ZStack {
                 AssetTheme.pageGradient.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: editorContentSpacing) {
                         AddAssetStepIndicator(step: step) {
                             guard step != .asset else { return }
                             dismissActiveKeyboard()
@@ -1864,16 +1934,16 @@ struct AssetItemEditorSheet: View {
                         }
 
                         Color.clear
-                            .frame(height: TabScrollLayout.formKeyboardDismissSpacer)
+                            .frame(height: editorKeyboardSpacer)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 dismissActiveKeyboard()
                             }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, editorHorizontalPadding)
                     .padding(.top, 0)
-                    .padding(.bottom, TabScrollLayout.sheetBottomPadding)
+                    .padding(.bottom, editorBottomPadding)
                     .id(step)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -1882,15 +1952,28 @@ struct AssetItemEditorSheet: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle(AppLocalization.string(
-                isEditing ? "编辑资产类型" : (isOnboarding ? "添加第一项资产" : "添加资产类型")
-            ))
+            #if targetEnvironment(macCatalyst)
+            .navigationTitle("")
+            #else
+            .navigationTitle(editorTitle)
+            #endif
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                #if targetEnvironment(macCatalyst)
+                ToolbarItem(placement: .principal) {
+                    Text(editorTitle)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(AssetTheme.textPrimary)
+                }
+                #endif
                 ToolbarItem(placement: .topBarLeading) {
                     Button(AppLocalization.string("取消")) {
                         dismiss()
                     }
+                    #if targetEnvironment(macCatalyst)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12))
+                    #endif
                     .foregroundStyle(AssetTheme.textSecondary)
                 }
 
@@ -1956,6 +2039,19 @@ struct AssetItemEditorSheet: View {
                 Text(AppLocalization.string("已有历史记录会保留原金额，但今后将按新的市场标的更新。"))
             }
         }
+        #if targetEnvironment(macCatalyst)
+        .frame(width: 460, height: macEditorHeight)
+        .presentationSizing(.fitted)
+        .controlSize(.small)
+        #endif
+    }
+
+    private var editorHorizontalPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        18
+        #else
+        20
+        #endif
     }
 
     @ViewBuilder
@@ -2412,21 +2508,49 @@ struct AssetItemEditorSheet: View {
                 Text(AppLocalization.string(
                     step == .asset ? "下一步" : (isOnboarding ? "保存第一项资产" : "保存")
                 ))
+                    #if targetEnvironment(macCatalyst)
+                    .font(.system(size: 13, weight: .medium))
+                    #else
                     .font(AppTypography.rowTitle)
+                    #endif
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(height: primaryButtonHeight)
                     .foregroundStyle(primaryActionEnabled ? Color.black.opacity(0.82) : AssetTheme.textSecondary)
                     .background(
                         primaryActionEnabled ? AssetTheme.gold : AssetTheme.overlayStrong,
-                        in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: primaryButtonRadius, style: .continuous)
                     )
             }
             .buttonStyle(.plain)
             .disabled(!primaryActionEnabled)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.horizontal, editorHorizontalPadding)
+            .padding(.vertical, primaryBarPadding)
         }
         .background(AssetTheme.background.opacity(0.96))
+    }
+
+    private var primaryButtonHeight: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        36
+        #else
+        48
+        #endif
+    }
+
+    private var primaryButtonRadius: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        8
+        #else
+        14
+        #endif
+    }
+
+    private var primaryBarPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        8
+        #else
+        12
+        #endif
     }
 
     private func handleMarketAssetSelection(_ asset: MarketAssetDescriptor?) {
@@ -2790,7 +2914,11 @@ struct RecordValueEditorSheet: View {
         case .quantityAndUnitPrice:
             text = quantityText
         }
+        #if targetEnvironment(macCatalyst)
+        return min(125, max(34, CGFloat(max(text.count, 1)) * 15))
+        #else
         return min(170, max(34, CGFloat(max(text.count, 1)) * 21))
+        #endif
     }
 
     private var currentMarketValue: Double? {
@@ -2819,16 +2947,16 @@ struct RecordValueEditorSheet: View {
             sheetHeader
 
             editorRow
-                .padding(.horizontal, 26)
-                .padding(.top, 63)
-                .padding(.bottom, errorMessage == nil ? 44 : 16)
+                .padding(.horizontal, quickEditorPadding)
+                .padding(.top, quickEditorTopPadding)
+                .padding(.bottom, errorMessage == nil ? quickEditorBottomPadding : 12)
 
             if let errorMessage {
                 Text(errorMessage)
                     .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.negative)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 26)
+                    .padding(.horizontal, quickEditorPadding)
                     .padding(.bottom, 14)
             }
 
@@ -2836,37 +2964,22 @@ struct RecordValueEditorSheet: View {
                 Rectangle()
                     .fill(Color.white.opacity(0.12))
                     .frame(height: 1)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, quickEditorPadding)
 
                 marketValueRow
-                    .padding(.horizontal, 26)
-                    .padding(.top, 24)
-                    .padding(.bottom, 30)
+                    .padding(.horizontal, quickEditorPadding)
+                    .padding(.top, marketValueTopPadding)
+                    .padding(.bottom, marketValueBottomPadding)
             }
         }
         .frame(
-            maxWidth: 540,
-            minHeight: item.valuationMethod == .directAmount ? 260 : 435,
+            maxWidth: quickEditorWidth,
+            minHeight: quickEditorMinHeight,
             alignment: .top
         )
-        .background(
-            UnevenRoundedRectangle(
-                topLeadingRadius: 28,
-                bottomLeadingRadius: 0,
-                bottomTrailingRadius: 0,
-                topTrailingRadius: 28,
-                style: .continuous
-            )
-                .fill(.ultraThinMaterial)
-        )
+        .background(panelShape.fill(.ultraThinMaterial))
         .overlay {
-            UnevenRoundedRectangle(
-                topLeadingRadius: 28,
-                bottomLeadingRadius: 0,
-                bottomTrailingRadius: 0,
-                topTrailingRadius: 28,
-                style: .continuous
-            )
+            panelShape
                 .stroke(
                     LinearGradient(
                         colors: [Color.white.opacity(0.16), AssetTheme.gold.opacity(0.08)],
@@ -2876,16 +2989,8 @@ struct RecordValueEditorSheet: View {
                     lineWidth: 1
                 )
         }
-        .shadow(color: .black.opacity(0.36), radius: 34, x: 0, y: -8)
-        .contentShape(
-            UnevenRoundedRectangle(
-                topLeadingRadius: 28,
-                bottomLeadingRadius: 0,
-                bottomTrailingRadius: 0,
-                topTrailingRadius: 28,
-                style: .continuous
-            )
-        )
+        .shadow(color: .black.opacity(0.3), radius: 18, x: 0, y: 8)
+        .contentShape(panelShape)
         .modifier(RecordValueAutoFocusModifier(focusedField: $focusedField))
         .onDisappear {
             manualAutoPriceRefreshTask?.cancel()
@@ -2894,13 +2999,77 @@ struct RecordValueEditorSheet: View {
         }
     }
 
+    private var panelShape: UnevenRoundedRectangle {
+        #if targetEnvironment(macCatalyst)
+        UnevenRoundedRectangle(cornerRadii: .init(topLeading: 14, bottomLeading: 14, bottomTrailing: 14, topTrailing: 14))
+        #else
+        UnevenRoundedRectangle(cornerRadii: .init(topLeading: 28, bottomLeading: 0, bottomTrailing: 0, topTrailing: 28))
+        #endif
+    }
+
+    private var quickEditorPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        18
+        #else
+        26
+        #endif
+    }
+
+    private var quickEditorTopPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        20
+        #else
+        63
+        #endif
+    }
+
+    private var quickEditorBottomPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        20
+        #else
+        44
+        #endif
+    }
+
+    private var quickEditorWidth: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        420
+        #else
+        540
+        #endif
+    }
+
+    private var quickEditorMinHeight: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        0
+        #else
+        item.valuationMethod == .directAmount ? 260 : 435
+        #endif
+    }
+
+    private var marketValueTopPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        14
+        #else
+        24
+        #endif
+    }
+
+    private var marketValueBottomPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        18
+        #else
+        30
+        #endif
+    }
+
     private var sheetHeader: some View {
         HStack(spacing: 12) {
             Button(action: onCancel) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 19, weight: .medium))
+                    .font(.system(size: quickHeaderIconSize, weight: .medium))
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: quickHeaderButtonSize, height: quickHeaderButtonSize)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -2909,7 +3078,7 @@ struct RecordValueEditorSheet: View {
             Spacer(minLength: 4)
 
             Text(AppLocalization.string(item.name))
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: quickHeaderTitleSize, weight: .semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
@@ -2917,13 +3086,45 @@ struct RecordValueEditorSheet: View {
             Spacer(minLength: 4)
 
             Button(AppLocalization.string("完成"), action: save)
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: quickHeaderTitleSize, weight: .medium))
                 .foregroundStyle(AssetTheme.goldSoft)
-                .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+                .frame(minWidth: quickHeaderButtonSize, minHeight: quickHeaderButtonSize, alignment: .trailing)
                 .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 14)
+        .padding(.horizontal, quickEditorPadding)
+        .padding(.top, quickHeaderTopPadding)
+    }
+
+    private var quickHeaderIconSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        13
+        #else
+        19
+        #endif
+    }
+
+    private var quickHeaderButtonSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        30
+        #else
+        44
+        #endif
+    }
+
+    private var quickHeaderTitleSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        14
+        #else
+        18
+        #endif
+    }
+
+    private var quickHeaderTopPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        12
+        #else
+        14
+        #endif
     }
 
     private var editorRow: some View {
@@ -2931,9 +3132,9 @@ struct RecordValueEditorSheet: View {
             AssetItemGlyph(
                 item: item,
                 accent: isLiability ? AssetTheme.negative : AssetTheme.goldSoft,
-                size: 34
+                size: quickGlyphSize
             )
-            .frame(width: 46, height: 46)
+            .frame(width: quickGlyphFrameSize, height: quickGlyphFrameSize)
 
             inlinePrimaryField
 
@@ -2944,11 +3145,27 @@ struct RecordValueEditorSheet: View {
         }
     }
 
+    private var quickGlyphSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        26
+        #else
+        34
+        #endif
+    }
+
+    private var quickGlyphFrameSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        36
+        #else
+        46
+        #endif
+    }
+
     private var inlinePrimaryField: some View {
         HStack(alignment: .firstTextBaseline, spacing: 7) {
             if item.valuationMethod == .directAmount {
                 Text("¥")
-                    .font(.system(size: 25, weight: .medium))
+                    .font(.system(size: primaryCurrencySize, weight: .medium))
                     .foregroundStyle(AssetTheme.textSecondary)
             }
 
@@ -2958,7 +3175,7 @@ struct RecordValueEditorSheet: View {
             )
             .keyboardType(.decimalPad)
             .textFieldStyle(.plain)
-            .font(.system(size: 34, weight: .medium, design: .rounded))
+            .font(.system(size: primaryInputSize, weight: .medium, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(AssetTheme.textPrimary)
             .focused($focusedField, equals: .primary)
@@ -2967,7 +3184,7 @@ struct RecordValueEditorSheet: View {
 
             if let quantityUnitTitle {
                 Text(quantityUnitTitle)
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: primaryUnitSize, weight: .medium))
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
             }
@@ -2981,6 +3198,30 @@ struct RecordValueEditorSheet: View {
                 .frame(height: 1)
         }
         .accessibilityLabel(primaryFieldTitle)
+    }
+
+    private var primaryCurrencySize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        18
+        #else
+        25
+        #endif
+    }
+
+    private var primaryInputSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        25
+        #else
+        34
+        #endif
+    }
+
+    private var primaryUnitSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        15
+        #else
+        20
+        #endif
     }
 
     @ViewBuilder

@@ -7,20 +7,14 @@ final class PublicBacktestCoreTests: XCTestCase {
 
         XCTAssertEqual(costs.transactionFeeRate, 0.00025, accuracy: 0.000_000_000_1)
         XCTAssertEqual(costs.slippageRate, 0.0005, accuracy: 0.000_000_000_1)
-        XCTAssertEqual(BacktestDefaults.advancedFeeRatePercent, 0.025, accuracy: 0.000_000_000_1)
-        XCTAssertEqual(BacktestDefaults.advancedSlippageRatePercent, 0.05, accuracy: 0.000_000_000_1)
+        XCTAssertEqual(BacktestCoreDefaults.advancedFeeRatePercent, 0.025, accuracy: 0.000_000_000_1)
+        XCTAssertEqual(BacktestCoreDefaults.advancedSlippageRatePercent, 0.05, accuracy: 0.000_000_000_1)
     }
 
     func testQuantStrategyProxyOverridesRecordedMarketSymbol() throws {
-        let category = AssetCategory(group: .financial)
-        let item = AssetItem(
-            name: "纳斯达克ETF",
-            category: category,
-            marketAssetSymbol: "record_etf:513100.sh",
-            quantStrategyProxySymbol: "gold_cny"
-        )
-        let snapshot = AssetSnapshot(entries: [
-            AssetEntry(amount: 100_000, item: item)
+        let snapshot = PortfolioHoldingsSnapshot(entries: [
+            PortfolioHolding(name: "纳斯达克ETF", amount: 100_000,
+                marketAssetSymbol: "record_etf:513100.sh", quantStrategyProxySymbol: "gold_cny")
         ])
         let advice = StrategyRebalanceAdvice(
             strategyTitle: "测试策略",
@@ -37,8 +31,8 @@ final class PublicBacktestCoreTests: XCTestCase {
         let actions = StrategyRebalanceActionBuilder.actions(
             for: advice,
             snapshot: snapshot,
-            selectedAssetOptions: BacktestDefaults.dcaAssetOptions.filter { ["gold_cny", "nasdaq"].contains($0.symbol) },
-            allAssetOptions: BacktestDefaults.dcaAssetOptions
+            selectedAssetOptions: BacktestCoreDefaults.dcaAssetOptions.filter { ["gold_cny", "nasdaq"].contains($0.symbol) },
+            allAssetOptions: BacktestCoreDefaults.dcaAssetOptions
         )
 
         let goldAction = try XCTUnwrap(actions.first(where: { $0.symbol == "gold_cny" }))
@@ -194,10 +188,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         ) throws -> PreparedAdvancedSeries {
             let points = try rows.map { (date: try date($0.0), cnyPrice: $0.1) }
             return PreparedAdvancedSeries(
-                assetOption: BacktestAssetOption(
+                assetOption: BacktestInstrument(
                     symbol: symbol,
                     title: symbol,
-                    color: .blue,
+
                     requiresHistoricalFX: false,
                     historicalFXSymbol: nil
                 ),
@@ -227,7 +221,7 @@ final class PublicBacktestCoreTests: XCTestCase {
 
         XCTAssertEqual(
             BacktestSeriesAlignment.rotationDecisionDates(from: [gold, sp500])
-                .map(\.recordDateString),
+                .map(\.backtestDateKey),
             ["2026-08-28", "2026-08-31"]
         )
 
@@ -239,8 +233,8 @@ final class PublicBacktestCoreTests: XCTestCase {
                 ("2026-08-30", 260),
             ]
         )
-        let aligned = BacktestEngine.alignedRotationPriceSeries(from: [goldWithoutMonday, sp500])
-        XCTAssertEqual(aligned.dates.map(\.recordDateString), ["2026-08-28"])
+        let aligned = BacktestCoreEngine.alignedRotationPriceSeries(from: [goldWithoutMonday, sp500])
+        XCTAssertEqual(aligned.dates.map(\.backtestDateKey), ["2026-08-28"])
         XCTAssertEqual(aligned.pricesBySymbol["gold_cny"], [200])
         XCTAssertEqual(aligned.observedBySymbol["gold_cny"], [true])
     }
@@ -249,10 +243,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         let dates = try ["2026-08-28", "2026-08-31", "2026-09-01"].map {
             try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: $0))
         }
-        let option = BacktestAssetOption(
+        let option = BacktestInstrument(
             symbol: "gold_cny",
             title: "黄金",
-            color: .blue,
+
             requiresHistoricalFX: false,
             historicalFXSymbol: nil
         )
@@ -295,11 +289,11 @@ final class PublicBacktestCoreTests: XCTestCase {
         let dates = try ["2026-08-27", "2026-08-28", "2026-08-31", "2026-09-01"].map {
             try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: $0))
         }
-        func option(_ symbol: String) -> BacktestAssetOption {
-            BacktestAssetOption(
+        func option(_ symbol: String) -> BacktestInstrument {
+            BacktestInstrument(
                 symbol: symbol,
                 title: symbol,
-                color: .blue,
+
                 requiresHistoricalFX: false,
                 historicalFXSymbol: nil
             )
@@ -357,10 +351,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         ))
         let prepared = try XCTUnwrap(BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
             assetSeries: extended,
-            assetOption: BacktestAssetOption(
+            assetOption: BacktestInstrument(
                 symbol: "gold_cny",
                 title: "黄金",
-                color: .blue,
+
                 requiresHistoricalFX: false,
                 historicalFXSymbol: nil
             ),
@@ -368,8 +362,8 @@ final class PublicBacktestCoreTests: XCTestCase {
             movingAverage: { values, _ in Array(repeating: nil, count: values.count) },
             bollingerBands: { values, _, _ in Array(repeating: nil, count: values.count) }
         ))
-        let aligned = BacktestEngine.alignedRotationPriceSeries(from: [prepared])
-        XCTAssertEqual(aligned.dates.map(\.recordDateString), ["2026-08-27", "2026-08-28", "2026-08-31"])
+        let aligned = BacktestCoreEngine.alignedRotationPriceSeries(from: [prepared])
+        XCTAssertEqual(aligned.dates.map(\.backtestDateKey), ["2026-08-27", "2026-08-28", "2026-08-31"])
         XCTAssertEqual(aligned.observedBySymbol["gold_cny"], [true, true, false])
     }
 
@@ -377,11 +371,11 @@ final class PublicBacktestCoreTests: XCTestCase {
         let dates = try ["2026-08-27", "2026-08-28", "2026-08-31"].map {
             try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: $0))
         }
-        func option(_ symbol: String) -> BacktestAssetOption {
-            BacktestAssetOption(
+        func option(_ symbol: String) -> BacktestInstrument {
+            BacktestInstrument(
                 symbol: symbol,
                 title: symbol,
-                color: .blue,
+
                 requiresHistoricalFX: false,
                 historicalFXSymbol: nil
             )
@@ -434,10 +428,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         let dates = try ["2026-08-28", "2026-08-31", "2026-09-01"].map {
             try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: $0))
         }
-        let option = BacktestAssetOption(
+        let option = BacktestInstrument(
             symbol: "gold_cny",
             title: "黄金",
-            color: .blue,
+
             requiresHistoricalFX: false,
             historicalFXSymbol: nil
         )
@@ -499,10 +493,10 @@ final class PublicBacktestCoreTests: XCTestCase {
             lows: [99, 100, 100],
             closes: [100, 110, 102]
         )
-        let option = BacktestAssetOption(
+        let option = BacktestInstrument(
             symbol: "gold_cny",
             title: "黄金",
-            color: .blue,
+
             requiresHistoricalFX: false,
             historicalFXSymbol: nil
         )
@@ -534,10 +528,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         let gold = try XCTUnwrap(response.series.first(where: { $0.symbol == "gold_cny" }))
         let prepared = try XCTUnwrap(BacktestAdvancedSeriesPreparer.preparedAdvancedSeries(
             assetSeries: gold,
-            assetOption: BacktestAssetOption(
+            assetOption: BacktestInstrument(
                 symbol: "gold_cny",
                 title: "黄金",
-                color: .blue,
+
                 requiresHistoricalFX: false,
                 historicalFXSymbol: nil
             ),
@@ -598,10 +592,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         let lookup = BacktestHistoricalLookup(
             points: [.init(date: fxDate, price: 0.14)]
         )
-        let option = BacktestAssetOption(
+        let option = BacktestInstrument(
             symbol: "nasdaq",
             title: "纳指",
-            color: .blue,
+
             requiresHistoricalFX: true,
             historicalFXSymbol: "usd_per_cny"
         )
@@ -624,10 +618,10 @@ final class PublicBacktestCoreTests: XCTestCase {
         let lookup = BacktestHistoricalLookup(
             points: [.init(date: date, price: 20)]
         )
-        let option = BacktestAssetOption(
+        let option = BacktestInstrument(
             symbol: "nikkei",
             title: "日经225",
-            color: .blue,
+
             requiresHistoricalFX: true,
             historicalFXSymbol: "jpy_per_cny"
         )
@@ -686,10 +680,10 @@ final class PublicBacktestCoreTests: XCTestCase {
             closePrices: nil,
             volumes: nil
         )
-        let option = BacktestAssetOption(
+        let option = BacktestInstrument(
             symbol: "nasdaq",
             title: "纳指",
-            color: .blue,
+
             requiresHistoricalFX: true,
             historicalFXSymbol: "usd_per_cny"
         )
@@ -744,7 +738,7 @@ final class PublicBacktestCoreTests: XCTestCase {
             AdvancedBacktestBenchmarkSeries(id: "nasdaq", title: "纳指", points: assetBenchmark)
         ])
         config.advancedCombinedBenchmarkPoints = BacktestRecordCodec.pointPayloads(from: combinedBenchmark)
-        let record = BacktestRecord(
+        let record = BacktestStoredRecord(
             kindRawValue: BacktestRecordKind.advanced.rawValue,
             title: "回测",
             totalReturn: 0.11,
@@ -934,7 +928,7 @@ final class PublicBacktestCoreTests: XCTestCase {
             ),
         ]
 
-        let sliced = try XCTUnwrap(BacktestEngine.statefulAdvancedReport(
+        let sliced = try XCTUnwrap(BacktestCoreEngine.statefulAdvancedReport(
             from: report,
             dailyStates: states,
             within: day1...day2,
@@ -1081,15 +1075,15 @@ final class PublicBacktestCoreTests: XCTestCase {
     }
 
     func testStrategyHistorySymbolsFollowSelectedTemplateDependencies() throws {
-        let standard = try XCTUnwrap(StrategyRebalanceDefaults.template(for: "nfci-dual-core-v1"))
-        let quality = try XCTUnwrap(StrategyRebalanceDefaults.template(for: "nfci-dual-core-v11-qual-role"))
+        let standard = try XCTUnwrap(BacktestCoreStrategyDefaults.template(for: "nfci-dual-core-v1"))
+        let quality = try XCTUnwrap(BacktestCoreStrategyDefaults.template(for: "nfci-dual-core-v11-qual-role"))
 
         XCTAssertEqual(
-            StrategyRebalanceDefaults.historySymbols(for: standard),
+            BacktestCoreStrategyDefaults.historySymbols(for: standard),
             Set(["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite", "usd_per_cny"])
         )
-        XCTAssertFalse(StrategyRebalanceDefaults.historySymbols(for: standard).contains("qual"))
-        XCTAssertTrue(StrategyRebalanceDefaults.historySymbols(for: quality).contains("qual"))
+        XCTAssertFalse(BacktestCoreStrategyDefaults.historySymbols(for: standard).contains("qual"))
+        XCTAssertTrue(BacktestCoreStrategyDefaults.historySymbols(for: quality).contains("qual"))
     }
 
     func testHistoryRefreshPlannerUsesPerSymbolFreshness() throws {

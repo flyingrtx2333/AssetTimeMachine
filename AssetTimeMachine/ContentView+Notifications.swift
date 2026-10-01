@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 
@@ -12,6 +13,7 @@ extension ContentView {
 
     @MainActor
     func scheduleSnapshotNotificationRefresh(delayNanoseconds: UInt64 = 500_000_000) {
+        guard !AppPreviewSession.isActive else { return }
         notificationRefreshGeneration &+= 1
         notificationRefreshRequestedDelayNanoseconds = delayNanoseconds
         guard pendingSnapshotNotificationRefreshTask == nil else { return }

@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -18,7 +19,7 @@ struct BacktestModeEntryPanel: View {
                             .foregroundStyle(AssetTheme.gold)
                             .frame(height: 18)
 
-                        Text(kind.title)
+                        Text(kind.localizedTitle)
                             .font(AppTypography.captionStrong)
                             .foregroundStyle(AssetTheme.textPrimary)
                             .multilineTextAlignment(.center)

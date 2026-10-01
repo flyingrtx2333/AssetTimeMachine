@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -492,7 +493,7 @@ struct AdvancedBacktestView: View {
                 if strategyMode.isRotation {
                     advancedStaticRow(
                         title: AppLocalization.string("策略模式"),
-                        value: strategyMode.title,
+                        value: strategyMode.localizedTitle,
                         showsDivider: false
                     )
                 } else {
@@ -738,6 +739,7 @@ struct AdvancedBacktestView: View {
         let capturedInitialCash = self.initialCash
         let capturedTradeAmount = self.tradeAmount
         let capturedStrategyMode = self.strategyMode
+        let capturedNFCIAsOf = marketStore.nfciAsOf?.backtestNFCIAsOfData
         let buyRule = AdvancedBacktestRule(direction: buyDirection, days: buyDays)
         let sellRule = AdvancedBacktestRule(direction: sellDirection, days: sellDays)
         let capturedRiskSettings = self.riskSettings
@@ -753,6 +755,7 @@ struct AdvancedBacktestView: View {
         let capturedStopLossRatio = stopLossRatio
         let capturedTakeProfitRatio = takeProfitRatio
         let capturedConfigSummary = advancedConfigSummary()
+        let capturedStrategyReference = activeStrategyTemplateID.flatMap { try? StrategyRegistry.definition(id: $0).reference }
 
         bestCandidates = []
         hasOptimizedStrategies = false
@@ -843,6 +846,7 @@ struct AdvancedBacktestView: View {
                                 initialCash: capturedInitialCash,
                                 settings: capturedRiskSettings,
                                 mode: capturedStrategyMode,
+                                nfciAsOf: capturedNFCIAsOf,
                                 dateBounds: statefulBounds
                             )
                             if let statefulRun, let selectedBounds {
@@ -872,6 +876,7 @@ struct AdvancedBacktestView: View {
                                 mode: capturedStrategyMode,
                                 initialCash: capturedInitialCash,
                                 settings: capturedRiskSettings,
+                                nfciAsOf: capturedNFCIAsOf,
                                 strategyRun: statefulRun
                             )
                             : nil
@@ -927,7 +932,8 @@ struct AdvancedBacktestView: View {
                         buyDays: capturedBuyDays,
                         sellDirection: capturedSellDirection,
                         sellDays: capturedSellDays,
-                        configSummary: capturedConfigSummary
+                        configSummary: capturedConfigSummary,
+                        strategyReference: capturedStrategyReference
                     )
                 }.value
                 guard !Task.isCancelled else { return }
@@ -1187,6 +1193,7 @@ struct AdvancedBacktestView: View {
         let capturedSellDirection = sellDirection
         let capturedSellDays = sellDays
         let capturedConfigSummary = advancedConfigSummary()
+        let capturedStrategyReference = activeStrategyTemplateID.flatMap { try? StrategyRegistry.definition(id: $0).reference }
         let recordKey = AdvancedBacktestDataSupport.recordSignature(
             report: report,
             strategyMode: capturedStrategyMode,
@@ -1228,7 +1235,8 @@ struct AdvancedBacktestView: View {
                     buyDays: capturedBuyDays,
                     sellDirection: capturedSellDirection,
                     sellDays: capturedSellDays,
-                    configSummary: capturedConfigSummary
+                    configSummary: capturedConfigSummary,
+                    strategyReference: capturedStrategyReference
                 )
             }.value
 
@@ -1263,7 +1271,7 @@ struct AdvancedBacktestView: View {
         if strategyMode.isRotation {
             return AppLocalization.format(
                 "%@ · 费率%.2f%% · 滑点%.2f%%",
-                strategyMode.title,
+                strategyMode.localizedTitle,
                 feeRate,
                 slippageRate
             )
@@ -1661,9 +1669,9 @@ struct AdvancedBacktestView: View {
 
     private func advancedRuleSummary(direction: AdvancedBacktestSignalDirection, days: Int) -> String {
         if direction.usesDayThreshold {
-            return AppLocalization.format("%@ %d天", direction.title, days)
+            return AppLocalization.format("%@ %d天", direction.localizedTitle, days)
         }
 
-        return direction.title
+        return direction.localizedTitle
     }
 }

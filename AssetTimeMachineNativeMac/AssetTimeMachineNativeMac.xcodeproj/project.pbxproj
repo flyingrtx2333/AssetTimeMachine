@@ -1,0 +1,397 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1611AD379A4B15A0F5DFABFA /* NativeMutationProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FFB314C3123870036863C9 /* NativeMutationProbe.swift */; };
+		310E8717D9901DAAB34D7929 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1BF35E0EE609182A53584F88 /* Assets.xcassets */; };
+		40F199CCF9E0D3068EF65CC5 /* BackgroundTaskWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72467AEC65E6DA3FFD12FDB7 /* BackgroundTaskWork.swift */; };
+		4313063ED2570356BA21FC81 /* NativeCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0F8552CDFEF2E9D23026890 /* NativeCompatibility.swift */; };
+		560FCD929003FB3497021D44 /* KeychainTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC313663E0C6957783660BB3 /* KeychainTokenStore.swift */; };
+		82BA9E036123E4356707CC64 /* NativeStoreBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 896579547229527DF290A0F6 /* NativeStoreBootstrap.swift */; };
+		864EAAB296DAE7896DF0C873 /* ImportExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63829A33D7A3C6DAA43982F7 /* ImportExport.swift */; };
+		87C19780F16C34CE1F7A45C8 /* NativeRecordsSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBDB1DF22DB5B315C52BB4DD /* NativeRecordsSettings.swift */; };
+		8DA7A41993FF045D97C85A0E /* NativeTrendVideoExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3CC8734AAEE5D6EF3A5CBFE /* NativeTrendVideoExporter.swift */; };
+		9110E39ED2FAF0C74303E878 /* PortfolioCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DB607CD16D2BC93B1CC958 /* PortfolioCalculator.swift */; };
+		93C1C3B700BA5FE99B0E13F6 /* PortfolioMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E9BB4219E30CF68C9521F54 /* PortfolioMetrics.swift */; };
+		947AE3D68B3FD7058E1EA434 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E315C3620652303A258541E2 /* AppLanguage.swift */; };
+		953E4A5EF7F36A76B12E3BE9 /* NativeRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 590FB9EB5DB0BAC9A091E7B0 /* NativeRootView.swift */; };
+		99FF3F4C930A18363974A8C2 /* SnapshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AC52496B444202F8A158B38 /* SnapshotService.swift */; };
+		BC4DE08D7C50917A7076384C /* AppPreviewSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A04E05D8441C9EA7496A389F /* AppPreviewSession.swift */; };
+		CBD5E17F777071A66A0817A9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 278AE097AF86FDF8B634D679 /* Models.swift */; };
+		DDB7B91F38C47A1CBAA3010C /* TimeMachineSnapshotProjectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6EB45381D65B3D8173F17E /* TimeMachineSnapshotProjectionStore.swift */; };
+		E6A9A0FC7696BA66BEA46A2B /* NativeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25092AB680675B86EFB10D5C /* NativeApp.swift */; };
+		EA92D9D1AC4ABC3071448971 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13973F84A63B5D21627C867 /* CloudSync.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0C6EB45381D65B3D8173F17E /* TimeMachineSnapshotProjectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeMachineSnapshotProjectionStore.swift; sourceTree = "<group>"; };
+		1BF35E0EE609182A53584F88 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		25092AB680675B86EFB10D5C /* NativeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeApp.swift; sourceTree = "<group>"; };
+		278AE097AF86FDF8B634D679 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		53FFB314C3123870036863C9 /* NativeMutationProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeMutationProbe.swift; sourceTree = "<group>"; };
+		590FB9EB5DB0BAC9A091E7B0 /* NativeRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRootView.swift; sourceTree = "<group>"; };
+		63829A33D7A3C6DAA43982F7 /* ImportExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExport.swift; sourceTree = "<group>"; };
+		72467AEC65E6DA3FFD12FDB7 /* BackgroundTaskWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskWork.swift; sourceTree = "<group>"; };
+		7E9BB4219E30CF68C9521F54 /* PortfolioMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioMetrics.swift; sourceTree = "<group>"; };
+		896579547229527DF290A0F6 /* NativeStoreBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStoreBootstrap.swift; sourceTree = "<group>"; };
+		8AC52496B444202F8A158B38 /* SnapshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotService.swift; sourceTree = "<group>"; };
+		98DB607CD16D2BC93B1CC958 /* PortfolioCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortfolioCalculator.swift; sourceTree = "<group>"; };
+		A04E05D8441C9EA7496A389F /* AppPreviewSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreviewSession.swift; sourceTree = "<group>"; };
+		A0F8552CDFEF2E9D23026890 /* NativeCompatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCompatibility.swift; sourceTree = "<group>"; };
+		AC313663E0C6957783660BB3 /* KeychainTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStore.swift; sourceTree = "<group>"; };
+		BBDB1DF22DB5B315C52BB4DD /* NativeRecordsSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRecordsSettings.swift; sourceTree = "<group>"; };
+		C3CC8734AAEE5D6EF3A5CBFE /* NativeTrendVideoExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTrendVideoExporter.swift; sourceTree = "<group>"; };
+		D13973F84A63B5D21627C867 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
+		E315C3620652303A258541E2 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		F201358FC51398ECD5A35C34 /* AssetTimeMachineNativeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AssetTimeMachineNativeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		113F4D65522D2CE895EB694E /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				25092AB680675B86EFB10D5C /* NativeApp.swift */,
+				A0F8552CDFEF2E9D23026890 /* NativeCompatibility.swift */,
+				53FFB314C3123870036863C9 /* NativeMutationProbe.swift */,
+				BBDB1DF22DB5B315C52BB4DD /* NativeRecordsSettings.swift */,
+				590FB9EB5DB0BAC9A091E7B0 /* NativeRootView.swift */,
+				896579547229527DF290A0F6 /* NativeStoreBootstrap.swift */,
+				C3CC8734AAEE5D6EF3A5CBFE /* NativeTrendVideoExporter.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		3D0059EA0A615CAFC467368E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F201358FC51398ECD5A35C34 /* AssetTimeMachineNativeMac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AEF852700777A2F9E042EDC3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				72467AEC65E6DA3FFD12FDB7 /* BackgroundTaskWork.swift */,
+				AC313663E0C6957783660BB3 /* KeychainTokenStore.swift */,
+				98DB607CD16D2BC93B1CC958 /* PortfolioCalculator.swift */,
+				7E9BB4219E30CF68C9521F54 /* PortfolioMetrics.swift */,
+				8AC52496B444202F8A158B38 /* SnapshotService.swift */,
+				0C6EB45381D65B3D8173F17E /* TimeMachineSnapshotProjectionStore.swift */,
+			);
+			name = Services;
+			path = ../AssetTimeMachine/Services;
+			sourceTree = "<group>";
+		};
+		F03C56618150DA0E2B0F9F87 = {
+			isa = PBXGroup;
+			children = (
+				F3B1549CF40A72A4D707453A /* AssetTimeMachine */,
+				AEF852700777A2F9E042EDC3 /* Services */,
+				113F4D65522D2CE895EB694E /* Sources */,
+				3D0059EA0A615CAFC467368E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F3B1549CF40A72A4D707453A /* AssetTimeMachine */ = {
+			isa = PBXGroup;
+			children = (
+				E315C3620652303A258541E2 /* AppLanguage.swift */,
+				A04E05D8441C9EA7496A389F /* AppPreviewSession.swift */,
+				1BF35E0EE609182A53584F88 /* Assets.xcassets */,
+				D13973F84A63B5D21627C867 /* CloudSync.swift */,
+				63829A33D7A3C6DAA43982F7 /* ImportExport.swift */,
+				278AE097AF86FDF8B634D679 /* Models.swift */,
+			);
+			name = AssetTimeMachine;
+			path = ../AssetTimeMachine;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6C55E94B8A68B1D02D4519C5 /* AssetTimeMachineNativeMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0A38DA0769E933FEAAAA586 /* Build configuration list for PBXNativeTarget "AssetTimeMachineNativeMac" */;
+			buildPhases = (
+				C90E9B093A3CECD193347069 /* Sources */,
+				00EB0B9338DFE444F26CF5CA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AssetTimeMachineNativeMac;
+			packageProductDependencies = (
+			);
+			productName = AssetTimeMachineNativeMac;
+			productReference = F201358FC51398ECD5A35C34 /* AssetTimeMachineNativeMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		54F3B988790B5A4B01C22E28 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					6C55E94B8A68B1D02D4519C5 = {
+						DevelopmentTeam = 8BPSC5L74V;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F160E51417D452E2144CD2F5 /* Build configuration list for PBXProject "AssetTimeMachineNativeMac" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = F03C56618150DA0E2B0F9F87;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3D0059EA0A615CAFC467368E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6C55E94B8A68B1D02D4519C5 /* AssetTimeMachineNativeMac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		00EB0B9338DFE444F26CF5CA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				310E8717D9901DAAB34D7929 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C90E9B093A3CECD193347069 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				947AE3D68B3FD7058E1EA434 /* AppLanguage.swift in Sources */,
+				BC4DE08D7C50917A7076384C /* AppPreviewSession.swift in Sources */,
+				40F199CCF9E0D3068EF65CC5 /* BackgroundTaskWork.swift in Sources */,
+				EA92D9D1AC4ABC3071448971 /* CloudSync.swift in Sources */,
+				864EAAB296DAE7896DF0C873 /* ImportExport.swift in Sources */,
+				560FCD929003FB3497021D44 /* KeychainTokenStore.swift in Sources */,
+				CBD5E17F777071A66A0817A9 /* Models.swift in Sources */,
+				E6A9A0FC7696BA66BEA46A2B /* NativeApp.swift in Sources */,
+				4313063ED2570356BA21FC81 /* NativeCompatibility.swift in Sources */,
+				1611AD379A4B15A0F5DFABFA /* NativeMutationProbe.swift in Sources */,
+				87C19780F16C34CE1F7A45C8 /* NativeRecordsSettings.swift in Sources */,
+				953E4A5EF7F36A76B12E3BE9 /* NativeRootView.swift in Sources */,
+				82BA9E036123E4356707CC64 /* NativeStoreBootstrap.swift in Sources */,
+				8DA7A41993FF045D97C85A0E /* NativeTrendVideoExporter.swift in Sources */,
+				9110E39ED2FAF0C74303E878 /* PortfolioCalculator.swift in Sources */,
+				93C1C3B700BA5FE99B0E13F6 /* PortfolioMetrics.swift in Sources */,
+				99FF3F4C930A18363974A8C2 /* SnapshotService.swift in Sources */,
+				DDB7B91F38C47A1CBAA3010C /* TimeMachineSnapshotProjectionStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		13C5D85D7FED97BB4E6B749F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = ../AssetTimeMachine/AssetTimeMachineMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 8BPSC5L74V;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "资产时光机";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.flyingrtx.AssetTimeMachine.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BE9EC62A622AFBA59ED62080 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_NAME = AssetTimeMachine;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		F6F2077BEB273F7D09CB6EBE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_NAME = AssetTimeMachine;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FB98D1E1B0AFF416726E454E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = ../AssetTimeMachine/AssetTimeMachineMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 8BPSC5L74V;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "资产时光机";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.flyingrtx.AssetTimeMachine.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C0A38DA0769E933FEAAAA586 /* Build configuration list for PBXNativeTarget "AssetTimeMachineNativeMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F6F2077BEB273F7D09CB6EBE /* Debug */,
+				BE9EC62A622AFBA59ED62080 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F160E51417D452E2144CD2F5 /* Build configuration list for PBXProject "AssetTimeMachineNativeMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				13C5D85D7FED97BB4E6B749F /* Debug */,
+				FB98D1E1B0AFF416726E454E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 54F3B988790B5A4B01C22E28 /* Project object */;
+}

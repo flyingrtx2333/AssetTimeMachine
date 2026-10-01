@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 
 struct AssetIconDefinition: Identifiable, Hashable {

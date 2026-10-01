@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 
@@ -78,6 +79,15 @@ extension ContentView {
     func syncTodaySnapshotWithLatestMarketData(expectedCloudDataRevision: Int) async {
         guard canCommitMarketRefresh(expectedCloudDataRevision: expectedCloudDataRevision) else { return }
         do {
+            #if targetEnvironment(macCatalyst)
+            // A fresh Mac can receive market prices before its first cloud download.
+            // Do not create an empty "today" snapshot that will later win the date
+            // ordering over the user's last valued cloud snapshot.
+            guard let latest = try SnapshotService.latestSnapshot(in: modelContext),
+                  latest.entries.contains(where: { $0.amount != nil || $0.quantity != nil }) else {
+                return
+            }
+            #endif
             let snapshot = try SnapshotService.createSnapshot(
                 on: .now,
                 inheritPrevious: true,

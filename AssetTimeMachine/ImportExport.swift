@@ -1,3 +1,6 @@
+#if !os(macOS) || targetEnvironment(macCatalyst)
+import AssetTimeMachineBacktestCore
+#endif
 import Foundation
 import SwiftData
 
@@ -104,6 +107,7 @@ nonisolated enum SyncPayloadWork {
 @ModelActor
 private actor CloudExportProjectionStore {
     private static let cancellationCheckInterval = 128
+    private static let fetchBatchSize = 128
 
     func exportPayload() throws -> ExportPayload {
         var result: ExportPayload?
@@ -114,8 +118,6 @@ private actor CloudExportProjectionStore {
             try Task.checkCancellation()
             let categories = try modelContext.fetch(FetchDescriptor<AssetCategory>())
             let items = try modelContext.fetch(FetchDescriptor<AssetItem>())
-            let snapshots = try modelContext.fetch(FetchDescriptor<AssetSnapshot>())
-            let entries = try modelContext.fetch(FetchDescriptor<AssetEntry>())
             let tombstones = try modelContext.fetch(FetchDescriptor<SyncDeletionTombstone>())
 
             var categoryPayloads: [ExportPayload.CategoryPayload] = []
@@ -151,44 +153,68 @@ private actor CloudExportProjectionStore {
             }
 
             var entryPayloadsBySnapshotID: [UUID: [ExportPayload.EntryPayload]] = [:]
-            entryPayloadsBySnapshotID.reserveCapacity(snapshots.count)
-            for (index, entry) in entries.enumerated() {
-                if let snapshotID = entry.snapshot?.id {
-                    entryPayloadsBySnapshotID[snapshotID, default: []].append(.init(
-                        id: entry.id,
-                        amount: entry.amount,
-                        quantity: entry.quantity,
-                        unitPrice: entry.unitPrice,
-                        note: entry.note,
-                        createdAt: entry.createdAt,
-                        updatedAt: entry.updatedAt,
-                        itemID: entry.item?.id
-                    ))
+            var entryOffset = 0
+            while true {
+                try Task.checkCancellation()
+                var descriptor = FetchDescriptor<AssetEntry>(sortBy: [SortDescriptor(\AssetEntry.id)])
+                descriptor.fetchLimit = Self.fetchBatchSize
+                descriptor.fetchOffset = entryOffset
+                let batch = try autoreleasepool { () throws -> (Int, [(UUID, ExportPayload.EntryPayload)]) in
+                    let context = ModelContext(modelContainer)
+                    let entries = try context.fetch(descriptor)
+                    return (entries.count, entries.compactMap { entry in
+                        guard let snapshotID = entry.snapshot?.id else { return nil }
+                        return (snapshotID, .init(
+                            id: entry.id,
+                            amount: entry.amount,
+                            quantity: entry.quantity,
+                            unitPrice: entry.unitPrice,
+                            note: entry.note,
+                            createdAt: entry.createdAt,
+                            updatedAt: entry.updatedAt,
+                            itemID: entry.item?.id
+                        ))
+                    })
                 }
-                try checkCancellation(afterProcessing: index + 1)
+                for (snapshotID, entry) in batch.1 {
+                    entryPayloadsBySnapshotID[snapshotID, default: []].append(entry)
+                }
+                entryOffset += Self.fetchBatchSize
+                if batch.0 < Self.fetchBatchSize { break }
             }
 
             var snapshotPayloads: [ExportPayload.SnapshotPayload] = []
-            snapshotPayloads.reserveCapacity(snapshots.count)
-            for (index, snapshot) in snapshots.enumerated() {
-                snapshotPayloads.append(.init(
-                    id: snapshot.id,
-                    date: snapshot.date,
-                    note: snapshot.note,
-                    createdAt: snapshot.createdAt,
-                    updatedAt: snapshot.updatedAt,
-                    goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
-                    goldAnchorPriceDate: snapshot.goldAnchorPriceDate,
-                    btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
-                    btcAnchorPriceDate: snapshot.btcAnchorPriceDate,
-                    nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
-                    nasdaqAnchorPriceDate: snapshot.nasdaqAnchorPriceDate,
-                    usdPerCNY: snapshot.usdPerCNY,
-                    usdPerCNYDate: snapshot.usdPerCNYDate,
-                    marketAnchorsUpdatedAt: snapshot.marketAnchorsUpdatedAt,
-                    entries: entryPayloadsBySnapshotID.removeValue(forKey: snapshot.id) ?? []
-                ))
-                try checkCancellation(afterProcessing: index + 1)
+            var snapshotOffset = 0
+            while true {
+                try Task.checkCancellation()
+                var descriptor = FetchDescriptor<AssetSnapshot>(sortBy: [SortDescriptor(\AssetSnapshot.id)])
+                descriptor.fetchLimit = Self.fetchBatchSize
+                descriptor.fetchOffset = snapshotOffset
+                let batch = try autoreleasepool { () throws -> [ExportPayload.SnapshotPayload] in
+                    let context = ModelContext(modelContainer)
+                    return try context.fetch(descriptor).map { snapshot in
+                        .init(
+                            id: snapshot.id,
+                            date: snapshot.date,
+                            note: snapshot.note,
+                            createdAt: snapshot.createdAt,
+                            updatedAt: snapshot.updatedAt,
+                            goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
+                            goldAnchorPriceDate: snapshot.goldAnchorPriceDate,
+                            btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
+                            btcAnchorPriceDate: snapshot.btcAnchorPriceDate,
+                            nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
+                            nasdaqAnchorPriceDate: snapshot.nasdaqAnchorPriceDate,
+                            usdPerCNY: snapshot.usdPerCNY,
+                            usdPerCNYDate: snapshot.usdPerCNYDate,
+                            marketAnchorsUpdatedAt: snapshot.marketAnchorsUpdatedAt,
+                            entries: entryPayloadsBySnapshotID.removeValue(forKey: snapshot.id) ?? []
+                        )
+                    }
+                }
+                snapshotPayloads.append(contentsOf: batch)
+                snapshotOffset += Self.fetchBatchSize
+                if batch.count < Self.fetchBatchSize { break }
             }
 
             var deletionPayloads: [ExportPayload.DeletionPayload] = []
@@ -496,6 +522,7 @@ enum ImportExportService {
             replaceExisting: replaceExisting,
             expectedStoreRevision: validatedStoreRevision
         )
+        MacMemoryRelief.scheduleAfterHeavyOperation()
         // Capture the exact revision synchronously after the atomic save. Callers must
         // not sample the global clock after another actor suspension, because a newer
         // local save would then be mistaken for data included in this payload.
@@ -1019,7 +1046,7 @@ enum SyncDeletionService {
 }
 
 nonisolated enum SyncMergeService {
-    static func mergedPayload(local: ExportPayload, remote: ExportPayload) -> ExportPayload {
+    static func mergedPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload? = nil) -> ExportPayload {
         let localNormalized = normalized(local)
         let remoteNormalized = normalized(remote)
         let deletions = mergeDeletions(
@@ -1027,9 +1054,9 @@ nonisolated enum SyncMergeService {
             remote: remoteNormalized.deletionRecords
         )
 
-        let categories = mergeCategories(local: localNormalized.categories, remote: remoteNormalized.categories)
-        let items = mergeByUpdatedAt(local: localNormalized.items, remote: remoteNormalized.items, id: \.id, updatedAt: \.updatedAt)
-        let snapshots = mergeSnapshots(local: localNormalized.snapshots, remote: remoteNormalized.snapshots)
+        let categories = mergeCategories(local: localNormalized.categories, remote: remoteNormalized.categories, baseline: baseline?.categories)
+        let items = mergeByUpdatedAt(local: localNormalized.items, remote: remoteNormalized.items, baseline: baseline?.items, id: \.id, updatedAt: \.updatedAt)
+        let snapshots = mergeSnapshots(local: localNormalized.snapshots, remote: remoteNormalized.snapshots, baseline: baseline?.snapshots)
 
         return normalized(payloadApplyingDeletions(ExportPayload(
             exportedAt: max(local.exportedAt, remote.exportedAt, Date()),
@@ -1038,6 +1065,97 @@ nonisolated enum SyncMergeService {
             snapshots: snapshots,
             deletions: deletions
         )))
+    }
+
+    enum Conflict: LocalizedError {
+        case divergentEdits
+        var errorDescription: String? {
+            "同一条数据在两端都有不同修改，已暂停同步以保留两端数据。请核对后选择恢复云端，或导出本机数据。"
+        }
+    }
+
+    static func reconciledPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload) throws -> ExportPayload {
+        func check<T: Encodable>(_ local: [T], _ remote: [T], _ base: [T],
+                                 id: KeyPath<T, UUID>, excluding: Set<String> = []) throws {
+            let locals = keyedByID(local, id: id), remotes = keyedByID(remote, id: id), bases = keyedByID(base, id: id)
+            for (key, left) in locals {
+                guard let right = remotes[key], !sameSemanticContent(left, right, excluding: excluding) else { continue }
+                guard let prior = bases[key], sameSemanticContent(left, prior, excluding: excluding)
+                        || sameSemanticContent(right, prior, excluding: excluding) else { throw Conflict.divergentEdits }
+            }
+        }
+        try check(local.categories, remote.categories, baseline.categories, id: \.id)
+        try check(local.items, remote.items, baseline.items, id: \.id)
+        try check(local.snapshots, remote.snapshots, baseline.snapshots, id: \.id, excluding: ["entries"])
+        let remotes = keyedByID(remote.snapshots, id: \.id), bases = keyedByID(baseline.snapshots, id: \.id)
+        for snapshot in local.snapshots {
+            if let other = remotes[snapshot.id] {
+                try check(snapshot.entries, other.entries, bases[snapshot.id]?.entries ?? [], id: \.id)
+            }
+        }
+        // Different UUIDs do not make two entries for the same account/day safe
+        // to add together. Preserve legacy duplicates but stop newly introduced ones.
+        let calendar = Calendar.current
+        let baselineDays = Dictionary(grouping: baseline.snapshots, by: { calendar.startOfDay(for: $0.date) })
+        let combinedSnapshots = keyedByID(local.snapshots + remote.snapshots, id: \.id)
+        for (day, snapshots) in Dictionary(grouping: Array(combinedSnapshots.values), by: { calendar.startOfDay(for: $0.date) }) {
+            if snapshots.count > max(baselineDays[day]?.count ?? 0, 1) { throw Conflict.divergentEdits }
+        }
+        for snapshot in local.snapshots {
+            guard let other = remotes[snapshot.id] else { continue }
+            let priorEntries = bases[snapshot.id]?.entries ?? []
+            let priorCounts = Dictionary(grouping: priorEntries.filter { $0.itemID != nil }, by: { $0.itemID! })
+            let union = keyedByID(snapshot.entries + other.entries, id: \.id)
+            for (itemID, entries) in Dictionary(grouping: Array(union.values).filter { $0.itemID != nil }, by: { $0.itemID! }) {
+                if entries.count > max(priorCounts[itemID]?.count ?? 0, 1) { throw Conflict.divergentEdits }
+            }
+        }
+        func checkDeletedEdits(deleting: ExportPayload, other: ExportPayload) throws {
+            let priorItems = keyedByID(baseline.items, id: \.id)
+            let priorEntries = keyedByID(baseline.snapshots.flatMap(\.entries), id: \.id)
+            for deletion in deleting.deletionRecords {
+                switch SyncDeletedEntityKind(rawValue: deletion.entityKind) {
+                case .category:
+                    if let prior = baseline.categories.first(where: { $0.id == deletion.entityID }),
+                       let value = other.categories.first(where: { $0.id == deletion.entityID }),
+                       !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                    for item in other.items where item.categoryID == deletion.entityID {
+                        guard let prior = priorItems[item.id], sameSemanticContent(prior, item) else { throw Conflict.divergentEdits }
+                        for entry in other.snapshots.flatMap(\.entries) where entry.itemID == item.id {
+                            guard let prior = priorEntries[entry.id], sameSemanticContent(prior, entry) else { throw Conflict.divergentEdits }
+                        }
+                    }
+                case .item:
+                    if let value = other.items.first(where: { $0.id == deletion.entityID }),
+                       let prior = priorItems[value.id], !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                    for entry in other.snapshots.flatMap(\.entries) where entry.itemID == deletion.entityID {
+                        guard let prior = priorEntries[entry.id], sameSemanticContent(prior, entry) else { throw Conflict.divergentEdits }
+                    }
+                case .snapshot:
+                    if let value = other.snapshots.first(where: { $0.id == deletion.entityID }),
+                       let prior = bases[value.id], !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                case .entry:
+                    if let value = other.snapshots.flatMap(\.entries).first(where: { $0.id == deletion.entityID }),
+                       let prior = priorEntries[value.id], !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                case nil: break
+                }
+            }
+        }
+        try checkDeletedEdits(deleting: local, other: remote)
+        try checkDeletedEdits(deleting: remote, other: local)
+        return mergedPayload(local: local, remote: remote, baseline: baseline)
+    }
+
+    private static func sameSemanticContent<T: Encodable>(_ lhs: T, _ rhs: T, excluding: Set<String> = []) -> Bool {
+        func content(_ value: T) -> Data? {
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+            guard let data = try? encoder.encode(value),
+                  var object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+            for key in excluding.union(["updatedAt", "createdAt"]) { object.removeValue(forKey: key) }
+            return try? JSONSerialization.data(withJSONObject: object, options: .sortedKeys)
+        }
+        guard let left = content(lhs), let right = content(rhs) else { return false }
+        return left == right
     }
 
     static func canonicalData(for payload: ExportPayload) throws -> Data {
@@ -1070,7 +1188,10 @@ nonisolated enum SyncMergeService {
             "花呗", "白条", "房贷",
         ]
         let itemNames = Set(payload.items.map { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) })
+        let seedNotes: Set<String> = ["", "默认资金项目，可编辑或删除", "示例项目，可编辑或删除", "默认负债项目，可编辑或删除"]
         return itemNames.isSubset(of: seedItemNames) && payload.categories.count <= 3 && payload.items.count <= seedItemNames.count
+            && payload.items.allSatisfy { seedNotes.contains($0.note) && $0.valuationMethod == "directAmount"
+                && $0.autoPricedAssetKind == nil && $0.quantStrategyProxySymbol == nil && $0.isActive }
     }
 
     static func isEmptyUserData(_ payload: ExportPayload) -> Bool {
@@ -1132,29 +1253,36 @@ nonisolated enum SyncMergeService {
         )
     }
 
-    private static func mergeCategories(local: [ExportPayload.CategoryPayload], remote: [ExportPayload.CategoryPayload]) -> [ExportPayload.CategoryPayload] {
+    private static func mergeCategories(local: [ExportPayload.CategoryPayload], remote: [ExportPayload.CategoryPayload], baseline: [ExportPayload.CategoryPayload]?) -> [ExportPayload.CategoryPayload] {
         var merged: [UUID: ExportPayload.CategoryPayload] = [:]
         for category in remote {
             merged[category.id] = category
         }
+        let bases = keyedByID(baseline ?? [], id: \.id)
         for category in local {
-            // Category currently has no updatedAt in the persisted model. Prefer the local copy for same UUID,
-            // while still preserving remote-only categories. This avoids destructive category loss during sync.
-            merged[category.id] = category
+            if let remoteValue = merged[category.id], let base = bases[category.id],
+               sameSemanticContent(category, base) {
+                merged[category.id] = remoteValue
+            } else { merged[category.id] = category }
         }
         return Array(merged.values)
     }
 
-    private static func mergeSnapshots(local: [ExportPayload.SnapshotPayload], remote: [ExportPayload.SnapshotPayload]) -> [ExportPayload.SnapshotPayload] {
+    private static func mergeSnapshots(local: [ExportPayload.SnapshotPayload], remote: [ExportPayload.SnapshotPayload], baseline: [ExportPayload.SnapshotPayload]?) -> [ExportPayload.SnapshotPayload] {
         let remoteByID = keyedByID(remote, id: \.id)
         let localByID = keyedByID(local, id: \.id)
         let allIDs = Set(remoteByID.keys).union(localByID.keys)
+        let baselineByID = keyedByID(baseline ?? [], id: \.id)
 
         return allIDs.compactMap { id in
             switch (localByID[id], remoteByID[id]) {
             case let (local?, remote?):
-                let base = local.updatedAt >= remote.updatedAt ? local : remote
-                let entries = mergeEntries(local: local.entries, remote: remote.entries)
+                let prior = baselineByID[id]
+                let localHeaderUnchanged = prior.map { sameSemanticContent(local, $0, excluding: ["entries"]) } ?? false
+                let remoteHeaderUnchanged = prior.map { sameSemanticContent(remote, $0, excluding: ["entries"]) } ?? false
+                let base = localHeaderUnchanged ? remote : (remoteHeaderUnchanged ? local
+                    : (isStrictlyNewer(local.updatedAt, than: remote.updatedAt) ? local : remote))
+                let entries = mergeEntries(local: local.entries, remote: remote.entries, baseline: prior?.entries)
                 return ExportPayload.SnapshotPayload(
                     id: base.id,
                     date: base.date,
@@ -1182,24 +1310,31 @@ nonisolated enum SyncMergeService {
         }
     }
 
-    private static func mergeEntries(local: [ExportPayload.EntryPayload], remote: [ExportPayload.EntryPayload]) -> [ExportPayload.EntryPayload] {
-        mergeByUpdatedAt(local: local, remote: remote, id: \.id, updatedAt: \.updatedAt)
+    private static func mergeEntries(local: [ExportPayload.EntryPayload], remote: [ExportPayload.EntryPayload], baseline: [ExportPayload.EntryPayload]?) -> [ExportPayload.EntryPayload] {
+        mergeByUpdatedAt(local: local, remote: remote, baseline: baseline, id: \.id, updatedAt: \.updatedAt)
     }
 
-    private static func mergeByUpdatedAt<T, ID: Hashable>(local: [T], remote: [T], id: KeyPath<T, ID>, updatedAt: KeyPath<T, Date>) -> [T] {
+    private static func mergeByUpdatedAt<T: Encodable, ID: Hashable>(local: [T], remote: [T], baseline: [T]?, id: KeyPath<T, ID>, updatedAt: KeyPath<T, Date>) -> [T] {
         var merged: [ID: T] = [:]
         for value in remote {
             let key = value[keyPath: id]
             if let existing = merged[key] {
-                merged[key] = value[keyPath: updatedAt] >= existing[keyPath: updatedAt] ? value : existing
+                merged[key] = isStrictlyNewer(value[keyPath: updatedAt], than: existing[keyPath: updatedAt]) ? value : existing
             } else {
                 merged[key] = value
             }
         }
+        let bases = keyedByID(baseline ?? [], id: id)
         for value in local {
             let key = value[keyPath: id]
             if let existing = merged[key] {
-                merged[key] = value[keyPath: updatedAt] >= existing[keyPath: updatedAt] ? value : existing
+                if let base = bases[key], sameSemanticContent(value, base) {
+                    merged[key] = existing
+                } else if let base = bases[key], sameSemanticContent(existing, base) {
+                    merged[key] = value
+                } else {
+                    merged[key] = isStrictlyNewer(value[keyPath: updatedAt], than: existing[keyPath: updatedAt]) ? value : existing
+                }
             } else {
                 merged[key] = value
             }
@@ -1229,8 +1364,14 @@ nonisolated enum SyncMergeService {
         return Array(merged.values)
     }
 
+    private static func isStrictlyNewer(_ local: Date, than remote: Date) -> Bool {
+        // Cloud JSON encodes ISO 8601 timestamps to seconds. A local fractional
+        // timestamp must not make an otherwise tied old value win against the cloud.
+        local.timeIntervalSince1970.rounded(.down) > remote.timeIntervalSince1970.rounded(.down)
+    }
+
     private static func newerOptional<T>(localValue: T?, localUpdatedAt: Date, remoteValue: T?, remoteUpdatedAt: Date) -> T? {
-        localUpdatedAt >= remoteUpdatedAt ? localValue : remoteValue
+        isStrictlyNewer(localUpdatedAt, than: remoteUpdatedAt) ? localValue : remoteValue
     }
 
     private static func maxOptional(_ lhs: Date?, _ rhs: Date?) -> Date? {

@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -687,8 +688,8 @@ struct AdvancedStrategyLibrarySheet: View {
             return template.title.localizedCaseInsensitiveContains(query)
                 || template.subtitle.localizedCaseInsensitiveContains(query)
                 || template.category.localizedCaseInsensitiveContains(query)
-                || template.mode.title.localizedCaseInsensitiveContains(query)
-                || template.mode.detail.localizedCaseInsensitiveContains(query)
+                || template.mode.localizedTitle.localizedCaseInsensitiveContains(query)
+                || template.mode.localizedDetail.localizedCaseInsensitiveContains(query)
         }
     }
 

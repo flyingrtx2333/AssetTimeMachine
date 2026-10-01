@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 @testable import AssetTimeMachineBacktestCore
+@testable import AssetTimeMachineResearchSupport
 
 final class IntradayDownsideBreadthStrategyTests: XCTestCase {
     private let commit = String(repeating: "a", count: 40)
@@ -10,7 +11,7 @@ final class IntradayDownsideBreadthStrategyTests: XCTestCase {
     private func dates(_ count: Int) -> [String] {
         let calendar = Calendar(identifier: .gregorian)
         let start = BacktestSeriesAlignment.historicalSeriesDate(from: "2021-10-01")!
-        return (0..<count).map { calendar.date(byAdding: .day, value: $0, to: start)!.recordDateString }
+        return (0..<count).map { calendar.date(byAdding: .day, value: $0, to: start)!.backtestDateKey }
     }
 
     private func bars(_ count: Int, source: String, close: (Int) -> Double) -> [IntradayDownsideBreadthSignalBar] {
@@ -58,9 +59,9 @@ final class IntradayDownsideBreadthStrategyTests: XCTestCase {
         )
     }
 
-    private func options() -> [String: BacktestAssetOption] {
+    private func options() -> [String: BacktestInstrument] {
         Dictionary(uniqueKeysWithValues: IntradayDownsideBreadthStrategy.assetOrder.map {
-            ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil))
+            ($0, BacktestInstrument(symbol: $0, title: $0, requiresHistoricalFX: false, historicalFXSymbol: nil))
         })
     }
 

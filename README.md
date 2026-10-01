@@ -19,10 +19,36 @@
 
 ## 平台策略
 
-- 当前仅维护 iOS / iPhone 版本
-- SwiftUI + SwiftData 单端 iOS 工程
-- 优先优化 iPhone 的录入、查看、分析、导入导出体验
-- 暂不维护 macOS 目标
+- 同一仓库维护 iPhone、原生 macOS 日常版与 Mac Catalyst 完整版。原生版复用 SwiftData 模型、资产计算、登录与云同步客户端；完整回测按需从原生版的「量化」页打开 Catalyst 版
+- Mac 使用独立 Bundle ID `com.flyingrtx.AssetTimeMachine.mac`，本地数据与 iPhone 分开保存，可通过现有云同步或 JSON 导入导出迁移
+- Mac 首页采用侧边栏、资产汇总、走势图、资产构成、财务自由进度与最近记录；其余入口接入现有功能
+- Mac 首次打开可通过 Apple 或已有账号密码登录，也可选择仅在本机使用；Apple 首次登录会自动创建云端账号，本机模式仍可稍后从「设置 → 云同步」登录
+- 原生 Mac 默认窗口为 1050 × 700，最小 820 × 560；Catalyst 完整版的默认窗口为 920 × 640
+- 当前 Mac 为本地开发版本，尚未进行 Mac App Store 发布验证
+
+### 运行 Mac 开发版
+
+日常浏览推荐打开根目录的 `AssetTimeMachine.xcworkspace`，选择 `AssetTimeMachineNativeMac` scheme；也可执行 `scripts/run_native_mac.sh` 构建并启动原生 Release 应用。脚本会复用当前开发签名和 Mac 应用权限；如果缺少描述文件，只能构建不具备真实账户数据访问及 Apple 登录的预览版。原生版首次接管旧数据库前会备份并核对路径、记录数和金额，失败时停止启动和同步。完整策略回测仍由同仓库的 Catalyst 版按需运行。
+
+需要 Catalyst 完整版时，在仓库根目录执行 `scripts/run_mac.sh`，或在 Xcode 的 AssetTimeMachine scheme 中选择 My Mac (Mac Catalyst)。本机有 Apple Development 证书时，脚本会使用开发签名并输出 `build/AssetTimeMachine-Mac-Signed.app`；没有证书时会使用仅供本地预览的临时签名，此时 Apple 登录和云同步不可用。可设置 `MAC_SIGNING=adhoc` 强制使用预览签名。脚本不会上传应用。
+
+两个脚本均构建优化过的 Release 版本。Mac 时光机按需汇总本机历史，只创建可见日期，并把曲线限制在保留峰谷的 600 个点以内。内存验收使用 `vmmap -summary <PID>` 的 `Physical footprint`，测试数据和测量记录见 [`evidence/performance/mac-low-memory-2026-09-29.md`](evidence/performance/mac-low-memory-2026-09-29.md)。
+
+构建脚本使用固定 App 路径：原生版为 `build/AssetTimeMachine-Native.app`，完整版为 `build/AssetTimeMachine-Mac-Signed.app`；更新前验证签名，各保留一个 `-Previous.app` 回退版本。设置 `MAC_BUILD_ONLY=1` 可只构建、不启动。脚本会清理确认停用的旧构建，跳过运行中的应用和构建任务；资产数据库、同步备份、研究证据、正式发布归档均保留。可用 `python3 scripts/mac_build_artifacts.py clean` 预览清单，加 `--apply` 执行清理。
+
+仅验证编译时使用 `bash scripts/validate_xcode_build.sh ios`（或 `native` / `catalyst`）。验证使用一次性目录，成功、失败或中断后都会清理构建产物，只保留一份固定名称的验证日志。
+
+要验证同一账号的跨端同步：
+
+1. 在 Apple Developer 的 Identifiers 中注册 Mac App ID `com.flyingrtx.AssetTimeMachine.mac`，启用 Sign in with Apple，并将它分组到 iPhone App ID `com.flyingrtx.AssetTimeMachine`（作为 primary）。同时为 Mac App ID 配置 App Groups 中的 `group.com.flyingrtx.AssetTimeMachine`。
+2. 在本机 Xcode → Settings → Accounts 登录该开发团队，给项目的 Mac Catalyst 主应用和小组件启用自动签名，取得开发证书及描述文件。用 Xcode 或 `scripts/run_mac.sh` 启动带开发团队签名的 Mac 版本，核对生成应用包含 Apple 登录权限。
+3. 服务端部署包含 Mac App ID Apple token audience 的版本。手机先在「设置 → 云同步」确认最近备份；Mac 再用同一个 Apple 账号登录，确认显示同一个服务端用户和备份记录后验证双向同步。
+
+正式分发仍需单独验证发布签名与能力配置。
+
+Mac 快捷键：`⌘1` 至 `⌘5` 切换主要页面，`⌘N` 在首页进入今日记录。
+
+设计和验证材料见 [`evidence/ui-concepts/mac-home/`](evidence/ui-concepts/mac-home/)。
 
 ## 核心功能
 
@@ -90,46 +116,24 @@
 
 ### 7. 量化策略回测
 
-App 内策略指标必须以当前 Swift `BacktestEngine` 的实际运行为准。策略只允许通过 Swift target provider 输出目标仓位；成交、费用、滑点、现金收益、持仓、净值和指标统一由 `BacktestDailySimulator` 计算。
+App 与服务器使用 `Sources/AssetTimeMachineBacktestCore` 中同一份策略、成交结算和指标实现。App 的 `BacktestEngine` 保留旧调用入口；研究工具使用 `AssetTimeMachineResearchSupport`，通过显式不可变配置运行。
 
-当前产品口径：
+- 共享计算：`Sources/AssetTimeMachineBacktestCore/{Domain,MarketData,Strategies,Execution,Metrics}`
+- 策略注册与版本：`Sources/AssetTimeMachineBacktestCore/API/BacktestRun.swift`
+- 产品显示顺序：`AdvancedBacktestStrategyTemplate.productCatalog`；研究目录：`.all`
+- 当前 settlement-v4 公开执行成本：手续费 **0.025%**、滑点 **0.05%**；历史冻结 1% 工件保持
+- 低噪及 NFCI 内部决策成本：冻结 **1.00% / 0.05%**，与最终成交成本分开
+- 夏普：按日收益计算，无风险利率为 0
 
-- 回测引擎：`AssetTimeMachine/Backtest/BacktestEngine.swift`
-- 统一底座：`MarketDataFrame`、`StrategyTargetProvider`、`BacktestExecutionConfig`、`BacktestDailySimulator`
-- 产品策略库：`AdvancedBacktestStrategyTemplate.productCatalog`
-- 完整研究策略库：`AdvancedBacktestStrategyTemplate.all`
-- 行情数据：`https://api.flyingrtx.com/api/v1/money/public/history`
-- 回测区间：全历史，按各策略可用数据起点自动决定
-- 初始资金：100,000 CNY
-- App 默认交易费：1.00%
-- App 默认滑点：0.05%
-- 夏普比率：按日收益计算，当前采用无风险利率为 0 的口径
-
-1% 交易费是产品默认和基线口径，不得为了改善回测数字擅自降低。成本敏感性测试可以通过环境变量临时运行，但不能替代 App 默认结果。
-
-固定快照验证命令（只验证对应冻结输入下的可复现性，不代表当前线上表现）：
+架构、配置、历史命令兼容和证据格式见 [共享架构说明](docs/architecture/backtest-core.md)。
 
 ```bash
-xcrun swiftc \
-  -parse-as-library \
-  -module-cache-path /private/tmp/atm-swift-module-cache \
-  AssetTimeMachine/Backtest/BacktestModels.swift \
-  AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift \
-  AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift \
-  AssetTimeMachine/Backtest/BacktestFXConverter.swift \
-  AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift \
-  AssetTimeMachine/Backtest/BacktestEngine.swift \
-  tools/strategy_metric_dump.swift \
-  -o /private/tmp/strategy_metric_dump
-
-ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
-  /private/tmp/strategy_metric_dump --verify-app-baseline
-
-ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
-  /private/tmp/strategy_metric_dump \
-  --verify-app-baseline \
-  --baseline tools/expected_backtest_metrics/app/current_app_default.json
+swift test -c release
+swift run -c release AssetTimeMachineResearch catalog
+swift run -c release AssetTimeMachineMetricDump --engine-version
 ```
+
+旧冻结基线仅能用它记录的源版本及成本核对。迁移前的基准和历史研究工件不会被当前引擎重写。
 
 历史精选策略固定基准（2026-08-10 刷新，行情有效至 2026-08-07；交易费 1%、滑点 0.05%）：
 

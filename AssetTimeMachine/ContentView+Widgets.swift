@@ -4,6 +4,7 @@ import SwiftUI
 extension ContentView {
     @MainActor
     func scheduleWidgetSnapshotRefresh(delayNanoseconds: UInt64 = 300_000_000) {
+        guard !AppPreviewSession.isActive else { return }
         widgetSnapshotGeneration &+= 1
         let generation = widgetSnapshotGeneration
         pendingWidgetSnapshotRefreshTask?.cancel()

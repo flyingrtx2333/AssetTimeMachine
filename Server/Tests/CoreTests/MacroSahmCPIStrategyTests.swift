@@ -65,8 +65,8 @@ final class MacroSahmCPIStrategyTests: XCTestCase {
         }
         var fx = Array(repeating: 7.0, count: days)
         for index in badFX { fx[index] = .nan }
-        func option(_ symbol: String) -> BacktestAssetOption {
-            BacktestAssetOption(symbol: symbol, title: symbol, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)
+        func option(_ symbol: String) -> BacktestInstrument {
+            BacktestInstrument(symbol: symbol, title: symbol, requiresHistoricalFX: false, historicalFXSymbol: nil)
         }
         return MarketDataFrame(
             dates: dates,

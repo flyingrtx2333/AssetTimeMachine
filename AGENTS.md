@@ -6,7 +6,7 @@ The research workspace is in the sibling FlyingrtxFast repository at `research/a
 
 For new research, the user's later fee instruction and the research workspace `AGENTS.md` apply: 0.025% per fill, zero base slippage unless the specific study freezes another scenario. Historical 1% results and current App product defaults remain unchanged.
 
-This repository is the **AssetTimeMachine** SwiftUI + SwiftData iOS app. It connects to the Flyingrtx backend for public market data and AssetTimeMachine cloud sync.
+This repository is the **AssetTimeMachine** SwiftUI + SwiftData iPhone and Mac Catalyst app. It connects to the Flyingrtx backend for public market data and AssetTimeMachine cloud sync.
 
 ## Project Structure & Module Organization
 
@@ -86,6 +86,17 @@ Local private credential configuration:
 - After each completed factor- or strategy-research trial: generate/update the matching manifest, run remote `--validate-only`, publish with the matching maintained helper, run `--status-only`, and reconcile the expected candidate count against the research ledger.
 - Preserve preregistration/result artifacts and the original lifecycle status; never promote or hide a failed factor or strategy merely to make either library look cleaner.
 
+## Mac App
+
+- Mac Catalyst is enabled in the existing AssetTimeMachine target. Keep iPhone device family settings independent of the Mac (`sdk=macosx*`) overrides.
+- Mac-only UI is in `ContentView+Mac.swift` and `Views/Mac/`, behind `targetEnvironment(macCatalyst)`.
+- Share existing SwiftData models, cloud clients and backtest engines. Mac bundle ID is `com.flyingrtx.AssetTimeMachine.mac`; never alter persisted schemas merely for layout.
+- Default content window: 920 × 640; minimum: 820 × 560. Keep the compact Mac layout and respect restored window sizes after the one-time compact-size migration.
+- Build/run locally with `scripts/run_mac.sh`; it uses Apple Development signing when available and falls back to an ad hoc preview build. The local build does not validate distribution signing.
+- Local Mac builds must use the fixed outputs from `scripts/run_native_mac.sh` / `scripts/run_mac.sh`, retaining at most one `-Previous.app` per variant. Do not create timestamped App copies. Use `bash scripts/validate_xcode_build.sh ios|native|catalyst` for disposable compile checks; its temporary products are automatically removed. For cleanup, use `python3 scripts/mac_build_artifacts.py clean --apply`; preserve databases, cloud backups, research evidence and release archives, and skip running apps/builds.
+- DEBUG `-macPreview` uses an in-memory model store and disables root market refresh, automatic cloud sync, widget writes and notification scheduling. Use `-importJSONPath` with repository demo data for captures. `-macCapturePath` captures native UIKit content at scale 1 after import. `-macPreviewTour <folder>` checks the five navigation routes.
+- Validate Mac build, iPhone simulator build, localization audit and relevant tests. Keep generated concepts out of runtime assets.
+
 ## Build, Test, and Development Commands
 
 Open in Xcode:
@@ -127,19 +138,9 @@ Recommended quick preflight before shipping:
 
 ```bash
 git diff --check
-xcrun swiftc \
-  -parse-as-library \
-  -module-cache-path /private/tmp/atm-swift-module-cache \
-  AssetTimeMachine/Backtest/BacktestModels.swift \
-  AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift \
-  AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift \
-  AssetTimeMachine/Backtest/BacktestFXConverter.swift \
-  AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift \
-  AssetTimeMachine/Backtest/BacktestEngine.swift \
-  tools/strategy_metric_dump.swift \
-  -o /private/tmp/strategy_metric_dump
+swift build -c release --product AssetTimeMachineMetricDump
 ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
-  /private/tmp/strategy_metric_dump --verify-app-baseline
+  .build/release/AssetTimeMachineMetricDump --verify-app-baseline
 xcodebuild \
   -project AssetTimeMachine.xcodeproj \
   -scheme AssetTimeMachine \
@@ -384,10 +385,10 @@ Important pitfall: this `altool` output uses `BUILD-STATUS: VALID`, not `Status:
 
 ### Where the App backtest engine lives
 
-The production App backtest engine currently lives in `AssetTimeMachine/Backtest/`:
+The calculation source is the Foundation-only `Sources/AssetTimeMachineBacktestCore/` Swift Package library. Research configuration, evidence and legacy replay helpers live in `Sources/AssetTimeMachineResearchSupport/`. See `docs/architecture/backtest-core.md` and the migration report for ownership and release gates. App presentation and persistence remain in `AssetTimeMachine/Backtest/`:
 
-- `AssetTimeMachine/Backtest/BacktestEngine.swift`: source of truth for App-facing metrics.
-- `AssetTimeMachine/Backtest/BacktestModels.swift`: `AdvancedBacktestStrategyTemplate.all`, `AdvancedBacktestStrategyMode`, strategy notification defaults, result payload models.
+- `AssetTimeMachine/Backtest/BacktestEngine.swift`: thin compatibility adapter to the shared calculation core; do not add strategy rules here.
+- `AssetTimeMachine/Backtest/BacktestModels.swift`: presentation wrappers, colors and defaults; calculation types and registry are in the shared core.
 - `BacktestEngine.runAdvancedStrategy(...)` handles single-asset rule based advanced backtests.
 - `BacktestEngine.runAdvancedStrategies(...)` handles multi-asset advanced backtests.
 - `BacktestEngine.runAdvancedRotationStrategy(...)` / `runAdvancedRotation(...)` handles rotation strategies.
@@ -400,7 +401,7 @@ Do not present strategy performance from a separate research script as product t
 
 The App exposes `AdvancedBacktestStrategyTemplate.productCatalog`; `AdvancedBacktestStrategyTemplate.all` remains the full research/diagnostic inventory. Do not add every parameter variant to the visible library. Keep a small product catalog with materially different risk tiers or signal families.
 
-Current App defaults are initial cash 100,000 CNY, fee 1.00%, and slippage 0.05%. This is both the product assumption and the pinned regression assumption. Do not lower the default fee to improve displayed strategy performance. Environment overrides are allowed only for explicit sensitivity research.
+Current settlement-v4 public defaults are initial cash 100,000 CNY, fee 0.025%, and slippage 0.05%; this cost was frozen before the architecture migration. Historical 1.00% / 0.05% evidence and low-noise internal decision simulation costs stay unchanged. Do not tune costs during an architecture refactor. Formal strategies reject research parameter overrides; explicit research configurations use immutable parameters through the shared CLI.
 
 The product Sharpe ratio must remain calculated and visible. The current implementation uses daily returns with a zero risk-free-rate assumption.
 
@@ -427,22 +428,13 @@ If this table disagrees with a non-App script, trust `tools/strategy_metric_dump
 Use this command before reporting or updating product-facing strategy metrics:
 
 ```bash
-xcrun swiftc \
-  -parse-as-library \
-  -module-cache-path /private/tmp/atm-swift-module-cache \
-  AssetTimeMachine/Backtest/BacktestModels.swift \
-  AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift \
-  AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift \
-  AssetTimeMachine/Backtest/BacktestFXConverter.swift \
-  AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift \
-  AssetTimeMachine/Backtest/BacktestEngine.swift \
-  tools/strategy_metric_dump.swift \
-  -o /private/tmp/strategy_metric_dump
+swift build -c release --product AssetTimeMachineMetricDump
 
-/private/tmp/strategy_metric_dump
+ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json \
+  .build/release/AssetTimeMachineMetricDump
 ```
 
-The dump fetches live history from `https://api.flyingrtx.com`, so it may need network permission. For stable golden verification, run it with `ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json` and `--verify-app-baseline`.
+The maintained dump requires an explicit `ATM_HISTORY_FIXTURE`; it retains historical diagnostic cost defaults. For stable golden verification, use `ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json .build/release/AssetTimeMachineMetricDump --verify-app-baseline`. For current configured runs use `AssetTimeMachineResearch configuration` / `run` and retain their parameter/data/version evidence. Refresh public data through the maintained helper before making current performance claims.
 
 ### How to find / research strategies
 
@@ -462,7 +454,7 @@ Use this order when looking for a new strategy candidate:
 
    ```bash
    rg -n "AdvancedBacktestStrategyTemplate" AssetTimeMachine/Backtest/BacktestModels.swift
-   rg -n "advancedRotationConfig" AssetTimeMachine/Backtest/BacktestEngine.swift
+   rg -n "advancedRotationConfig" Sources/AssetTimeMachineBacktestCore/Strategies/Rotation/RotationParameters.swift
    rg -n 'symbol: ".*rotation' AssetTimeMachine/Backtest
    ```
 

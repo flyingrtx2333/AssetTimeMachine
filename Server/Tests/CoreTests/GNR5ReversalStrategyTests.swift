@@ -120,8 +120,8 @@ final class GNR5ReversalStrategyTests: XCTestCase {
             priorReturns: variedPriorReturns + Array(repeating: 0.001, count: 8),
             currentReturn: 0.001
         )
-        func option(_ symbol: String) -> BacktestAssetOption {
-            BacktestAssetOption(symbol: symbol, title: symbol, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)
+        func option(_ symbol: String) -> BacktestInstrument {
+            BacktestInstrument(symbol: symbol, title: symbol, requiresHistoricalFX: false, historicalFXSymbol: nil)
         }
         var runtime = GNR5ReversalStrategy.Runtime()
         var pending = [String: Double]()
@@ -183,8 +183,8 @@ final class GNR5ReversalStrategyTests: XCTestCase {
         }
         let data = syntheticSpread(priorReturns: variedPriorReturns + Array(repeating: 0.001, count: 8), currentReturn: 0.001)
         func run(fee: Double, slippage: Double) throws -> BacktestDailySimulationResult {
-            func option(_ symbol: String) -> BacktestAssetOption {
-                BacktestAssetOption(symbol: symbol, title: symbol, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)
+            func option(_ symbol: String) -> BacktestInstrument {
+                BacktestInstrument(symbol: symbol, title: symbol, requiresHistoricalFX: false, historicalFXSymbol: nil)
             }
             var runtime = GNR5ReversalStrategy.Runtime()
             var pending = [String: Double]()

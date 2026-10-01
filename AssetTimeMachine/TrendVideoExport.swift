@@ -205,6 +205,7 @@ struct TrendVideoPreviewSheet: View {
         }
         .onDisappear {
             player?.pause()
+            MacMemoryRelief.scheduleAfterHeavyOperation()
         }
         .sheet(isPresented: Binding(
             get: { localExportURL != nil },

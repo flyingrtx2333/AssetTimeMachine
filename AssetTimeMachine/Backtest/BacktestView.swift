@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -656,6 +657,7 @@ struct BacktestView: View {
                 pendingBacktestComputationTask = nil
                 isBacktestLoading = false
                 backtestRunStage = nil
+                MacMemoryRelief.scheduleAfterHeavyOperation()
             }
         }
         .onChange(of: selectedPage) { _, newValue in

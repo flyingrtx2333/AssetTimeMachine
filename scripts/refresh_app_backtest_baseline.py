@@ -16,7 +16,6 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -27,7 +26,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FIXTURE = ROOT / "tools/fixtures/backtest-history/public_history.json"
 DEFAULT_BASELINE = ROOT / "tools/expected_backtest_metrics/app/app_engine_strategy_baseline.json"
 DEFAULT_BINARY = Path("/private/tmp/strategy_metric_dump")
-ENGINE_SOURCE = ROOT / "AssetTimeMachine/Backtest/BacktestEngine.swift"
 ENDPOINT = "https://api.flyingrtx.com/api/v1/money/public/history"
 SYMBOLS = [
     "gold_cny",
@@ -42,16 +40,6 @@ SYMBOLS = [
     "shenzhen_component",
     "chinext",
     "usd_per_cny",
-]
-SWIFT_SOURCES = [
-    "AssetTimeMachine/Backtest/BacktestModels.swift",
-    "AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift",
-    "AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift",
-    "AssetTimeMachine/Backtest/BacktestFXConverter.swift",
-    "AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift",
-    "AssetTimeMachine/Backtest/GORQREG25263Strategy.swift",
-    "AssetTimeMachine/Backtest/BacktestEngine.swift",
-    "tools/strategy_metric_dump.swift",
 ]
 
 
@@ -98,20 +86,12 @@ def fetch_fixture(path: Path, timeout: int) -> dict:
 
 
 def compile_metric_dump(binary: Path, timeout: int) -> None:
-    command = [
-        "xcrun",
-        "swiftc",
-        "-parse-as-library",
-        "-module-cache-path",
-        "/private/tmp/atm-swift-module-cache",
-        *SWIFT_SOURCES,
-        "-o",
-        str(binary),
-    ]
-    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, timeout=timeout)
-    if result.returncode != 0:
-        sys.stderr.write(result.stdout[-8000:] + result.stderr[-8000:])
-        raise RuntimeError("Failed to compile strategy_metric_dump")
+    subprocess.run(["swift", "build", "-c", "release", "--product", "AssetTimeMachineMetricDump"], cwd=ROOT, check=True, timeout=timeout)
+    bin_path = Path(subprocess.check_output(["swift", "build", "-c", "release", "--show-bin-path"], cwd=ROOT, text=True).strip())
+    launcher = "#!/bin/sh\nexec " + __import__("shlex").quote(str(bin_path / "AssetTimeMachineMetricDump")) + ' "$@"\n'
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write(binary, launcher.encode())
+    binary.chmod(0o755)
 
 
 def collect_slice_rows(binary: Path, fixture: Path, timeout: int) -> list[dict[str, str]]:
@@ -136,13 +116,9 @@ def collect_slice_rows(binary: Path, fixture: Path, timeout: int) -> list[dict[s
 
 
 def current_engine_version() -> str:
-    match = re.search(
-        r'static let defaultEngineVersion\s*=\s*"([^"]+)"',
-        ENGINE_SOURCE.read_text(),
-    )
-    if match is None:
-        raise RuntimeError("Could not read BacktestEngine.defaultEngineVersion")
-    return match.group(1)
+    # Query the compiled module; do not parse an application's source file.
+    bin_path = Path(subprocess.check_output(["swift", "build", "-c", "release", "--show-bin-path"], cwd=ROOT, text=True).strip())
+    return subprocess.check_output([str(bin_path / "AssetTimeMachineMetricDump"), "--engine-version"], cwd=ROOT, text=True).strip()
 
 
 def update_baseline(path: Path, fixture_document: dict, rows: list[dict[str, str]]) -> dict:

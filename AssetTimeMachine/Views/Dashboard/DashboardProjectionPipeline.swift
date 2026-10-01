@@ -57,6 +57,14 @@ actor DashboardProjectionRepository {
     ) async throws -> DashboardDataProjectionInput {
         try Task.checkCancellation()
 
+        #if targetEnvironment(macCatalyst)
+        return try await captureMacDataInput(
+            liveMarket: liveMarket,
+            otherAllocationTitle: otherAllocationTitle,
+            unnamedAllocationTitle: unnamedAllocationTitle
+        )
+        #else
+
         var snapshotDescriptor = FetchDescriptor<AssetSnapshot>(
             sortBy: [SortDescriptor(\AssetSnapshot.date, order: .reverse)]
         )
@@ -142,7 +150,75 @@ actor DashboardProjectionRepository {
             liveMarket: liveMarket,
             otherAllocationTitle: otherAllocationTitle
         )
+        #endif
     }
+
+    #if targetEnvironment(macCatalyst)
+    private func captureMacDataInput(
+        liveMarket: DashboardLiveMarketProjectionInput,
+        otherAllocationTitle: String,
+        unnamedAllocationTitle: String
+    ) async throws -> DashboardDataProjectionInput {
+        let revision = ModelStoreRevisionClock.shared.currentRevision()
+        let allSnapshots = try await MacSnapshotSummaryCache.shared.projections(
+            in: modelContainer, revision: revision
+        )
+        guard let latest = allSnapshots.last else {
+            return DashboardDataProjectionInput(
+                snapshots: [], liveMarket: liveMarket,
+                otherAllocationTitle: otherAllocationTitle
+            )
+        }
+
+        // The chart only needs the recent year. Keep full account models out of
+        // the daily path and load names solely for the latest allocation card.
+        let newestWindow = Array(allSnapshots.suffix(400))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let oneYearAgo = calendar.date(byAdding: .year, value: -1, to: latest.date) ?? .distantPast
+        let recentWindow = newestWindow.filter { $0.date >= oneYearAgo }
+        let displayWindow = recentWindow.count >= 2 ? recentWindow : newestWindow
+
+        let context = ModelContext(modelContainer)
+        let latestID = latest.id
+        var descriptor = FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.id == latestID })
+        descriptor.fetchLimit = 1
+        let latestModel = try context.fetch(descriptor).first
+        var allocationEntries: [DashboardEntryProjectionInput] = []
+        if let latestModel {
+            allocationEntries = latestModel.entries.compactMap { entry in
+                guard (entry.item?.category?.group ?? .financial) != .liability else { return nil }
+                return DashboardEntryProjectionInput(
+                    amount: entry.resolvedAmount,
+                    isLiability: false,
+                    allocationName: entry.item?.name ?? unnamedAllocationTitle
+                )
+            }
+        }
+
+        let snapshots = displayWindow.map { snapshot in
+            DashboardSnapshotProjectionInput(
+                date: snapshot.date,
+                isLatest: snapshot.id == latestID,
+                totalAssets: snapshot.totalAssets,
+                totalLiabilities: snapshot.totalLiabilities,
+                goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY,
+                goldAnchorDate: snapshot.goldAnchorDate,
+                btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD,
+                btcAnchorPriceCNY: snapshot.btcAnchorPriceCNY,
+                btcAnchorDate: snapshot.btcAnchorDate,
+                nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD,
+                nasdaqAnchorPriceCNY: snapshot.nasdaqAnchorPriceCNY,
+                nasdaqAnchorDate: snapshot.nasdaqAnchorDate,
+                allocationEntries: snapshot.id == latestID ? allocationEntries : []
+            )
+        }
+        return DashboardDataProjectionInput(
+            snapshots: snapshots, liveMarket: liveMarket,
+            otherAllocationTitle: otherAllocationTitle
+        )
+    }
+    #endif
 
     private static func sourceSnapshots(from newestFirstSnapshots: [AssetSnapshot]) -> [AssetSnapshot] {
         let orderedSnapshots = Array(newestFirstSnapshots.reversed())

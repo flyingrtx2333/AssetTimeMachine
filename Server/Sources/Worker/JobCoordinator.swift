@@ -62,6 +62,7 @@ actor BacktestJobCoordinator {
     private var cacheByKey: [String: CacheRecord] = [:]
     private var expiredRunIDs: Set<String> = []
     private var processing = false
+    private var processorTask: Task<Void, Never>?
 
     init(
         configuration: WorkerConfiguration,
@@ -156,14 +157,21 @@ actor BacktestJobCoordinator {
         return (queue.count, processing, cacheByKey.count)
     }
 
+    func shutdown() async {
+        queue.removeAll()
+        let task = processorTask
+        task?.cancel()
+        await task?.value
+    }
+
     private func scheduleProcessorIfNeeded() {
         guard !processing else { return }
         processing = true
-        Task { await processLoop() }
+        processorTask = Task { await processLoop() }
     }
 
     private func processLoop() async {
-        while !queue.isEmpty {
+        while !queue.isEmpty && !Task.isCancelled {
             let job = queue.removeFirst()
             guard var record = recordsByID[job.runID] else { continue }
             record.status = .running
@@ -209,6 +217,7 @@ actor BacktestJobCoordinator {
             }
         }
         processing = false
+        processorTask = nil
     }
 
     private func envelope(for record: JobRecord) -> WorkerRunEnvelope {
@@ -229,9 +238,15 @@ actor BacktestJobCoordinator {
     }
 
     private func cacheKey(request: PublicBacktestRunRequest, datasetHash: String) -> String {
-        let requestData = (try? PublicBacktestComputeCodec.makeEncoder().encode(request)) ?? Data()
+        let encoder = PublicBacktestComputeCodec.makeEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let requestData = (try? encoder.encode(request)) ?? Data()
+        let definition = try? StrategyRegistry.definition(id: request.strategyID)
+        let parameters = (try? definition?.frozenParametersJSON) ?? Data()
         let canonical = [
             PublicBacktestCore.engineVersion,
+            definition?.reference.version ?? "public-basic-v1",
+            parameters.base64EncodedString(),
             datasetHash,
             requestData.base64EncodedString()
         ].joined(separator: "|")

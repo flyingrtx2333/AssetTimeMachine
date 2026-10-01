@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import UIKit
 import UserNotifications
@@ -27,6 +28,9 @@ struct SettingsView: View {
     @State private var showsStrategyLibrary = false
     @State private var showsMonthlyExpenseEstimator = false
     @State private var pendingAppLanguage: AppLanguage?
+    #if DEBUG && targetEnvironment(macCatalyst)
+    @State private var didOpenPreviewCloud = false
+    #endif
 
     init(
         cloudStore: AssetTimeMachineCloudStore,
@@ -136,17 +140,25 @@ struct SettingsView: View {
                 }
                 .id(appLanguageStore.language.rawValue)
                 .listStyle(.plain)
-                .listSectionSpacing(.custom(18))
+                .listSectionSpacing(.custom(settingsSectionSpacing))
                 .scrollContentBackground(.hidden)
                 .contentMargins(.top, 0, for: .scrollContent)
-                .contentMargins(.bottom, 88, for: .scrollContent)
-                .environment(\.defaultMinListRowHeight, 58)
+                .contentMargins(.bottom, settingsBottomMargin, for: .scrollContent)
+                .environment(\.defaultMinListRowHeight, settingsRowHeight)
             }
             .toolbar(.hidden, for: .navigationBar)
             .task(id: isActive) {
                 guard isActive else { return }
                 normalizeStrategyNotificationTemplateIfNeeded()
                 await reloadNotificationStatus()
+                #if DEBUG && targetEnvironment(macCatalyst)
+                if AppPreviewSession.isActive,
+                   ProcessInfo.processInfo.arguments.contains("-macPreviewCloud"),
+                   !didOpenPreviewCloud {
+                    didOpenPreviewCloud = true
+                    showsCloudSyncModal = true
+                }
+                #endif
             }
             .onChange(of: notificationEnabled) { _, _ in
                 Task {
@@ -172,8 +184,13 @@ struct SettingsView: View {
                 NavigationStack {
                     AssetTimeMachineCloudPage(store: cloudStore)
                 }
+                #if targetEnvironment(macCatalyst)
+                .frame(width: 470, height: cloudStore.currentUser == nil ? 230 : 400)
+                .presentationSizing(.fitted)
+                #else
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+                #endif
             }
             .sheet(isPresented: $showsStrategyLibrary) {
                 AdvancedStrategyLibrarySheet(
@@ -197,6 +214,30 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    private var settingsSectionSpacing: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        8
+        #else
+        18
+        #endif
+    }
+
+    private var settingsBottomMargin: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        24
+        #else
+        88
+        #endif
+    }
+
+    private var settingsRowHeight: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        46
+        #else
+        58
+        #endif
     }
 
     private var pageOverviewSection: some View {
@@ -228,10 +269,35 @@ struct SettingsView: View {
 
     private var preferencesSection: some View {
         Section {
-            Menu {
+            #if targetEnvironment(macCatalyst)
+            HStack(spacing: 12) {
+                SettingsRowLabel(
+                    title: AppLocalization.string("外观"),
+                    systemImage: "circle.lefthalf.filled"
+                )
+                Spacer(minLength: 10)
                 Picker(AppLocalization.string("外观"), selection: $appearanceModeRawValue) {
                     ForEach(AppAppearanceMode.allCases) { mode in
                         Text(mode.title).tag(mode.rawValue)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+            }
+            .frame(minHeight: 46)
+            .settingsSurfaceRow()
+            #else
+            Menu {
+                ForEach(AppAppearanceMode.allCases) { mode in
+                    Button {
+                        appearanceModeRawValue = mode.rawValue
+                    } label: {
+                        HStack {
+                            Text(mode.title)
+                            if currentAppearanceMode == mode {
+                                Image(systemName: "checkmark")
+                            }
+                        }
                     }
                 }
             } label: {
@@ -243,6 +309,7 @@ struct SettingsView: View {
             }
             .foregroundStyle(AssetTheme.textPrimary)
             .settingsSurfaceRow()
+            #endif
 
             Button {
                 pendingAppLanguage = nil
@@ -514,7 +581,11 @@ private struct SettingsPageHeader: View {
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             Text(AppLocalization.string("设置"))
+                #if targetEnvironment(macCatalyst)
+                .font(.system(size: 25, weight: .semibold))
+                #else
                 .font(.largeTitle.weight(.semibold))
+                #endif
                 .foregroundStyle(AssetTheme.textPrimary)
 
             Spacer(minLength: 12)
@@ -529,7 +600,7 @@ private struct SettingsPageHeader: View {
                         )
 
                     Image(systemName: cloudState.cloudSymbolName)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: cloudIconSize, weight: .semibold))
                         .foregroundStyle(cloudState.symbolColor)
                 }
                 .overlay(alignment: .topTrailing) {
@@ -539,14 +610,46 @@ private struct SettingsPageHeader: View {
                         .overlay(Circle().stroke(AssetTheme.background, lineWidth: 1.5))
                         .offset(x: -1, y: 1)
                 }
-                .frame(width: 44, height: 44)
+                .frame(width: cloudButtonSize, height: cloudButtonSize)
                 .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(cloudAccessibilityLabel)
         }
-        .padding(.top, 16)
-        .padding(.bottom, 8)
+        .padding(.top, headerTopPadding)
+        .padding(.bottom, headerBottomPadding)
+    }
+
+    private var cloudIconSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        18
+        #else
+        20
+        #endif
+    }
+
+    private var cloudButtonSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        38
+        #else
+        44
+        #endif
+    }
+
+    private var headerTopPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        8
+        #else
+        16
+        #endif
+    }
+
+    private var headerBottomPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        4
+        #else
+        8
+        #endif
     }
 }
 
@@ -580,13 +683,21 @@ private struct SettingsOverviewRail: View {
                 }
             }
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, verticalPadding)
         .overlay(alignment: .top) {
             Rectangle().fill(AssetTheme.border.opacity(0.78)).frame(height: 0.5)
         }
         .overlay(alignment: .bottom) {
             Rectangle().fill(AssetTheme.border.opacity(0.78)).frame(height: 0.5)
         }
+    }
+
+    private var verticalPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        8
+        #else
+        14
+        #endif
     }
 
     private var cloudItem: some View {
@@ -739,8 +850,16 @@ private struct SettingsNavigationRow: View {
                 SettingsDisclosureIcon()
             }
         }
-        .frame(minHeight: 58)
+        .frame(minHeight: rowHeight)
         .contentShape(Rectangle())
+    }
+
+    private var rowHeight: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        46
+        #else
+        58
+        #endif
     }
 }
 

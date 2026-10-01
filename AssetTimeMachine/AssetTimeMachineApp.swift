@@ -63,6 +63,9 @@ struct AssetTimeMachineApp: App {
                 .environmentObject(appLanguageStore)
                 .preferredColorScheme(appearanceMode.colorScheme)
                 .statusBarHidden(hidesStatusBarForScreenshots)
+                #if targetEnvironment(macCatalyst)
+                .background(MacWindowConfiguration().allowsHitTesting(false))
+                #endif
         }
         .modelContainer(modelBootstrap.container)
     }
@@ -71,6 +74,26 @@ struct AssetTimeMachineApp: App {
 private struct AppModelContainerBootstrap {
     let container: ModelContainer
     let persistentStoreError: Error?
+
+    private static var isPreviewSession: Bool {
+        #if DEBUG && targetEnvironment(macCatalyst)
+        ProcessInfo.processInfo.arguments.contains("-macPreview")
+        #else
+        false
+        #endif
+    }
+
+    private static var performanceStoreURL: URL? {
+        #if DEBUG && targetEnvironment(macCatalyst)
+        let arguments = ProcessInfo.processInfo.arguments
+        guard isPreviewSession,
+              let index = arguments.firstIndex(of: "-macPerfStorePath"),
+              arguments.indices.contains(index + 1) else { return nil }
+        return URL(fileURLWithPath: arguments[index + 1])
+        #else
+        return nil
+        #endif
+    }
 
     init() {
         let schema = Schema([
@@ -83,9 +106,15 @@ private struct AppModelContainerBootstrap {
         ])
 
         do {
+            let configuration: ModelConfiguration
+            if let performanceStoreURL = Self.performanceStoreURL {
+                configuration = ModelConfiguration(schema: schema, url: performanceStoreURL)
+            } else {
+                configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: Self.isPreviewSession)
+            }
             container = try ModelContainer(
                 for: schema,
-                configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)]
+                configurations: [configuration]
             )
             persistentStoreError = nil
         } catch {

@@ -6,14 +6,22 @@ struct AssetRecordingQuickStartView: View {
     let onSearchOtherAssets: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: contentSpacing) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(AppLocalization.string("先录入一项资产"))
+                    #if targetEnvironment(macCatalyst)
+                    .font(.system(size: 16, weight: .semibold))
+                    #else
                     .font(.title2.weight(.semibold))
+                    #endif
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Text(AppLocalization.string("从常见类型中选择，快速开始"))
+                    #if targetEnvironment(macCatalyst)
+                    .font(.system(size: 12))
+                    #else
                     .font(AppTypography.body)
+                    #endif
                     .foregroundStyle(AssetTheme.textSecondary)
             }
 
@@ -22,11 +30,11 @@ struct AssetRecordingQuickStartView: View {
                     Button {
                         onSelect(choice)
                     } label: {
-                        HStack(spacing: 14) {
+                        HStack(spacing: rowSpacing) {
                             Image(systemName: choice.systemImageName)
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: iconSize, weight: .semibold))
                                 .foregroundStyle(selectedChoice == choice ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                .frame(width: 28, height: 28)
+                                .frame(width: iconFrameSize, height: iconFrameSize)
 
                             Text(AppLocalization.string(choice.titleLocalizationKey))
                                 .font(AppTypography.rowTitle)
@@ -38,8 +46,8 @@ struct AssetRecordingQuickStartView: View {
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(selectedChoice == choice ? AssetTheme.gold : AssetTheme.textSecondary)
                         }
-                        .padding(.horizontal, 16)
-                        .frame(minHeight: 58)
+                        .padding(.horizontal, rowHorizontalPadding)
+                        .frame(minHeight: rowHeight)
                         .contentShape(Rectangle())
                         .background(selectedChoice == choice ? AssetTheme.gold.opacity(0.09) : Color.clear)
                     }
@@ -48,27 +56,99 @@ struct AssetRecordingQuickStartView: View {
                     if choice != AssetRecordingQuickChoice.allCases.last {
                         Divider()
                             .overlay(AssetTheme.border.opacity(0.4))
-                            .padding(.leading, 58)
+                            .padding(.leading, dividerInset)
                     }
                 }
             }
-            .background(AssetTheme.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(AssetTheme.surface.opacity(0.72), in: RoundedRectangle(cornerRadius: panelRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: panelRadius, style: .continuous)
                     .stroke(AssetTheme.border.opacity(0.7), lineWidth: 1)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: panelRadius, style: .continuous))
 
             Button(action: onSearchOtherAssets) {
                 Label(AppLocalization.string("搜索其他资产"), systemImage: "magnifyingglass")
-                    .font(AppTypography.rowTitle)
+                    .font(AppTypography.metaStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .frame(height: searchButtonHeight)
+                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: panelRadius, style: .continuous))
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private var contentSpacing: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        10
+        #else
+        18
+        #endif
+    }
+
+    private var rowSpacing: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        10
+        #else
+        14
+        #endif
+    }
+
+    private var iconSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        14
+        #else
+        17
+        #endif
+    }
+
+    private var iconFrameSize: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        20
+        #else
+        28
+        #endif
+    }
+
+    private var rowHorizontalPadding: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        12
+        #else
+        16
+        #endif
+    }
+
+    private var rowHeight: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        38
+        #else
+        58
+        #endif
+    }
+
+    private var dividerInset: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        42
+        #else
+        58
+        #endif
+    }
+
+    private var searchButtonHeight: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        32
+        #else
+        48
+        #endif
+    }
+
+    private var panelRadius: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        10
+        #else
+        18
+        #endif
     }
 }
 

@@ -1,3 +1,6 @@
+#if !os(macOS) || targetEnvironment(macCatalyst)
+import AssetTimeMachineBacktestCore
+#endif
 import Foundation
 import SwiftData
 

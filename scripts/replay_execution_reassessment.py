@@ -2,9 +2,7 @@
 """Compile actual App core and replay six fixed product strategies (post hoc only)."""
 import argparse
 from pathlib import Path
-import re
 import subprocess
-import tempfile
 
 
 def main():
@@ -22,27 +20,14 @@ def main():
         parser.error('Output exists; choose a new versioned output path to preserve evidence')
     if not 0 <= args.fee_percent <= 100:
         parser.error('Fee is a percentage, between 0 and 100')
-    # SwiftPM owns Bundle.module. Generate its actual accessor through the normal build.
-    accessors = [p for p in (repo / '.build').rglob('resource_bundle_accessor.swift')
-                 if 'AssetTimeMachineBacktestCore' in str(p)]
-    if not accessors:
-        subprocess.run(['swift', 'build', '-c', 'release', '--product',
-                        'AssetTimeMachineBacktestCompute'], cwd=repo, check=True)
-        accessors = [p for p in (repo / '.build').rglob('resource_bundle_accessor.swift')
-                     if 'AssetTimeMachineBacktestCore' in str(p)]
-    if not accessors:
-        parser.error('SwiftPM resource accessor unavailable')
-    package = (repo / 'Package.swift').read_text()
-    names = re.findall(r'"([^"\n]+\.swift)"', package.split('sources: [', 1)[1].split('],', 1)[0])
-    sources = [str(repo / 'AssetTimeMachine/Backtest' / name) for name in names]
-    with tempfile.TemporaryDirectory(prefix='atm-execution-replay-') as tmp:
-        executable = Path(tmp) / 'replay'
-        subprocess.run(['xcrun', 'swiftc', '-O', '-D', 'ATM_SERVER', '-parse-as-library',
-                        *sources, str(sorted(accessors)[0]),
-                        str(repo / 'tools/strategy_execution_reassessment.swift'),
-                        '-o', str(executable)], cwd=repo, check=True)
-        subprocess.run([str(executable), str(args.history.resolve()), str(args.macro.resolve()),
-                        str(args.fee_percent), str(args.output.resolve())], cwd=repo, check=True)
+    subprocess.run(['swift', 'build', '-c', 'release', '--product',
+                    'AssetTimeMachineExecutionReassessment'], cwd=repo, check=True)
+    bin_path = Path(subprocess.check_output(
+        ['swift', 'build', '-c', 'release', '--show-bin-path'], cwd=repo, text=True).strip())
+    subprocess.run([str(bin_path / 'AssetTimeMachineExecutionReassessment'),
+                    str(args.history.resolve()), str(args.macro.resolve()),
+                    str(args.fee_percent), str(args.output.resolve())], cwd=repo, check=True)
+
 
 
 if __name__ == '__main__':

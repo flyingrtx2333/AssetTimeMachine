@@ -2,6 +2,12 @@
 """Run the preregistered Orthogonal Factor Family V2 through the shared Swift engine."""
 from __future__ import annotations
 
+if __name__ == "__main__":
+    import sys as _legacy_sys
+    from replay_legacy_research import redirect_historical
+    redirect_historical(__file__, _legacy_sys.argv[1:])
+
+
 import argparse
 import csv
 import json

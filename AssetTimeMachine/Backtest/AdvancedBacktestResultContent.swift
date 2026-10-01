@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import SwiftUI
 import SwiftData
 import Charts
@@ -106,7 +107,7 @@ struct AdvancedBacktestResultPage: View {
             BacktestPosterPreviewSheet(
                 title: presentation.strategyMode == .ruleBased
                     ? presentation.title
-                    : presentation.strategyMode.title,
+                    : presentation.strategyMode.localizedTitle,
                 report: presentation.report,
                 comparisonSeries: presentation.comparisonSeries
             )
@@ -575,7 +576,7 @@ struct AdvancedBacktestResultContent: View {
             Spacer(minLength: 12)
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text(action.kind.title)
+                Text(action.kind.localizedTitle)
                     .font(AppTypography.captionStrong)
                     .foregroundStyle(action.kind.accent)
 
@@ -753,7 +754,7 @@ struct AdvancedBacktestResultContent: View {
             ForEach(Array(displayedRotationTradeEvents.enumerated()), id: \.element.id) { eventIndex, event in
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(AppLocalization.format("%@调仓", strategyMode.title))
+                        Text(AppLocalization.format("%@调仓", strategyMode.localizedTitle))
                             .font(AppTypography.metaStrong)
                             .foregroundStyle(AssetTheme.textPrimary)
 
@@ -794,7 +795,7 @@ struct AdvancedBacktestResultContent: View {
             ForEach(Array(displayedRuleBasedTrades.enumerated()), id: \.element.id) { index, trade in
                 tradeRow(
                     trade,
-                    actionTitle: trade.action.title,
+                    actionTitle: trade.action.localizedTitle,
                     detailText: "\(trade.assetTitle) · \(trade.date.shortDateString) · \(trade.price.currencyString())",
                     noteText: trade.reason.isEmpty ? nil : AppLocalization.format("触发：%@", trade.reason)
                 )

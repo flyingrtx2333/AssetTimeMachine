@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile and verify that low-noise targets are invariant to user execution fees.
+"""Build the shared Package and verify that low-noise targets are invariant to user execution fees.
 
 The low-noise strategy intentionally freezes internal shadow-engine research costs at
 1.00% fee + 0.05% slippage. User-entered fee changes may alter realized performance,
@@ -16,14 +16,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TMP_SWIFT = Path("/private/tmp/atm_low_noise_cost_invariance.swift")
 TMP_BIN = Path("/private/tmp/atm_low_noise_cost_invariance")
-SOURCES = [
-    "AssetTimeMachine/Backtest/BacktestModels.swift",
-    "AssetTimeMachine/Backtest/BacktestMetricsCalculator.swift",
-    "AssetTimeMachine/Backtest/BacktestSeriesAlignment.swift",
-    "AssetTimeMachine/Backtest/BacktestFXConverter.swift",
-    "AssetTimeMachine/Backtest/BacktestAdvancedSeriesPreparer.swift",
-    "AssetTimeMachine/Backtest/BacktestEngine.swift",
-]
 
 
 def run(cmd: list[str], env: dict[str, str] | None = None) -> str:
@@ -36,16 +28,10 @@ def run(cmd: list[str], env: dict[str, str] | None = None) -> str:
 
 
 def main() -> None:
-    run([
-        "python3", "scripts/assemble_strategy_metric_dump.py",
-        "--fragment", "tools/low_noise_fee_sensitivity.swiftpart",
-        "--output", str(TMP_SWIFT),
-    ])
-    run(["swiftc", *SOURCES, str(TMP_SWIFT), "-o", str(TMP_BIN)])
-    env = os.environ.copy()
-    env["ATM_HISTORY_FIXTURE"] = "tools/fixtures/backtest-history/public_history.json"
-    env["ATM_LOW_NOISE_FEE_SENSITIVITY"] = "1"
-    output = run([str(TMP_BIN)], env=env)
+    run(["swift", "build", "-c", "release", "--product", "AssetTimeMachineResearch"])
+    bin_path = Path(run(["swift", "build", "-c", "release", "--show-bin-path"]).strip())
+    output = run([str(bin_path / "AssetTimeMachineResearch"), "verify-cost-invariance",
+                  "--history", "tools/fixtures/backtest-history/public_history.json"])
 
     rows: list[dict[str, str]] = []
     capture = False

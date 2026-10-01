@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import Combine
 import Foundation
 import SwiftData
@@ -895,7 +896,6 @@ final class RemoteMarketStore: ObservableObject {
     @Published var nfciAsOf: PublicNFCIAsOfResponse? {
         didSet {
             macroRevision &+= 1
-            BacktestMacroSnapshotStore.shared.updateNFCIAsOf(nfciAsOf?.backtestNFCIAsOfData)
         }
     }
     @Published var historySeries: [String: PublicHistorySeries] = [:] {

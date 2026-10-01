@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import Charts
 import Combine
 import SwiftData
@@ -366,7 +367,7 @@ struct TodayPositionAdviceCard: View {
                 .frame(width: 50, alignment: .trailing)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(action.kind.title)
+                Text(action.kind.localizedTitle)
                     .foregroundStyle(action.kind.accent)
 
                 if showsOperationAmounts {

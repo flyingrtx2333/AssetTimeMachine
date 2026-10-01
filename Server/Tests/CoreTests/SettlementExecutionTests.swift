@@ -8,7 +8,7 @@ final class SettlementExecutionTests: XCTestCase {
         let first = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2026-09-01"))
         let dates = (0..<12).map { first.addingTimeInterval(Double($0) * 86400) }
         let symbols = ["gold_cny", "nasdaq"]
-        let options = Dictionary(uniqueKeysWithValues: BacktestDefaults.strategyAssetOptions.filter { symbols.contains($0.symbol) }.map { ($0.symbol, $0) })
+        let options = Dictionary(uniqueKeysWithValues: BacktestCoreDefaults.strategyAssetOptions.filter { symbols.contains($0.symbol) }.map { ($0.symbol, $0) })
         let frame = MarketDataFrame(dates: dates,
             pricesBySymbol: ["gold_cny": Array(repeating: 100, count: 12), "nasdaq": dates.indices.map { rising ? 100 + Double($0) : 100 }],
             observedBySymbol: Dictionary(uniqueKeysWithValues: symbols.map { ($0, dates.indices.map { !closed.contains($0) }) }),

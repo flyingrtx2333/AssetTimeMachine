@@ -75,6 +75,10 @@ struct ContentView: View {
                         .background(AssetTheme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             } else {
+                #if targetEnvironment(macCatalyst)
+                macWorkspace
+                    .id(cloudDataRevision)
+                #else
                 TabView(selection: tabSelection) {
             deferredTabContent(for: .dashboard) {
                 TabSurface(isSelected: selectedTab == .dashboard) {
@@ -153,6 +157,7 @@ struct ContentView: View {
                 }
                 .id(cloudDataRevision)
                 .animation(nil, value: selectedTab)
+                #endif
             }
         }
         .tint(AssetTheme.gold)
@@ -168,6 +173,9 @@ struct ContentView: View {
             }
             #if DEBUG
             scheduleDebugTabSwitchLoopIfNeeded()
+            #if targetEnvironment(macCatalyst)
+            scheduleMacPreviewTourIfNeeded()
+            #endif
             #endif
             scheduleSnapshotNotificationRefresh(delayNanoseconds: 0)
 
@@ -175,6 +183,7 @@ struct ContentView: View {
             startupMaintenanceTask = Task(priority: .utility) {
                 try? await Task.sleep(for: .milliseconds(1_500))
                 guard !Task.isCancelled else { return }
+                guard !AppPreviewSession.isActive else { return }
                 await cloudStore.refreshIfNeeded(from: modelContext)
                 guard !Task.isCancelled else { return }
                 try? await Task.sleep(for: .milliseconds(500))
@@ -184,7 +193,7 @@ struct ContentView: View {
             }
         }
         .task(id: scenePhase) {
-            guard scenePhase == .active else { return }
+            guard scenePhase == .active, !AppPreviewSession.isActive else { return }
 
             while !didRunStartup && !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 200_000_000)
@@ -212,7 +221,7 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
             guard PortfolioSaveNotificationFilter.affectsPortfolio(notification) else { return }
             scheduleWidgetSnapshotRefresh()
-            if !cloudStore.isApplyingLocalData {
+            if !cloudStore.isApplyingLocalData && !AppPreviewSession.isActive {
                 cloudStore.scheduleAutoSync(from: modelContext, quietly: true)
             }
             guard notificationEnabled || strategyNotificationEnabled else { return }

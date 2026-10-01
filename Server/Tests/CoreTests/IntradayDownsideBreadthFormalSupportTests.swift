@@ -1,13 +1,14 @@
 import Foundation
 import XCTest
 @testable import AssetTimeMachineBacktestCore
+@testable import AssetTimeMachineResearchSupport
 
 final class IntradayDownsideBreadthFormalSupportTests: XCTestCase {
     private func dates(_ count: Int) -> [String] {
         let calendar = Calendar(identifier: .gregorian)
         let start = BacktestSeriesAlignment.historicalSeriesDate(from: "2024-01-01")!
         return (0..<count).map {
-            calendar.date(byAdding: .day, value: $0, to: start)!.recordDateString
+            calendar.date(byAdding: .day, value: $0, to: start)!.backtestDateKey
         }
     }
 
@@ -240,7 +241,7 @@ final class IntradayDownsideBreadthFormalSupportTests: XCTestCase {
         })
         let observed = Dictionary(uniqueKeysWithValues: symbols.map { ($0, Array(repeating: true, count: 126)) })
         let options = Dictionary(uniqueKeysWithValues: symbols.map {
-            ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil))
+            ($0, BacktestInstrument(symbol: $0, title: $0, requiresHistoricalFX: false, historicalFXSymbol: nil))
         })
         let frame = MarketDataFrame(
             dates: parsedDates, pricesBySymbol: prices, observedBySymbol: observed, ohlcBySymbol: [:],

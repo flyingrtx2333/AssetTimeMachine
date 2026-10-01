@@ -1,3 +1,4 @@
+import AssetTimeMachineBacktestCore
 import Foundation
 import SwiftData
 

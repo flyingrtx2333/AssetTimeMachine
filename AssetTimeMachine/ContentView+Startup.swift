@@ -26,6 +26,16 @@ extension ContentView {
             selectTab(.backtest)
         }
 
+        if ProcessInfo.processInfo.arguments.contains("-openSettingsTab") {
+            selectTab(.settings)
+        }
+
+        #if targetEnvironment(macCatalyst)
+        if ProcessInfo.processInfo.arguments.contains("-macPreviewAssetSheet") {
+            presentOnboarding()
+        }
+        #endif
+
         if let importPath = launchArgumentValue(after: "-importJSONPath") {
             do {
                 let data = try Data(contentsOf: URL(fileURLWithPath: importPath))
@@ -58,9 +68,35 @@ extension ContentView {
         await Task.yield()
         migrateLegacyAutoPricedItemsForStartup()
 
+        AppPreviewSession.didFinishStartup = true
+        #if DEBUG && targetEnvironment(macCatalyst)
+        if let outputPath = launchArgumentValue(after: "-macPerfCloudExportOutput") {
+            Task { @MainActor in
+                do {
+                    let export = try await ImportExportService.exportPayloadCooperatively(from: modelContext)
+                    let snapshots = export.payload.snapshots
+                    let summary: [String: Any] = [
+                        "snapshots": snapshots.count,
+                        "entries": snapshots.reduce(0) { $0 + $1.entries.count },
+                        "total": snapshots.reduce(0.0) { sum, snapshot in
+                            sum + snapshot.entries.reduce(0.0) { $0 + ($1.amount ?? 0) }
+                        }
+                    ]
+                    let data = try JSONSerialization.data(withJSONObject: summary)
+                    try data.write(to: URL(fileURLWithPath: outputPath))
+                } catch {
+                    try? error.localizedDescription.write(
+                        to: URL(fileURLWithPath: outputPath), atomically: true, encoding: .utf8
+                    )
+                }
+            }
+        }
+        #endif
+        #if !targetEnvironment(macCatalyst)
         if !hasCompletedOnboarding {
             presentOnboarding()
         }
+        #endif
     }
 
     @MainActor

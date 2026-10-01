@@ -102,6 +102,7 @@ actor BacktestComputeExecutor {
     ) async throws -> Response {
         await acquire()
         defer { release() }
+        try Task.checkCancellation()
 
         let identifier = UUID().uuidString.lowercased()
         let invocationURL = temporaryDirectory.appendingPathComponent(identifier + "-request.json")
@@ -125,15 +126,16 @@ actor BacktestComputeExecutor {
         process.standardOutput = FileHandle.nullDevice
         process.standardError = errorHandle
         try process.run()
+        // Sleep can throw cancellation before the loop reaches its next check.
+        // Every exit must reap the child before removing its input/output files.
+        defer { if process.isRunning { terminate(process) } }
 
         let deadline = Date().addingTimeInterval(Double(timeoutSeconds))
         while process.isRunning {
             if Task.isCancelled {
-                terminate(process)
                 throw CancellationError()
             }
             if Date() >= deadline {
-                terminate(process)
                 throw WorkerTimeoutError.timedOut
             }
             try await Task.sleep(for: .milliseconds(25))
@@ -173,13 +175,19 @@ actor BacktestComputeExecutor {
     }
 
     private nonisolated func terminate(_ process: Process) {
-        guard process.isRunning else { return }
-        process.terminate()
         let pid = process.processIdentifier
+        guard pid > 0, kill(pid, 0) == 0 else { return }
+        _ = kill(pid, SIGTERM)
         usleep(100_000)
-        if process.isRunning {
+        if kill(pid, 0) == 0 {
             _ = kill(pid, SIGKILL)
         }
-        process.waitUntilExit()
+        // Foundation reaps Process asynchronously. In cancellation tests its
+        // run-loop wait outlived an already-reaped child; inspect the OS PID.
+        // Bound cleanup and inspect the OS process instead of blocking forever.
+        for _ in 0..<200 {
+            if kill(pid, 0) != 0 && errno == ESRCH { return }
+            usleep(10_000)
+        }
     }
 }

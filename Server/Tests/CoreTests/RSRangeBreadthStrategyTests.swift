@@ -1,5 +1,6 @@
 import XCTest
 @testable import AssetTimeMachineBacktestCore
+@testable import AssetTimeMachineResearchSupport
 
 final class RSRangeBreadthStrategyTests: XCTestCase {
     private func bits(_ value: Double) -> String {
@@ -29,7 +30,7 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
         let start = BacktestSeriesAlignment.historicalSeriesDate(from: "2020-01-01")!
         return (0..<count).map { index in
             let values = qMode(index)
-            let date = calendar.date(byAdding: .day, value: index, to: start)!.recordDateString
+            let date = calendar.date(byAdding: .day, value: index, to: start)!.backtestDateKey
             return RSRangeBreadthSignalBar(
                 date: date,
                 open: values.0,
@@ -203,7 +204,7 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
         let dateTexts = base.map(\.date)
         let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: dateTexts))
         let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { symbol in
-            (symbol, BacktestAssetOption(symbol: symbol, title: symbol, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil))
+            (symbol, BacktestInstrument(symbol: symbol, title: symbol, requiresHistoricalFX: false, historicalFXSymbol: nil))
         })
         let frame = MarketDataFrame(
             dates: dates,
@@ -236,7 +237,7 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
             pricesBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) }),
             observedBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) }),
             ohlcBySymbol: [:], tradableSymbols: RSRangeBreadthStrategy.assetOrder,
-            optionBySymbol: Dictionary(uniqueKeysWithValues: incompleteOptions.map { ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)) }),
+            optionBySymbol: Dictionary(uniqueKeysWithValues: incompleteOptions.map { ($0, BacktestInstrument(symbol: $0, title: $0, requiresHistoricalFX: false, historicalFXSymbol: nil)) }),
             simulationRange: 1...(dates.count - 1)
         )
         XCTAssertThrowsError(try RSRangeBreadthSharedSimulator.run(
@@ -258,7 +259,7 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
         let executableDates = base.map(\.date).filter { $0 != omittedCompletion }
         let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: executableDates))
         let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { symbol in
-            (symbol, BacktestAssetOption(symbol: symbol, title: symbol, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil))
+            (symbol, BacktestInstrument(symbol: symbol, title: symbol, requiresHistoricalFX: false, historicalFXSymbol: nil))
         })
         let frame = MarketDataFrame(
             dates: dates,
@@ -282,7 +283,7 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
         let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: base.map(\.date)))
         let prices = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) })
         let observed = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) })
-        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)) })
+        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, BacktestInstrument(symbol: $0, title: $0, requiresHistoricalFX: false, historicalFXSymbol: nil)) })
         let execution = BacktestExecutionConfig(initialCash: 100_000, feeRate: 0, slippageRate: 0, rebalanceBand: 0, financingAnnualRate: 0, allowsFinancedExposure: false, buyReason: "malformed frame test")
 
         var duplicateDates = dates
@@ -322,7 +323,7 @@ final class RSRangeBreadthStrategyTests: XCTestCase {
         let artifact = try RSRangeBreadthScheduleBuilder.build(assets: assets, config: config(executableDates: executableDates))
         var observed = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: true, count: dates.count)) })
         observed[RSRangeBreadthStrategy.assetOrder[2]]![closedIndex] = false
-        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, BacktestAssetOption(symbol: $0, title: $0, color: .blue, requiresHistoricalFX: false, historicalFXSymbol: nil)) })
+        let options = Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, BacktestInstrument(symbol: $0, title: $0, requiresHistoricalFX: false, historicalFXSymbol: nil)) })
         let frame = MarketDataFrame(
             dates: dates,
             pricesBySymbol: Dictionary(uniqueKeysWithValues: RSRangeBreadthStrategy.assetOrder.map { ($0, Array(repeating: 100.0, count: dates.count)) }),

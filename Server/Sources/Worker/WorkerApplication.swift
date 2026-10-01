@@ -98,13 +98,22 @@ struct AssetTimeMachineBacktestWorker {
         let refreshTask = Task {
             await runDailyRefresh(datasetStore: datasetStore)
         }
-        defer { refreshTask.cancel() }
 
         let application = Application(
             router: router,
             configuration: .init(address: .hostname("0.0.0.0", port: configuration.port))
         )
-        try await application.runService()
+        do {
+            try await application.runService()
+        } catch {
+            refreshTask.cancel()
+            await coordinator.shutdown()
+            await refreshTask.value
+            throw error
+        }
+        refreshTask.cancel()
+        await coordinator.shutdown()
+        await refreshTask.value
     }
 
     private static func authorize(request: Request, configuration: WorkerConfiguration) throws {

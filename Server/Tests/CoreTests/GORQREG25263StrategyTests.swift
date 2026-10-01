@@ -11,7 +11,7 @@ final class GORQREG25263StrategyTests: XCTestCase {
                 let scaled = Int64(((event.targetWeights[symbol] ?? 0) * 1_000_000_000).rounded())
                 return "\(symbol)=\(scaled)"
             }.joined(separator: ",")
-            let row = "\(event.signalIndex)|\(event.signalDate.recordDateString)|\(weights)|\(event.reason)\n"
+            let row = "\(event.signalIndex)|\(event.signalDate.backtestDateKey)|\(weights)|\(event.reason)\n"
             for byte in row.utf8 {
                 hash ^= UInt64(byte)
                 hash &*= 1099511628211
@@ -20,11 +20,11 @@ final class GORQREG25263StrategyTests: XCTestCase {
         return String(format: "%016llx", hash)
     }
 
-    private func option(_ symbol: String) -> BacktestAssetOption {
-        BacktestAssetOption(
+    private func option(_ symbol: String) -> BacktestInstrument {
+        BacktestInstrument(
             symbol: symbol,
             title: symbol,
-            color: .blue,
+
             requiresHistoricalFX: false,
             historicalFXSymbol: nil
         )
