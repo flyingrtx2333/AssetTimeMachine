@@ -1,6 +1,6 @@
 # 策略与回测迁移报告
 
-核对日期：2026-10-02。本机与 Linux 计算、兼容和隔离服务验证已完成；原生 Mac 完整内存验收、可复现源提交及生产发布门禁尚未完成。本报告不改变策略准入状态、冻结日期、OOS 起点或已有研究结论。
+核对日期：2026-10-02。本机与 Linux 计算、兼容、隔离服务及正式签名原生 Mac 内存验收已完成。已形成独立源码快照，并完成不可变 Worker 镜像发布、生产切换及公开接口验证。仓库 PR 合并与 TestFlight 不在此次生产 Worker 切换中执行。本报告不改变策略准入状态、冻结日期、OOS 起点或已有研究结论。
 
 ## 基准与保护范围
 
@@ -8,7 +8,7 @@
 
 已有 Mac/UI/同步工作保留在原工作区。主 App 入口、顶层 ContentView、Dashboard UI 和本地化目录与编辑前备份逐字节一致。用户随后要求修复反复请求钥匙串，`CloudSync.swift` 的初始化改用共享凭证缓存，并在预览模式跳过凭证读取；同步、合并及上传逻辑保持原样。其他共享界面文件只调整类型来源、展示适配或调用参数。当前 AGENTS.md 中另一个工作流加入的 Mac 构建清理规则保留；本次只更新共享核心路径、维护命令及既有 settlement-v4 成本说明。
 
-本次没有读取、恢复或上传真实账户数据，也没有切换数据库。工作区尚未提交，所以新运行证据中的实际源提交为 `unknown`；规则版本仍明确指向原规则源。发布前必须形成可复现的完整源提交及对应镜像。
+本次没有读取、恢复或上传真实账户数据，也没有切换数据库。早期工作区运行证据中的实际源提交保留为 `unknown`，不追补历史来源；规则版本仍明确指向原规则源。当前完整源码快照为 `6156e371232e2bb406e5ff6bc227c8f35e13220e`，已推送独立分支 `codex/backtest-architecture-source-20261002`，包含受保护的既有 UI/Mac/同步源及本次迁移。主分支、工作区与原暂存区保持原样。102 个计算、构建及资源文件与该提交逐文件核对。
 
 ## 迁移清单
 
@@ -20,8 +20,8 @@
 | 研究工具 | 两个共享库、维护 CLI、配置与证据、原 Git 版本历史回放；移除活动工具的源码拼接 | 完成 |
 | 各端接入 | iPhone/Catalyst、Worker/Compute、研究 CLI 使用共享库；原生 Mac 保留按需完整量化 | 本机编译通过 |
 | Linux 与资源镜像 | Release 117 项测试、72 项同平台旧/新完整轨迹、隔离 Worker、运行镜像内资源读取 | 通过 |
-| Mac 日常内存 | 1 年三轮及 5 年第一轮有效；其他轮次因窗口创建阻塞未完成 | 未通过完整门禁 |
-| 生产发布 | 隔离 Linux Worker 对照、不可变镜像切换、旧缓存清理、上一镜像回退 | 未执行 |
+| Mac 日常内存 | 正式签名沙盒 Release，1/5/10 年各三轮、同进程三轮及重操作释放 | 通过 |
+| 生产发布 | 最终不可变镜像七项对照、生产 Worker 切换、旧缓存归档、上一镜像回退及公开接口验证 | 完成 |
 
 ### 代码归属对照
 
@@ -83,13 +83,38 @@ Linux 运行宿主只有约 2GB 内存。后续验证容器限制为 768MB 内�
 
 耗时基本一致。峰值内存有波动，新版单轮最高值高于旧版最高值；本次不据此声称所有运行的峰值更低。该测试包含重回放及完整轨迹输出，不能替代日常页面低于 100MB 或同一 App 内连续浏览无增长的验收。
 
-## 未通过的发布门禁与后续动作
+## 正式签名 Mac 验收与钥匙串修复
 
-1. **Mac 完整内存与交互验收**：桌面已解锁。早期四轮有效 Release 窗口测量中，1 年数据三轮稳定 30 秒后的 footprint 为 59.8、58.7、58.4MB，5 年第一轮为 59.5MB；明细读取 P95 为 9.12–20.06ms。之后检查完整采样发现阻塞点是 `CloudStore.init → SecItemCopyMatching → 旧式钥匙串解密`，并非已证实的 SwiftUI 窗口问题。预览模式已隔离凭证存储，正式凭证改为 Data Protection 钥匙串、禁止自动认证弹窗、缓存读取及静默旧凭证迁移；开发签名补齐应用身份与钥匙串组，旧凭证保留。独立模拟 Security 操作的 12 项检查通过，尚未用真实账户登录验证。重新测量的 1 年三轮为 58.6、60.2、60.1MB。五年/十年完整轮次、同进程持续增长、hover 绘制和重操作后 60 秒验收仍未完成；本轮因用户提出钥匙串问题停止。已有 UI 窗口试验均撤回，仅保留测试范围的前台激活与绘制计时。上述内存来自无沙盒测试产品，不能证明开发签名交付版本全部达标。
-2. **可复现提交与发布**：当前代码仍位于保护既有 UI/Mac/同步工作的未提交工作区，`final-source-manifest.json` 保存实际计算源文件哈希。验证运行镜像为 `sha256:2e78cb2a2f920a99ce68d9505ebcc8549ced7678eb5cc2607e48b1babd6952a1`，仅用于隔离验证。形成可复现完整源提交及不可变发布镜像、完成 Mac 门禁后，才切换生产 Worker 并清理旧计算缓存。TestFlight 单独安排。
-3. **服务运行状态**：SSH、公共行情及两类数据库探测已恢复，生产回测 Worker 健康。另观察到两个既有 scheduler 容器反复因 OperationalError 重启，尚未确定具体原因；本次未变更这些进程或数据库配置。服务器恢复与此前构建的因果关系没有确认。
+测试使用交付路径 `build/AssetTimeMachine-Native.app` 的 Apple Development 签名、沙盒 Release 应用；通过原生文件选择器只授权独立合成测试文件夹，每日 30 个账户，未读取或上传真实账户数据。测量统一使用 vmmap physical footprint，页面浏览结束后稳定 30 秒。
 
-原冻结 Compute 二进制在服务器 `/opt/assettimemachine-forward/AssetTimeMachineBacktestCompute`，再次核对 SHA-256 仍为 `b16a922f5c0b4182e0ef48af178cebf7bfa4cf99e1e0a15000e7e706b358fb32`。当前旧 Worker 镜像 tag `aca9916f660366200c10423412b92203c9fbc1e9`，digest `sha256:d34c3eb123bdca8b1e1f2b9b61e7c6a04eab1b7310b019b7b63295585df99532`。生产镜像及冻结程序均未修改。
+| 历史跨度 | 三轮稳定内存 MB | 悬停绘制 P95 最大值 | 选日明细 P95 最大值 |
+|---|---|---:|---:|
+| 1 年 | 75.0 / 58.8 / 58.8 | 30.20ms | 10.60ms |
+| 5 年 | 61.7 / 61.6 / 61.6 | 29.39ms | 19.08ms |
+| 10 年 | 57.6 / 61.4 / 65.0 | 29.63ms | 30.42ms |
+
+同一进程连续浏览十年数据三轮后为 64.6 / 66.2 / 66.3MB，后两轮基本稳定；没有观察到持续的大幅增长。十年视频生成结束 60 秒后为 44.6MB，峰值 138.1MB；编辑、删除、恢复与导入结束 60 秒后为 54.0MB，峰值 145.6MB，四项缓存失效检查均通过，合成数据库记录数量恢复为 366。九轮浏览的稳定内存全部低于 100MB，悬停与明细 P95 分别低于 50ms 和 150ms。第一次文件夹授权加载系统选择器后测得 75MB，后续无需再次授权。悬停计时覆盖状态变化、SwiftUI 更新和 AppKit 绘制轮次，没有测量 GPU 合成至屏幕的完整延迟。
+
+早期窗口阻塞采样实际位于 `CloudStore.init → SecItemCopyMatching → 旧式钥匙串解密`。已改为 Data Protection 钥匙串、禁止自动认证界面、共享读取缓存（包括缺失/拒绝结果）及静默旧凭证迁移；旧凭证保留，成功写入/退出后避免恢复退休的旧登录。开发签名补齐应用身份与授权钥匙串组。预览/性能测试跳过真实凭证访问。12 项模拟 Security 操作检查通过；另用同一开发身份的独立程序对 UUID 服务名的合成凭证完成真实系统保存、读取、重启读取及清除，无授权弹窗。iPhone Release 模拟器与 Catalyst Release 兼容编译通过。没有使用真实账户验证重新登录；旧登录若无法静默迁移，需要用户主动通过 Apple 登录一次，资产数据库保持原样。
+
+## 生产发布与保留项
+
+发布源提交为 `6156e371232e2bb406e5ff6bc227c8f35e13220e`，镜像为 ACR 仓库 `flyingrtx/asset-time-machine-backtest-worker:6156e371232e2bb406e5ff6bc227c8f35e13220e`，镜像 digest 为 `sha256:18871d91c3ea9009289156711ad96a0bb6931a1c0d888636e7c40effd01fa9b1`，实际运行 image ID 为 `sha256:d5a05b7f8c7c6272150bb11b2205f23ff8f08991f9e58cdabaec98ce181058b9`。
+
+最终镜像复用已经通过 Linux Release 测试的二进制与资源，再添加不可变源码标签和执行版本。完整 Git 快照中的 102 个计算/构建/资源文件已核对；Linux 编译容器中的 101 个计算输入及资源逐字节相同，唯一不同为验证阶段的 Dockerfile 布置。Worker/Compute 二进制 SHA-256 分别为 `4b7d874252d818bd5eacb9809953433c7c62daa51af2f646d52dcd00dec7ff69` / `f66ef68d6c0c7dae3f8f268ac7ac11dc20d9a70f3a3658c5ba22a3c7ff617379`；镜像内八个资源文件与提交相同。此次没有在生产宿主上重新进行全量并行编译。
+
+最终镜像在无外部网络、独立数据与授权令牌的容器中再次完成五项公开策略及两项 NFCI 的旧/新对照：9,091 次检查，差异 0；实际后端模型解析、无授权拒绝、缓存命中、重启加载及关闭清理计算子进程全部通过。随后等待生产 Worker 空闲，备份环境、容器配置及卷数据，归档旧结果缓存，再仅更换 Worker。切换前旧结果缓存为 0 项；旧环境/卷备份仍保留。新 Worker 健康，执行版本为 `atm-swift-settlement-v4-2026-09-30-6156e371232e2bb406e5ff6bc227c8f35e13220e`。
+
+生产公开策略目录 HTTP 200，仍为五项；通过公开网页接口提交独立公共行情回测并轮询至成功，结果执行版本与新镜像一致。数据截止 `2026-10-01`，`data_stale=false`。资产账户接口与后端容器未随此次发布更换。
+
+回退文件在服务器 `/opt/atm-architecture-20261001/release-6156e371232e2bb406e5ff6bc227c8f35e13220e/before/`，私有环境与容器配置只保存在服务器限制访问的目录，不放入仓库。上一生产镜像 tag `aca9916f660366200c10423412b92203c9fbc1e9`，digest `sha256:d34c3eb123bdca8b1e1f2b9b61e7c6a04eab1b7310b019b7b63295585df99532` 保留。原冻结 Compute `/opt/assettimemachine-forward/AssetTimeMachineBacktestCompute` 发布后再次核对仍为 `b16a922f5c0b4182e0ef48af178cebf7bfa4cf99e1e0a15000e7e706b358fb32`；协议、台账、OOS 起点和策略验证状态没有修改。
+
+仍需分别处理的事项：
+
+- [后端发布引用草稿 PR #3](https://github.com/flyingrtx2333/FlyingrtxFast/pull/3) 仅含 Worker 源引用及两个契约文件，孤立分支五项测试通过。当前自动发布流程还会更换完整后端，而远端 main 未包含本地已有的生产结算等变更；草稿暂不合并，避免重新部署旧后端。当前线上 Worker 已独立切换，无需等待这项仓库合并。后续全栈发布必须先协调既有变更并使用新 Worker 引用，防止退回旧引擎。
+- 实际用户账户重新登录尚未验证；已通过真实系统合成凭证探针。最终重新打开 Mac 应用时桌面已锁定；修复的正式 App 位于固定交付路径，解锁后可重开。
+- TestFlight 发布另行安排；本次未上传。
+- 观察到两个既有 scheduler 容器因 OperationalError 重启，尚未确认原因，本次未修改这些进程或数据库配置。生产回测 Worker、公共行情及主库/行情库检查正常。
 
 ## 本机证据索引
 
@@ -111,8 +136,17 @@ Linux 运行宿主只有约 2GB 内存。后续验证容器限制为 768MB 内�
 - `runtime-resource-parity.json`、`runtime-validation-artifacts.log`：实际运行镜像中的资源回放、二进制和原冻结程序校验值。
 - `auth-sync-compatibility-tests-final.log`：18 项 Apple 登录与同步兼容测试。
 - `native-final-performance-visible.log`、`native-reopen-sample.txt`：四轮部分有效内存值及后续窗口创建阻塞采样。
-- `native-full-final/`、`native-isolation-after-keychain.sample`：凭证隔离后三轮 1 年数据及无钥匙串等待的主线程采样；完整矩阵尚未完成。
+- `native-full-final/`、`native-isolation-after-keychain.sample`：凭证隔离后三轮 1 年数据及无钥匙串等待的主线程采样；这些早期无沙盒测量为诊断证据；最终验收使用下述正式签名完整矩阵。
 - `keychain-adapter-tests-final.log`、`native-keychain-fix-build.log`：禁止自动弹窗、凭证缓存、静默迁移及退出保持的 12 项检查；正式 Mac 签名已补齐授权的应用身份与钥匙串组。
 - `keychain-system-probe.log`、`ios-keychain-fix-validation.log`、`catalyst-keychain-fix-validation.log`：临时开发签名程序仅对 UUID 服务名的合成凭证进行真实系统保存、读取、重启读取、清除；无授权弹窗，未读取真实账户凭证。两端 Release 编译通过。
-- `source-snapshot.json`、`source-snapshot.bundle`：专用本地 Git 快照，包含可构建的既有 UI/Mac/同步源及共享计算库；主分支、工作区和原暂存区保持原样。后续凭证测试/文档改动尚未归入该快照，不代表发布门禁已完成。
+- `source-snapshot.json`、`source-snapshot.bundle`：专用本地 Git 快照，包含可构建的既有 UI/Mac/同步源及共享计算库；主分支、工作区和原暂存区保持原样。凭证修复、实际系统探针及正式沙盒测试入口均已归入 `6156e371` 快照；后续报告作为交付记录保留。
 - `final-source-manifest.json`：实际计算源文件哈希，尚不等同于完整发布源提交。
+
+- `native-signed-summary.json`、`native-signed-performance/`：正式签名沙盒 Release 的九轮、同进程连续浏览、交互 P95、视频与编辑/删除/恢复/导入释放原始证据。
+- `release-source-manifest.json`：不可变源码快照中的 102 个计算、构建与资源文件哈希。
+
+- `release-provenance.json`、`final-release-canary/`：最终镜像源码/资源/二进制匹配、七项零差异回放、实际后端契约及生命周期证据。
+- `production-deployment.json`、`production-public-smoke.json`：实际生产镜像、健康状态、缓存归档、冻结程序不变及公开目录/回测成功的验证。
+- `backend-release-pin-source.json`：隔离后端发布引用分支，主工作区与原暂存区保持原样。
+
+完整迁移源码与交付报告已放入[App 草稿 PR #1](https://github.com/flyingrtx2333/AssetTimeMachine/pull/1)，保持原主分支及暂存区；提交合并独立于已完成的 Worker 发布。
