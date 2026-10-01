@@ -34,6 +34,46 @@ OLD_NATIVE_NAMES = {
     "AssetTimeMachine-Native-Diagnostic.app", "AssetTimeMachine-Native-ReadWrite.app",
     "AssetTimeMachine-Native-Mac-20260929.app",
 }
+DEEP_DERIVED_DATA = {
+    "architecture-ios", "ExecutionV4Compatibility", "native-mac", "native-release",
+    "mac-signed-release", "architecture-refactor/ios", "architecture-refactor/catalyst",
+    "architecture-refactor/native",
+}
+SWIFT_INTERMEDIATES = {
+    "Intermediates.noindex", "ModuleCache.noindex", "SDKExplicitPrecompiledModules",
+    "SDKStatCaches.noindex", "CompilationCache.noindex", "PCH",
+}
+
+
+def deep_candidates(root):
+    paths = [root / "build" / name for name in sorted(DEEP_DERIVED_DATA)]
+    # Keep Release tools and baseline binaries; dependencies remain in the main cache.
+    for base in (root / ".build", root / "build/architecture-refactor/before/.build"):
+        paths.extend(base / "out" / name for name in sorted(SWIFT_INTERMEDIATES))
+    paths.extend([
+        root / ".build/out/Products/Debug",
+        root / "build/architecture-refactor/before/.build/checkouts",
+        root / "build/architecture-refactor/before/.build/repositories",
+    ])
+    return paths
+
+
+def safe_deep_path(root, path):
+    relative = path.relative_to(root)
+    if any((root / Path(*relative.parts[:i])).is_symlink()
+           for i in range(1, len(relative.parts) + 1)):
+        return "symlink preserved"
+    build_relative = str(path.relative_to(root / "build")) if path.is_relative_to(root / "build") else None
+    if build_relative in DEEP_DERIVED_DATA:
+        if not (path / "Build").is_dir() or any(p.name not in XCODE_ENTRIES for p in path.iterdir()):
+            return "not a recognized Xcode build directory"
+    if path.name in {"checkouts", "repositories"}:
+        current = root / ".build" / path.name
+        baseline_lock = root / "build/architecture-refactor/before/Package.resolved"
+        current_lock = root / "Package.resolved"
+        if not current.is_dir() or not baseline_lock.is_file() or not current_lock.is_file() or baseline_lock.read_bytes() != current_lock.read_bytes():
+            return "baseline dependency cache has no matching current cache"
+    return protected_data_reason(path)
 
 
 def process_commands():
@@ -146,11 +186,12 @@ def size_kib(path):
     return int(subprocess.check_output(["/usr/bin/du", "-sk", str(path)], text=True).split()[0])
 
 
-def cleanup(root, apply=False, keep_app=None):
+def cleanup(root, apply=False, keep_app=None, deep=False):
     build = build_root(root)
     with (build / ".artifacts.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        before = size_kib(build)
+        scopes = [build] + ([root / ".build"] if deep and (root / ".build").is_dir() else [])
+        before = sum(size_kib(p) for p in scopes)
         report = {"applied": apply, "before_kib": before, "removed": [], "candidates": [], "skipped": []}
         if build_is_running(process_commands()):
             report["skipped"].append({"path": "build", "reason": "a build is running"})
@@ -160,17 +201,23 @@ def cleanup(root, apply=False, keep_app=None):
             ))
             signed_ready = valid_app(build / "AssetTimeMachine-Mac-Signed.app")
             perf_ready = valid_app(build / "AssetTimeMachine-Mac-Perf.app")
-            for path in sorted(build.iterdir()):
+            paths = sorted(build.iterdir())
+            if deep:
+                paths.extend(p for p in deep_candidates(root) if p.exists() and p not in paths)
+            deep_paths = set(deep_candidates(root)) if deep else set()
+            for path in paths:
                 name = path.name
+                label = str(path.relative_to(root))
                 old_native = name in OLD_NATIVE_NAMES or re.fullmatch(
                     r"AssetTimeMachine-Native-\d{8}-\d{6}\.app", name
                 )
                 old_signed = re.fullmatch(r"AssetTimeMachine-Mac-Signed-Previous-\d{8}-\d{6}\.app", name)
                 old_perf = name.startswith("AssetTimeMachine-Mac-Perf-") and name.endswith(".app")
                 old_preview = name in {"AssetTimeMachine-Mac.app", "AssetTimeMachine-Mac-Preview.app", "AssetTimeMachine-Mac-Release.app"}
-                candidate = (name in OLD_DERIVED_DATA or (old_native and native_ready)
+                candidate = (path in deep_paths or name in OLD_DERIVED_DATA or (old_native and native_ready)
                              or (old_signed and signed_ready and native_ready)
-                             or (old_perf and perf_ready) or (old_preview and signed_ready))
+                             or (old_perf and perf_ready) or (old_preview and signed_ready)
+                             or (deep and name == "AssetTimeMachine-Mac-Perf.app" and native_ready and signed_ready))
                 if not candidate or name == keep_app:
                     continue
                 commands = process_commands()  # Recheck immediately before each removal.
@@ -181,19 +228,19 @@ def cleanup(root, apply=False, keep_app=None):
                 elif not path.is_dir():
                     reason = "unexpected file type"
                 else:
-                    reason = protected_data_reason(path)
+                    reason = safe_deep_path(root, path) if path in deep_paths else protected_data_reason(path)
                 if reason:
-                    report["skipped"].append({"path": name, "reason": reason})
+                    report["skipped"].append({"path": label if deep else name, "reason": reason})
                     continue
-                report["candidates"].append({"path": name, "kib": size_kib(path)})
+                report["candidates"].append({"path": label if deep else name, "kib": size_kib(path)})
                 if apply:
                     commands = process_commands()
                     if build_is_running(commands) or path_is_running(path, commands):
                         report["skipped"].append({"path": name, "reason": "became active before removal"})
                         continue
                     shutil.rmtree(path)
-                    report["removed"].append(name)
-        report["after_kib"] = size_kib(build)
+                    report["removed"].append(label if deep else name)
+        report["after_kib"] = sum(size_kib(p) for p in scopes)
         report["reclaimed_kib"] = report["before_kib"] - report["after_kib"]
         if apply:
             (build / "artifact-cleanup-report.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -205,6 +252,7 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     clean = sub.add_parser("clean", help="List safe candidates; delete only with --apply")
     clean.add_argument("--apply", action="store_true")
+    clean.add_argument("--deep", action="store_true", help="Also remove unused validation and compiler caches; retain Release tools and baseline binaries")
     clean.add_argument("--keep-app", choices=INSTALL_NAMES, help="Preserve the variant just built")
     install = sub.add_parser("install", help="Verify, replace fixed app, retain one rollback")
     install.add_argument("source", type=Path)
@@ -213,7 +261,7 @@ def main():
     if args.command == "install":
         install_app(ROOT, args.source, args.name)
     else:
-        report = cleanup(ROOT, args.apply, args.keep_app)
+        report = cleanup(ROOT, args.apply, args.keep_app, args.deep)
         if args.apply:
             print(f"Removed {len(report['removed'])} unused products; "
                   f"reclaimed {report['reclaimed_kib'] / 1024 / 1024:.3f} GiB; "

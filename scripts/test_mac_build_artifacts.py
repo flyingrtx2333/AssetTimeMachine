@@ -158,6 +158,44 @@ class BuildArtifactTests(unittest.TestCase):
             self.assertEqual(result.returncode, status, result.stderr)
             self.assertEqual(list(self.build.glob('.validation-*')), [])
 
+    def test_deep_cleanup_keeps_release_binaries_and_evidence(self):
+        derived = self.derived("architecture-refactor/ios")
+        current = self.root / ".build/out/Intermediates.noindex"
+        current.mkdir(parents=True)
+        binary = self.build / "architecture-refactor/before/.build/out/Products/Release/frozen-compute"
+        binary.parent.mkdir(parents=True)
+        binary.write_bytes(b"original frozen binary")
+        evidence = self.build / "architecture-refactor/parity.json"
+        evidence.write_text('{"failures": 0}')
+        artifacts.cleanup(self.root, True, deep=True)
+        self.assertFalse(derived.exists())
+        self.assertFalse(current.exists())
+        self.assertEqual(binary.read_bytes(), b"original frozen binary")
+        self.assertTrue(evidence.exists())
+
+    def test_deep_cleanup_preserves_symlink_ancestors_and_database(self):
+        outside = self.root / "outside"
+        (outside / "ios/Build").mkdir(parents=True)
+        (self.build / "architecture-refactor").symlink_to(outside, target_is_directory=True)
+        data = self.derived("native-release")
+        (data / "Build/personal.store").write_text("keep")
+        artifacts.cleanup(self.root, True, deep=True)
+        self.assertTrue((outside / "ios/Build").exists())
+        self.assertTrue((data / "Build/personal.store").exists())
+
+    def test_baseline_dependency_cache_needs_matching_locked_current_cache(self):
+        baseline = self.build / "architecture-refactor/before"
+        old = baseline / ".build/repositories"
+        old.mkdir(parents=True)
+        (self.root / ".build/repositories").mkdir(parents=True)
+        (baseline / "Package.resolved").write_text("old-lock")
+        (self.root / "Package.resolved").write_text("new-lock")
+        artifacts.cleanup(self.root, True, deep=True)
+        self.assertTrue(old.exists())
+        (self.root / "Package.resolved").write_text("old-lock")
+        artifacts.cleanup(self.root, True, deep=True)
+        self.assertFalse(old.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
