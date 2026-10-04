@@ -1,0 +1,59 @@
+{
+  "evidence_class": "ENGINEERING_PAPER_FORWARD",
+  "source_commit": "261a7803c222484cfeacd501aa906a88265ecd2b",
+  "executable_sha256": "3f18baa77736744d5dd6e43a5941eec7c87a4f489454f139e9b99d2cefae9ebf",
+  "pinned_executable": "build/forward-paper-v4/AssetTimeMachineResearch",
+  "sources": {
+    "history.json": {
+      "url": "https://api.flyingrtx.com/api/v1/money/public/history?symbols=gold,nasdaq,sp500,csi300,shanghai_composite,usd_per_cny&period=all&include_ohlc=true",
+      "sha256": "a6332a86de3a42b15b9a15deabbd9b9d0b9340a64cd6b4a0dfcbe5270e5ad60f",
+      "bytes": 2535084
+    },
+    "nfci-asof.json": {
+      "url": "https://api.flyingrtx.com/api/v1/money/public/nfci-asof",
+      "sha256": "6bb26cff58b6ec5d0288464e409ca323e7cbc765c8c989a827094b341ec8c10c",
+      "bytes": 240912
+    }
+  },
+  "accounts": [
+    {
+      "strategy_id": "nfci-dual-core-v1",
+      "account_id": "paper-v4-5a92b3b4-2aa6-4495-8c11-0af5c90732cc",
+      "registered_at": "2026-10-04T16:11:56Z",
+      "signal_date": "2026-10-02",
+      "signal_recorded_at": "2026-10-04T16:11:57Z",
+      "journal_sha256": "ba495f9d6c405d353d9fb3ff8befd2627857d76bf9ff2582ad9c6ff3958f7cfd",
+      "performance": null,
+      "file": "tools/research-results/forward-paper-v4-2026-10-05/nfci-dual-core-v1/001-signal/account.json"
+    },
+    {
+      "strategy_id": "nfci-dual-core-v11",
+      "account_id": "paper-v4-0110fdef-2858-480b-a04b-b1d7a6039624",
+      "registered_at": "2026-10-04T16:12:11Z",
+      "signal_date": "2026-10-02",
+      "signal_recorded_at": "2026-10-04T16:12:12Z",
+      "journal_sha256": "64aeb58f801f5cdedc55db51c8d101f99a207f25cef9db06aaa5bd41567a81a3",
+      "performance": null,
+      "file": "tools/research-results/forward-paper-v4-2026-10-05/nfci-dual-core-v11/001-signal/account.json"
+    }
+  ],
+  "automatic_online_collection": false,
+  "original_frozen_ledger_modified": false,
+  "recommendation_eligible": false,
+  "initial_advance_checks": [
+    {
+      "strategy_id": "nfci-dual-core-v1",
+      "status": "EXPECTED_PENDING",
+      "exit_code": 1,
+      "performance": null,
+      "reason": "no finalized post-registration session; no backfilled fills or NAV"
+    },
+    {
+      "strategy_id": "nfci-dual-core-v11",
+      "status": "EXPECTED_PENDING",
+      "exit_code": 1,
+      "performance": null,
+      "reason": "no finalized post-registration session; no backfilled fills or NAV"
+    }
+  ]
+}
