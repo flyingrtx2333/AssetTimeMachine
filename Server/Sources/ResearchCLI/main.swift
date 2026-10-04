@@ -21,7 +21,10 @@ struct ResearchCLI {
         let optionsByCommand: [String: Set<String>] = [
             "catalog": [], "configuration": ["--strategy"],
             "verify-cost-invariance": ["--history", "--strategy", "--macro"],
-            "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"]
+            "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
+            "paper-register": ["--strategy", "--commission-percent", "--slippage-percent", "--output", "--source-commit"],
+            "paper-signal": ["--account", "--history", "--macro", "--output", "--source-commit"],
+            "paper-advance": ["--account", "--history", "--output", "--source-commit"]
         ]
         if let command = args.first, let allowed = optionsByCommand[command] {
             var index = 1
@@ -43,6 +46,32 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "paper-register", "paper-signal", "paper-advance":
+            let source = try argument("--source-commit")
+            let executable = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+            let binaryHash = ResearchRunEvidence.sha256(try Data(contentsOf: executable))
+            let journal: ForwardPaperAccount.Journal
+            if args.first == "paper-register" {
+                guard let commission = Double(try argument("--commission-percent")),
+                      let slippage = Double(try argument("--slippage-percent")) else {
+                    throw BacktestConfigurationError.invalidParameter("paper costs must be percent per fill")
+                }
+                journal = try ForwardPaperAccount.register(strategyID: argument("--strategy"),
+                    sourceCommit: source, binarySHA256: binaryHash,
+                    commissionPercent: commission, slippagePercent: slippage)
+            } else {
+                let previous = try ForwardPaperAccount.read(URL(fileURLWithPath: argument("--account")))
+                try ForwardPaperAccount.verifyRuntime(previous, sourceCommit: source, binarySHA256: binaryHash)
+                let history = try Data(contentsOf: URL(fileURLWithPath: argument("--history")))
+                if args.first == "paper-signal" {
+                    journal = try ForwardPaperAccount.record(previous, historyData: history,
+                        macroData: Data(contentsOf: URL(fileURLWithPath: argument("--macro"))))
+                } else {
+                    journal = try ForwardPaperAccount.advance(previous, historyData: history)
+                }
+            }
+            try ForwardPaperAccount.write(journal, to: URL(fileURLWithPath: argument("--output")))
+            print("paper account \(journal.contract.accountID), revision \(journal.revision); new immutable account.json saved")
         case "catalog":
             struct Entry: Encodable {
                 let reference: StrategyReference
@@ -77,7 +106,9 @@ struct ResearchCLI {
             let commit = args.contains("--source-commit") ? try argument("--source-commit") : "unknown"
             let result = try ResearchRunEvidence.run(configurationData: configuration, historyData: history,
                 macroData: macro, observationsData: observations, sourceCommit: commit)
-            try ResearchRunEvidence.write(result, to: output)
+            let binaryHash = ResearchRunEvidence.sha256(try Data(contentsOf:
+                URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()))
+            try ResearchRunEvidence.write(result, to: output, executableSHA256: binaryHash)
             print("RESEARCH_REPLAY_COMPLETE \(output.path)")
         default:
             print("AssetTimeMachineResearch catalog | configuration --strategy ID | run --config FILE --history FILE [--macro FILE] --output NEW_DIRECTORY [--source-commit SHA]")

@@ -10,7 +10,7 @@ nonisolated public enum BacktestDailySimulator {
         didExecuteTarget: ((Int) -> Void)? = nil
     ) -> BacktestDailySimulationResult? {
         guard execution.initialCash > 0,
-              frame.simulationRange.count > 1,
+              frame.simulationRange.count >= 1,
               !frame.tradableSymbols.isEmpty else { return nil }
 
         var cash = execution.initialCash

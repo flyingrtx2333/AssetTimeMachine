@@ -33048,6 +33048,190 @@
           }
         }
       }
+    },
+    "以下是原冻结试验的历史数值。旧成交引擎已发现结算缺陷，这些数值不能作为当前策略推荐或前瞻表现依据。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These are historical figures from the original frozen trial. Settlement defects were found in the old execution engine; these figures cannot support current recommendations or forward performance claims."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以下是原冻结试验的历史数值。旧成交引擎已发现结算缺陷，这些数值不能作为当前策略推荐或前瞻表现依据。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "以下是原凍結試驗的歷史數值。舊成交引擎已發現結算缺陷，這些數值不能作為目前策略推薦或前瞻表現依據。"
+          }
+        }
+      }
+    },
+    "冻结信号观察账本": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frozen signal observation ledger"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "冻结信号观察账本"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "凍結訊號觀察帳本"
+          }
+        }
+      }
+    },
+    "前瞻账户收益与回撤": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forward account return and drawdown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前瞻账户收益与回撤"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前瞻帳戶收益與回撤"
+          }
+        }
+      }
+    },
+    "旧引擎历史档案（非当前成绩）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Old engine archive (not current performance)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旧引擎历史档案（非当前成绩）"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "舊引擎歷史檔案（非目前成績）"
+          }
+        }
+      }
+    },
+    "旧引擎历史证据，待复核": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Old engine evidence, pending review"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旧引擎历史证据，待复核"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "舊引擎歷史證據，待複核"
+          }
+        }
+      }
+    },
+    "未跟踪": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not tracked"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未跟踪"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未追蹤"
+          }
+        }
+      }
+    },
+    "这里仅记录信号与模型权重，没有持续前瞻净值，收益、Sharpe 与回撤均未知。观察里程碑不代表验证通过。新成交引擎的前瞻账户须单独注册，不能回填原冻结成绩。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This ledger records signals and model weights, without continuous forward NAV. Return, Sharpe and drawdown are unknown. Observation milestones do not constitute validation. A forward account using the new execution engine requires a separate registration and cannot backfill the original frozen results."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这里仅记录信号与模型权重，没有持续前瞻净值，收益、Sharpe 与回撤均未知。观察里程碑不代表验证通过。新成交引擎的前瞻账户须单独注册，不能回填原冻结成绩。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "這裡僅記錄訊號與模型權重，沒有持續前瞻淨值，收益、Sharpe 與回撤均未知。觀察里程碑不代表驗證通過。新成交引擎的前瞻帳戶須單獨註冊，不能回填原凍結成績。"
+          }
+        }
+      }
+    },
+    "首条记录后新增信号数": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New signals after the first record"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首条记录后新增信号数"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首條記錄後新增訊號數"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

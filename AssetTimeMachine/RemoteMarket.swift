@@ -212,7 +212,7 @@ nonisolated struct PublicForwardValidationStrategy: Codable, Equatable, Identifi
     let newSessions: Int
     let firstSignalDate: String
     let latestSignalDate: String
-    let latestExecutionDateHint: String
+    let latestExecutionDateHint: String?
     let latestTargetFingerprint: String
     let latestPayloadSHA256: String
     let latestDesiredCashWeight: Double

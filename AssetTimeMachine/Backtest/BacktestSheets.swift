@@ -1268,8 +1268,8 @@ struct ForwardStrategyValidationSheet: View {
             VStack(spacing: 9) {
                 statusRow(
                     title: AppLocalization.string("回顾性稳健性"),
-                    status: AppLocalization.string("通过"),
-                    accent: AssetTheme.positive
+                    status: AppLocalization.string("旧引擎历史证据，待复核"),
+                    accent: AssetTheme.accentOrange
                 )
                 statusRow(
                     title: AppLocalization.string("跨资产泛化"),
@@ -1277,8 +1277,8 @@ struct ForwardStrategyValidationSheet: View {
                     accent: AssetTheme.accentOrange
                 )
                 statusRow(
-                    title: AppLocalization.string("真实未来 OOS"),
-                    status: AppLocalization.string("进行中"),
+                    title: AppLocalization.string("前瞻账户收益与回撤"),
+                    status: AppLocalization.string("未跟踪"),
                     accent: AssetTheme.accentBlue
                 )
             }
@@ -1286,7 +1286,7 @@ struct ForwardStrategyValidationSheet: View {
     }
 
     private var prospectiveOOSCard: some View {
-        validationCard(title: AppLocalization.string("真实前瞻 OOS"), icon: "clock.badge.checkmark") {
+        validationCard(title: AppLocalization.string("冻结信号观察账本"), icon: "clock.badge.checkmark") {
             if isLoading && validation == nil {
                 HStack(spacing: 9) {
                     ProgressView()
@@ -1308,7 +1308,7 @@ struct ForwardStrategyValidationSheet: View {
                 let sessions = prospectiveSessions
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(AppLocalization.string("冻结后新增交易日"))
+                        Text(AppLocalization.string("首条记录后新增信号数"))
                             .font(AppTypography.metaStrong)
                             .foregroundStyle(AssetTheme.textPrimary)
                         Spacer()
@@ -1358,11 +1358,7 @@ struct ForwardStrategyValidationSheet: View {
                         )
                     }
 
-                    Text(
-                        sessions == 0
-                            ? AppLocalization.string("当前尚无冻结后的新增交易日，因此不应计算或宣传前瞻收益、Sharpe 或回撤。")
-                            : AppLocalization.string("前瞻样本正在累积；252 个新交易日才进行第一次主要判定，期间不得因短期表现修改冻结策略。")
-                    )
+                    Text(AppLocalization.string("这里仅记录信号与模型权重，没有持续前瞻净值，收益、Sharpe 与回撤均未知。观察里程碑不代表验证通过。新成交引擎的前瞻账户须单独注册，不能回填原冻结成绩。"))
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1372,8 +1368,11 @@ struct ForwardStrategyValidationSheet: View {
     }
 
     private var retrospectiveRobustnessCard: some View {
-        validationCard(title: AppLocalization.string("回顾性稳健性"), icon: "chart.xyaxis.line") {
+        validationCard(title: AppLocalization.string("旧引擎历史档案（非当前成绩）"), icon: "chart.xyaxis.line") {
             VStack(alignment: .leading, spacing: 11) {
+                Text(AppLocalization.string("以下是原冻结试验的历史数值。旧成交引擎已发现结算缺陷，这些数值不能作为当前策略推荐或前瞻表现依据。"))
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AssetTheme.accentOrange)
                 if isSimplifiedV11 {
                     metricGrid([
                         (AppLocalization.string("历史 CAGR"), "14.35%"),

@@ -72,7 +72,7 @@ public enum ResearchRunEvidence {
     }
 
     /// Never replaces an existing evidence directory or a historical study.
-    public static func write(_ result: BacktestRunResult, to directory: URL) throws {
+    public static func write(_ result: BacktestRunResult, to directory: URL, executableSHA256: String? = nil) throws {
         let manager = FileManager.default
         guard !manager.fileExists(atPath: directory.path) else {
             throw CocoaError(.fileWriteFileExists)
@@ -97,15 +97,18 @@ public enum ResearchRunEvidence {
         let hasDecisionShadow = [.riskContributionCashConfidenceLowNoise,
             .riskContributionCashConfidenceRouter, .nfciDualCoreV1,
             .nfciDualCoreSimplifiedV11, .nfciDualCoreSimplifiedV11QualRole].contains(mode)
+        let knownFrozenTargetReplay = [.recentVolatilityManagedIdleCash,
+            .recentPairSpreadZ252Shift25, .recentGoldEquityRelativeZ252Shift25].contains(mode)
         let internalCosts: Any = hasDecisionShadow
             ? ["fee_percent": CashConfidenceFrozenParameters.frozenV1.frozenDecisionFeeRatePercent,
                "slippage_percent": CashConfidenceFrozenParameters.frozenV1.frozenDecisionSlippageRatePercent]
             : NSNull()
-        let evidence: [String: Any] = [
+        var evidence: [String: Any] = [
             "schema_version": 1,
             "evidence_class": "ENGINEERING_REPLAY",
             "strategy": ["id": result.provenance.strategy.id, "version": result.provenance.strategy.version],
             "execution_version": result.provenance.executionVersion,
+            "execution_binary_sha256": executableSHA256 ?? "unknown",
             "source_commit": result.provenance.sourceCommit,
             "dataset_sha256": result.provenance.datasetHash,
             "macro_sha256": result.provenance.macroHash as Any? ?? "unknown",
@@ -116,11 +119,21 @@ public enum ResearchRunEvidence {
                                 "slippage_percent": result.provenance.configuration.settings.slippageRate],
             "internal_decision_costs": internalCosts,
             "internal_decision_cost_scope": hasDecisionShadow ? "cash-confidence shadow simulations" : "not applicable",
+            "recommendation_eligible": false,
+            "independent_forward_performance_verified": false,
+            "known_frozen_target_replay": knownFrozenTargetReplay,
+            "known_proxy_price_extension": knownFrozenTargetReplay,
+            "reporting_currency": "CNY",
+            "date_basis": "Asia/Shanghai",
+            "sharpe_risk_free_rate": 0,
+            "known_limitations": knownFrozenTargetReplay
+                ? ["Replays previously selected frozen target CSVs; not an independent reconstruction of current signals.",
+                   "Frozen ETF total-return inputs are extended using price-index proxies (money fund flat).",
+                   "A historical replay does not establish independent forward performance."]
+                : ["A historical replay does not establish independent forward performance; data and benchmark basis require separate review."],
             "interval": ["start": result.report.points.first.map { isoDate($0.date) } ?? "unknown",
                          "end": result.report.points.last.map { isoDate($0.date) } ?? "unknown"]
         ]
-        try JSONSerialization.data(withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys])
-            .write(to: temporary.appendingPathComponent("evidence.json"))
         try parameters.write(to: temporary.appendingPathComponent("parameters.json"))
         let report = result.report
         let reportObject: [String: Any] = [
@@ -134,8 +147,11 @@ public enum ResearchRunEvidence {
             })),
             "daily_states": try JSONSerialization.jsonObject(with: encoder.encode(result.dailyStates))
         ]
-        try JSONSerialization.data(withJSONObject: reportObject, options: [.sortedKeys])
-            .write(to: temporary.appendingPathComponent("result.json"))
+        let reportData = try JSONSerialization.data(withJSONObject: reportObject, options: [.sortedKeys])
+        evidence["result_sha256"] = sha256(reportData)
+        try JSONSerialization.data(withJSONObject: evidence, options: [.prettyPrinted, .sortedKeys])
+            .write(to: temporary.appendingPathComponent("evidence.json"))
+        try reportData.write(to: temporary.appendingPathComponent("result.json"))
         try manager.moveItem(at: temporary, to: directory)
     }
 
