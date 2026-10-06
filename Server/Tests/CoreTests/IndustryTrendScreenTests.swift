@@ -3,6 +3,24 @@ import AssetTimeMachineBacktestCore
 @testable import AssetTimeMachineResearchSupport
 
 final class IndustryTrendScreenTests: XCTestCase {
+    func testCalendarRetainsExistingAnchorAndNoPreQuoteExecution() {
+        let days = ["2005-01-03", "2005-01-04", "2005-01-05"]
+        let series = [IndustryTrendScreen.Series(symbol: "A", dates: days, prices: [100, 101, 102]),
+            IndustryTrendScreen.Series(symbol: "B", dates: [days[2]], prices: [100])]
+        let prepared = series.map { s -> PreparedAdvancedSeries in
+            let dates = s.dates.map { BacktestSeriesAlignment.historicalSeriesDate(from: $0)! }
+            return .init(assetOption: .init(symbol: s.symbol, title: s.symbol,
+                requiresHistoricalFX: false, historicalFXSymbol: nil),
+                pricePoints: Array(zip(dates, s.prices)), executionObservationDates: Set(dates),
+                ohlcPoints: [], hypotheticalDecisionDate: nil, ma20: [], ma60: [], boll20: [])
+        }
+        let aligned = MarketInputPreparation.alignedRotationPriceSeries(from: prepared,
+            zeroFillBeforeFirstSymbols: IndustryTrendScreen.preQuoteZeroFillSymbols(series: series, start: days[0]))
+        XCTAssertEqual(aligned.dates.count, 3)
+        XCTAssertEqual(aligned.pricesBySymbol["B"], [0, 0, 100])
+        XCTAssertEqual(aligned.observedBySymbol["B"], [false, false, true])
+    }
+
     func testControlLoaderRequiresOnlyFrozenResearchDependenciesAndRejectsMissingData() throws {
         let required = ["usd_per_cny", "sp500", "gold_cny", "nasdaq_composite"]
         let series = required.map { symbol in

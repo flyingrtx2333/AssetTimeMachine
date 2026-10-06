@@ -150,6 +150,13 @@ public enum IndustryTrendScreen {
         let longestUnheldTargetOpportunities: Int
     }
 
+    static func preQuoteZeroFillSymbols(series: [Series], start: String) -> Set<String> {
+        // Existing instruments anchor the observed calendar. Only later first
+        // quotes need unavailable pre-quote slots; marking all optional removes
+        // every calendar anchor in the shared aligner.
+        Set(series.filter { ($0.dates.first ?? start) > start }.map(\.symbol))
+    }
+
     // Research needs these four original provider symbols, not the complete
     // public product catalogue or its normalized Nasdaq alias.
     static func loadControlSeries(from data: Data) throws -> [String: PublicHistorySeries] {
@@ -301,7 +308,8 @@ public enum IndustryTrendScreen {
         for (id, equal) in [("industry-notebook-100-rmb-price", false), ("industry-equal-weight-rmb-price", true)] {
             var submissions: [Submission] = []
             let config = ResearchTargetStrategyConfig(symbol: id, title: id, warmupSessions: 41,
-                rebalanceSessions: 1, zeroFillBeforeFirstSymbols: Set(symbols))
+                rebalanceSessions: 1, zeroFillBeforeFirstSymbols:
+                    preQuoteZeroFillSymbols(series: input.series, start: "2005-01-03"))
             guard let run = TargetProviderBacktest.runResearchTargetProviderStrategyWithTrace(
                 assetInputs: inputs, initialCash: 100000, settings: settings, config: config,
                 dateBounds: start...end, targetWeights: { context, _ in
