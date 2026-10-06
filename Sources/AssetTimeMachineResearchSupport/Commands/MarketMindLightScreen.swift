@@ -140,9 +140,7 @@ public enum MarketMindLightScreen {
         guard sectorInput.series.map(\.symbol) == SectorMonthstartScreen.symbols else {
             throw BacktestConfigurationError.invalidParameter("fixed sector breadth basket")
         }
-        let formatter = DateFormatter(); formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.dateFormat = "yyyy-MM-dd"
-        let days = input.bars.map { formatter.string(from: $0.date) }
+        let days = sessionDays(input.bars.map(\.date))
         let closes = try sectorInput.series.map { series -> [Double] in
             guard Set(series.bars.map(\.date)).count == series.bars.count,
                   zip(series.bars, series.bars.dropFirst()).allSatisfy({ $0.date < $1.date }) else {
@@ -229,4 +227,10 @@ public enum MarketMindLightScreen {
         print("MII-Light fixed sector proxy: one candidate, five controls saved.")
     }
 
+    static func sessionDays(_ dates: [Date]) -> [String] {
+        let formatter = DateFormatter()
+        formatter.timeZone = BacktestSeriesAlignment.historicalSeriesCalendar.timeZone
+        formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.dateFormat = "yyyy-MM-dd"
+        return dates.map { formatter.string(from: $0) }
+    }
 }

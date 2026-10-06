@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+import AssetTimeMachineBacktestCore
 @testable import AssetTimeMachineResearchSupport
 
 final class MarketMindLightTests: XCTestCase {
@@ -59,6 +60,8 @@ final class MarketMindLightTests: XCTestCase {
     }
 
     func testInvalidInputsAndUndefinedScoreDoNotProduceInventedRegimes() throws {
+        let date = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2008-01-02"))
+        XCTAssertEqual(MarketMindLightScreen.sessionDays([date]), ["2008-01-02"])
         let (bars, sectors) = input(300)
         XCTAssertThrowsError(try MarketMindLightScreen.features(bars: bars, sectorCloses: Array(sectors.prefix(8))))
         var bad = sectors; bad[0][0] = -.infinity
