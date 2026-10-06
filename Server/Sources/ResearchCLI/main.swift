@@ -23,6 +23,7 @@ struct ResearchCLI {
             "verify-cost-invariance": ["--history", "--strategy", "--macro"],
             "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
             "published-rule-screen": ["--history", "--output", "--source-commit"],
+            "industry-trend-screen": ["--etfs", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
             "paper-register": ["--strategy", "--commission-percent", "--slippage-percent", "--output", "--source-commit"],
@@ -49,6 +50,9 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "industry-trend-screen":
+            try IndustryTrendScreen.run(etfPath: argument("--etfs"), historyPath: argument("--history"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "fomc-cycle-screen":
             try FOMCCycleScreen.run(spyPath: argument("--spy"), historyPath: argument("--history"),
                 calendarPath: argument("--calendar"), outputPath: argument("--output"),
