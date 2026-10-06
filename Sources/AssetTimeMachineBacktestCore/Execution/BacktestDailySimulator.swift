@@ -11,11 +11,14 @@ nonisolated public enum BacktestDailySimulator {
         /// Optional genuine execution quotes (for example, next-session opens).
         /// Zero means unavailable: defer the target, never fall back to a close.
         /// Signals and end-of-day valuation still use the frame's close series.
-        executionPricesBySymbol: [String: [Double]]? = nil
+        executionPricesBySymbol: [String: [Double]]? = nil,
+        /// Explicit research counterfactual; production callers retain sorted purchases.
+        buyBudgetPolicy: BacktestBuyBudgetPolicy = .symbolOrder
     ) -> BacktestDailySimulationResult? {
         guard execution.initialCash > 0,
               frame.simulationRange.count >= 1,
-              !frame.tradableSymbols.isEmpty else { return nil }
+              !frame.tradableSymbols.isEmpty,
+              buyBudgetPolicy == .symbolOrder || !execution.allowsFinancedExposure else { return nil }
         if let quotes = executionPricesBySymbol {
             guard frame.tradableSymbols.allSatisfy({ symbol in
                 guard let prices = quotes[symbol], prices.count == frame.dates.count else { return false }
@@ -235,11 +238,7 @@ nonisolated public enum BacktestDailySimulator {
                 // Previously settled cash remains usable even if today's
                 // marked holdings trigger another small sale.
                 let totalValue = executionValue(at: index)
-                for symbol in targetSymbols.sorted() {
-                    guard let targetWeight = targetWeights[symbol],
-                          let price = executionPrices[symbol]?[index],
-                          price > 0,
-                          let option = frame.optionBySymbol[symbol] else { continue }
+                func desiredBuyGap(_ symbol: String, _ targetWeight: Double, _ price: Double) -> Double {
                     let currentValue = (unitsBySymbol[symbol] ?? 0) * price
                     let targetValue = totalValue * targetWeight
                     let targetGap = Swift.max(targetValue - currentValue, 0.0)
@@ -256,6 +255,28 @@ nonisolated public enum BacktestDailySimulator {
                     } else {
                         desiredGap = 0.0
                     }
+                    return desiredGap
+                }
+                var proportionalBudgets: [String: Double] = [:]
+                if buyBudgetPolicy == .proportionalGap {
+                    var gaps: [String: Double] = [:]
+                    for symbol in targetSymbols.sorted() {
+                        guard let weight = targetWeights[symbol],
+                              let price = executionPrices[symbol]?[index], price > 0,
+                              frame.optionBySymbol[symbol] != nil else { continue }
+                        gaps[symbol] = desiredBuyGap(symbol, weight, price)
+                    }
+                    let demand = gaps.keys.sorted().reduce(0.0) { $0 + gaps[$1]! }
+                    let budget = Swift.min(Swift.max(cash, 0), settledBuyBudget)
+                    let scale = demand > 0 ? Swift.min(1, budget / demand) : 0
+                    proportionalBudgets = gaps.mapValues { $0 * scale }
+                }
+                for symbol in targetSymbols.sorted() {
+                    guard let targetWeight = targetWeights[symbol],
+                          let price = executionPrices[symbol]?[index],
+                          price > 0,
+                          let option = frame.optionBySymbol[symbol] else { continue }
+                    let desiredGap = desiredBuyGap(symbol, targetWeight, price)
                     let availableBudget = Swift.min(Swift.max(cash, 0), settledBuyBudget)
                     if !execution.allowsFinancedExposure,
                        desiredGap > availableBudget + 0.0001,
@@ -264,7 +285,8 @@ nonisolated public enum BacktestDailySimulator {
                     }
                     let amountToInvest = execution.allowsFinancedExposure
                         ? desiredGap
-                        : Swift.min(availableBudget, desiredGap)
+                        : Swift.min(availableBudget, Swift.min(desiredGap,
+                            proportionalBudgets[symbol] ?? desiredGap))
                     if amountToInvest > 0 {
                         let executionPrice = price * (1 + execution.slippageRate)
                         let invested = amountToInvest * (1 - execution.feeRate)

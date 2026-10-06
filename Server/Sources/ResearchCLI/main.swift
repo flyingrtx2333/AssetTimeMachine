@@ -23,7 +23,7 @@ struct ResearchCLI {
             "verify-cost-invariance": ["--history", "--strategy", "--macro"],
             "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
             "published-rule-screen": ["--history", "--output", "--source-commit"],
-            "industry-trend-screen": ["--etfs", "--history", "--output", "--source-commit"],
+            "industry-trend-screen": ["--etfs", "--history", "--output", "--source-commit", "--buy-budget-policy"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
             "paper-register": ["--strategy", "--commission-percent", "--slippage-percent", "--output", "--source-commit"],
@@ -51,8 +51,16 @@ struct ResearchCLI {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
         case "industry-trend-screen":
+            let policy: BacktestBuyBudgetPolicy
+            if args.contains("--buy-budget-policy") {
+                guard let value = BacktestBuyBudgetPolicy(rawValue: try argument("--buy-budget-policy")) else {
+                    throw BacktestConfigurationError.invalidParameter("buy budget policy")
+                }
+                policy = value
+            } else { policy = .symbolOrder }
             try IndustryTrendScreen.run(etfPath: argument("--etfs"), historyPath: argument("--history"),
-                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"),
+                buyBudgetPolicy: policy)
         case "fomc-cycle-screen":
             try FOMCCycleScreen.run(spyPath: argument("--spy"), historyPath: argument("--history"),
                 calendarPath: argument("--calendar"), outputPath: argument("--output"),

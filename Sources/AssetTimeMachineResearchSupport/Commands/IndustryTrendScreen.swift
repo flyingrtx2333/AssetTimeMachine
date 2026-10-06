@@ -180,7 +180,8 @@ public enum IndustryTrendScreen {
     }
 
     public static func run(etfPath: String, historyPath: String,
-                           outputPath: String, sourceCommit: String) throws {
+                           outputPath: String, sourceCommit: String,
+                           buyBudgetPolicy: BacktestBuyBudgetPolicy = .symbolOrder) throws {
         let output = URL(fileURLWithPath: outputPath)
         guard !FileManager.default.fileExists(atPath: output.path) else { throw CocoaError(.fileWriteFileExists) }
         let raw = try Data(contentsOf: URL(fileURLWithPath: etfPath))
@@ -312,7 +313,7 @@ public enum IndustryTrendScreen {
                     preQuoteZeroFillSymbols(series: input.series, start: "2005-01-03"))
             guard let run = TargetProviderBacktest.runResearchTargetProviderStrategyWithTrace(
                 assetInputs: inputs, initialCash: 100000, settings: settings, config: config,
-                dateBounds: start...end, targetWeights: { context, _ in
+                dateBounds: start...end, buyBudgetPolicy: buyBudgetPolicy, targetWeights: { context, _ in
                     let weights = weights(series: input.series, indicators: indicators,
                         asOf: dayString(context.signalDate), equalWeight: equal)
                     submissions.append(.init(executionDate: context.date,
@@ -357,6 +358,8 @@ public enum IndustryTrendScreen {
             "evidence_class": "D0_PRICE_ONLY_NOTEBOOK_ADAPTATION",
             "formal_validation": false, "recommendation_eligible": false,
             "source_commit": sourceCommit, "execution_version": "settlement-v4",
+            "buy_budget_policy": buyBudgetPolicy.rawValue,
+            "counterfactual_scope": "ETF candidate and ETF equal-weight only; public controls retain production execution",
             "dataset_sha256": ResearchRunEvidence.sha256(raw),
             "control_history_sha256": ResearchRunEvidence.sha256(history),
             "binary_sha256": ResearchRunEvidence.sha256(try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[0]))),

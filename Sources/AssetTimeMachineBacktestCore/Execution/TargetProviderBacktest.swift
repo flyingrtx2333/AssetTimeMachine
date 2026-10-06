@@ -72,6 +72,7 @@ nonisolated public enum TargetProviderBacktest {
         rebalanceDecision: ((Int, Int, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
         contextualRebalanceDecision: ((StrategyTargetContext, ResearchTargetDataContext) -> BacktestRebalanceDecision)? = nil,
         frozenSchedule: ((MarketDataFrame) -> FrozenTargetSchedule?)? = nil,
+        buyBudgetPolicy: BacktestBuyBudgetPolicy = .symbolOrder,
         targetWeights: @escaping (StrategyTargetContext, ResearchTargetDataContext) -> [String: Double]
     ) -> ResearchTargetStrategyRun? {
         let preparedSeries: [PreparedAdvancedSeries] = assetInputs.compactMap { input -> PreparedAdvancedSeries? in
@@ -199,7 +200,8 @@ nonisolated public enum TargetProviderBacktest {
                 return BacktestRebalanceDecision(shouldRebalance: shouldRebalance, refreshOverlay: false)
             },
             contextualRebalanceDecision: contextualDecision,
-            didExecuteTarget: { lastRebalanceIndex = $0 }
+            didExecuteTarget: { lastRebalanceIndex = $0 },
+            buyBudgetPolicy: buyBudgetPolicy
         ) else { return nil }
 
         guard let last = simulation.points.last,

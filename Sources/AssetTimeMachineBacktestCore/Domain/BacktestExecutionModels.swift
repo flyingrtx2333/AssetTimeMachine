@@ -30,6 +30,12 @@ nonisolated public struct MarketDataFrame {
 }
 
 
+/// Versioned, explicit allocation experiment. Defaults preserve historical execution.
+nonisolated public enum BacktestBuyBudgetPolicy: String, Codable, Sendable {
+    case symbolOrder = "symbol-order-v1"
+    case proportionalGap = "proportional-gap-v1"
+}
+
 nonisolated public struct BacktestExecutionConfig {
     public let initialCash: Double
     public let feeRate: Double
