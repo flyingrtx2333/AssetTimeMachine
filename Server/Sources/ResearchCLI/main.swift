@@ -25,6 +25,7 @@ struct ResearchCLI {
             "published-rule-screen": ["--history", "--output", "--source-commit"],
             "industry-trend-screen": ["--etfs", "--history", "--output", "--source-commit", "--buy-budget-policy"],
             "sector-monthstart-screen": ["--sectors", "--history", "--output", "--source-commit"],
+            "mii-light-screen": ["--spy", "--sectors", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
             "paper-register": ["--strategy", "--commission-percent", "--slippage-percent", "--output", "--source-commit"],
@@ -51,6 +52,10 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "mii-light-screen":
+            try MarketMindLightScreen.run(spyPath: argument("--spy"), sectorsPath: argument("--sectors"),
+                historyPath: argument("--history"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
         case "sector-monthstart-screen":
             try SectorMonthstartScreen.run(sectorsPath: argument("--sectors"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
