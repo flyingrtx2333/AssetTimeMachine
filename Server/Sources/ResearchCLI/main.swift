@@ -24,6 +24,7 @@ struct ResearchCLI {
             "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
             "published-rule-screen": ["--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
+            "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
             "paper-register": ["--strategy", "--commission-percent", "--slippage-percent", "--output", "--source-commit"],
             "paper-signal": ["--account", "--history", "--macro", "--output", "--source-commit"],
             "paper-advance": ["--account", "--history", "--output", "--source-commit"]
@@ -48,6 +49,10 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "fomc-cycle-screen":
+            try FOMCCycleScreen.run(spyPath: argument("--spy"), historyPath: argument("--history"),
+                calendarPath: argument("--calendar"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
         case "ibs-open-screen":
             try IBSOpenScreen.run(spyPath: argument("--spy"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))

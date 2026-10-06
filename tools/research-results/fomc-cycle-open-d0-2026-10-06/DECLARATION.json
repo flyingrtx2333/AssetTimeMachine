@@ -1,0 +1,102 @@
+{
+  "study_id": "D0-FOMC-CYCLE-OPEN-20261006",
+  "evidence_class": "D0_EXPLORATORY_PUBLIC_RULE_ADAPTATION",
+  "frozen_at": "2026-10-06T03:20:51.481153+00:00",
+  "performance_viewed": false,
+  "formal_validation": false,
+  "product_promotion": false,
+  "candidate_count": 1,
+  "control_count": 3,
+  "run_budget": 4,
+  "parameter_search_budget": 0,
+  "candidate": "fomc-even-weeks-spy-open-rmb-v1",
+  "controls": [
+    "fomc-odd-weeks-falsification-control",
+    "spy-buy-hold-open-control",
+    "gold-nasdaq-dual-trend-barbell"
+  ],
+  "evaluation_start": "2008-01-02",
+  "evaluation_end": "2026-08-20",
+  "fee_percent": 0.025,
+  "slippage_percent": 0,
+  "initial_cash_cny": 100000,
+  "cash": "CashYieldCNY only",
+  "execution_version": "settlement-v4-with-explicit-session-quotes-v1",
+  "datasets": [
+    {
+      "path": "research/asset-time-machine/workspace/studies/net-share-issues-long-only-001/data/SPY-adjusted-close-through-2026-08-20.json",
+      "raw_sha256": "9ca6da69b7137fa3e3bc0b8ed9c486d1a1640f174f773af85af778a482628598",
+      "stored_sha256": "9ca6da69b7137fa3e3bc0b8ed9c486d1a1640f174f773af85af778a482628598",
+      "not_pristine": true
+    },
+    {
+      "path": "research/asset-time-machine/workspace/studies/published-rules-2026-10-06/history-supported.json.gz",
+      "raw_sha256": "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa",
+      "stored_sha256": "e0c3f1251c658255206081e82dc086f3677d99b7b38a2c750d7593ebae8d6ca2",
+      "not_pristine": true
+    },
+    {
+      "path": "research/asset-time-machine/workspace/studies/fomc-published-calendar-2026-09-07/calendar-inputs.json",
+      "raw_sha256": "5e1de270a9a6f488c9441757c92abf191ce7bb83adf92124faca49ba1bdd3061",
+      "stored_sha256": "5e1de270a9a6f488c9441757c92abf191ce7bb83adf92124faca49ba1bdd3061",
+      "not_pristine": true
+    }
+  ],
+  "source": "https://www7.uc.cl/economia/finance_uc/docs/conferences/9th/MORSE_CieslakMorseVissing.pdf",
+  "paper_sha256": "d6663be7f5b18b023ca504282f1080abec98c1819a8b0d1a0677449934128bdc",
+  "first_draft_date": "2014-04-23",
+  "paper_vintage": "2014-06-25",
+  "rule": {
+    "week_zero": "business weekday offsets -1 through +3 from scheduled announcement, final day of two-day meeting",
+    "invested_weeks": [
+      0,
+      2,
+      4,
+      6
+    ],
+    "last_business_offset": 33,
+    "holidays": "count in phase; no fill without actual quote",
+    "calendar_asof": "At previous observed session close; apply latest dated update/cancellation. No emergency meeting retroactive insertion.",
+    "execution": "Phase for execution date known from prior calendar; buy or sell at actual next open. Start flat; first evaluation close baseline. No same-leader daily rebalance.",
+    "missing_2007_anchor": "Cash until first classified 2008 phase, disclosed.",
+    "odd_control": "Only weeks1,3,5 inside same finite phase, not tuned and not a candidate."
+  },
+  "objective": {
+    "primary": "Full available-period excess Sharpe vs CashYieldCNY >=1.2",
+    "comparison": "Full CAGR >= native gold/Nasdaq control AND daily MDD <= native control; separate validity",
+    "falsification": "Report even and odd week strategy results, not a formal significance claim",
+    "secondary": "RF0 Sharpe, SPY passive, post-paper period and all crisis slices"
+  },
+  "windows": [
+    "full",
+    "since2020",
+    "since2022",
+    "post_publication_2014-04-24",
+    "crisis2008",
+    "crisis2020",
+    "crisis2022"
+  ],
+  "constraints": [
+    "no leverage",
+    "no shorts",
+    "no crypto",
+    "no external strategy funds",
+    "no cash enhancement",
+    "no parameter rescue"
+  ],
+  "differences_from_previous_research": [
+    "Published 2014 alternating cycle risk premium; no condition on announcement-day return.",
+    "Not the 2026-09-07 one/two-day announcement window and shifted controls.",
+    "Actual SPY ETF opening quotes rather than Nasdaq price-index closing window."
+  ],
+  "limitations": [
+    "2008-2026 available-period screen, not original 1994-2013 reproduction.",
+    "Price-only SPY, omitted dividends, single Yahoo archive.",
+    "Next-open differs from paper close-to-close return intervals; do not reject original from adapted result.",
+    "Strictly prior FX both fills/marks; no USD wallet or conversion charges.",
+    "Scheduled-date notices currently hosted; first-release vintage not independently certified.",
+    "No 2007 cycle anchor; first classified 2008 phase only.",
+    "Native comparator uses different instruments/FX clock; diagnostic relative comparison only.",
+    "All history already exposed; no fresh holdout, no G0-G6 certification."
+  ]
+}
