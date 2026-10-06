@@ -1,8 +1,25 @@
 import XCTest
 import AssetTimeMachineBacktestCore
-import AssetTimeMachineResearchSupport
+@testable import AssetTimeMachineResearchSupport
 
 final class IndustryTrendScreenTests: XCTestCase {
+    func testControlLoaderRequiresOnlyFrozenResearchDependenciesAndRejectsMissingData() throws {
+        let required = ["usd_per_cny", "sp500", "gold_cny", "nasdaq_composite"]
+        let series = required.map { symbol in
+            PublicHistorySeries(symbol: symbol, category: "test", label: symbol,
+                currency: "USD", unit: "price", source: "fixture",
+                dates: ["2026-10-01", "2026-10-02"], prices: [100, 101],
+                hasOHLC: nil, ohlcSource: nil, ohlcCoverageRatio: nil,
+                openPrices: nil, highPrices: nil, lowPrices: nil, closePrices: nil, volumes: nil)
+        }
+        let response = PublicHistoryResponse(success: true, series: series, availableSymbols: nil, catalog: nil)
+        XCTAssertEqual(Set(try IndustryTrendScreen.loadControlSeries(from: JSONEncoder().encode(response)).keys), Set(required))
+        let missing = PublicHistoryResponse(success: true, series: Array(series.dropLast()), availableSymbols: nil, catalog: nil)
+        XCTAssertThrowsError(try IndustryTrendScreen.loadControlSeries(from: JSONEncoder().encode(missing)))
+        let duplicate = PublicHistoryResponse(success: true, series: series + [series[0]], availableSymbols: nil, catalog: nil)
+        XCTAssertThrowsError(try IndustryTrendScreen.loadControlSeries(from: JSONEncoder().encode(duplicate)))
+    }
+
     private func dates(_ count: Int) -> [String] {
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone(secondsFromGMT: 0)

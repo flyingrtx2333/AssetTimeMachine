@@ -150,6 +150,28 @@ public enum IndustryTrendScreen {
         let longestUnheldTargetOpportunities: Int
     }
 
+    // Research needs these four original provider symbols, not the complete
+    // public product catalogue or its normalized Nasdaq alias.
+    static func loadControlSeries(from data: Data) throws -> [String: PublicHistorySeries] {
+        let response = try JSONDecoder().decode(PublicHistoryResponse.self, from: data)
+        guard response.success else { throw BacktestConfigurationError.missingData("control response") }
+        let required: Set<String> = ["usd_per_cny", "sp500", "gold_cny", "nasdaq_composite"]
+        var series: [String: PublicHistorySeries] = [:]
+        for s in response.series where required.contains(s.symbol) {
+            guard series[s.symbol] == nil, s.dates.count == s.prices.count, s.dates.count >= 2,
+                  zip(s.dates, s.dates.dropFirst()).allSatisfy({ $0 < $1 }),
+                  s.dates.allSatisfy({ BacktestSeriesAlignment.historicalSeriesDate(from: $0) != nil }),
+                  s.prices.allSatisfy({ $0.isFinite && $0 > 0 }) else {
+                throw BacktestConfigurationError.invalidParameter("control observations \(s.symbol)")
+            }
+            series[s.symbol] = s
+        }
+        guard required.isSubset(of: Set(series.keys)) else {
+            throw BacktestConfigurationError.missingData("controls and historical FX")
+        }
+        return series
+    }
+
     public static func run(etfPath: String, historyPath: String,
                            outputPath: String, sourceCommit: String) throws {
         let output = URL(fileURLWithPath: outputPath)
@@ -175,12 +197,11 @@ public enum IndustryTrendScreen {
         guard root?["history_quality_policy"] as? String == "provider-trade-date-v1" else {
             throw BacktestConfigurationError.missingData("provider trade dates")
         }
-        let dataset = try PublicBacktestCore.loadDataset(from: history,
-            datasetHash: ResearchRunEvidence.sha256(history), dataStale: false)
-        guard let fx = dataset.seriesBySymbol["usd_per_cny"],
-              let sp = dataset.seriesBySymbol["sp500"],
-              let gold = dataset.seriesBySymbol["gold_cny"],
-              let nasdaq = dataset.seriesBySymbol["nasdaq_composite"] else {
+        let controls = try loadControlSeries(from: history)
+        guard let fx = controls["usd_per_cny"],
+              let sp = controls["sp500"],
+              let gold = controls["gold_cny"],
+              let nasdaq = controls["nasdaq_composite"] else {
             throw BacktestConfigurationError.missingData("controls and historical FX")
         }
         let start = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-01-03")!
