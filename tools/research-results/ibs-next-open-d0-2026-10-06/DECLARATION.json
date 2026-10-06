@@ -1,0 +1,90 @@
+{
+  "app_source_before_changes": "4cdef5a50d21ad347562cff1b82e81f46cde50ce",
+  "candidate": "ibs-spy-next-open-rmb-v1",
+  "candidate_count": 1,
+  "cash": "CashYieldCNY only",
+  "constraints": [
+    "no leverage",
+    "no short",
+    "no crypto",
+    "no proxy strategy funds",
+    "no USD cash yield",
+    "no parameter search or post-result rescue"
+  ],
+  "control_count": 3,
+  "controls": [
+    "ibs-spy-next-close-clock-control",
+    "spy-buy-hold-open-control",
+    "gold-nasdaq-dual-trend-barbell"
+  ],
+  "datasets": [
+    {
+      "coverage": "2006-01-03/2026-08-20",
+      "not_pristine": true,
+      "path": "research/asset-time-machine/workspace/studies/net-share-issues-long-only-001/data/SPY-adjusted-close-through-2026-08-20.json",
+      "provider": "archived Yahoo SPY real OHLC",
+      "raw_sha256": "9ca6da69b7137fa3e3bc0b8ed9c486d1a1640f174f773af85af778a482628598"
+    },
+    {
+      "not_pristine": true,
+      "path": "research/asset-time-machine/workspace/studies/published-rules-2026-10-06/history-supported.json.gz",
+      "raw_sha256": "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa",
+      "stored_sha256": "e0c3f1251c658255206081e82dc086f3677d99b7b38a2c750d7593ebae8d6ca2"
+    }
+  ],
+  "evaluation_end": "2026-08-20",
+  "evaluation_start": "2008-01-02",
+  "evidence_class": "D0_EXPLORATORY_PUBLIC_RULE_ADAPTATION",
+  "execution_version": "settlement-v4-with-explicit-session-quotes-v1",
+  "fee_percent": 0.025,
+  "formal_validation": false,
+  "frozen_at": "2026-10-06T01:08:28.691041+00:00",
+  "fx_policy": "Strictly prior calendar-date observation, age <=14 calendar days, used for both session open and session close. No current-date final FX at opening fills.",
+  "initial_cash_cny": 100000,
+  "limitations": [
+    "Public source gives rules but does not define fill clock; next-open is an explicit adaptation, not claimed exact author replication.",
+    "SPY cash dividends omitted. Price-only ETF path is not total-return portfolio certification.",
+    "Single provider; no independent historical price certification.",
+    "No separate USD settlement wallet or FX conversion fee. Opening auction/cost availability needs broker verification.",
+    "Archive ends August 20; not an October current replay. Publication-after slice is retrospective, not prospective OOS.",
+    "Gold/Nasdaq control uses its native close/index data and cannot certify relative tradable ETF performance.",
+    "D0 exploratory study, not G0-G6 acceptance."
+  ],
+  "objective": {
+    "comparison": "Full CAGR >= gold/Nasdaq control AND full daily MDD <= control. Separate validity, objective and comparison.",
+    "primary": "Full-history excess Sharpe vs CashYieldCNY >=1.2",
+    "report_secondary": "Existing App Sharpe RF=0 separately"
+  },
+  "parameter_search_budget": 0,
+  "performance_viewed": false,
+  "product_promotion": false,
+  "root_source_before_changes": "eb715747e8a3d106c36ee7a7c00244d3fc23fcc4",
+  "rule": {
+    "entry": "Flat: signal close below inclusive rolling high minus multiplier times mean daily range AND IBS below threshold. Fully invest at next actual session open.",
+    "exit": "Held: signal close strictly above prior session high; liquidate at next actual session open.",
+    "ibs_entry_strictly_below": 0.3,
+    "no_same_session_reentry": true,
+    "range_mean_sessions": 25,
+    "range_multiplier": 2.5,
+    "rolling_high_sessions": 10,
+    "study_boundary": "Start flat. First evaluation close is baseline; earlier observations warm indicators only.",
+    "zero_range": "No new entry"
+  },
+  "rule_version": "public-spy-range-base-v1",
+  "run_budget": 4,
+  "signal_currency": "USD raw OHLC",
+  "slippage_percent": 0,
+  "source": "https://www.quantitativo.com/p/a-mean-reversion-strategy-with-211",
+  "source_publication_date": "2024-05-20",
+  "study_id": "D0-IBS-NEXT-OPEN-20261006",
+  "valuation_currency": "CNY",
+  "windows": [
+    "full",
+    "since2020",
+    "since2022",
+    "post_publication",
+    "crisis2008",
+    "crisis2020",
+    "crisis2022"
+  ]
+}

@@ -7,11 +7,22 @@ nonisolated public enum BacktestDailySimulator {
         provider: StrategyTargetProvider,
         rebalanceDecision: (Int, Int) -> BacktestRebalanceDecision,
         contextualRebalanceDecision: ((StrategyTargetContext) -> BacktestRebalanceDecision)? = nil,
-        didExecuteTarget: ((Int) -> Void)? = nil
+        didExecuteTarget: ((Int) -> Void)? = nil,
+        /// Optional genuine execution quotes (for example, next-session opens).
+        /// Zero means unavailable: defer the target, never fall back to a close.
+        /// Signals and end-of-day valuation still use the frame's close series.
+        executionPricesBySymbol: [String: [Double]]? = nil
     ) -> BacktestDailySimulationResult? {
         guard execution.initialCash > 0,
               frame.simulationRange.count >= 1,
               !frame.tradableSymbols.isEmpty else { return nil }
+        if let quotes = executionPricesBySymbol {
+            guard frame.tradableSymbols.allSatisfy({ symbol in
+                guard let prices = quotes[symbol], prices.count == frame.dates.count else { return false }
+                return prices.allSatisfy { $0.isFinite && $0 >= 0 }
+            }) else { return nil }
+        }
+        let executionPrices = executionPricesBySymbol ?? frame.pricesBySymbol
 
         var cash = execution.initialCash
         var unitsBySymbol = Dictionary(uniqueKeysWithValues: frame.tradableSymbols.map { ($0, 0.0) })
@@ -45,6 +56,11 @@ nonisolated public enum BacktestDailySimulator {
                 partial + (unitsBySymbol[symbol] ?? 0) * (frame.pricesBySymbol[symbol]?[index] ?? 0)
             }
         }
+        func executionValue(at index: Int) -> Double {
+            cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
+                partial + (unitsBySymbol[symbol] ?? 0) * (executionPrices[symbol]?[index] ?? 0)
+            }
+        }
 
         for index in frame.simulationRange {
             guard !Task.isCancelled else { return nil }
@@ -74,7 +90,7 @@ nonisolated public enum BacktestDailySimulator {
             }
 
             let signalIndex = index - 1
-            let preRebalanceValue = portfolioValue(at: index)
+            let preRebalanceValue = executionValue(at: index)
             let signalPortfolioValue = points.last?.portfolioValue ?? preRebalanceValue
             let signalDate = signalIndex >= 0 && frame.dates.indices.contains(signalIndex)
                 ? frame.dates[signalIndex]
@@ -120,7 +136,7 @@ nonisolated public enum BacktestDailySimulator {
                 let executionSymbols = heldSymbols.union(targetSymbols)
                 let canExecuteTarget = executionSymbols.allSatisfy { symbol in
                     frame.observedBySymbol[symbol]?[index] == true
-                        && (frame.pricesBySymbol[symbol]?[index] ?? 0) > 0
+                        && (executionPrices[symbol]?[index] ?? 0) > 0
                 }
 
                 if canExecuteTarget {
@@ -131,7 +147,7 @@ nonisolated public enum BacktestDailySimulator {
                 var hasSettlementDeferredBuy = false
 
                 for symbol in heldSymbols.subtracting(targetSymbols).sorted() {
-                    guard let price = frame.pricesBySymbol[symbol]?[index],
+                    guard let price = executionPrices[symbol]?[index],
                           let units = unitsBySymbol[symbol],
                           units > 0,
                           let option = frame.optionBySymbol[symbol] else { continue }
@@ -166,7 +182,7 @@ nonisolated public enum BacktestDailySimulator {
 
                 for symbol in targetSymbols.sorted() {
                     guard let targetWeight = targetWeights[symbol],
-                          let price = frame.pricesBySymbol[symbol]?[index],
+                          let price = executionPrices[symbol]?[index],
                           price > 0,
                           let currentUnits = unitsBySymbol[symbol],
                           currentUnits > 0,
@@ -218,10 +234,10 @@ nonisolated public enum BacktestDailySimulator {
 
                 // Previously settled cash remains usable even if today's
                 // marked holdings trigger another small sale.
-                let totalValue = portfolioValue(at: index)
+                let totalValue = executionValue(at: index)
                 for symbol in targetSymbols.sorted() {
                     guard let targetWeight = targetWeights[symbol],
-                          let price = frame.pricesBySymbol[symbol]?[index],
+                          let price = executionPrices[symbol]?[index],
                           price > 0,
                           let option = frame.optionBySymbol[symbol] else { continue }
                     let currentValue = (unitsBySymbol[symbol] ?? 0) * price
@@ -343,5 +359,4 @@ nonisolated public enum BacktestDailySimulator {
         )
     }
 }
-
 
