@@ -28,6 +28,7 @@ struct ResearchCLI {
             "mii-light-screen": ["--spy", "--sectors", "--history", "--output", "--source-commit"],
             "rebalancing-pressure-screen": ["--prices", "--history", "--output", "--source-commit"],
             "credit-lead-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
             "paper-register": ["--strategy", "--commission-percent", "--slippage-percent", "--output", "--source-commit"],
@@ -54,6 +55,9 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "dix-demand-screen":
+            try DIXDemandScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "credit-lead-screen":
             try CreditLeadScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
