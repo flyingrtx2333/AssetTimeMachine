@@ -29,6 +29,7 @@ struct ResearchCLI {
             "mii-light-screen": ["--spy", "--sectors", "--history", "--output", "--source-commit"],
             "rebalancing-pressure-screen": ["--prices", "--history", "--output", "--source-commit"],
             "credit-lead-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "spf-growth-revision-screen": ["--prices", "--history", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
@@ -56,6 +57,9 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "spf-growth-revision-screen":
+            try SPFGrowthRevisionScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "sector-residual-screen":
             try SectorResidualMomentumScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
