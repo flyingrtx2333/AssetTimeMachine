@@ -1,0 +1,13 @@
+Another instance of SwiftPM (PID: 20954) is already running using '/Users/xiangjunsheng/AssetTimeMachine/.build', waiting until that process has finished execution...Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+[4 / 154] Tracing
+[6 / 55] Crypto
+[10 / 50] AssetTimeMachineBacktestCore
+[13 / 40] AssetTimeMachineResearchSupport
+[15 / 42] AssetTimeMachineResearchSupport
+[29 / 30] RSRangeBreadthFreeze-product
+[29 / 30] IntradayDownsideBreadthFormal-product
+[31 / 33] AssetTimeMachineBacktestCoreTests-product
+[40 / 40] RSRangeBreadthFormal-product
+Build complete! (3.59秒)

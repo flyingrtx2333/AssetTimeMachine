@@ -1,0 +1,15 @@
+{
+  "started_at": "2026-10-08T10:52:35.326039+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "build",
+    "-c",
+    "release",
+    "--product",
+    "AssetTimeMachineResearch"
+  ],
+  "completed_at": "2026-10-08T10:53:31.476997+00:00",
+  "exit_code": 0
+}

@@ -1,0 +1,13 @@
+Building for production...
+[Pre-planning 1 / 182]
+[Starting]
+[2 / 4] AssetTimeMachineBacktestCore
+[3 / 5] AssetTimeMachineBacktestCore
+[9 / 14] AssetTimeMachineResearchSupport
+[10 / 15] AssetTimeMachineResearchSupport
+[19 / 19] AssetTimeMachineResearchSupport
+[20 / 23] AssetTimeMachineMetricDump-product
+[21 / 24] AssetTimeMachineMetricDump-product
+[23 / 24] AssetTimeMachineMetricDump-product
+[24 / 24] AssetTimeMachineMetricDump-product
+Build complete! (53.11秒)

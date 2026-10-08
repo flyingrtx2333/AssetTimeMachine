@@ -1,0 +1,15 @@
+{
+  "recorded_at": "2026-10-08T11:01:00.830578+00:00",
+  "status": "UNRESOLVED_CONFIGURATION_CONCURRENCY_CRASH_PRESERVED",
+  "broad_test": "TEST_RECEIPT.json",
+  "isolated_reproduction": "ISOLATED_CONCURRENCY_RECEIPT.json",
+  "signal_code": 10,
+  "assertion_failure": false,
+  "scope": "NFCI concurrent parameter/macro snapshot test process; source root cause not established. ETF comparison is a sequential saved-output diagnostic only. No full-suite or formal-validation PASS claim.",
+  "focused_test_passed": 45,
+  "focused_receipt": "FOCUSED_TEST_RECEIPT.json",
+  "golden_comparison_pending": "BEFORE_AFTER_RECEIPT.json",
+  "golden_status": "PREEXISTING_BASELINE_MISMATCH_PRECHANGE_CURRENT_OUTPUT_LINES_EQUAL",
+  "golden_comparison": "PRECHANGE_PARITY_RECEIPT.json",
+  "concurrency_root_cause": "UNRESOLVED_NOT_CLAIMED_PREEXISTING_OR_CAUSED_BY_THIS_CHANGE"
+}

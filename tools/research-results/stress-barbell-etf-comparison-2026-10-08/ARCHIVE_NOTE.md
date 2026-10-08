@@ -1,0 +1,1 @@
+Frozen pre-run diagnostic archive. Executable launcher/auditor paths belong to the sibling research workspace; these are archival copies. Explicit GLD/QQQ adaptation only, not original product parity, full-suite PASS or formal promotion. Preserved baseline failures and concurrency crash are disclosed in VALIDATION_LIMITATIONS.json.

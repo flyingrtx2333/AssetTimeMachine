@@ -1,0 +1,11 @@
+Building for production...
+[6 / 16]
+[7 / 13] AssetTimeMachineBacktestCore
+[9 / 15] AssetTimeMachineBacktestCore
+[15 / 21] AssetTimeMachineResearchSupport
+[17 / 23] AssetTimeMachineResearchSupport
+[23 / 26] AssetTimeMachineResearch-product
+[24 / 27] AssetTimeMachineResearch-product
+[26 / 27] AssetTimeMachineResearch-product
+[27 / 27] AssetTimeMachineResearch-product
+Build complete! (55.48秒)

@@ -1,0 +1,77 @@
+{
+  "study_id": "POSTHOC-STRESS-VS-BARBELL-ETF-20261008",
+  "frozen_at": "2026-10-08T10:49:10.180474+00:00",
+  "formal_validation": false,
+  "evidence_class": "POSTHOC_ETF_BENCHMARK_ADAPTATION_NOT_PRODUCT_PARITY",
+  "prior_candidate_returns_exposed": true,
+  "benchmark_adaptation_returns_viewed": false,
+  "economic_candidates": 0,
+  "new_benchmark_accounts": 2,
+  "candidate_source_accounts": [
+    "cross-market-extreme-qqq-cash:gross",
+    "cross-market-extreme-qqq-cash:withhold30"
+  ],
+  "cash_scenarios": [
+    0,
+    0.3
+  ],
+  "funded_start": "2008-03-03",
+  "funded_end": "2026-10-02",
+  "seed": "2008-03-02",
+  "valuation_dates": "exact frozen stress funded date array, common observed GLD/QQQ; extend only pre2007 warmup",
+  "initial_cny": 100000,
+  "fee_percent_per_fill": 0.025,
+  "slippage_percent": 0,
+  "cash": "CashYieldCNY",
+  "max_gross": 1,
+  "allows_financing": false,
+  "benchmark_parameters": "GoldNasdaqBarbellParameters.frozenV1 unchanged",
+  "benchmark_formula": "shared gold/Nasdaq strong/weak/neutral MA200/momentum126/252; weights0.55/0.45 scales frozen",
+  "benchmark_timing": "strict prior close, next real jointly observed open; rebalance every63 sessions since last completed target, band0.10, sell proceeds settle before buying",
+  "mapping": {
+    "original_gold_cny": "GLD raw observed USD closes / prior usd_per_cny",
+    "original_nasdaq_composite": "QQQ raw observed USD closes / prior usd_per_cny"
+  },
+  "mapping_limit": "QQQ tracks Nasdaq100, original App Nasdaq marked Composite; GLD represents funded bullion trust, originalgoldCOMEX price proxy. This is an explicit benchmark adaptation, not product-source parity or a new strategy. Cannot alone certify beating existing original full frontier.",
+  "no_rule_parameter_search": true,
+  "all_outcomes_retained": true,
+  "cash_events": 77,
+  "splits_in_funded_window": 0,
+  "GLD_cash_assumption": "Trust expense sales have no distributions to shareholders per issuer FAQ; frozen chart no cash/split events. No personal capital-gain tax modeling.",
+  "primary_diagnostic": "candidateRf0 > matching tax scenario frozenETFbarbell full Rf0; full/2020+/2022+/2025+ retained",
+  "completion_limitations": [
+    "Original six-product complete total-return frontier still not certified",
+    "Final-vintage sources not original PIT",
+    "No G0-G6 or pristine OOS completion"
+  ],
+  "input_sha256": "79d0a154886faa7b6b3c5eee9ee7060e3dfb9eba027f18b184acbf0598ba4756",
+  "cash_sha256": "f0ed5704bd4a67c1456cc4c168f91d49fcb7bfe782c50b5b9d0114e719d33d6f",
+  "history_sha256": "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa",
+  "quote_sources": [
+    {
+      "symbol": "QQQ",
+      "frozen_source": "research/asset-time-machine/workspace/studies/cross-market-extreme-cash-2026-10-08/data/QQQ-chart.json.gz",
+      "raw_sha256": "f938887f00b009833a04d675ef8d5926bce8f073173ffa4375dd8fddefb30d85",
+      "source_events": [
+        "dividends"
+      ],
+      "full_observed_bars": 5976
+    },
+    {
+      "symbol": "GLD",
+      "frozen_source": "research/asset-time-machine/workspace/studies/cross-market-extreme-cash-2026-10-08/data/GLD-chart.json.gz",
+      "raw_sha256": "5d76a1295a8ed0a32c34d6122e02960d85b053eba5528052913cf28d09713149",
+      "source_events": [],
+      "full_observed_bars": 5502
+    }
+  ],
+  "primary_issuer_source": {
+    "url": "https://files.spdrgoldshares.com/spdr-cms/2025-10/GLD-FAQs-January-2025.pdf",
+    "requested_at": "2026-10-08T10:49:07.307434+00:00",
+    "status": 200,
+    "final_url": "https://files.spdrgoldshares.com/spdr-cms/2025-10/GLD-FAQs-January-2025.pdf",
+    "completed_at": "2026-10-08T10:49:10.179847+00:00",
+    "raw_sha256": "a252fa9fdf5d2ce61212ae777f6154ede2c82688b789bf03a208f3175975622c",
+    "bytes": 218624
+  }
+}

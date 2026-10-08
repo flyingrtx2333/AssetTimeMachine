@@ -1,0 +1,14 @@
+{
+  "started_at": "2026-10-08T10:51:54.651675+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "test",
+    "--filter",
+    "GoldNasdaqBarbellSignalTests|PublicBacktestCoreTests|BacktestRunConfigurationTests|CashDistributionTests"
+  ],
+  "completed_at": "2026-10-08T10:52:06.336275+00:00",
+  "exit_code": 1,
+  "observed_tests": 0
+}

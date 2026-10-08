@@ -32,6 +32,7 @@ struct ResearchCLI {
             "spf-growth-revision-screen": ["--prices", "--history", "--output", "--source-commit"],
             "cross-market-stress-screen": ["--prices", "--history", "--output", "--source-commit"],
             "cross-market-cash-screen": ["--prices", "--history", "--cash", "--output", "--source-commit"],
+            "stress-barbell-etf-comparison": ["--prices", "--history", "--cash", "--output", "--source-commit"],
             "olmar-prediction-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
             "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -89,6 +90,9 @@ struct ResearchCLI {
         case "cross-market-cash-screen":
             try CrossMarketCashScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 cashPath: argument("--cash"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "stress-barbell-etf-comparison":
+            try StressBarbellETFComparison.run(pricesPath:argument("--prices"),historyPath:argument("--history"),
+                cashPath:argument("--cash"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
         case "spf-growth-revision-screen":
             try SPFGrowthRevisionScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
