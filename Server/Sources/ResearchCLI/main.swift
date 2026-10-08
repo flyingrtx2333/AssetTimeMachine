@@ -31,6 +31,7 @@ struct ResearchCLI {
             "credit-lead-screen": ["--prices", "--history", "--output", "--source-commit"],
             "spf-growth-revision-screen": ["--prices", "--history", "--output", "--source-commit"],
             "cross-market-stress-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "cross-market-cash-screen": ["--prices", "--history", "--cash", "--output", "--source-commit"],
             "olmar-prediction-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
             "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -85,6 +86,9 @@ struct ResearchCLI {
         case "cross-market-stress-screen":
             try CrossMarketStressScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "cross-market-cash-screen":
+            try CrossMarketCashScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                cashPath: argument("--cash"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "spf-growth-revision-screen":
             try SPFGrowthRevisionScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))

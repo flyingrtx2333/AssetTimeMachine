@@ -1,0 +1,77 @@
+{
+  "study_id": "POSTHOC-CROSS-MARKET-ISSUER-CASH-20261008",
+  "created_at": "2026-10-08T10:33:27.941555+00:00",
+  "evidence_class": "POST_HOC_UNCHANGED_RULE_ISSUER_CASH_DIAGNOSTIC",
+  "prior_price_returns_exposed": true,
+  "formal_validation": false,
+  "source_qualification": "Issuer facts preferred from historical audited aggregates; not pristine PIT/tax certification",
+  "original_price_results_unchanged": true,
+  "candidate": "cross-market-extreme-qqq-cash",
+  "controls": [
+    "inverse-stress-control",
+    "qqq-buyhold",
+    "cny-cash-control"
+  ],
+  "funded_accounts": 8,
+  "tax_scenarios": [
+    {
+      "id": "gross",
+      "uniform_withholding_rate": 0,
+      "role": "optimistic diagnostic"
+    },
+    {
+      "id": "withhold30",
+      "uniform_withholding_rate": 0.3,
+      "role": "conservative diagnostic, not personal tax estimate"
+    }
+  ],
+  "changes_allowed": [
+    "Issuer QQQ cash receivable on ex-date from previous-close units, actual pay-date cash after trading, prior FX conversion. No automatic reinvestment."
+  ],
+  "changes_forbidden": [
+    "Signal data/decision/threshold/wait parameters",
+    "Quotes/FX/costs/window/seed",
+    "Asset substitutions or sleeve expansion"
+  ],
+  "rule_authority": "Existing CrossMarketStressScreen.decisions, exact frozen original input",
+  "start": "2008-03-03",
+  "end": "2026-10-02",
+  "seed": "2008-03-02",
+  "initial_cny": 100000,
+  "fee_percent_per_fill": 0.025,
+  "slippage_percent": 0,
+  "cash": "CashYieldCNY",
+  "no_leverage": true,
+  "primary_metric": "App full-history sharpeRatio Rf0",
+  "target": "Exceed matched strongest eligible existing strategy; this four-account replay alone cannot prove it",
+  "parameter_searches": 0,
+  "retain_all_accounts": true,
+  "funded_cash_events": 77,
+  "future_last_payment": "2026-10-08, beyond fixed end; receivable only",
+  "share_splits_in_funded_window": 0,
+  "source_adjudication_sha256": "2757fb9253be95208d7f3d45eb8163e9acf12cc1b94d24734d4421be21b00c7f",
+  "cash_input_sha256": "f0ed5704bd4a67c1456cc4c168f91d49fcb7bfe782c50b5b9d0114e719d33d6f",
+  "inputs": {
+    "prices": {
+      "archive_sha256": "92b84ac9ac6ddf69dfd372bd9e9572e600a5b55c1d1a73a0e871152d845a86ee",
+      "raw_sha256": "c89a17e0523d1882c55c93bdcde2edf2b0592251f900cb793919b1a4bfcb33aa"
+    },
+    "history": {
+      "archive_sha256": "e0c3f1251c658255206081e82dc086f3677d99b7b38a2c750d7593ebae8d6ca2",
+      "raw_sha256": "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa"
+    }
+  },
+  "verification": [
+    "11 prior-day signal/corporate-cash tests before funded run",
+    "Feature schedule byte-identical to retained original",
+    "Desired target weights identical in both tax accounts",
+    "Independent previous-close entitlement / pay timing / receivable / cash / fee / NAV / metric audit",
+    "Cash-only controls exactly equal original price-only control"
+  ],
+  "limitations": [
+    "Current corrected signal vintages not original PIT; unchanged-rule diagnostic only",
+    "Historical aggregate reconciliation excludes vendor extras by inference, not explicit event cancellation notice",
+    "2023 cash tax classification incomplete, kept in raw source",
+    "Matched house product total-return replay and prospective formal gates pending"
+  ]
+}

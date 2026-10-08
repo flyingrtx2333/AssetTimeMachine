@@ -1,0 +1,15 @@
+{
+  "inputs": {
+    "prices": {
+      "archive_sha256": "92b84ac9ac6ddf69dfd372bd9e9572e600a5b55c1d1a73a0e871152d845a86ee",
+      "raw_sha256": "c89a17e0523d1882c55c93bdcde2edf2b0592251f900cb793919b1a4bfcb33aa"
+    },
+    "history": {
+      "archive_sha256": "e0c3f1251c658255206081e82dc086f3677d99b7b38a2c750d7593ebae8d6ca2",
+      "raw_sha256": "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa"
+    }
+  },
+  "cash_sha256": "f0ed5704bd4a67c1456cc4c168f91d49fcb7bfe782c50b5b9d0114e719d33d6f",
+  "raw_data_home": "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-issuer-cash-replay-2026-10-08",
+  "nonformal": true
+}
