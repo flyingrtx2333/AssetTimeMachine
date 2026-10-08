@@ -1,0 +1,28 @@
+[
+  {
+    "name": "完整MarketMind MII｜Swift因果分类与市场输入准入",
+    "key": "AUDIT:MII:SWIFT-CLASSIFIER:READINESS:20261008",
+    "kind": "独立审计",
+    "cagr": null,
+    "mdd": null,
+    "sharpe": null,
+    "latest": "2026-10-08T13:23:20.977323+00:00",
+    "time_basis": "实际原生分类输出与市场来源审计完成时间",
+    "trial_status": "CLASSIFIER_IMPLEMENTED_REAL_DATA_IDENTITY_CLOCK_ROLL_AND_MISSINGNESS_CONTRACT_BLOCKED",
+    "validation": "PASS_SWIFT_FIXED252_CLASSIFIER_PARITY_AND_EXACT_PREFIX",
+    "objective": "USER_SINGLE_INDICATOR_SUPERIORITY_UNPROVEN",
+    "comparison": "NOT_EVALUATED_NO_ACCOUNT",
+    "backtest_start": null,
+    "backtest_end": null,
+    "fee": null,
+    "slip": null,
+    "since2020": null,
+    "since2022": null,
+    "legacy": false,
+    "review": "Swift固定252预热分类成功编译；11参考案例8882状态/17764阈值匹配，1194共同前缀状态精确不变，5拒绝及月更新当前值隔离通过。仅分类移植，非完整估计器或交易候选。一次生产基础目录200/38项、0全史请求；固定作者主列SPX/NDX/SX5E/ES，网络默认全列，禁止缺主列静默回退。NDX身份、ES滚动、跨市场可得时刻、陈旧与修订政策仍缺；配置ffill5不能约束估计器无界ffill。0实际市场特征/账户/收益搜索；旧361行/14覆盖/95待同步键保留，Notion额度待恢复。",
+    "source": "research/asset-time-machine/workspace/studies/marketmind-causal-classifier-swift-2026-10-08/SUMMARY.json",
+    "source_sha256": "7a3fe4d74c7b9eb0c9eee8a3f5ad036d7ca14aa63a776b9ca8c982074db339cb",
+    "evidence_page": null,
+    "synced_at": null
+  }
+]

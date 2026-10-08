@@ -1,0 +1,19 @@
+{
+  "status": "PASS_NATIVE_CLASSIFIER_SOURCE_PROFILE_AND_MASTER_ARCHIVE_BINDINGS",
+  "verified_at": "2026-10-08T13:29:14.672190+00:00",
+  "manifest_sha256": "ac21d19f95f89aa3a1ffd80772287853ae19c5b8c9de7190b7a05fbd28c3ae5e",
+  "workspace_files_bound": 32,
+  "app_mirror_files_bound": 28,
+  "app_source_files_bound": 3,
+  "native_states": 8882,
+  "exact_prefix_states": 1194,
+  "previous_rows_preserved": 361,
+  "previous_overrides_preserved": 14,
+  "previous_pending_keys_preserved": 95,
+  "local_total_rows": 362,
+  "pending_keys": 96,
+  "market_feature_runs": 0,
+  "funded_runs": 0,
+  "new_candidates": 0,
+  "objective_complete": false
+}

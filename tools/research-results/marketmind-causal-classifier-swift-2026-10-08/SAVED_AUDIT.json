@@ -1,0 +1,16 @@
+{
+  "verified_at": "2026-10-08T13:21:06.232331+00:00",
+  "status": "PASS_SWIFT_FIXED252_CLASSIFIER_PARITY_AND_EXACT_PREFIX",
+  "states": 8882,
+  "threshold_cells": 17764,
+  "exact_shared_prefix_states": 1194,
+  "reference_cases": 11,
+  "native_rejections": 5,
+  "monthly_current_value_isolation": "PASS_NATIVE_ASSERTION",
+  "fixture_sha256": "d4847318758c8a677147b5d3f7be7bc5f32c87689a51882fd9df8e5eef4ed910",
+  "swift_states_sha256": "73399295598911cee8061f7bc4e29b310d218cdbc464cc74548e3c3ec462e6d5",
+  "account_runs": 0,
+  "raw_feature_estimator_runs": 0,
+  "actual_market_availability_certified": false,
+  "objective_complete": false
+}

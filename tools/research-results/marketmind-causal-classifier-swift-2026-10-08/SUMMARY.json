@@ -1,0 +1,18 @@
+{
+  "completed_at": "2026-10-08T13:23:20.977323+00:00",
+  "status": "CLASSIFIER_IMPLEMENTED_REAL_DATA_IDENTITY_CLOCK_ROLL_AND_MISSINGNESS_CONTRACT_BLOCKED",
+  "native_validation": "PASS_SWIFT_FIXED252_CLASSIFIER_PARITY_AND_EXACT_PREFIX",
+  "native_states": 8882,
+  "native_threshold_cells": 17764,
+  "exact_shared_prefix_states": 1194,
+  "real_market_data_or_availability_certified": false,
+  "full_feature_swift_port_completed": false,
+  "funded_runs": 0,
+  "new_candidates": 0,
+  "parameter_searches": 0,
+  "strategy_returns_executed": false,
+  "objective_complete": false,
+  "metrics": null,
+  "saved_audit_sha256": "13bf6f32f01e74a56904f1b21bf31dbcc0a95d9f89538150c1d30ba0dd9cdf1a",
+  "source_profile_sha256": "9e434355f4f730e89344706e2723e28961ae9a903bf0f6136c45a7b117a30a15"
+}

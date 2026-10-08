@@ -1,0 +1,22 @@
+{
+  "status": "LOCAL_APPEND_VERIFIED_NOTION_QUERY_ENTITLEMENT_PENDING",
+  "previous_rows_unchanged": 361,
+  "previous_overrides_unchanged": 14,
+  "new_audit_rows": 1,
+  "total_rows": 362,
+  "previous_pending_keys_retained": 95,
+  "total_pending_keys": 96,
+  "remote_new_pages_created": 0,
+  "master_before_sha256": {
+    "strategy-master.json": "0cc2e3f4b74ab7e6bda7192e428d79181fdc5aa94a023b14bb6f57758dffe8df",
+    "strategy-master.csv": "62a33206bfd8b4738d567d5f0204fee5a2dc2b0bb3fca49614b9565905bd8217",
+    "notion-target.json": "3b02e5b29cd9cd84142b585c536928228acb372da31ef2cb74618e7946a790d8",
+    "validation-report.json": "406e788f079d3510d85f1730403831aae955978e1da03e17b927dc087e0345c2"
+  },
+  "master_after_sha256": {
+    "strategy-master.json": "dac885976de034054e1935c3430c847b448d382858417f6e867bdafcc083873a",
+    "strategy-master.csv": "6fa8fe9082ed8c91249325798e5c46cb181a2eb261522b06ece94f6a8073cce9",
+    "notion-target.json": "3e5cb70ce40848f17a396f173d275cf8937b6be8a296560dc0c03ae45e7682cc",
+    "validation-report.json": "1abee83c1358687dc5f3300cf01d4630d439f785e2b9c134f7d21bb346c88dd6"
+  }
+}
