@@ -1,0 +1,1604 @@
+{
+  "capital_runs" : 0,
+  "evidence_class" : "READONLY_SAVED_APP_PATH_REPORT_SUPPLEMENT",
+  "new_targets" : 0,
+  "primary_cagr_sharpe_source" : "unchanged shared Swift result.json",
+  "rows" : [
+    {
+      "adverse_slippage_cost_cny" : 0,
+      "average_actual_gross" : 0.96026632302405501,
+      "buy_cash_cny" : 54610657.333621204,
+      "buy_count" : 185,
+      "drawdown" : {
+        "peak" : "2008-01-01",
+        "percent" : 35.192778969708215,
+        "trough" : "2008-11-13"
+      },
+      "fee_cost_cny" : 27283.515782152666,
+      "id" : "defensive_gold:slip0.0",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 54509774.943553708,
+      "sell_count" : 184,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -20.956455545861896,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 26.298173477346197,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 21.520160484911855,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 13.900352583197574,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.526812504206866,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 25.843889932873477,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 8.938953684623252,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -5.6236805758589252,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 0.34282514658385832,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 19.78283387308586,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 9.9309349441259798,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 27.882357491666056,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 37.411165745637831,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 13.107160757735903,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -16.166155900348645,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 47.710058786095864,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 23.726408333333616,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 29.64950344402326,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 17.219664604321316,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 0,
+      "average_actual_gross" : 0.1013745704467354,
+      "buy_cash_cny" : 12813448.191775754,
+      "buy_count" : 130,
+      "drawdown" : {
+        "peak" : "2008-09-19",
+        "percent" : 42.124541559349879,
+        "trough" : "2008-11-20"
+      },
+      "fee_cost_cny" : 6409.2935032239766,
+      "id" : "panic_premium:slip0.0",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 12820519.889668154,
+      "sell_count" : 130,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -21.959146962430797,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 11.390402167419268,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 0.64713697622904576,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -6.8181189186327433,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 0.42292903157834516,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 5.2420905686815678,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 8.0430162570848793,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 8.751768849378827,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 4.6216890612614581,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 0.57439945346484667,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -7.5938784821466427,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.1257406878876051,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.640957852883032,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.4351384742032263,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -6.7690597906804983,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 0.34940953599011948,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.2960645928672463,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 0.29243163617598267,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : -2.3184299135910469,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 0,
+      "average_actual_gross" : 0.89841065292096223,
+      "buy_cash_cny" : 30381107.292133398,
+      "buy_count" : 131,
+      "drawdown" : {
+        "peak" : "2008-01-01",
+        "percent" : 34.578060164298499,
+        "trough" : "2009-04-07"
+      },
+      "fee_cost_cny" : 15167.095239213028,
+      "id" : "defensive_cash:slip0.0",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 30279701.846308783,
+      "sell_count" : 130,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -28.053372941479125,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 28.553418878850124,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 11.730136760954935,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 0.31602617252677323,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.526812504206866,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 27.25844444822323,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.1208957776781823,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 1.1285363598733777,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 9.6413705011625161,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 19.782833873085835,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 8.8419950715549653,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 27.256359181771671,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 28.722229435321967,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 13.107160757735791,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -22.500125678106066,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 47.710058786095885,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 22.994085033041767,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.813116353833067,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 11.511250324228882,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 0,
+      "average_actual_gross" : 0.96026632302405501,
+      "buy_cash_cny" : 16142327.417426914,
+      "buy_count" : 185,
+      "drawdown" : {
+        "peak" : "2008-03-03",
+        "percent" : 53.337985758307717,
+        "trough" : "2008-11-20"
+      },
+      "fee_cost_cny" : 8047.0932254728978,
+      "id" : "reverse_rotation:slip0.0",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 16042033.973096451,
+      "sell_count" : 184,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -40.89395744763172,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 25.990894525778518,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 18.938868432828503,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -20.91173087222543,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 5.7033246920658698,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -25.839255007671682,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 0.473765789849101,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -1.4923422406978748,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 14.635381943234016,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 6.7710951658147334,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -0.041067358990254377,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 17.283881404304257,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 19.813541869857488,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -7.3886658600126225,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 0.82050852870803048,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 16.500211817201759,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 32.334658121146887,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 60.80192791029053,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : -1.9199332208594266,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 0,
+      "average_actual_gross" : 0.9997852233676976,
+      "buy_cash_cny" : 100001.97125256674,
+      "buy_count" : 1,
+      "drawdown" : {
+        "peak" : "2008-01-01",
+        "percent" : 54.165918842391513,
+        "trough" : "2009-03-09"
+      },
+      "fee_cost_cny" : 25.000492813138408,
+      "id" : "nasdaq:slip0.0",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 0,
+      "sell_count" : 0,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -43.165749122910732,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 43.97204047562078,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 13.062481318248121,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -6.2119746107323071,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.526812504206887,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 34.399463544606505,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 16.259032082237489,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 10.475470139348175,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 15.111215857340255,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 20.171521259144853,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 1.5859481547475296,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 36.871165187626232,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 34.897486820209231,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 17.946881377870817,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -27.346694219636014,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 47.710058786095885,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 32.162515262501003,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 15.437463605016234,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 9.322485029231542,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 0,
+      "average_actual_gross" : 0.79816876168817308,
+      "buy_cash_cny" : 1180735.3546424503,
+      "buy_count" : 28,
+      "drawdown" : {
+        "peak" : "2008-03-18",
+        "percent" : 17.539573724476188,
+        "trough" : "2008-11-13"
+      },
+      "fee_cost_cny" : 598.81834958521119,
+      "id" : "product:slip0.0",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 1214234.4091878147,
+      "sell_count" : 30,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -7.9057767027877031,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 26.444899340390137,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 17.191552667294552,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 0.49123316601784595,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 3.4562327251093983,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 6.6706083180764875,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 3.9769857028030264,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 2.7847998095279713,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 9.307267739237556,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 12.391361973744219,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.6692310229363931,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 25.470215590227596,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 24.715108030211375,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.6996863984186481,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -4.4646515061316556,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 21.611179649624379,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 31.543799465897138,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 34.167492212816811,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 0.57559583661210834,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 47845.173948590404,
+      "average_actual_gross" : 0.96026632302405501,
+      "buy_cash_cny" : 47895581.362619601,
+      "buy_count" : 185,
+      "drawdown" : {
+        "peak" : "2008-01-01",
+        "percent" : 36.634651656711078,
+        "trough" : "2008-11-13"
+      },
+      "fee_cost_cny" : 23925.584074050566,
+      "id" : "defensive_gold:slip0.05",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 47794803.244858734,
+      "sell_count" : 184,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -23.023589403447943,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 24.791652474303149,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 19.830731692798143,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 12.429230886293197,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.526812504206887,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 24.841155017425454,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.7471918020423081,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -6.7494285062347998,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -0.75489747838631827,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 19.663110900698989,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.7541564080135794,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 26.483360035215632,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 36.452646237771091,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 12.881172480994207,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -17.248942601116923,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 47.710058786095885,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 22.863347639668376,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 28.616445073504227,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 16.285648256459261,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 11987.166957458476,
+      "average_actual_gross" : 0.1013745704467354,
+      "buy_cash_cny" : 11990308.365988312,
+      "buy_count" : 130,
+      "drawdown" : {
+        "peak" : "2008-09-19",
+        "percent" : 42.124541559349879,
+        "trough" : "2008-11-20"
+      },
+      "fee_cost_cny" : 5994.3314112949156,
+      "id" : "panic_premium:slip0.05",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 11984020.524874143,
+      "sell_count" : 130,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -23.427925708952245,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 10.392386272868892,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -0.25462332348051842,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -7.5606001443581423,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 0.42292903157827855,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.507968299131182,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.1821202308330001,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.885225421643427,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 3.891894438189536,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 0.47387531608027444,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -8.832967086240572,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 6.3252896688915206,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.1190588549112839,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.2264769109833233,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -7.6043737709006969,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 0.34940953599007507,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 6.7609231936832437,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -0.30752134483610361,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : -2.9027646256645001,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 27700.840333535667,
+      "average_actual_gross" : 0.89841065292096223,
+      "buy_cash_cny" : 27751516.742002498,
+      "buy_count" : 131,
+      "drawdown" : {
+        "peak" : "2008-01-01",
+        "percent" : 36.288964043891148,
+        "trough" : "2009-04-07"
+      },
+      "fee_cost_cny" : 13852.162104857205,
+      "id" : "defensive_cash:slip0.05",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 27650217.394512843,
+      "sell_count" : 130,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -29.44273309242471,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 27.401628842693569,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 10.729076972876129,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -0.483300533567943,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.526812504206866,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 26.370745833030785,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 6.2673472865463209,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 0.32273550287276187,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 8.8765608008421601,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 19.663110900698967,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.3824883394778107,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 26.305522351299949,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 28.080224584282188,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 12.881172480994207,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -23.194495254783476,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 47.710058786095885,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 22.380649423770514,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.126300107661717,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 10.844185960976628,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 14537.688734178591,
+      "average_actual_gross" : 0.96026632302405501,
+      "buy_cash_cny" : 14587854.79445925,
+      "buy_count" : 185,
+      "drawdown" : {
+        "peak" : "2008-03-03",
+        "percent" : 55.616458215258959,
+        "trough" : "2015-07-24"
+      },
+      "fee_cost_cny" : 7269.7659156732043,
+      "id" : "reverse_rotation:slip0.05",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 14487586.066019569,
+      "sell_count" : 184,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -42.439689013589145,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 24.488038834604929,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 17.285325942183192,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -21.933224362331206,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 5.7033246920658698,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -26.430174188564081,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -0.62538928937400096,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -2.6673699650819116,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 13.381302718363241,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 6.6643774295170877,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -2.0203870034221638,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 16.000828331264415,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 18.977775601769476,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -7.5737034444487534,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -0.48167565444613425,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 16.500211817201759,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 31.411550084855456,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 59.520644347989446,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : -2.7014436106079787,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 49.963503628051839,
+      "average_actual_gross" : 0.9997852233676976,
+      "buy_cash_cny" : 100001.97125256674,
+      "buy_count" : 1,
+      "drawdown" : {
+        "peak" : "2008-01-01",
+        "percent" : 54.188824430176417,
+        "trough" : "2009-03-09"
+      },
+      "fee_cost_cny" : 25.000492813138408,
+      "id" : "nasdaq:slip0.05",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 0,
+      "sell_count" : 0,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -43.194152046887304,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 43.972040475620801,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 13.062481318248098,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -6.2119746107323071,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 14.526812504206866,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 34.399463544606505,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 16.259032082237489,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 10.475470139348197,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 15.111215857340255,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 20.171521259144875,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 1.5859481547475296,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 36.871165187626254,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 34.897486820209231,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 17.946881377870838,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -27.346694219636024,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 47.710058786095914,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 32.162515262501003,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 15.437463605016234,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 9.322485029231542,
+          "year" : 2026
+        }
+      ]
+    },
+    {
+      "adverse_slippage_cost_cny" : 1193.0190190098942,
+      "average_actual_gross" : 0.79819567936075075,
+      "buy_cash_cny" : 1176629.3693299294,
+      "buy_count" : 28,
+      "drawdown" : {
+        "peak" : "2008-03-18",
+        "percent" : 17.555972211250637,
+        "trough" : "2008-11-13"
+      },
+      "fee_cost_cny" : 596.57873092031798,
+      "id" : "product:slip0.05",
+      "maximum_actual_gross" : 1,
+      "minimum_cash" : 0,
+      "sell_cash_cny" : 1209383.1329631733,
+      "sell_count" : 30,
+      "yearly" : [
+        {
+          "end" : "2008-12-31",
+          "partial_final_year" : false,
+          "return_percent" : -7.9613482661958894,
+          "year" : 2008
+        },
+        {
+          "end" : "2009-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 26.371285231166208,
+          "year" : 2009
+        },
+        {
+          "end" : "2010-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 17.183119880756891,
+          "year" : 2010
+        },
+        {
+          "end" : "2011-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 0.47637459931495485,
+          "year" : 2011
+        },
+        {
+          "end" : "2012-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 3.397170492335122,
+          "year" : 2012
+        },
+        {
+          "end" : "2013-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 6.6354298944533818,
+          "year" : 2013
+        },
+        {
+          "end" : "2014-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 3.9270185485190012,
+          "year" : 2014
+        },
+        {
+          "end" : "2015-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 2.7569762612551285,
+          "year" : 2015
+        },
+        {
+          "end" : "2016-12-30",
+          "partial_final_year" : false,
+          "return_percent" : 9.2640892168068145,
+          "year" : 2016
+        },
+        {
+          "end" : "2017-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 12.348549585965628,
+          "year" : 2017
+        },
+        {
+          "end" : "2018-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 4.6420717766310737,
+          "year" : 2018
+        },
+        {
+          "end" : "2019-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 25.452354185718249,
+          "year" : 2019
+        },
+        {
+          "end" : "2020-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 24.70420610899351,
+          "year" : 2020
+        },
+        {
+          "end" : "2021-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 7.668563769576342,
+          "year" : 2021
+        },
+        {
+          "end" : "2022-12-30",
+          "partial_final_year" : false,
+          "return_percent" : -4.4907865322498797,
+          "year" : 2022
+        },
+        {
+          "end" : "2023-12-29",
+          "partial_final_year" : false,
+          "return_percent" : 21.586173560505586,
+          "year" : 2023
+        },
+        {
+          "end" : "2024-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 31.543707956308143,
+          "year" : 2024
+        },
+        {
+          "end" : "2025-12-31",
+          "partial_final_year" : false,
+          "return_percent" : 34.147836813337392,
+          "year" : 2025
+        },
+        {
+          "end" : "2026-09-04",
+          "partial_final_year" : true,
+          "return_percent" : 0.55383267709618877,
+          "year" : 2026
+        }
+      ]
+    }
+  ]
+}
