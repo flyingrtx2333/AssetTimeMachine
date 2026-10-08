@@ -1,0 +1,28 @@
+{
+  "status": "PASS_NATIVE_SAVED_ACCOUNTING_AND_METRICS_LONG_COMPARISON_FAIL",
+  "audited_at": "2026-10-08T12:16:28.777036+00:00",
+  "states_checked": 3086,
+  "fills_checked": 287,
+  "original_19_saved_results_unchanged": true,
+  "original_other_series_and_macro_unchanged": true,
+  "original_QUAL_rule_parameters_unchanged": true,
+  "native_App_report_metrics": {
+    "annualized_return": 0.08067167929683938,
+    "sharpe_rf0": 0.9626978217368036,
+    "max_drawdown": 0.14427436391922732
+  },
+  "post_substitution_sp500_role_fill_count": 71,
+  "role_fills_without_real_QUAL_date": [],
+  "hybrid_calendar_dates_without_QUAL_quote": [
+    "2016-11-24"
+  ],
+  "actual_tradable_QUAL_units_and_issuer_corporate_cash_certified": false,
+  "not_certified": [
+    "original2002 full common comparison",
+    "independent historical macro release-vintage reconstruction",
+    "QUAL versus S&P price/total-return economic equivalence",
+    "all economic targets/settlement intent",
+    "G0-G6",
+    "pristine OOS"
+  ]
+}

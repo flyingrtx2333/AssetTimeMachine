@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-08T12:19:44.668188+00:00",
+  "release_build_passed": true,
+  "funded_runs_completed": 1,
+  "capital_reruns": 0,
+  "saved_account_audit": "PASS_NATIVE_SAVED_ACCOUNTING_AND_METRICS_LONG_COMPARISON_FAIL",
+  "comparison_guards_tested": [
+    {
+      "case": "cross-language decimal canonical hash",
+      "initial": "REJECTED",
+      "correction": "same config semantic values with Foundation hash; no replay"
+    },
+    {
+      "case": "missing2509fixedcommondates",
+      "result": "REJECTED_BEFORE_OUTPUT_CREATION"
+    }
+  ],
+  "comparison_output_directory_absent": true,
+  "new_XCTest_written": false,
+  "scope": "No calculation-core change; existing native account through shared Registry. Actual guard rejections and saved SHA/state readback constitute relevant proof, not fullApp/OOS/G0-G6."
+}

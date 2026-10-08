@@ -1,0 +1,17 @@
+{
+  "status": "LOCAL_APPEND_VERIFIED_NOTION_QUERY_ENTITLEMENT_PENDING",
+  "previous_rows_unchanged": 334,
+  "previous_overrides_unchanged": 13,
+  "new_rows": 2,
+  "total_rows": 336,
+  "previous_pending_keys_retained": 68,
+  "total_pending_keys": 70,
+  "remote_new_pages_created": 0,
+  "source_recovered_pending_override_key": "PENDING:APP-CATALOGUE:20261008:NFCI-QUAL",
+  "master_before_sha256": {
+    "strategy-master.json": "e766db8523a10105f8c601ee69b9a0f8dcaebfbb3adfedbec6897c496031240a",
+    "strategy-master.csv": "e49fdf293554bd9ec41cc8dfb2322d8285dfb1ab4453e3ee666bf9140ad09a76",
+    "notion-target.json": "2185c36a5f3b52d990ef78df6eb71e8c31eeb462d95609a5bfff3500aaa267e8",
+    "validation-report.json": "76065d594b302996d43897806417f4e6871ac4b8769378b7c6bef1c4a30ff8f6"
+  }
+}

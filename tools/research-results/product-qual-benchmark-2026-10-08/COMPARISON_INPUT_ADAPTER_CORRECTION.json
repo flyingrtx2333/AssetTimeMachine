@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-08T12:10:19.819909+00:00",
+  "status": "POSTHOC_METADATA_SERIALIZATION_ADAPTER_ONLY",
+  "first_comparison_exit_code": 1,
+  "cause": "Python shortest JSON feeRate0.025 vs Foundation JSONSerialization feeRate0.025000000000000001. Both decode to the same binary floating point number.",
+  "old_expected_canonical_hash": "161056d965fa914f115181a359112c788221e852897f08430f62f63dd968177a",
+  "foundation_canonical_hash": "da671f72dc7859c2f96c0ddf61e82db6364bd14b08864109adf1160686386ce0",
+  "original_config_file_sha256": "6918abb41b88badcc6101e8da49ddb455a8be21cc5707e777161044fb1ee71fc",
+  "run_configuration_semantic_identity": true,
+  "market_signal_target_or_return_changes": false,
+  "funded_replays_after_correction": 0,
+  "rules_and_dates_unchanged": true,
+  "first_failure_retained": true,
+  "result_provenance_checks_other_than_serialization": {
+    "source_commit": true,
+    "result_sha256": true,
+    "parameters_sha256": true
+  }
+}

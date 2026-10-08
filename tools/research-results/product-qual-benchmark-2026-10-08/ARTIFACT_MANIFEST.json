@@ -1,0 +1,277 @@
+{
+  "status": "PASS",
+  "created_at": "2026-10-08T12:28:36.199351+00:00",
+  "files": {
+    "ARCHIVE_RECEIPT.json": {
+      "bytes": 2583,
+      "sha256": "8c63c0ec34ba3f1a6a2fe52ad95f66ab9d54662f0ef4dbf58775d1879ad8622c"
+    },
+    "CHECK_RECEIPT.json": {
+      "bytes": 816,
+      "sha256": "f21f4753cf688d59812ac762bca8b14e543452fc63b4f3da8e048bc91c96202b"
+    },
+    "COMPARISON_BINDINGS.json": {
+      "bytes": 303,
+      "sha256": "9a24a8acbe6b7203a785fa289fc3df40abdc4118658dff65dda322782ebe90e6"
+    },
+    "COMPARISON_INPUT_ADAPTER_CORRECTION.json": {
+      "bytes": 960,
+      "sha256": "3b2b3359e876b77b26f90c3d47b33e93a91430018e2309b7fd7d6c642a57780c"
+    },
+    "COMPARISON_RECEIPT.json": {
+      "bytes": 983,
+      "sha256": "2d80534e2f5fef67ad55f5c730e814ec5385aa921b72114621d3336e01e64846"
+    },
+    "COMPARISON_STDERR.txt": {
+      "bytes": 96,
+      "sha256": "24942b48158a26a2abb279ecf3726475eb586e9841455e2b5fe70617a4fbe9a4"
+    },
+    "COMPARISON_STDOUT.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "DATA_REQUEST_CONTRACT.json": {
+      "bytes": 1141,
+      "sha256": "8dd2340ee4aaa8a45c94bfc5188893dd9682aaf93ec97604cc10fafc9343b779"
+    },
+    "DATA_SOURCE.json": {
+      "bytes": 772,
+      "sha256": "c5ecc4b7f3b2c3aaf5bb457508f1decf43dbe099000e74a601b85bf8e8c6b929"
+    },
+    "DECLARATION.json": {
+      "bytes": 664,
+      "sha256": "57d5f80a115e1c258755572f9f3a42397e74fd5e9c225da3fb7bda8cc4bfc04f"
+    },
+    "EXPECTED_QUAL_PARAMETERS.json": {
+      "bytes": 114569,
+      "sha256": "df8bb1c77c3fae71a7c3f8a3db0552da8c6f23c5f69f4ffc89af3699239ca066"
+    },
+    "FIRST_COMPARISON_BINDINGS.json": {
+      "bytes": 303,
+      "sha256": "07b3ef9c209dee137300f3f5dc54823c02b8d3ffc44c87ccf231cc1f450bac04"
+    },
+    "FIRST_COMPARISON_RECEIPT.json": {
+      "bytes": 983,
+      "sha256": "ceb12aeb265a299a77851b992a4f97f530f56c50d123c4381df30570b08de9ba"
+    },
+    "FIRST_COMPARISON_STDERR.txt": {
+      "bytes": 58,
+      "sha256": "2fb83663a12beff1f399ef38b55956ca7f2c63fb302bc2ebf83e4dae8095acc7"
+    },
+    "FIRST_COMPARISON_STDOUT.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "FOUNDATION_CONFIGURATION_CANONICAL.json": {
+      "bytes": 362,
+      "sha256": "da671f72dc7859c2f96c0ddf61e82db6364bd14b08864109adf1160686386ce0"
+    },
+    "HANDOFF.md": {
+      "bytes": 1261,
+      "sha256": "d0c0d4cead23be30fa42b2f4769f5550cfa8b1d874fef3753668f3fab9bb1e4d"
+    },
+    "INPUT_QUALIFICATION.json": {
+      "bytes": 1557,
+      "sha256": "7464c9c2db65576c6124aadb89ace4c378ecc9a29630571523d5f71f93609d31"
+    },
+    "ISSUER_IDENTITY.json": {
+      "bytes": 528,
+      "sha256": "e0306e199af903e6e1e334731b32d839cf513d6a1e57d387707cd7cb1402b1d6"
+    },
+    "LEGACY_READBACK.json": {
+      "bytes": 1862,
+      "sha256": "7de1bccfa568b6185625a722dd5275968ca741f43f35b035195bfd7c3dd3df0b"
+    },
+    "MASTER_RECEIPT.json": {
+      "bytes": 786,
+      "sha256": "69e7ffe87228438066af4f91e6b52cf7be0ed570f243b4543967d2fabf56edf9"
+    },
+    "MASTER_ROWS.json": {
+      "bytes": 3362,
+      "sha256": "ca3847689b9bb7ffeed23357ab8395f960d77fd67897833685fe5416116e1b42"
+    },
+    "PRE_CAPITAL_COMMITS.json": {
+      "bytes": 189,
+      "sha256": "ccba62818387096aaaaca4c5c0d8ba499ab2df639086c5b4e8360868f54ab334"
+    },
+    "PRIMARY_COMPARISON_FAILURE.json": {
+      "bytes": 71121,
+      "sha256": "3eed0273c9fb9a126468cd08cb21a2ea1d1b15a87fa38bddbfb16f65218b43ab"
+    },
+    "README.md": {
+      "bytes": 1073,
+      "sha256": "ff37818fd7dec6313bdad15c1195bd73ba192f484b4205f37ffe73aedff53646"
+    },
+    "REPORT.md": {
+      "bytes": 4545,
+      "sha256": "c8daadef2c4a350fe156f2ce41df1151c360303122a20601d231bce073abd308"
+    },
+    "RUN_RECEIPT.json": {
+      "bytes": 1098,
+      "sha256": "e686bb221b577d7d208b309a7e1c674f5ae1355c4a8c20a58dffa74b955fc180"
+    },
+    "RUN_STDERR.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "RUN_STDOUT.txt": {
+      "bytes": 149,
+      "sha256": "1dc5a0e658bdf543c2c2a33e8a01ea505e32b845bfc888423edf460ea63b8112"
+    },
+    "SAVED_AUDIT.json": {
+      "bytes": 1009,
+      "sha256": "f464891fe50c07ae2bcd33484a60d555ad3ca713c48b93737cac6d3d6ba4c888"
+    },
+    "SECOND_COMPARISON_RECEIPT.json": {
+      "bytes": 983,
+      "sha256": "2d80534e2f5fef67ad55f5c730e814ec5385aa921b72114621d3336e01e64846"
+    },
+    "SECOND_COMPARISON_STDERR.txt": {
+      "bytes": 96,
+      "sha256": "24942b48158a26a2abb279ecf3726475eb586e9841455e2b5fe70617a4fbe9a4"
+    },
+    "SECOND_COMPARISON_STDOUT.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "SUMMARY.json": {
+      "bytes": 1292,
+      "sha256": "1877a5aac9b98a94f6dbd4754d61e57340970b15ee296bacaed88bbb14b1d122"
+    },
+    "TECHNICAL_FREEZE.json": {
+      "bytes": 13005,
+      "sha256": "c9dcdad5749a447aaad07c8930b12ed47e6daf50327e38acb9b9ca0535776a2e"
+    },
+    "audit_saved_account.py": {
+      "bytes": 7750,
+      "sha256": "73b831eee8c6a8468295138a91deef3d6c5698587508fbc43eb283146e752d4b"
+    },
+    "combined-history.json.gz": {
+      "bytes": 1881544,
+      "sha256": "4015645ba784a20a5d62620d10e52f395b442df04a8ff64c1151a89ec785e5b2"
+    },
+    "configuration.json": {
+      "bytes": 517,
+      "sha256": "6918abb41b88badcc6101e8da49ddb455a8be21cc5707e777161044fb1ee71fc"
+    },
+    "legacy/datasets.json": {
+      "bytes": 3272,
+      "sha256": "69898b75c431b07189e08e91a0784bfcf23f84f5abce55267492fada4bf82069"
+    },
+    "legacy/preregistrations.json": {
+      "bytes": 7496,
+      "sha256": "e335e7df4152362e1d3524d55c4e52dc873a17da7f6ebb5c31d97e4df653adf0"
+    },
+    "legacy/results.json": {
+      "bytes": 4740,
+      "sha256": "68cf6b617b45ce51ef041d299bd25329f85867541ef5632684e3dcedc29ef07c"
+    },
+    "master-before/notion-target.json.gz": {
+      "bytes": 2527,
+      "sha256": "dbb5af6919b250c98ca259a8bd45cada68b72176749731f5825ada6d4483d825"
+    },
+    "master-before/strategy-master.csv.gz": {
+      "bytes": 70048,
+      "sha256": "72ef611044f3f49ce731743adfc02ddadf91b54a53e37f464984f6f016ccb5e7"
+    },
+    "master-before/strategy-master.json.gz": {
+      "bytes": 311579,
+      "sha256": "b552f3a406dc7dd426d4a0d879753e74f096f8e200cb8dcd3307494c08f42278"
+    },
+    "master-before/validation-report.json.gz": {
+      "bytes": 1957,
+      "sha256": "6fbe8d41595c4ea21ce0e63d6381c8f2a2202c2c7521c92008e5ac0c2503f94a"
+    },
+    "nfci.json.gz": {
+      "bytes": 19258,
+      "sha256": "d2f8809ce230969208d18b04f8b16c633ff5ad0645311e20d36f649b0b95b1a6"
+    },
+    "old19-evidence.json": {
+      "bytes": 102014,
+      "sha256": "63c63d3b5aea3cfe66182616ab13f9223e7c776fc68d69fd0b51ad88ec69eef1"
+    },
+    "old19-result.json.gz": {
+      "bytes": 6412355,
+      "sha256": "6b607f0b48e4a155d007cb4480bb18dd80c6592c9825c71a8feb3eaa9c0a3557"
+    },
+    "qual-response.json.gz": {
+      "bytes": 42113,
+      "sha256": "b4bbe9ad7104cb03bfc3fd36c45bb4e8254cdce042e81e249a5182f931bf9e53"
+    },
+    "qual-run/evidence.json": {
+      "bytes": 136333,
+      "sha256": "678451ac9c75ab00f6db984a8db083c4acb5cd32b67f75ef003588fe237a96d3"
+    },
+    "qual-run/parameters.json.gz": {
+      "bytes": 7061,
+      "sha256": "5b999aea0efd017e64913076f117d822b112a3c75ad24055931e57beaf561788"
+    },
+    "qual-run/result.json.gz": {
+      "bytes": 242797,
+      "sha256": "010c5de94d1af14eb1a8aa4cbba75d17cb4976ec55f4039c21de3dc95c9016ad"
+    },
+    "record_results.py": {
+      "bytes": 6688,
+      "sha256": "35b7f57dbceff1f3880c280340dd504837c53d84190231b87c051344e34cf1b6"
+    }
+  },
+  "mirrored_paths": [
+    "ARCHIVE_RECEIPT.json",
+    "CHECK_RECEIPT.json",
+    "COMPARISON_BINDINGS.json",
+    "COMPARISON_INPUT_ADAPTER_CORRECTION.json",
+    "COMPARISON_RECEIPT.json",
+    "COMPARISON_STDERR.txt",
+    "COMPARISON_STDOUT.txt",
+    "DATA_REQUEST_CONTRACT.json",
+    "DATA_SOURCE.json",
+    "DECLARATION.json",
+    "EXPECTED_QUAL_PARAMETERS.json",
+    "FIRST_COMPARISON_BINDINGS.json",
+    "FIRST_COMPARISON_RECEIPT.json",
+    "FIRST_COMPARISON_STDERR.txt",
+    "FIRST_COMPARISON_STDOUT.txt",
+    "FOUNDATION_CONFIGURATION_CANONICAL.json",
+    "HANDOFF.md",
+    "INPUT_QUALIFICATION.json",
+    "ISSUER_IDENTITY.json",
+    "LEGACY_READBACK.json",
+    "MASTER_RECEIPT.json",
+    "MASTER_ROWS.json",
+    "PRE_CAPITAL_COMMITS.json",
+    "PRIMARY_COMPARISON_FAILURE.json",
+    "README.md",
+    "REPORT.md",
+    "RUN_RECEIPT.json",
+    "RUN_STDERR.txt",
+    "RUN_STDOUT.txt",
+    "SAVED_AUDIT.json",
+    "SECOND_COMPARISON_RECEIPT.json",
+    "SECOND_COMPARISON_STDERR.txt",
+    "SECOND_COMPARISON_STDOUT.txt",
+    "SUMMARY.json",
+    "TECHNICAL_FREEZE.json",
+    "audit_saved_account.py",
+    "combined-history.json.gz",
+    "configuration.json",
+    "legacy/datasets.json",
+    "legacy/preregistrations.json",
+    "legacy/results.json",
+    "nfci.json.gz",
+    "old19-evidence.json",
+    "old19-result.json.gz",
+    "qual-response.json.gz",
+    "qual-run/evidence.json",
+    "qual-run/parameters.json.gz",
+    "qual-run/result.json.gz",
+    "record_results.py"
+  ],
+  "workspace_only_paths": [
+    "master-before/notion-target.json.gz",
+    "master-before/strategy-master.csv.gz",
+    "master-before/strategy-master.json.gz",
+    "master-before/validation-report.json.gz"
+  ],
+  "manifest_self_excluded": true,
+  "master_full_working_files_not_staged": true
+}

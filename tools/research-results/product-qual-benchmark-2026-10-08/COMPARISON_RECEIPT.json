@@ -1,0 +1,21 @@
+{
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "qual-product-compare",
+    "--comparators",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/old19-result.json",
+    "--qual-directory",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/qual-run",
+    "--bindings",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/COMPARISON_BINDINGS.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/comparison",
+    "--source-commit",
+    "40df1c12702e1a2157b50ecce48c5fe9f2d49c42"
+  ],
+  "started_at": "2026-10-08T12:10:19.976141+00:00",
+  "finished_at": "2026-10-08T12:10:20.741023+00:00",
+  "exit_code": 1
+}

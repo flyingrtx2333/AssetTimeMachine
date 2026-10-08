@@ -1,0 +1,6 @@
+{
+  "schema": "existing-qual-append-fixed-calendar-v1",
+  "comparatorsSHA256": "61590e4509ab62001908056cf321dcae50363f264c0c64c15691183ed7d67b9b",
+  "sourceCommit": "40df1c12702e1a2157b50ecce48c5fe9f2d49c42",
+  "configurationSHA256": "161056d965fa914f115181a359112c788221e852897f08430f62f63dd968177a"
+}

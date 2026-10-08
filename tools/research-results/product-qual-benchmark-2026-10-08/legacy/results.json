@@ -1,0 +1,75 @@
+{
+  "artifact_manifest": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/artifact-manifest.json",
+  "artifacts": [
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/run-authorization.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/execution.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/stdout.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/stderr.txt",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/candidate-metrics.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/candidate-metrics.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/statistical-audit.json",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/statistical-audit.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/V11-CONTROL-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/C-SPY-TR-PROD-SP500-ROLE-portfolio.csv",
+    "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/candidates/S-QUAL-VS-SPY-TR-ROLE-portfolio.csv"
+  ],
+  "candidate_results": [
+    {
+      "candidate_id": "S-QUAL-VS-SPY-TR-ROLE",
+      "metrics": {
+        "bootstrap_mdd_p975": 0.1258338605313579,
+        "bootstrap_median_candidate_minus_matched_cagr": 0.0005865714074288902,
+        "bootstrap_median_candidate_minus_matched_sharpe": 0.009836972815516098,
+        "bootstrap_probability_cagr_gt_matched": 0.7519,
+        "bootstrap_probability_sharpe_gt_matched": 0.83945,
+        "bootstrap_robust_pass": false,
+        "cagr_percent": 14.422013,
+        "deterministic_admit": true,
+        "evaluation_cagr_percent": 13.069187,
+        "evaluation_mdd_percent": 7.379394,
+        "evaluation_sharpe": 1.480549,
+        "evaluation_start": "2013-07-19",
+        "execution_event_target_fingerprint": "ea843d2a26d9eff3",
+        "folds_sharpe_ge_matched": 5,
+        "global_dsr_pass": false,
+        "global_post_protocol_dsr_probability": 0.8896672939131469,
+        "global_post_protocol_dsr_trial_count": 42,
+        "matched_control_id": "C-SPY-TR-PROD-SP500-ROLE",
+        "matched_evaluation_cagr_percent": 13.008582,
+        "matched_evaluation_mdd_percent": 7.384346,
+        "matched_evaluation_sharpe": 1.470548,
+        "mdd_percent": 7.689054,
+        "robust_strategy_pass": false,
+        "sharpe": 1.532266,
+        "since2020_cagr_percent": 17.64344,
+        "since2020_sharpe": 1.642162,
+        "since2022_cagr_percent": 21.123459,
+        "since2022_sharpe": 1.794869,
+        "worst_fold_sharpe": 0.761351
+      }
+    }
+  ],
+  "dataset_manifest": "tools/research-results/strategy-validation/datasets/ATM-SVP2-QUAL-SPY-TR-001.json",
+  "decision": "FAIL / MATCHED TOTAL-RETURN AUDIT DOES NOT CONFIRM ROBUST QUAL QUALITY ALPHA. QUAL remains directionally better than matched SPY: evaluation CAGR 13.069187% vs SPY 13.008582% and Sharpe 1.480549 vs 1.470548, with 5/7 fold Sharpe wins and slightly lower MDD 7.379394% vs 7.384346%. However paired 20,000-replicate bootstrap gave P(CAGR QUAL>SPY)=75.190% and P(Sharpe QUAL>SPY)=83.945%, both below the frozen 90% gates; cumulative 42-candidate DSR=88.967%<95%. Therefore robust_strategy_pass=false. The earlier ATM-SVP2-US-MQ-ROLE-002 QUAL result remains truthful against the original price-index comparator but cannot support a quality-premium/product promotion after matched total-return correction. QUAL may remain visible only as an explicitly labeled research experiment; its prospective promotion interpretation is suspended. No SPY/QUAL blend, timing, alternate start, ETF replacement, threshold, or comparator rescue is permitted.",
+  "execution_git_commit": "328a0487c175b35b4e1a5f82ac3d2faea07579e6",
+  "matched_control": {
+    "cagr_percent": 14.405713,
+    "candidate_id": "C-SPY-TR-PROD-SP500-ROLE",
+    "evaluation_cagr_percent": 13.008582,
+    "evaluation_mdd_percent": 7.384346,
+    "evaluation_sharpe": 1.470548,
+    "evaluation_start": "2013-07-19",
+    "mdd_percent": 7.689054,
+    "sharpe": 1.528949
+  },
+  "preregistration_record_hash": "2f867f01e77b8d16687053fd502f4317bd6fef21e491a030525941455ebe928e",
+  "run_guard_receipt": "tools/research-results/strategy-validation/runs/ATM-SVP2-QUAL-SPY-TR-001/run-authorization.json",
+  "status": "FAIL",
+  "trial_id": "ATM-SVP2-QUAL-SPY-TR-001",
+  "v11_price_index_background": {
+    "cagr_percent": 14.345615,
+    "candidate_id": "V11-CONTROL",
+    "mdd_percent": 7.689054,
+    "sharpe": 1.522263
+  }
+}
