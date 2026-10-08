@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "evaluationRange": {
+      "endDate": "2026-10-05T16:00:00Z",
+      "startDate": "1899-12-31T15:54:17Z"
+    },
+    "initialCash": 100000,
+    "parameters": {},
+    "purpose": "research",
+    "settings": {
+      "cooldownDays": 0,
+      "feeRate": 0.025,
+      "maxPositionRatio": 100,
+      "slippageRate": 0,
+      "stopLossRatio": 0,
+      "takeProfitRatio": 0
+    },
+    "strategy": {
+      "id": "nfci-dual-core-v11-qual-role",
+      "version": "rules-d801a9bb"
+    }
+  }
+}

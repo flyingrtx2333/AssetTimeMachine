@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-08T12:02:53.043600+00:00",
+  "status": "INPUT_APPEND_EXACT_QUAL_SHARED_APP_HYBRID_LIMITS_RETAINED",
+  "source_parent": "research/asset-time-machine/workspace/studies/product-benchmark-scope-replay-2026-10-08",
+  "old_series_semantic_sha256": "85b98a14bca38a95933364f21fb7b519678c550255933f85bb6c9108d817952f",
+  "old_series_all_identical": true,
+  "combined_history_sha256": "51fa9087001e0dbcf19f9da8ab2bf393b98917f347a690e33cfb99bb9f8c460e",
+  "macro_sha256": "d6a5dd149f7d799a19b5164e1d72ae1b9ac02bb92c1e2557886cbd425690144b",
+  "qual_first": "2013-07-18",
+  "qual_last": "2026-10-06",
+  "sp500_dates_after_substitution": 3325,
+  "qual_missing_sp500_dates": [
+    "2016-11-24"
+  ],
+  "qual_extra_dates": [],
+  "limitations": [
+    "Hybrid S&P path begins before ETF inception; not a new investable account",
+    "Hybrid retains S&P observation calendar, including dates lacking actual QUAL observations",
+    "Hybrid uses vendor adjusted-close role; no discrete funded issuer corporate-cash reconstruction",
+    "Pure App diagnostic comparator, not independently eligible frontier certification"
+  ],
+  "issuer_identity_sources": [
+    "https://www.ishares.com/us/products/256101/QUAL",
+    "https://www.nasdaqtrader.com/content/newsalerts/2013/infocircular/QUALcircular.pdf"
+  ],
+  "issuer_inception": "2013-07-16",
+  "backend_price_field_source": "backend/services/money_service.py PUBLIC_FUND_HISTORY_SPECS.qual and get_yahoo_adjusted_close_history_by_symbol",
+  "cash_rule": "App inherited CashYieldCNY; no money-fund cash added"
+}

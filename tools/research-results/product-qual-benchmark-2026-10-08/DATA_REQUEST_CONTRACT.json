@@ -1,0 +1,18 @@
+{
+  "study_id": "POSTHOC-APP-QUAL-COMPARATOR-20261008",
+  "declared_at": "2026-10-08T12:01:55.793175+00:00",
+  "existing_comparator": "nfci-dual-core-v11-qual-role",
+  "new_candidate_count": 0,
+  "funded_replay_budget": 1,
+  "parameter_search_budget": 0,
+  "data_request": "production public history QUAL only; no refresh=true; no fallback instrument/field/provider or return selection",
+  "inputs": "append exact returned QUAL series to previous frozen19-control response; previous other series and macro bytes preserved",
+  "end": "2026-10-06 unchanged prior catalogue end; compare exact mechanical common dates with19 saved native accounts",
+  "fee_percent": 0.025,
+  "slippage_percent": 0,
+  "cash": "CashYieldCNY demand deposits",
+  "role": "App current hybrid S&P pre2013-07-19 and QUAL realized-return role thereafter. Preserve native source and all known limits; not a new quality-alpha candidate.",
+  "formal_validation": false,
+  "promotion": false,
+  "source_eligibility": "QUAL is App-visible native ETF; still audit total-return proxy and hybrid quote semantics. Old matched-control FAIL unchanged. No independent OOS claim."
+}

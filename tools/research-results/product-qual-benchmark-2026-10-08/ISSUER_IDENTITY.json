@@ -1,0 +1,14 @@
+{
+  "verified_at": "2026-10-08T12:06:56.543784+00:00",
+  "ticker": "QUAL",
+  "CUSIP": "46432F339",
+  "issuer_inception": "2013-07-16",
+  "exchange_circular_date": "2013-07-18",
+  "sources": [
+    "https://www.ishares.com/us/products/256101/QUAL",
+    "https://www.nasdaqtrader.com/content/newsalerts/2013/infocircular/QUALcircular.pdf"
+  ],
+  "scope": "identity and inception only; no issuer full historical price or distribution certification",
+  "backend_first_quote": "2013-07-18",
+  "app_substitution_start": "2013-07-19"
+}

@@ -1,0 +1,35 @@
+{
+  "verified_at": "2026-10-08T12:06:06.248118+00:00",
+  "archive_file": "research/asset-time-machine/workspace/archive/branch-integration-2026-10-07/legacy-dayk-files.tar.xz",
+  "manifest": "research/asset-time-machine/workspace/archive/branch-integration-2026-10-07/LEGACY_MANIFEST.json",
+  "verified_entries": [
+    {
+      "source_path": "tools/research-results/strategy-validation/datasets/ATM-SVP2-QUAL-SPY-TR-001.json",
+      "git_blob": "0d5c76b261ab5fd4ab2a4d90d5d2549131e4e74b",
+      "git_mode": "100644",
+      "content_bytes": 3272,
+      "content_sha256": "69898b75c431b07189e08e91a0784bfcf23f84f5abce55267492fada4bf82069",
+      "disposition": "ORIGINAL_VERSION_ARCHIVED",
+      "archive_path": "legacy/tools/research-results/strategy-validation/datasets/ATM-SVP2-QUAL-SPY-TR-001.json"
+    },
+    {
+      "source_path": "tools/research-results/strategy-validation/preregistrations/ATM-SVP2-QUAL-SPY-TR-001.json",
+      "git_blob": "aa49d7be659456f5947b608afbf0e1dea1d17ae4",
+      "git_mode": "100644",
+      "content_bytes": 7496,
+      "content_sha256": "e335e7df4152362e1d3524d55c4e52dc873a17da7f6ebb5c31d97e4df653adf0",
+      "disposition": "ORIGINAL_VERSION_ARCHIVED",
+      "archive_path": "legacy/tools/research-results/strategy-validation/preregistrations/ATM-SVP2-QUAL-SPY-TR-001.json"
+    },
+    {
+      "source_path": "tools/research-results/strategy-validation/results/ATM-SVP2-QUAL-SPY-TR-001.json",
+      "git_blob": "06f15bfccb71991ac4656d8a84582b93e5945dd2",
+      "git_mode": "100644",
+      "content_bytes": 4740,
+      "content_sha256": "68cf6b617b45ce51ef041d299bd25329f85867541ef5632684e3dcedc29ef07c",
+      "disposition": "ORIGINAL_VERSION_ARCHIVED",
+      "archive_path": "legacy/tools/research-results/strategy-validation/results/ATM-SVP2-QUAL-SPY-TR-001.json"
+    }
+  ],
+  "old_formal_FAIL_and_metrics_unchanged": true
+}

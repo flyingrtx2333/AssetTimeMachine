@@ -20,6 +20,7 @@ struct ResearchCLI {
         let args = Array(CommandLine.arguments.dropFirst())
         let optionsByCommand: [String: Set<String>] = [
             "catalog": [], "configuration": ["--strategy"],
+            "qual-product-compare": ["--comparators", "--qual-directory", "--bindings", "--output", "--source-commit"],
             "product-benchmark-scope": ["--mode", "--history", "--macro", "--output", "--prepared", "--source-commit"],
             "verify-cost-invariance": ["--history", "--strategy", "--macro"],
             "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
@@ -68,6 +69,10 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "qual-product-compare":
+            try SavedQUALProductComparison.run(comparatorsPath: argument("--comparators"),
+                qualDirectory: argument("--qual-directory"), bindingsPath: argument("--bindings"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "product-benchmark-scope":
             try ProductBenchmarkScopeReplay.run(mode: argument("--mode"), historyPath: argument("--history"),
                 macroPath: argument("--macro"), outputPath: argument("--output"),
