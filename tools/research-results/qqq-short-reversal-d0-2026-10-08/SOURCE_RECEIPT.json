@@ -1,0 +1,15 @@
+{
+  "status": "FETCHED_NOT_PRICE_CERTIFIED",
+  "queried_at": "2026-10-08T08:45:41.901225+00:00",
+  "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/QQQ?period1=0&period2=1790985600&interval=1d&events=div%2Csplits&includeAdjustedClose=true",
+  "raw_sha256": "b7883374c67fb3dc543211b11f3aa22683171abde6ed6292c0fda1608a60288e",
+  "symbol": "QQQ",
+  "exchange_timezone": "America/New_York",
+  "observations": 6935,
+  "events": {
+    "dividends": 90,
+    "splits": 1
+  },
+  "earliest_timestamp": 921076200,
+  "last_timestamp": 1790947800
+}
