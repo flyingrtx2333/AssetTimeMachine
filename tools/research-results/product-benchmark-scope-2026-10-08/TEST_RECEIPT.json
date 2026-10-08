@@ -1,0 +1,13 @@
+{
+  "command": "rtk proxy swift test --filter 'BacktestRunConfigurationTests/(testStatefulSliceRetainsTargetsAndRebasesAllMonetaryValues|testEvidenceIsCanonicalAndCannotReplacePreviousOutput)'",
+  "exit_code": 0,
+  "completed_at": "2026-10-08T11:53:45.049+00:00",
+  "passed_tests": [
+    "testEvidenceIsCanonicalAndCannotReplacePreviousOutput",
+    "testStatefulSliceRetainsTargetsAndRebasesAllMonetaryValues"
+  ],
+  "test_count": 2,
+  "failures": 0,
+  "scope": "shared evidence cannot overwrite and stateful monetary rebasing; no broad NFCI concurrency or whole App test claim",
+  "release_build_passed": true
+}

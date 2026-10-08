@@ -1,0 +1,6 @@
+{
+  "app_pre_replay_commit": "c7ff078359e1ca7bdf6fdf73b721f779f63157db",
+  "workspace_pre_replay_commit": "7fa476a46f123bd6ae0b57cce94c495271bb0e6d",
+  "prepared_contract": "prepare/contract.json",
+  "funded_runs_performed": 0
+}

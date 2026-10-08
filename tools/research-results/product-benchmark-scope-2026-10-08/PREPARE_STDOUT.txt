@@ -1,0 +1,1 @@
+Prepared 23 existing App entries: 19 ready, 1 QUAL pending, 3 violate cash constraint; no capital replay.

@@ -1,0 +1,375 @@
+{
+  "at": "2026-10-08T11:57:13.759226+00:00",
+  "status": "ALL_RAW_BYTES_LOSSLESSLY_RETAINED",
+  "archives": [
+    {
+      "raw_path": "inputs/history.json",
+      "archive_path": "inputs/history.json.gz",
+      "raw_sha256": "7b41a7802c79cb3c5088055ad766973d5be85ae09e34a17582cc7064866ef846",
+      "archive_sha256": "7d397e954cab528afb9b0d3539286c54cc0f690bdd655f4d1ba785cfeaef7a90",
+      "raw_bytes": 5198669,
+      "archive_bytes": 1841041,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "inputs/nfci.json",
+      "archive_path": "inputs/nfci.json.gz",
+      "raw_sha256": "d6a5dd149f7d799a19b5164e1d72ae1b9ac02bb92c1e2557886cbd425690144b",
+      "archive_sha256": "d2f8809ce230969208d18b04f8b16c633ff5ad0645311e20d36f649b0b95b1a6",
+      "raw_bytes": 241195,
+      "archive_bytes": 19258,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-boll-breakout/parameters.json",
+      "archive_path": "run/accounts/basic-boll-breakout/parameters.json.gz",
+      "raw_sha256": "c34d948713687da0e118702c6838690659984a89a4f19a183a3f9a4e93ec5f6f",
+      "archive_sha256": "9b092dc5b5ad4870ab52b9e286446428c141e343a98ae50477779e621c9342e0",
+      "raw_bytes": 81732,
+      "archive_bytes": 6675,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-boll-breakout/result.json",
+      "archive_path": "run/accounts/basic-boll-breakout/result.json.gz",
+      "raw_sha256": "eefa65f404251f5f10a6d3e556e7447640106f2d9570e4948dd70c6a8df71b08",
+      "archive_sha256": "a5413c5ec9da7a64f2f4ec656088903b5350611965b9df36b046bf6feb0cf678",
+      "raw_bytes": 1947584,
+      "archive_bytes": 436871,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-boll-mean-reversion/parameters.json",
+      "archive_path": "run/accounts/basic-boll-mean-reversion/parameters.json.gz",
+      "raw_sha256": "daa42c95c021ae131bbc62e831f3e197cc6db3e9ebc6c5a6a13f310158797d28",
+      "archive_sha256": "195009fb573de7761223d31a28a49339c3b3dfde864caf6edce7106f9921505c",
+      "raw_bytes": 81744,
+      "archive_bytes": 6676,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-boll-mean-reversion/result.json",
+      "archive_path": "run/accounts/basic-boll-mean-reversion/result.json.gz",
+      "raw_sha256": "1f2ea4c5144bc333c357804a70ce826d8f1bbc0c550b47cb431e1c7155023e95",
+      "archive_sha256": "a49f2871b70526bbe002e01377be349df32d7acebd87178e38a50b63c446bd84",
+      "raw_bytes": 1792536,
+      "archive_bytes": 377924,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-buy-and-hold/parameters.json",
+      "archive_path": "run/accounts/basic-buy-and-hold/parameters.json.gz",
+      "raw_sha256": "4d92330f650aa4b7c6a1d7b12442771c73f02e6af1154e47296fb993fa06a465",
+      "archive_sha256": "1a7deb627e9cc97a12500082258eadde616aaf61e22027b23b7db0674e51cf48",
+      "raw_bytes": 81705,
+      "archive_bytes": 6653,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-buy-and-hold/result.json",
+      "archive_path": "run/accounts/basic-buy-and-hold/result.json.gz",
+      "raw_sha256": "f3d1758a89a72005e0c22cfdc1d7d81585095745c55b0e488c2bfb1651b3667f",
+      "archive_sha256": "847051b5b249c92ccf450f278e2b0141724fd9d924184a9b09a9849385641aac",
+      "raw_bytes": 2600560,
+      "archive_bytes": 702631,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-china-trend/parameters.json",
+      "archive_path": "run/accounts/basic-china-trend/parameters.json.gz",
+      "raw_sha256": "828f921e6d91ec0676d00481ff6bd5b9dade1d76134e88a171089abdef38ec94",
+      "archive_sha256": "67600acb5fb7ed7e1d535fbe825c37368cd7e84020e3754e594c67c83d216bea",
+      "raw_bytes": 81706,
+      "archive_bytes": 6656,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-china-trend/result.json",
+      "archive_path": "run/accounts/basic-china-trend/result.json.gz",
+      "raw_sha256": "3898207cb13c0effbf0978a42555d4e415432969f01b33e3dd2465598193ed5d",
+      "archive_sha256": "2a2618bcd6ddf77eea2cf863acb7b8e76d0404d5387f1bf03b219fa177c579e3",
+      "raw_bytes": 1825137,
+      "archive_bytes": 361189,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-gold-nasdaq-hold/parameters.json",
+      "archive_path": "run/accounts/basic-gold-nasdaq-hold/parameters.json.gz",
+      "raw_sha256": "3803760c9c23ffeaf07fc6dcc70bc1563d9b5ed789940cdb1374267798cd7d61",
+      "archive_sha256": "0eebde3479418a7d5a129ecd2bb9222d456bd68cb0279e39c56083d880e5645f",
+      "raw_bytes": 81696,
+      "archive_bytes": 6649,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-gold-nasdaq-hold/result.json",
+      "archive_path": "run/accounts/basic-gold-nasdaq-hold/result.json.gz",
+      "raw_sha256": "2641e5b655fe7572f14293e4ffecbbea15c1b7dcaa366774a02e2f6e7d15f7e0",
+      "archive_sha256": "ae31aa463752b00f520ac23eb211151f0450211763de5f17f1e54e55590e01b9",
+      "raw_bytes": 1883172,
+      "archive_bytes": 445596,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-gold-trend/parameters.json",
+      "archive_path": "run/accounts/basic-gold-trend/parameters.json.gz",
+      "raw_sha256": "a7c055c47e12446bc4da3140b84da7a1201239bd9bc6b3c9a589135c3fd11c0d",
+      "archive_sha256": "cedb80a58f67b28ea342e7e83c7f41daba54286625ad894bc63ee515716f365c",
+      "raw_bytes": 81685,
+      "archive_bytes": 6658,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-gold-trend/result.json",
+      "archive_path": "run/accounts/basic-gold-trend/result.json.gz",
+      "raw_sha256": "000276094528166c59213745ef4e3acf4f7a8f8a20d6c8da82282bda3b10bbbc",
+      "archive_sha256": "eeb456f2b73339ce72f056b03ef98c209780513040615116288bff9af8ba6e3a",
+      "raw_bytes": 1522399,
+      "archive_bytes": 233680,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma-golden-cross/parameters.json",
+      "archive_path": "run/accounts/basic-ma-golden-cross/parameters.json.gz",
+      "raw_sha256": "1ab112df0ded65ec220719b37dafaa621b4458c5e331d35efd26802b18978609",
+      "archive_sha256": "19231df2a74c921d1487a7f01e4877f41ceb2b7307b3fbc3515c5a7481140d0e",
+      "raw_bytes": 81733,
+      "archive_bytes": 6675,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma-golden-cross/result.json",
+      "archive_path": "run/accounts/basic-ma-golden-cross/result.json.gz",
+      "raw_sha256": "3b3999d2dd24d758d8cece5fce5fbe0b9cf69827978a76cd594067bf2a89de54",
+      "archive_sha256": "d12abfbd75ffd79d862303f49c45b5564137dccc11a2cd59421b7ebf223efa68",
+      "raw_bytes": 2232862,
+      "archive_bytes": 573235,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma20-hold/parameters.json",
+      "archive_path": "run/accounts/basic-ma20-hold/parameters.json.gz",
+      "raw_sha256": "45dd1f8c08743ac770a1ce46e2d88a040bafe6f28a30a573e963f49018d2d740",
+      "archive_sha256": "c1275eb2bc9723b4ee28a5705cd72a3c46ddeb5dd11b1593076bc38199e882cf",
+      "raw_bytes": 81709,
+      "archive_bytes": 6662,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma20-hold/result.json",
+      "archive_path": "run/accounts/basic-ma20-hold/result.json.gz",
+      "raw_sha256": "e86bef62fd62d0f49ec3b184625f122ffa9c06d70cd3ed34ceaa1e7d355324c6",
+      "archive_sha256": "dbc0b8d3a75538ad3334d884dd450325b9df3ee042496b3e513207192b3d9475",
+      "raw_bytes": 2921458,
+      "archive_bytes": 687131,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma20-trend/parameters.json",
+      "archive_path": "run/accounts/basic-ma20-trend/parameters.json.gz",
+      "raw_sha256": "e9b3c7cd8b3bde181f97bb5a7478c26abda23b5d4fb7d1d76cdc8d5b1861fd7d",
+      "archive_sha256": "acf8edc2bea08dc1b9fd8248d6e0528a10c9427168172764eb2d266ebdc0a73f",
+      "raw_bytes": 81725,
+      "archive_bytes": 6671,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma20-trend/result.json",
+      "archive_path": "run/accounts/basic-ma20-trend/result.json.gz",
+      "raw_sha256": "4b216d38cc9e528eee19635cc4cf299655808609627ec860d02be8f69fe356bc",
+      "archive_sha256": "faf4efe7c91e57f1af50bb533c62004c849d122bf4c1c006bed57f5794b7f54d",
+      "raw_bytes": 2872848,
+      "archive_bytes": 677256,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma60-trend/parameters.json",
+      "archive_path": "run/accounts/basic-ma60-trend/parameters.json.gz",
+      "raw_sha256": "555c0b6e4beb8feada15d717cf14e21641b2b0e50f7ede4c6555396180ff15f8",
+      "archive_sha256": "df617010d9f52c34fc65ab7323cd218c88428e3bf903e83db951a86de2a88394",
+      "raw_bytes": 81711,
+      "archive_bytes": 6662,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-ma60-trend/result.json",
+      "archive_path": "run/accounts/basic-ma60-trend/result.json.gz",
+      "raw_sha256": "780c47550ea5b14d6eef87ef643db6feec33eab4eee39cbed6251c4de348818f",
+      "archive_sha256": "0418790f5240fc8dc8233472bb475fb20939618f33d69ead35c6fe11351cecd2",
+      "raw_bytes": 2586102,
+      "archive_bytes": 635955,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-three-day-reversal/parameters.json",
+      "archive_path": "run/accounts/basic-three-day-reversal/parameters.json.gz",
+      "raw_sha256": "b924984a840e7bbe1e52f25af5ce24ffe55a16f616e77cb3e10f1b2d935899e0",
+      "archive_sha256": "9daf1676d20149710c3586b40e16f80d0db1299d0297b94df51510ba11090b05",
+      "raw_bytes": 81727,
+      "archive_bytes": 6665,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-three-day-reversal/result.json",
+      "archive_path": "run/accounts/basic-three-day-reversal/result.json.gz",
+      "raw_sha256": "16037a92721e4cbfd7012f6f064c1fbb74cb4975c1c49f6428e38e19e433e9f7",
+      "archive_sha256": "389cb3fc7aca88887d6676e74c178350e3f77349d46d11b8997700b27ec1185c",
+      "raw_bytes": 2284599,
+      "archive_bytes": 537043,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-three-day-trend/parameters.json",
+      "archive_path": "run/accounts/basic-three-day-trend/parameters.json.gz",
+      "raw_sha256": "60fb746ba569407201336a4cbd109da1e89916dd15655a6100c3e003f2c07bf8",
+      "archive_sha256": "6b1575a1c7632825338fc8f15dd20f2fa673729e13015cc51e8a9fe22e864045",
+      "raw_bytes": 81721,
+      "archive_bytes": 6657,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-three-day-trend/result.json",
+      "archive_path": "run/accounts/basic-three-day-trend/result.json.gz",
+      "raw_sha256": "e62e7b0de1da3570b3d501ad75b12177ef7c08f540d54ea8e817b015ef6cd430",
+      "archive_sha256": "f270a21a6699bae2c4be27f45791736e07055ad39b1fede42e8e6023e5b05612",
+      "raw_bytes": 2494432,
+      "archive_bytes": 614423,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-us-trend/parameters.json",
+      "archive_path": "run/accounts/basic-us-trend/parameters.json.gz",
+      "raw_sha256": "ece65c2dff2905e30aefe080ad8bafc4406c6481026af5319305948914613f6f",
+      "archive_sha256": "7344c2ce17d0da7b758cf0c8eca4bf1f5fe6e7a1dcb4bfd36f8becaeeb2acd7e",
+      "raw_bytes": 81687,
+      "archive_bytes": 6655,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/basic-us-trend/result.json",
+      "archive_path": "run/accounts/basic-us-trend/result.json.gz",
+      "raw_sha256": "d64d0d42f1926b461d7e1c196e65eabe7fec3f52e3fac5993516e4775cbede80",
+      "archive_sha256": "aeb2e33c8d84fa59b336e5780b7cb8076be308c607db2aed2277e2c14ad76c2f",
+      "raw_bytes": 1957961,
+      "archive_bytes": 428940,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/core-gold-satellite-equity-curve-state-gate-momentum/parameters.json",
+      "archive_path": "run/accounts/core-gold-satellite-equity-curve-state-gate-momentum/parameters.json.gz",
+      "raw_sha256": "c48a7475c2a7b157142b5a27bf124a0829fc8dd6118e0aeef348b72293f229fa",
+      "archive_sha256": "05f26738334d10ec6105cd065912815fb64a0da1aea056fd632a124da8d706a3",
+      "raw_bytes": 84257,
+      "archive_bytes": 6767,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/core-gold-satellite-equity-curve-state-gate-momentum/result.json",
+      "archive_path": "run/accounts/core-gold-satellite-equity-curve-state-gate-momentum/result.json.gz",
+      "raw_sha256": "9ca88a316ef726a751f28078122f9164a527ff33d326b7ffdf5d3dd9e4386b6f",
+      "archive_sha256": "d5437508b5e60b24f22b4b0acc6b4de0441c7dd5cb49c8dc57beec476519ca97",
+      "raw_bytes": 1859237,
+      "archive_bytes": 358953,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/core-gold-satellite-profit-lock-momentum/parameters.json",
+      "archive_path": "run/accounts/core-gold-satellite-profit-lock-momentum/parameters.json.gz",
+      "raw_sha256": "2ac53279ffacba368952c66daf757dfe645f2a08fb89cc650cc2ab4b590ab7e0",
+      "archive_sha256": "029cc855c71bd5eeefecdb8bcf08278069b9601afa4b8413fe7446178162c18a",
+      "raw_bytes": 84233,
+      "archive_bytes": 6781,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/core-gold-satellite-profit-lock-momentum/result.json",
+      "archive_path": "run/accounts/core-gold-satellite-profit-lock-momentum/result.json.gz",
+      "raw_sha256": "ff6a5b394ea7254a9acd8f3676a0bf36338fd0fe983d3e07abd2bc57538e0e46",
+      "archive_sha256": "f97f0f6f9ef90cbf08f7a7fdabb68ee8647dfa018190e89d6aac9f50bd2217ee",
+      "raw_bytes": 1869167,
+      "archive_bytes": 359483,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/core-gold-satellite-risk-budget-state-gate-momentum/parameters.json",
+      "archive_path": "run/accounts/core-gold-satellite-risk-budget-state-gate-momentum/parameters.json.gz",
+      "raw_sha256": "1574f2274ae14b25e2c5050c4b98156ef940eed48a5ea9e51ce3fab9670a5597",
+      "archive_sha256": "2265cd5573ca7f1a27728fab73bbdf5765652e9f8d03efdc1ded99da0fe64173",
+      "raw_bytes": 84572,
+      "archive_bytes": 6753,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/core-gold-satellite-risk-budget-state-gate-momentum/result.json",
+      "archive_path": "run/accounts/core-gold-satellite-risk-budget-state-gate-momentum/result.json.gz",
+      "raw_sha256": "0b82598fecdbe653defd1e8ac9cd34718c8f0763580e50af9acd45e1c74d1670",
+      "archive_sha256": "5d7f99ab4da07de5f02e96434f91e326af3c8a06c5fd43c0030a043054734cec",
+      "raw_bytes": 1889449,
+      "archive_bytes": 364560,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/gold-nasdaq-dual-trend-barbell/parameters.json",
+      "archive_path": "run/accounts/gold-nasdaq-dual-trend-barbell/parameters.json.gz",
+      "raw_sha256": "a302ac6cade5492c4849b6b20e87c6eca1d89db8502d0436127c0f9452ba7030",
+      "archive_sha256": "3f95dba56451662c39423bfceeb4958d3a63532526701f8f5509027f8014878d",
+      "raw_bytes": 82179,
+      "archive_bytes": 6785,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/gold-nasdaq-dual-trend-barbell/result.json",
+      "archive_path": "run/accounts/gold-nasdaq-dual-trend-barbell/result.json.gz",
+      "raw_sha256": "b77ea0a6f557eade93d72df9fa1decdac34c95e12c9dedc2a0f42427ca91b8f0",
+      "archive_sha256": "1e357ed0705d2e7b9559653905338072f14cccf0a772662810477647b4364a5a",
+      "raw_bytes": 1852789,
+      "archive_bytes": 346912,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/nfci-dual-core-v11/parameters.json",
+      "archive_path": "run/accounts/nfci-dual-core-v11/parameters.json.gz",
+      "raw_sha256": "b58d6998641c3e9372409d578bfe8814b5cdc5c6ffd6452dc9b3d7d21b508780",
+      "archive_sha256": "1811af950008fb8df70196d1f1416c245a9f926ffda3e6cc9b518cc256059f0e",
+      "raw_bytes": 82967,
+      "archive_bytes": 7045,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/nfci-dual-core-v11/result.json",
+      "archive_path": "run/accounts/nfci-dual-core-v11/result.json.gz",
+      "raw_sha256": "24bd5bee348a81e32d1f5092baefe6ac4ca33b15b22d02fa27917dc01b6b104b",
+      "archive_sha256": "15ce63812395dbaa10e6763e362e804fa09e4f6f7305cd25cead36b03961096b",
+      "raw_bytes": 2201074,
+      "archive_bytes": 427211,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/risk-contribution-cash-confidence-low-noise/parameters.json",
+      "archive_path": "run/accounts/risk-contribution-cash-confidence-low-noise/parameters.json.gz",
+      "raw_sha256": "20efd1951e01b7cbf419955427cc142b333c7aa782a053a0aa683c77de19e56f",
+      "archive_sha256": "7e432f29e52b24d36bda7c6a33548d39eb755a09a2d76298cd6301e1da2ced23",
+      "raw_bytes": 82436,
+      "archive_bytes": 6890,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/accounts/risk-contribution-cash-confidence-low-noise/result.json",
+      "archive_path": "run/accounts/risk-contribution-cash-confidence-low-noise/result.json.gz",
+      "raw_sha256": "3350d1d911e8759ff9626a9cdec482eb9859e85b106a3d273659941c1ba80412",
+      "archive_sha256": "57d992bf34e2ed66c83ddd73d56ebe13f7865ed6fe260a562bcf8aa802a79583",
+      "raw_bytes": 2172851,
+      "archive_bytes": 421917,
+      "lossless_verified": true
+    },
+    {
+      "raw_path": "run/result.json",
+      "archive_path": "run/result.json.gz",
+      "raw_sha256": "61590e4509ab62001908056cf321dcae50363f264c0c64c15691183ed7d67b9b",
+      "archive_sha256": "6b607f0b48e4a155d007cb4480bb18dd80c6592c9825c71a8feb3eaa9c0a3557",
+      "raw_bytes": 28501158,
+      "archive_bytes": 6412355,
+      "lossless_verified": true
+    }
+  ]
+}

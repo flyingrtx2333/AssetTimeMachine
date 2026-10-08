@@ -1,0 +1,25 @@
+{
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "product-benchmark-scope",
+    "--mode",
+    "run",
+    "--history",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-benchmark-scope-replay-2026-10-08/inputs/history.json",
+    "--macro",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-benchmark-scope-replay-2026-10-08/inputs/nfci.json",
+    "--prepared",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-benchmark-scope-replay-2026-10-08/prepare/contract.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-benchmark-scope-replay-2026-10-08/run",
+    "--source-commit",
+    "c7ff078359e1ca7bdf6fdf73b721f779f63157db"
+  ],
+  "started_at": "2026-10-08T11:47:48.410706+00:00",
+  "source_commit": "c7ff078359e1ca7bdf6fdf73b721f779f63157db",
+  "binary_sha256": "55d9348b67d05b290d38b383d63f20c1bed33a44daa016af13a5536c96ffb12f",
+  "finished_at": "2026-10-08T11:48:19.526114+00:00",
+  "exit_code": 0
+}
