@@ -1,0 +1,85 @@
+{
+  "status": "PASS_SAVED_CASH_LEDGER_AND_UNCHANGED_SIGNAL_READBACK",
+  "audited_at": "2026-10-08T10:36:37.715487+00:00",
+  "accounts": [
+    {
+      "id": "cross-market-extreme-qqq-cash:gross",
+      "states_checked": 4677,
+      "fills_checked": 114,
+      "entitlements_checked": 32,
+      "unpaid_terminal_claims": 0,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "inverse-stress-control:gross",
+      "states_checked": 4677,
+      "fills_checked": 113,
+      "entitlements_checked": 45,
+      "unpaid_terminal_claims": 1,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "qqq-buyhold:gross",
+      "states_checked": 4677,
+      "fills_checked": 1,
+      "entitlements_checked": 77,
+      "unpaid_terminal_claims": 1,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "cny-cash-control:gross",
+      "states_checked": 4677,
+      "fills_checked": 0,
+      "entitlements_checked": 0,
+      "unpaid_terminal_claims": 0,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "cross-market-extreme-qqq-cash:withhold30",
+      "states_checked": 4677,
+      "fills_checked": 114,
+      "entitlements_checked": 32,
+      "unpaid_terminal_claims": 0,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "inverse-stress-control:withhold30",
+      "states_checked": 4677,
+      "fills_checked": 113,
+      "entitlements_checked": 45,
+      "unpaid_terminal_claims": 1,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "qqq-buyhold:withhold30",
+      "states_checked": 4677,
+      "fills_checked": 1,
+      "entitlements_checked": 77,
+      "unpaid_terminal_claims": 1,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    },
+    {
+      "id": "cny-cash-control:withhold30",
+      "states_checked": 4677,
+      "fills_checked": 0,
+      "entitlements_checked": 0,
+      "unpaid_terminal_claims": 0,
+      "metric_groups_checked": 4,
+      "target_mismatches": 0
+    }
+  ],
+  "features_byte_identical_to_original": true,
+  "targets_identical_to_original": true,
+  "zero_cash_control_differences": true,
+  "formal_validation": false,
+  "matched_total_return_superiority_certified": false,
+  "result_sha256": "fdc2422910871a584931c4ec88b538d5445fb6c55096eb898f4c8acd9100261c",
+  "scope": "Saved funded audit only, not independent alpha/PIT/OOS qualification."
+}

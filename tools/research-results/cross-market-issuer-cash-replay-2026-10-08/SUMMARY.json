@@ -1,0 +1,332 @@
+{
+  "study_id": "POSTHOC-CROSS-MARKET-ISSUER-CASH-20261008",
+  "completed_at": "2026-10-08T10:35:47.089218+00:00",
+  "evidence_class": "POSTHOC_UNCHANGED_RULE_ISSUER_CASH_DIAGNOSTIC",
+  "source_commit": "48a304f07978a468cf603f4665333394f4403872",
+  "primary_metric": "App full-history sharpeRatio Rf0",
+  "formal_validation": false,
+  "goal_achieved": false,
+  "comparison": "MATCHED_TOTAL_RETURN_HOUSE_FRONTIER_NOT_RUN",
+  "parameter_searches": 0,
+  "fee_percent": 0.025,
+  "slippage_percent": 0,
+  "funded_start": "2008-03-03",
+  "funded_end": "2026-10-02",
+  "seed": "2008-03-02",
+  "rows": [
+    {
+      "id": "cross-market-extreme-qqq-cash:gross",
+      "kind": "candidate",
+      "cagr_percent": 13.080786142523149,
+      "max_drawdown_percent": 20.26945420563065,
+      "sharpe_rf0": 1.0654216805335541,
+      "excess_sharpe_cny_cash": 1.03469343816862,
+      "cash_sharpe_informative": true,
+      "slices": {
+        "full": {
+          "cagr_percent": 13.080786142523149,
+          "max_drawdown_percent": 20.26945420563065,
+          "sharpe_rf0": 1.0654216805335541,
+          "excess_sharpe_cny_cash": 1.03469343816862,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 12.103407739726135,
+          "max_drawdown_percent": 20.269454205630673,
+          "sharpe_rf0": 0.9472013248997105,
+          "excess_sharpe_cny_cash": 0.9202034913950472,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 8.653697331209331,
+          "max_drawdown_percent": 18.53397078043536,
+          "sharpe_rf0": 0.712457049467303,
+          "excess_sharpe_cny_cash": 0.6851128371591433,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 7.408142344274071,
+          "max_drawdown_percent": 7.586863297277667,
+          "sharpe_rf0": 0.7830477233759094,
+          "excess_sharpe_cny_cash": 0.7471914002805482,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "inverse-stress-control:gross",
+      "kind": "control",
+      "cagr_percent": 3.70889786826456,
+      "max_drawdown_percent": 52.03202435942216,
+      "sharpe_rf0": 0.28648053338001694,
+      "excess_sharpe_cny_cash": 0.26673149743366675,
+      "cash_sharpe_informative": true,
+      "slices": {
+        "full": {
+          "cagr_percent": 3.70889786826456,
+          "max_drawdown_percent": 52.03202435942216,
+          "sharpe_rf0": 0.28648053338001694,
+          "excess_sharpe_cny_cash": 0.26673149743366675,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 7.533780637147491,
+          "max_drawdown_percent": 28.7076249173528,
+          "sharpe_rf0": 0.44219441581065005,
+          "excess_sharpe_cny_cash": 0.42614176575291207,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 6.982294538339717,
+          "max_drawdown_percent": 26.10395804414291,
+          "sharpe_rf0": 0.43848839790781263,
+          "excess_sharpe_cny_cash": 0.42088844881414156,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 10.9831210485148,
+          "max_drawdown_percent": 22.771029314996795,
+          "sharpe_rf0": 0.6123656102477754,
+          "excess_sharpe_cny_cash": 0.5951847651792265,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "qqq-buyhold:gross",
+      "kind": "control",
+      "cagr_percent": 16.496030557778575,
+      "max_drawdown_percent": 50.08672713335084,
+      "sharpe_rf0": 0.8064356051850111,
+      "excess_sharpe_cny_cash": 0.7892692273632796,
+      "cash_sharpe_informative": true,
+      "slices": {
+        "full": {
+          "cagr_percent": 16.496030557778575,
+          "max_drawdown_percent": 50.08672713335084,
+          "sharpe_rf0": 0.8064356051850111,
+          "excess_sharpe_cny_cash": 0.7892692273632796,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 19.5748730560533,
+          "max_drawdown_percent": 28.416921595252514,
+          "sharpe_rf0": 0.8612842844321501,
+          "excess_sharpe_cny_cash": 0.8467958659521783,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 15.466738184828932,
+          "max_drawdown_percent": 27.768517420208923,
+          "sharpe_rf0": 0.7518205399056055,
+          "excess_sharpe_cny_cash": 0.7362571700160249,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 18.31383644572224,
+          "max_drawdown_percent": 21.61534502807588,
+          "sharpe_rf0": 0.8917597490862567,
+          "excess_sharpe_cny_cash": 0.875445589451434,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "cny-cash-control:gross",
+      "kind": "control",
+      "cagr_percent": 0.37665427871507173,
+      "max_drawdown_percent": 0,
+      "sharpe_rf0": 24.347463770122864,
+      "excess_sharpe_cny_cash": -0.2319659262158159,
+      "cash_sharpe_informative": false,
+      "slices": {
+        "full": {
+          "cagr_percent": 0.37665427871507173,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 24.347463770122864,
+          "excess_sharpe_cny_cash": -0.2319659262158159,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 0.35061153241049414,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 26.07362861795533,
+          "excess_sharpe_cny_cash": null,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 0.35061153241058296,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 26.07579570027691,
+          "excess_sharpe_cny_cash": null,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 0.35061153241042753,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 26.07695191404184,
+          "excess_sharpe_cny_cash": null,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "cross-market-extreme-qqq-cash:withhold30",
+      "kind": "candidate",
+      "cagr_percent": 12.967430813103586,
+      "max_drawdown_percent": 20.377660954324952,
+      "sharpe_rf0": 1.0568034537611566,
+      "excess_sharpe_cny_cash": 1.0260890290090943,
+      "cash_sharpe_informative": true,
+      "slices": {
+        "full": {
+          "cagr_percent": 12.967430813103586,
+          "max_drawdown_percent": 20.377660954324952,
+          "sharpe_rf0": 1.0568034537611566,
+          "excess_sharpe_cny_cash": 1.0260890290090943,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 12.024754286224425,
+          "max_drawdown_percent": 20.37766095432515,
+          "sharpe_rf0": 0.9416224087933308,
+          "excess_sharpe_cny_cash": 0.9146289829628612,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 8.577002816384294,
+          "max_drawdown_percent": 18.64180993434627,
+          "sharpe_rf0": 0.7068150749493226,
+          "excess_sharpe_cny_cash": 0.679476148521401,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 7.3442722823652495,
+          "max_drawdown_percent": 7.62492041850528,
+          "sharpe_rf0": 0.7770268705263119,
+          "excess_sharpe_cny_cash": 0.7411641546392116,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "inverse-stress-control:withhold30",
+      "kind": "control",
+      "cagr_percent": 3.5670299311664433,
+      "max_drawdown_percent": 52.272648060104935,
+      "sharpe_rf0": 0.2792660882590179,
+      "excess_sharpe_cny_cash": 0.2595227072461777,
+      "cash_sharpe_informative": true,
+      "slices": {
+        "full": {
+          "cagr_percent": 3.5670299311664433,
+          "max_drawdown_percent": 52.272648060104935,
+          "sharpe_rf0": 0.2792660882590179,
+          "excess_sharpe_cny_cash": 0.2595227072461777,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 7.4263313153387855,
+          "max_drawdown_percent": 28.70762491735281,
+          "sharpe_rf0": 0.43756974885726,
+          "excess_sharpe_cny_cash": 0.42151979460326217,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 6.872544734610764,
+          "max_drawdown_percent": 26.1388453390843,
+          "sharpe_rf0": 0.4332896860256178,
+          "excess_sharpe_cny_cash": 0.4156922331955031,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 10.897280599273284,
+          "max_drawdown_percent": 22.81190188986459,
+          "sharpe_rf0": 0.608516851110341,
+          "excess_sharpe_cny_cash": 0.591337696970124,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "qqq-buyhold:withhold30",
+      "kind": "control",
+      "cagr_percent": 16.428043744952237,
+      "max_drawdown_percent": 50.13310297048221,
+      "sharpe_rf0": 0.7982162042742932,
+      "excess_sharpe_cny_cash": 0.7812132674609824,
+      "cash_sharpe_informative": true,
+      "slices": {
+        "full": {
+          "cagr_percent": 16.428043744952237,
+          "max_drawdown_percent": 50.13310297048221,
+          "sharpe_rf0": 0.7982162042742932,
+          "excess_sharpe_cny_cash": 0.7812132674609824,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 19.633280892481043,
+          "max_drawdown_percent": 28.924481769523013,
+          "sharpe_rf0": 0.8549702171105025,
+          "excess_sharpe_cny_cash": 0.8406761459443854,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 15.471209761542081,
+          "max_drawdown_percent": 28.247752020039908,
+          "sharpe_rf0": 0.7450883125864834,
+          "excess_sharpe_cny_cash": 0.7297284324274587,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 18.373311560045423,
+          "max_drawdown_percent": 21.89751020655343,
+          "sharpe_rf0": 0.885937014728295,
+          "excess_sharpe_cny_cash": 0.8698174559891918,
+          "point_count": 440
+        }
+      }
+    },
+    {
+      "id": "cny-cash-control:withhold30",
+      "kind": "control",
+      "cagr_percent": 0.37665427871507173,
+      "max_drawdown_percent": 0,
+      "sharpe_rf0": 24.347463770122864,
+      "excess_sharpe_cny_cash": -0.2319659262158159,
+      "cash_sharpe_informative": false,
+      "slices": {
+        "full": {
+          "cagr_percent": 0.37665427871507173,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 24.347463770122864,
+          "excess_sharpe_cny_cash": -0.2319659262158159,
+          "point_count": 4678
+        },
+        "since2020": {
+          "cagr_percent": 0.35061153241049414,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 26.07362861795533,
+          "excess_sharpe_cny_cash": null,
+          "point_count": 1698
+        },
+        "since2022": {
+          "cagr_percent": 0.35061153241058296,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 26.07579570027691,
+          "excess_sharpe_cny_cash": null,
+          "point_count": 1193
+        },
+        "since2025": {
+          "cagr_percent": 0.35061153241042753,
+          "max_drawdown_percent": 0,
+          "sharpe_rf0": 26.07695191404184,
+          "excess_sharpe_cny_cash": null,
+          "point_count": 440
+        }
+      }
+    }
+  ],
+  "result_sha256": "fdc2422910871a584931c4ec88b538d5445fb6c55096eb898f4c8acd9100261c",
+  "audit_sha256": "169cfc9bbc897922f7d323e4f15af7844c34ec7c2fb317f973c5b222b9451fa6"
+}

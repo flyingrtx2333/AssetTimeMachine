@@ -1,0 +1,9 @@
+{
+  "initial_audit_status": "FAILED_PERCENTAGE_UNIT_ASSERTION",
+  "initial_cagr_actual": 0.1308078614252315,
+  "initial_cagr_expected_incorrect_percent_points": 13.080786142523104,
+  "correction": "Saved Swift annualizedReturn and maxDrawdown are decimal fractions, not percentage points. Fix only independent audit units; master/report conversions remain explicit times100.",
+  "initial_auditor_retained_in_git_commit": "ed864c8154c2a8aa6b6b0262c12902451cadd339",
+  "strategy_or_input_or_engine_or_result_changed": false,
+  "funded_rerun_performed": false
+}

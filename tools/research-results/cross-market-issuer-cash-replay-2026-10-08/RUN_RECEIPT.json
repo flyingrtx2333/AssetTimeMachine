@@ -1,0 +1,26 @@
+{
+  "started_at": "2026-10-08T10:35:45.250951+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "cross-market-cash-screen",
+    "--prices",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-stress-cash-jjvo9bpm/prices.json",
+    "--history",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-stress-cash-jjvo9bpm/history.json",
+    "--cash",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-issuer-cash-replay-2026-10-08/cash.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-issuer-cash-replay-2026-10-08/run",
+    "--source-commit",
+    "48a304f07978a468cf603f4665333394f4403872"
+  ],
+  "app_commit": "48a304f07978a468cf603f4665333394f4403872",
+  "root_freeze_commit": "ed864c8154c2a8aa6b6b0262c12902451cadd339",
+  "status": "COMPLETED",
+  "funded_accounts": 8,
+  "parameter_searches": 0,
+  "completed_at": "2026-10-08T10:35:47.089218+00:00",
+  "exit_code": 0
+}

@@ -92,9 +92,9 @@ for row in rows:
         assert len(window)==metric['pointCount']
         years=(stamp(window[-1]['date'])-stamp(window[0]['date'])).days/365.25
         returns=[b['portfolioValue']/a['portfolioValue']-1 for a,b in zip(window,window[1:])]
-        near(metric['annualizedReturn'],((window[-1]['portfolioValue']/window[0]['portfolioValue'])**(1/years)-1)*100)
+        near(metric['annualizedReturn'],(window[-1]['portfolioValue']/window[0]['portfolioValue'])**(1/years)-1)
         peak=window[0]['portfolioValue']; dd=0
-        for s in window: peak=max(peak,s['portfolioValue']); dd=max(dd,(peak-s['portfolioValue'])/peak*100)
+        for s in window: peak=max(peak,s['portfolioValue']); dd=max(dd,(peak-s['portfolioValue'])/peak)
         near(metric['maxDrawdown'],dd)
         near(metric['sharpeRF0'],statistics.mean(returns)/statistics.stdev(returns)*math.sqrt(len(returns)/years))
         excess=[r-(accrue(a['date'],b['date'])-1) for r,a,b in zip(returns,window,window[1:])]
