@@ -1,0 +1,62 @@
+{
+  "study_id": "AUDIT-CROSS-MARKET-SAVED-NAV-20261008",
+  "frozen_at": "2026-10-08T09:22:45.124605+00:00",
+  "evidence_class": "POSTHOC_MATCHED_SAVED_NAV_AUDIT",
+  "prior_candidate_performance_exposed": true,
+  "matched_comparison_performance_viewed": false,
+  "formal_validation": false,
+  "candidate": "cross-market-extreme-qqq-cash",
+  "metric": "App whole account daily NAV Sharpe Rf=0",
+  "user_metric_confirmation": "App full-history Sharpe Rf=0",
+  "rule_changes": 0,
+  "parameter_search_budget": 0,
+  "accounts": [
+    "cross-market-extreme-qqq-cash",
+    "inverse-stress-control",
+    "qqq-buyhold",
+    "cny-cash-control",
+    "gold-nasdaq-dual-trend-barbell",
+    "nfci-dual-core-v11",
+    "core-gold-satellite-equity-curve-state-gate-momentum",
+    "core-gold-satellite-risk-budget-state-gate-momentum",
+    "core-gold-satellite-profit-lock-momentum",
+    "risk-contribution-cash-confidence-low-noise"
+  ],
+  "primary_comparison": "candidate strictly above every six current curated control on full exact common valuation-date intersection",
+  "window": "earliest/latest mechanically common dates from all ten continuous saved accounts; no performance selection",
+  "costs": {
+    "fee_percent_per_fill": 0.025,
+    "slippage_percent": 0,
+    "cash": "CashYieldCNY"
+  },
+  "source_files": [
+    {
+      "source": "cross-market-extreme-cash-2026-10-08/run/result.json.gz",
+      "archive_sha256": "762c9eefe24573cf7e1cd567917ebab93530511379627a2ffe0aad26fcd3c7ed",
+      "raw_sha256": "13b98b1e2e506483e3d124d623cb66f61745d0b3da9db206607134c17b723de3",
+      "account_count": 4
+    },
+    {
+      "source": "qqq-short-reversal-indicators-2026-10-08/run/native-full.json.gz",
+      "archive_sha256": "bb2ce8ffd6776e2516e4efaf9b7d1cff09708d4fff869ddcf7bd8ba237399cb2",
+      "raw_sha256": "ab302d4a5aca8af5db146fda696d469ff70c5c578beee5c4e236f4d46864c1be",
+      "account_count": 6
+    }
+  ],
+  "strategy_replay": false,
+  "eligibility": "Eight-component stress composite is a complex reference, not a pure one-price single-indicator candidate. A positive comparison cannot complete the user goal or imply formal validity.",
+  "old_status": "Original cash-excess Sharpe 1.2 failure and original four-account report remain immutable. This separately records the user-confirmed Rf0 comparison audit.",
+  "checks": [
+    "Verify source hashes",
+    "Exact common date intersection",
+    "Swift App metric calculation, independently recompute saved NAV metrics",
+    "No changed NAVs, targets or fills",
+    "Disclose source dates, clock and core version differences"
+  ],
+  "limitations": [
+    "Saved candidate price-only, no funded dividends or tax.",
+    "Account vintages and native instruments/closing versus QQQ opening clocks differ.",
+    "Current core added optional cash distribution/split support since original candidate; no replay parity claimed in this saved-output audit.",
+    "No source-vintage/G0-G6/OOS or complete eligible-frontier certification."
+  ]
+}

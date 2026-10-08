@@ -1,0 +1,27 @@
+{
+  "schema": "saved-account-matched-nav-v1",
+  "files": [
+    {
+      "path": "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-saved-nav-audit-2026-10-08/stress-accounts.json",
+      "sha256": "13b98b1e2e506483e3d124d623cb66f61745d0b3da9db206607134c17b723de3",
+      "ids": [
+        "cross-market-extreme-qqq-cash",
+        "inverse-stress-control",
+        "qqq-buyhold",
+        "cny-cash-control"
+      ]
+    },
+    {
+      "path": "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-saved-nav-audit-2026-10-08/product-accounts.json",
+      "sha256": "ab302d4a5aca8af5db146fda696d469ff70c5c578beee5c4e236f4d46864c1be",
+      "ids": [
+        "gold-nasdaq-dual-trend-barbell",
+        "nfci-dual-core-v11",
+        "core-gold-satellite-equity-curve-state-gate-momentum",
+        "core-gold-satellite-risk-budget-state-gate-momentum",
+        "core-gold-satellite-profit-lock-momentum",
+        "risk-contribution-cash-confidence-low-noise"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "adaptations" : [
+    "CNY cash replaces TLT\/IEF",
+    "Daily next-open re-entry replaces Friday intraday re-entry",
+    "Warmup state carried into funded period"
+  ],
+  "binary_sha256" : "d0c30a9bec596916fa5e79dae7e6396d8070f7d642ca68e7156d9fcb99e48a32",
+  "candidate_count" : 1,
+  "cash" : "CashYieldCNY",
+  "completed_at" : "2026-10-07T21:45:24Z",
+  "data_sha256" : "c89a17e0523d1882c55c93bdcde2edf2b0592251f900cb793919b1a4bfcb33aa",
+  "evidence_class" : "D0_RETROSPECTIVE_PUBLIC_RULE_CNY_ADAPTATION",
+  "execution_version" : "settlement-v4\/next-open\/symbol-order-v1",
+  "feature_keys" : [
+    "XLI",
+    "DBB",
+    "IGE",
+    "SHY",
+    "negative_UUP",
+    "negative_GLD_minus_SLV",
+    "negative_XLU_minus_XLI",
+    "negative_FXF_minus_FXA"
+  ],
+  "fee_percent" : 0.025000000000000001,
+  "formal_validation" : false,
+  "history_sessions" : 252,
+  "history_sha256" : "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa",
+  "limitations" : [
+    "Current adjusted signals, price-only account; original numeric quote vintage not certified.",
+    "No pristine OOS or formal G0-G6 PASS; no superiority claim from selected slices.",
+    "Signal-only ETFs do not enter holdings; no leverage, crypto, cash proxy or implicit bond income.",
+    "Single-asset binary switch; hold units between target changes, not daily maintenance."
+  ],
+  "maximum_target_gross" : 1,
+  "parameter_search_count" : 0,
+  "percentile" : 1,
+  "recommendation_eligible" : false,
+  "reference_shifts" : [
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65
+  ],
+  "result_sha256" : "13b98b1e2e506483e3d124d623cb66f61745d0b3da9db206607134c17b723de3",
+  "run_count" : 4,
+  "slippage_percent" : 0,
+  "source_commit" : "55612ee3434d50c918b9778bfac3e162ad1f438f",
+  "wait_cap" : 60,
+  "wait_initial" : 15
+}

@@ -34,6 +34,7 @@ struct ResearchCLI {
             "olmar-prediction-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
             "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "saved-account-compare": ["--accounts", "--output", "--source-commit"],
             "qqq-reversal-screen": ["--prices", "--history", "--control-history", "--macro", "--output", "--source-commit"],
             "single-indicator-screen": ["--history", "--macro", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -63,6 +64,9 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "saved-account-compare":
+            try SavedAccountComparison.run(accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "qqq-reversal-screen":
             try QQQReversalScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"), controlHistoryPath: argument("--control-history"), macroPath: argument("--macro"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
