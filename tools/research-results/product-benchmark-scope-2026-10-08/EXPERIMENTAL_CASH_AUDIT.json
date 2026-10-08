@@ -1,0 +1,284 @@
+{
+  "audit_completed_at": "2026-10-08T11:46:46.528392+00:00",
+  "status": "PASS_SAVED_MONEY_FUND_HOLDING_PROOF",
+  "accounts": [
+    {
+      "key": "REPLAY:SETTLEMENT-V4:2026-10-04:recent-gold-equity-relative-z252-shift25:SLIP0.05",
+      "strategy_id": "recent-gold-equity-relative-z252-shift25",
+      "old_sharpe_rf0": 1.6013497821614744,
+      "fee_percent": 0.025,
+      "slippage_percent": 0.05,
+      "source": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/runs/recent-gold-equity-relative-z252-shift25-product/result.json.gz",
+      "raw_sha256": "a3709750c011a0996c3a0653db27f0b0210b88e691856c299da43fc3150239cd",
+      "states": 4379,
+      "positive_money_fund_holding_states": 2539,
+      "first_positive_money_state": "2013-01-03T16:00:00Z",
+      "last_positive_money_state": "2026-10-01T16:00:00Z",
+      "max_money_fund_nav_fraction": 1.0,
+      "actual_symbols": [
+        "etf510210_cny",
+        "etf510300_cny",
+        "gold_cny",
+        "money511990_cny",
+        "oneq_tr",
+        "spy_tr"
+      ],
+      "cash_constraint_eligible": false,
+      "historical_metrics_modified": false,
+      "not_concluded": [
+        "not alleging all targets leveraged",
+        "not claiming original intrinsic validation failed",
+        "not recomputing performance after removing money fund"
+      ]
+    },
+    {
+      "key": "REPLAY:SETTLEMENT-V4:2026-10-04:recent-gold-equity-relative-z252-shift25:SLIP0",
+      "strategy_id": "recent-gold-equity-relative-z252-shift25",
+      "old_sharpe_rf0": 1.6419709868563035,
+      "fee_percent": 0.025,
+      "slippage_percent": 0,
+      "source": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/runs/recent-gold-equity-relative-z252-shift25-research/result.json.gz",
+      "raw_sha256": "9400f5fec02ff9be43f45462b1a2f4a8719a0a2c1c1ab0669500f47b2f87d8d2",
+      "states": 4379,
+      "positive_money_fund_holding_states": 2539,
+      "first_positive_money_state": "2013-01-03T16:00:00Z",
+      "last_positive_money_state": "2026-10-01T16:00:00Z",
+      "max_money_fund_nav_fraction": 1.0,
+      "actual_symbols": [
+        "etf510210_cny",
+        "etf510300_cny",
+        "gold_cny",
+        "money511990_cny",
+        "oneq_tr",
+        "spy_tr"
+      ],
+      "cash_constraint_eligible": false,
+      "historical_metrics_modified": false,
+      "not_concluded": [
+        "not alleging all targets leveraged",
+        "not claiming original intrinsic validation failed",
+        "not recomputing performance after removing money fund"
+      ]
+    },
+    {
+      "key": "REPLAY:SETTLEMENT-V4:2026-10-04:recent-pair-spread-z252-shift25:SLIP0.05",
+      "strategy_id": "recent-pair-spread-z252-shift25",
+      "old_sharpe_rf0": 1.7000978245381608,
+      "fee_percent": 0.025,
+      "slippage_percent": 0.05,
+      "source": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/runs/recent-pair-spread-z252-shift25-product/result.json.gz",
+      "raw_sha256": "696d2759022280607bc197b6a4944d727df00966cd6495ad1d800b23ce49485c",
+      "states": 4379,
+      "positive_money_fund_holding_states": 2539,
+      "first_positive_money_state": "2013-01-03T16:00:00Z",
+      "last_positive_money_state": "2026-10-01T16:00:00Z",
+      "max_money_fund_nav_fraction": 1.0,
+      "actual_symbols": [
+        "csi300",
+        "etf510210_cny",
+        "etf510300_cny",
+        "gold_cny",
+        "money511990_cny",
+        "oneq_tr",
+        "shanghai_composite",
+        "spy_tr"
+      ],
+      "cash_constraint_eligible": false,
+      "historical_metrics_modified": false,
+      "not_concluded": [
+        "not alleging all targets leveraged",
+        "not claiming original intrinsic validation failed",
+        "not recomputing performance after removing money fund"
+      ]
+    },
+    {
+      "key": "REPLAY:SETTLEMENT-V4:2026-10-04:recent-pair-spread-z252-shift25:SLIP0",
+      "strategy_id": "recent-pair-spread-z252-shift25",
+      "old_sharpe_rf0": 1.7256557994524988,
+      "fee_percent": 0.025,
+      "slippage_percent": 0,
+      "source": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/runs/recent-pair-spread-z252-shift25-research/result.json.gz",
+      "raw_sha256": "24419176072061cb9e6d2dc2567656bb1e4eae839dfa27a903621e4a2e668fc7",
+      "states": 4379,
+      "positive_money_fund_holding_states": 2539,
+      "first_positive_money_state": "2013-01-03T16:00:00Z",
+      "last_positive_money_state": "2026-10-01T16:00:00Z",
+      "max_money_fund_nav_fraction": 1.0,
+      "actual_symbols": [
+        "csi300",
+        "etf510210_cny",
+        "etf510300_cny",
+        "gold_cny",
+        "money511990_cny",
+        "oneq_tr",
+        "shanghai_composite",
+        "spy_tr"
+      ],
+      "cash_constraint_eligible": false,
+      "historical_metrics_modified": false,
+      "not_concluded": [
+        "not alleging all targets leveraged",
+        "not claiming original intrinsic validation failed",
+        "not recomputing performance after removing money fund"
+      ]
+    },
+    {
+      "key": "REPLAY:SETTLEMENT-V4:2026-10-04:recent-volatility-managed-idle-cash:SLIP0.05",
+      "strategy_id": "recent-volatility-managed-idle-cash",
+      "old_sharpe_rf0": 1.669152754472341,
+      "fee_percent": 0.025,
+      "slippage_percent": 0.05,
+      "source": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/runs/recent-volatility-managed-idle-cash-product/result.json.gz",
+      "raw_sha256": "9d46a85f29aabef68f007bcada2579fc05e6fc5e2366543954d653c749c8c9f0",
+      "states": 4379,
+      "positive_money_fund_holding_states": 1897,
+      "first_positive_money_state": "2012-12-26T16:00:00Z",
+      "last_positive_money_state": "2026-10-01T16:00:00Z",
+      "max_money_fund_nav_fraction": 1.0,
+      "actual_symbols": [
+        "csi300",
+        "etf510210_cny",
+        "etf510300_cny",
+        "gold_cny",
+        "money511990_cny",
+        "oneq_tr",
+        "shanghai_composite",
+        "spy_tr"
+      ],
+      "cash_constraint_eligible": false,
+      "historical_metrics_modified": false,
+      "not_concluded": [
+        "not alleging all targets leveraged",
+        "not claiming original intrinsic validation failed",
+        "not recomputing performance after removing money fund"
+      ]
+    },
+    {
+      "key": "REPLAY:SETTLEMENT-V4:2026-10-04:recent-volatility-managed-idle-cash:SLIP0",
+      "strategy_id": "recent-volatility-managed-idle-cash",
+      "old_sharpe_rf0": 1.6884899402709699,
+      "fee_percent": 0.025,
+      "slippage_percent": 0,
+      "source": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/runs/recent-volatility-managed-idle-cash-research/result.json.gz",
+      "raw_sha256": "4bceabcbb65bcd2501d38cabb8428d94211b98723de754d1669c10d6e4e9dc50",
+      "states": 4379,
+      "positive_money_fund_holding_states": 1897,
+      "first_positive_money_state": "2012-12-26T16:00:00Z",
+      "last_positive_money_state": "2026-10-01T16:00:00Z",
+      "max_money_fund_nav_fraction": 1.0,
+      "actual_symbols": [
+        "csi300",
+        "etf510210_cny",
+        "etf510300_cny",
+        "gold_cny",
+        "money511990_cny",
+        "oneq_tr",
+        "shanghai_composite",
+        "spy_tr"
+      ],
+      "cash_constraint_eligible": false,
+      "historical_metrics_modified": false,
+      "not_concluded": [
+        "not alleging all targets leveraged",
+        "not claiming original intrinsic validation failed",
+        "not recomputing performance after removing money fund"
+      ]
+    }
+  ],
+  "existing_pair_override": {
+    "REASSESS:OHLC-RECLAIM-V1:BPS25:2026-09-06": {
+      "status": "SUSPENDED_EXECUTION_MISMATCH",
+      "exclude_from_current_strategy_comparisons": true,
+      "affected_original_scenario": "low_base",
+      "reason": "Expected versus accepted target mismatch up to 113 days. Original immutable metric row is historical evidence, not faithful strategy performance. Corrected performance unknown.",
+      "audit_key": "AUDIT:CHANGE-ONLY-TARGET-DELIVERY:2026-09-06",
+      "source": "studies/target-delivery-audit-2026-09-06/RESEARCH_IMPACT.json",
+      "source_sha256": "16ef666502e992a93c10a1b02041c08f9ec88f0aab8ec67db126f4f6e04d41c3",
+      "historical_row_preserved": true,
+      "correction_key": "CORRECTION:OHLC-RECLAIM-V1:TARGET-DELIVERY:2026-09-06",
+      "correction_status": "TARGET_DELIVERY_FIXED_BUY_PHASE_REVIEW_REQUIRED",
+      "latest_execution_audit_key": "AUDIT:REPEATED-SELL-PHASE-BUY-DEFERRAL:2026-09-06"
+    },
+    "CORRECTION:OHLC-RECLAIM-V1:TARGET-DELIVERY:2026-09-06": {
+      "status": "EXECUTION_REVIEW_REQUIRED",
+      "exclude_from_current_strategy_comparisons": true,
+      "reason": "Diagnostic path retains repeated sell-phase buy deferral. Top-level performance fields intentionally null.",
+      "audit_key": "AUDIT:REPEATED-SELL-PHASE-BUY-DEFERRAL:2026-09-06",
+      "source": "studies/reclaim-delivery-correction-2026-09-06/execution/FINAL_RESULT.json",
+      "source_sha256": "b12a46da12992c4e176eec864d4a5cb7fc52dd07484345018c54b388e303f83f"
+    },
+    "BASELINE:BPS25:LOW-NOISE-CORRVAR-PRODUCT-NATIVE-511990:2026-08-20": {
+      "status": "HISTORICAL_ENGINE_VINTAGE_CURRENT_REFERENCE_SUSPENDED",
+      "exclude_from_current_strategy_comparisons": true,
+      "reason": "Old metric vintage does not represent corrected current execution. Do not use to promote; original verdict unchanged, no blanket invalidation of all historical trials.",
+      "historical_row_preserved": true,
+      "original_trial_status": "CONTROL",
+      "source": "studies/execution-reassessment-2026-09-30/REPORT.md",
+      "latest_audit_date": "2026-09-30"
+    },
+    "REPLAY:V11:2026-09-04:fee1-slip005": {
+      "status": "HISTORICAL_ENGINE_VINTAGE_CURRENT_REFERENCE_SUSPENDED",
+      "exclude_from_current_strategy_comparisons": true,
+      "reason": "Old metric vintage does not represent corrected current execution. Do not use to promote; original verdict unchanged, no blanket invalidation of all historical trials.",
+      "historical_row_preserved": true,
+      "original_trial_status": "POST_HOC_CURRENT_REPLAY",
+      "source": "studies/execution-reassessment-2026-09-30/REPORT.md",
+      "latest_audit_date": "2026-09-30"
+    },
+    "ATM-SVP2-V11-C3L3-CORE-SWITCH-001::S-V11-C3L3-CORE-SWITCH": {
+      "status": "HISTORICAL_ENGINE_VINTAGE_CURRENT_REFERENCE_SUSPENDED",
+      "exclude_from_current_strategy_comparisons": true,
+      "reason": "Old metric vintage does not represent corrected current execution. Do not use to promote; original verdict unchanged, no blanket invalidation of all historical trials.",
+      "historical_row_preserved": true,
+      "original_trial_status": "FAIL",
+      "source": "studies/execution-reassessment-2026-09-30/REPORT.md",
+      "latest_audit_date": "2026-09-30"
+    },
+    "BPS25-SCREEN:pair-spread-high-sell-low-buy-bps25-screen-001:us-pair-oneq-spy-z252-shift25": {
+      "status": "ARCHIVED_PAIR_POLICY_FIDELITY_UNSUPPORTED",
+      "exclude_from_current_strategy_comparisons": true,
+      "historical_row_preserved": true,
+      "reason": "Raw pair targets contain negative legs; removal/normalization changes other sleeves. No matched current overlay-alpha evidence; sanitized account legality is not disproved.",
+      "audit_key": "AUDIT:PAIR-ATTRIBUTION-RAW-TARGETS:20261008",
+      "source": "research/asset-time-machine/workspace/studies/pair-attribution-and-target-audit-2026-10-08/AUDIT.json",
+      "source_sha256": "bf1ff16cff6bd70c91d360341e5628ce14612496798a7cdd328adb26eaff5016",
+      "latest_audit_date": "2026-10-07T19:30:47.476925+00:00"
+    },
+    "BPS25-SCREEN:pair-spread-high-sell-low-buy-bps25-screen-001:us-and-china-pairs-z252-shift25": {
+      "status": "ARCHIVED_PAIR_POLICY_FIDELITY_UNSUPPORTED",
+      "exclude_from_current_strategy_comparisons": true,
+      "historical_row_preserved": true,
+      "reason": "Raw pair targets contain negative legs; removal/normalization changes other sleeves. No matched current overlay-alpha evidence; sanitized account legality is not disproved.",
+      "audit_key": "AUDIT:PAIR-ATTRIBUTION-RAW-TARGETS:20261008",
+      "source": "research/asset-time-machine/workspace/studies/pair-attribution-and-target-audit-2026-10-08/AUDIT.json",
+      "source_sha256": "bf1ff16cff6bd70c91d360341e5628ce14612496798a7cdd328adb26eaff5016",
+      "latest_audit_date": "2026-10-07T19:30:47.476925+00:00"
+    },
+    "REPLAY:SETTLEMENT-V4:2026-10-04:recent-pair-spread-z252-shift25:SLIP0": {
+      "status": "ARCHIVED_PAIR_POLICY_FIDELITY_UNSUPPORTED",
+      "exclude_from_current_strategy_comparisons": true,
+      "historical_row_preserved": true,
+      "reason": "Raw pair targets contain negative legs; removal/normalization changes other sleeves. No matched current overlay-alpha evidence; sanitized account legality is not disproved.",
+      "audit_key": "AUDIT:PAIR-ATTRIBUTION-RAW-TARGETS:20261008",
+      "source": "research/asset-time-machine/workspace/studies/pair-attribution-and-target-audit-2026-10-08/AUDIT.json",
+      "source_sha256": "bf1ff16cff6bd70c91d360341e5628ce14612496798a7cdd328adb26eaff5016",
+      "latest_audit_date": "2026-10-07T19:30:47.476925+00:00"
+    },
+    "REPLAY:SETTLEMENT-V4:2026-10-04:recent-pair-spread-z252-shift25:SLIP0.05": {
+      "status": "ARCHIVED_PAIR_POLICY_FIDELITY_UNSUPPORTED",
+      "exclude_from_current_strategy_comparisons": true,
+      "historical_row_preserved": true,
+      "reason": "Raw pair targets contain negative legs; removal/normalization changes other sleeves. No matched current overlay-alpha evidence; sanitized account legality is not disproved.",
+      "audit_key": "AUDIT:PAIR-ATTRIBUTION-RAW-TARGETS:20261008",
+      "source": "research/asset-time-machine/workspace/studies/pair-attribution-and-target-audit-2026-10-08/AUDIT.json",
+      "source_sha256": "bf1ff16cff6bd70c91d360341e5628ce14612496798a7cdd328adb26eaff5016",
+      "latest_audit_date": "2026-10-07T19:30:47.476925+00:00"
+    }
+  },
+  "existing_resource_provenance": {
+    "path": "research/asset-time-machine/workspace/studies/strategy-selection-2026-10-04/RESOURCE_PROVENANCE.json",
+    "sha256": "705b5d31a660b7b5afe8b02aaa1f179ccf8d59c2bdf6a64abe4bca6ed3c093cb"
+  },
+  "restriction_source": "AssetTimeMachine AGENTS.md user RMB demand-deposit hard rule; strategy logic and saved holdings both checked",
+  "no_capital_replay": true
+}

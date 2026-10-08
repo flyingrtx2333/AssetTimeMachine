@@ -20,6 +20,7 @@ struct ResearchCLI {
         let args = Array(CommandLine.arguments.dropFirst())
         let optionsByCommand: [String: Set<String>] = [
             "catalog": [], "configuration": ["--strategy"],
+            "product-benchmark-scope": ["--mode", "--history", "--macro", "--output", "--prepared", "--source-commit"],
             "verify-cost-invariance": ["--history", "--strategy", "--macro"],
             "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
             "published-rule-screen": ["--history", "--output", "--source-commit"],
@@ -67,6 +68,10 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "product-benchmark-scope":
+            try ProductBenchmarkScopeReplay.run(mode: argument("--mode"), historyPath: argument("--history"),
+                macroPath: argument("--macro"), outputPath: argument("--output"),
+                preparedPath: argument("--prepared"), sourceCommit: argument("--source-commit"))
         case "recovered-term-structure":
             try RecoveredTermStructureScreen.run(mode:argument("--mode"),curvePath:argument("--curve"),
                 historyPath:argument("--history"),preparedPath:argument("--prepared"),
