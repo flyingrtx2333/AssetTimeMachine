@@ -32,8 +32,10 @@ enum DailyScreenOutput {
         guard !states.isEmpty else { throw BacktestConfigurationError.missingData(id) }
         for s in states {
             let held = s.holdingsBySymbol.values.reduce(0, +)
+            let receivable = s.distributionReceivable ?? 0
             guard s.portfolioValue > 0, s.portfolioValue.isFinite, s.cash >= -1e-8,
-                  abs(held + s.cash - s.portfolioValue) <= max(1e-8, abs(s.portfolioValue) * 1e-12),
+                  receivable.isFinite, receivable >= 0,
+                  abs(held + s.cash + receivable - s.portfolioValue) <= max(1e-8, abs(s.portfolioValue) * 1e-12),
                   held / s.portfolioValue <= 1 + 1e-12,
                   s.targetWeights.values.allSatisfy({ $0 >= 0 && $0.isFinite }),
                   s.targetWeights.values.reduce(0, +) <= 1 + 1e-12 else {

@@ -13,7 +13,12 @@ nonisolated public enum BacktestDailySimulator {
         /// Signals and end-of-day valuation still use the frame's close series.
         executionPricesBySymbol: [String: [Double]]? = nil,
         /// Explicit research counterfactual; production callers retain sorted purchases.
-        buyBudgetPolicy: BacktestBuyBudgetPolicy = .symbolOrder
+        buyBudgetPolicy: BacktestBuyBudgetPolicy = .symbolOrder,
+        /// Opt in only with unadjusted prices and complete ex/pay-date events.
+        cashDistributions: [BacktestCashDistribution] = [],
+        /// Base currency per distribution-currency unit, on every frame date.
+        distributionFXToBaseBySymbol: [String: [Double]] = [:],
+        shareSplits: [BacktestShareSplit] = []
     ) -> BacktestDailySimulationResult? {
         guard execution.initialCash > 0,
               frame.simulationRange.count >= 1,
@@ -26,6 +31,18 @@ nonisolated public enum BacktestDailySimulator {
             }) else { return nil }
         }
         let executionPrices = executionPricesBySymbol ?? frame.pricesBySymbol
+        var distributionLedger: BacktestDistributionLedger?
+        if !cashDistributions.isEmpty {
+            guard let ledger = BacktestDistributionLedger(frame: frame, events: cashDistributions,
+                fxToBaseBySymbol: distributionFXToBaseBySymbol) else { return nil }
+            distributionLedger = ledger
+        }
+        var splitsByIndex: [Int: [BacktestShareSplit]] = [:]
+        if !shareSplits.isEmpty {
+            guard let schedule = BacktestSplitSchedule(frame: frame, events: shareSplits) else { return nil }
+            splitsByIndex = schedule.eventsByIndex
+        }
+        var splitAdjustments: [BacktestSplitAdjustment] = []
 
         var cash = execution.initialCash
         var unitsBySymbol = Dictionary(uniqueKeysWithValues: frame.tradableSymbols.map { ($0, 0.0) })
@@ -53,16 +70,20 @@ nonisolated public enum BacktestDailySimulator {
             }) else { return nil }
             return (symbol, entryIndex)
         })
+        var benchmarkSplitMultipliers: [String: Double] = [:]
 
         func portfolioValue(at index: Int) -> Double {
-            cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
+            let held = cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
                 partial + (unitsBySymbol[symbol] ?? 0) * (frame.pricesBySymbol[symbol]?[index] ?? 0)
             }
+            return distributionLedger.map { held + $0.receivableValue(at: index) } ?? held
         }
         func executionValue(at index: Int) -> Double {
-            cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
+            let held = cash + frame.tradableSymbols.reduce(0.0) { partial, symbol in
                 partial + (unitsBySymbol[symbol] ?? 0) * (executionPrices[symbol]?[index] ?? 0)
             }
+            // Execution must not value the claim with execution-day closing FX.
+            return distributionLedger.map { held + $0.receivableValue(at: Swift.max(index - 1, 0)) } ?? held
         }
 
         for index in frame.simulationRange {
@@ -92,6 +113,18 @@ nonisolated public enum BacktestDailySimulator {
                 }
             }
 
+            for split in splitsByIndex[index] ?? [] {
+                if let entry = benchmarkEntryIndexBySymbol[split.symbol], entry < index {
+                    benchmarkSplitMultipliers[split.symbol, default: 1] *= split.newUnitsPerOldUnit
+                }
+                let previousUnits = unitsBySymbol[split.symbol] ?? 0
+                guard previousUnits > 0 else { continue }
+                let newUnits = previousUnits * split.newUnitsPerOldUnit
+                unitsBySymbol[split.symbol] = newUnits
+                averageCostBySymbol[split.symbol] = (averageCostBySymbol[split.symbol] ?? 0) / split.newUnitsPerOldUnit
+                splitAdjustments.append(.init(split: split, previousUnits: previousUnits, resultingUnits: newUnits))
+            }
+            distributionLedger?.recognize(at: index, previousCloseUnits: unitsBySymbol)
             let signalIndex = index - 1
             let preRebalanceValue = executionValue(at: index)
             let signalPortfolioValue = points.last?.portfolioValue ?? preRebalanceValue
@@ -321,6 +354,7 @@ nonisolated public enum BacktestDailySimulator {
                 }
             }
 
+            if let paid = distributionLedger?.payAfterTrading(at: index, date: date) { cash += paid }
             let value = portfolioValue(at: index)
             points.append(.init(date: date, portfolioValue: value, sequence: points.count))
             portfolioValuesByIndex[index] = value
@@ -337,7 +371,8 @@ nonisolated public enum BacktestDailySimulator {
                 targetWeights: currentTargetWeights,
                 cash: cash,
                 holdingsBySymbol: holdingsBySymbol,
-                portfolioValue: value
+                portfolioValue: value,
+                distributionReceivable: distributionLedger?.receivableValue(at: index)
             ))
             exposureSum += value > 0 ? investedValue / value : 0
             exposureSamples += 1
@@ -356,7 +391,8 @@ nonisolated public enum BacktestDailySimulator {
                     // first observation instead of dropping it from the benchmark.
                     return partial + allocation
                 }
-                return partial + allocation * prices[index] / prices[entryIndex]
+                let sleeveValue = allocation * prices[index] / prices[entryIndex]
+                return partial + sleeveValue * (benchmarkSplitMultipliers[symbol] ?? 1)
             }
             benchmarkPoints.append(.init(date: date, portfolioValue: benchmarkValue, sequence: benchmarkPoints.count))
         }
@@ -377,8 +413,9 @@ nonisolated public enum BacktestDailySimulator {
             exposureRatio: exposureSamples > 0 ? exposureSum / Double(exposureSamples) : 0,
             cashYieldSummary: cashYieldSummary,
             portfolioValuesByIndex: portfolioValuesByIndex,
-            dailyStates: dailyStates
+            dailyStates: dailyStates,
+            distributionEntitlements: distributionLedger?.entitlements ?? [],
+            splitAdjustments: splitAdjustments
         )
     }
 }
-

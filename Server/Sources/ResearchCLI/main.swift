@@ -33,6 +33,7 @@ struct ResearchCLI {
             "cross-market-stress-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-prediction-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
@@ -60,6 +61,9 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "haa-cash-screen":
+            try HAACashScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "olmar-funded-screen":
             try OLMARFundedScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))

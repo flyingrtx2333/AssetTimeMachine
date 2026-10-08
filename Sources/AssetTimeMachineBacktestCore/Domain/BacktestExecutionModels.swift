@@ -200,18 +200,22 @@ nonisolated public struct BacktestDailyState: Codable, Sendable {
     public let cash: Double
     public let holdingsBySymbol: [String: Double]
     public let portfolioValue: Double
+    /// Nil for historical price-only runs, preserving their encoded format.
+    public let distributionReceivable: Double?
     public init(
         date: Date,
         targetWeights: [String: Double],
         cash: Double,
         holdingsBySymbol: [String: Double],
-        portfolioValue: Double
+        portfolioValue: Double,
+        distributionReceivable: Double? = nil
     ) {
         self.date = date
         self.targetWeights = targetWeights
         self.cash = cash
         self.holdingsBySymbol = holdingsBySymbol
         self.portfolioValue = portfolioValue
+        self.distributionReceivable = distributionReceivable
     }
 }
 
@@ -257,6 +261,9 @@ nonisolated public struct BacktestRebalanceDecision {
 
 nonisolated public struct BacktestDailySimulationResult {
     public let points: [BacktestSeriesPoint]
+    /// Equal initial sleeves, price return with share-split normalization.
+    /// Excludes distributions and costs; funded total-return comparisons must
+    /// run explicit control accounts through the same simulator.
     public let benchmarkPoints: [BacktestSeriesPoint]
     public let trades: [AdvancedBacktestTrade]
     public let finalCash: Double
@@ -265,6 +272,8 @@ nonisolated public struct BacktestDailySimulationResult {
     public let cashYieldSummary: CashYieldSummary
     public let portfolioValuesByIndex: [Double]
     public let dailyStates: [BacktestDailyState]
+    public let distributionEntitlements: [BacktestDistributionEntitlement]
+    public let splitAdjustments: [BacktestSplitAdjustment]
     public init(
         points: [BacktestSeriesPoint],
         benchmarkPoints: [BacktestSeriesPoint],
@@ -274,7 +283,9 @@ nonisolated public struct BacktestDailySimulationResult {
         exposureRatio: Double,
         cashYieldSummary: CashYieldSummary,
         portfolioValuesByIndex: [Double],
-        dailyStates: [BacktestDailyState]
+        dailyStates: [BacktestDailyState],
+        distributionEntitlements: [BacktestDistributionEntitlement] = [],
+        splitAdjustments: [BacktestSplitAdjustment] = []
     ) {
         self.points = points
         self.benchmarkPoints = benchmarkPoints
@@ -285,6 +296,7 @@ nonisolated public struct BacktestDailySimulationResult {
         self.cashYieldSummary = cashYieldSummary
         self.portfolioValuesByIndex = portfolioValuesByIndex
         self.dailyStates = dailyStates
+        self.distributionEntitlements = distributionEntitlements
+        self.splitAdjustments = splitAdjustments
     }
 }
-
