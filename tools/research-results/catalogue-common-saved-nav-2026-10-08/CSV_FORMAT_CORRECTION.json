@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-08T12:43:54.335221+00:00",
+  "initial_git_diff_check": "FAIL_EXIT2_CSV_CRLF_FLAGGED_AS_TRAILING_WHITESPACE",
+  "original_csv_raw_sha256": "99a827c9659eb5bec65374a2930cffa458ed3408600ebbe0f015321673044f63",
+  "original_csv_archive": "COMPARISON_METRICS.original-crlf.csv.gz",
+  "new_csv_sha256": "3eb7ec516b15f49c86dc57cc6c0f30d54e720d2cd0f71ec3dfc295fcf012604b",
+  "parsed_rows_values_unchanged": true,
+  "account_or_comparison_rerun": false,
+  "correction": "Use LF for newly generated comparison CSV only; retain original CRLF bytes losslessly, update only this batch source digests."
+}

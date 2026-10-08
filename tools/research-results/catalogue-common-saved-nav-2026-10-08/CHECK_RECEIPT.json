@@ -1,0 +1,10 @@
+{
+  "release_build": "PASS31.49seconds",
+  "independent_saved_state_audit": "PASS67892states151metricgroups",
+  "calculation_core_changed": false,
+  "account_replay_or_new_target_construction": false,
+  "new_XCTest_suite_added_or_run": false,
+  "scope": "Immutable saved-source/hash/date/cash/holding/native-source and metrics readback, not trading-intent/PIT/G0-G6 certification",
+  "metadata_only_initial_error_preserved": "METADATA_SOURCE_BINDING_CORRECTION.json",
+  "original_long_calendar_failure_preserved": true
+}

@@ -1,0 +1,192 @@
+{
+  "status": "PASS",
+  "created_at": "2026-10-08T12:43:54.407275+00:00",
+  "files": {
+    "ARCHIVE_METADATA_PRINT_ERROR.json": {
+      "bytes": 449,
+      "sha256": "4652f38a1016dd65f88c711f9cd60164fbb298353b956b14eef88140fe021801"
+    },
+    "ARCHIVE_RECEIPT.json": {
+      "bytes": 1948,
+      "sha256": "f06f3956d44c14e6c52b13c5f7fda63b1da77f60454063a2a558e7537c37bfdb"
+    },
+    "CHECK_RECEIPT.json": {
+      "bytes": 521,
+      "sha256": "7d1bbbac1023d3091e3cd5d8adea9b7c01432c6f88d75f66aac52a9229737981"
+    },
+    "COMPARISON_METRICS.csv": {
+      "bytes": 17577,
+      "sha256": "3eb7ec516b15f49c86dc57cc6c0f30d54e720d2cd0f71ec3dfc295fcf012604b"
+    },
+    "COMPARISON_METRICS.original-crlf.csv.gz": {
+      "bytes": 5259,
+      "sha256": "5593fd08368a8d7e79d93cbb61d371b382580a02b3c51093ecf483ffe43fcea2"
+    },
+    "CSV_FORMAT_CORRECTION.json": {
+      "bytes": 608,
+      "sha256": "ab1af9e0a050c700c1d3ae6bdf1a6f1fc98cc3d96f90d0b66bb93fdd1dfbc1c0"
+    },
+    "DECLARATION.json": {
+      "bytes": 1506,
+      "sha256": "675fe90dad6ef7946bf804c7a5f621127a51e8d4c2cc6a0eb40a40babdb943d1"
+    },
+    "HANDOFF.md": {
+      "bytes": 1753,
+      "sha256": "cc109bbe0886f61202afb80c0babf4944dae82c5f57fe4978db9304ec644aa87"
+    },
+    "INPUT_PROVENANCE.json": {
+      "bytes": 921,
+      "sha256": "07b9134676de440a6494e72e191e23cd0942018d0d2756ecf5ee6a9dc773d335"
+    },
+    "MASTER_RECEIPT.json": {
+      "bytes": 700,
+      "sha256": "2faeab9121b4ccc3541430a6f9c0874689e5dccad9991a3b0d20a96984ea73cb"
+    },
+    "MASTER_ROWS.json": {
+      "bytes": 35626,
+      "sha256": "47675ce9ace84698a2225219f7c6447607bed0131f986751293da25987ead9a0"
+    },
+    "MECHANISM_REVIEW.md": {
+      "bytes": 1025,
+      "sha256": "675b709266a7a368ef8809e7b0f34a2addd721d6f82992be0ce1488280c0475e"
+    },
+    "METADATA_SOURCE_BINDING_CORRECTION.json": {
+      "bytes": 447,
+      "sha256": "4205fbdfcecfb2de7210f122ed8febfe71c7b60b45fbd3ea77f0778e106f8842"
+    },
+    "ORIGINAL_NATIVE_ACCOUNT_REPORTS.json": {
+      "bytes": 10118,
+      "sha256": "5ce9f1fc516e30c79d020e75b78416344cedc05fd13a65905fd5766bcdf86ed7"
+    },
+    "PRE_COMPARISON_COMMITS.json": {
+      "bytes": 123,
+      "sha256": "27501885957259d223ebfa8b89df15f6207d843c035e5f12a4bd87da4362bfb5"
+    },
+    "README.md": {
+      "bytes": 1386,
+      "sha256": "0c39c42bb58edbaa03bbdb76fd3435195c0e9a45247f8dc15d2cfb89de26eaf4"
+    },
+    "REPORT.md": {
+      "bytes": 3466,
+      "sha256": "4f51512ab0ae8b60a548a1f329e6124b3c9c084062ba9562b7c507f64d45e110"
+    },
+    "RUN_RECEIPT.json": {
+      "bytes": 730,
+      "sha256": "b497fad0d3f71ea82b35520355a1c53234e7a8c8243ce5d481a9801525a47cbb"
+    },
+    "SAVED_AUDIT.json": {
+      "bytes": 811,
+      "sha256": "8cc98f7f004e46f07b0a93604d78fb867391b181a1df7a04202bf7b4fa27c4b6"
+    },
+    "SOURCE_SCOPE_NOTICE.json": {
+      "bytes": 426,
+      "sha256": "4364ab9303cdc2bdce9c57e070daae4c9861deb4fe4730f353fa0794adf844a6"
+    },
+    "STDERR.txt": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "STDOUT.txt": {
+      "bytes": 82,
+      "sha256": "3f57fe95134eec7af09d69e8c3a9334292ae7b1af8b90f4c3bc5a35d90027756"
+    },
+    "SUMMARY.json": {
+      "bytes": 2235,
+      "sha256": "3b1f735a0f7d0a513803c0e2fd04a1d9a6d19cb710c2c7bcdfe39cd5b2a98884"
+    },
+    "TECHNICAL_FREEZE.json": {
+      "bytes": 739,
+      "sha256": "161cce9b16cad2404330ad3d2428f6389e7b6ba6eeafa68c6edca99ae45b44aa"
+    },
+    "accounts.json": {
+      "bytes": 1758,
+      "sha256": "9b43fa6de90eca93c427eea36a12d12b631cf83c6c55a385f337dca93116e069"
+    },
+    "audit_saved_comparison.py": {
+      "bytes": 7551,
+      "sha256": "2d8e6e67118e18926f6547d33823b7a263a82b1eea9d37fc59135ea02908c0f7"
+    },
+    "comparison/evidence.json": {
+      "bytes": 56810,
+      "sha256": "1e447ef97bb007919999048ffeefb42d8e73eb70c8b8a58e3d63d686dbc705f9"
+    },
+    "comparison/result.json.gz": {
+      "bytes": 3640886,
+      "sha256": "f33cc85fd06824033c30cc4eb09dcc19550e2dc6e6c7869df51904e16367ce69"
+    },
+    "inputs/catalogue19.json.gz": {
+      "bytes": 6412355,
+      "sha256": "6b607f0b48e4a155d007cb4480bb18dd80c6592c9825c71a8feb3eaa9c0a3557"
+    },
+    "inputs/qual-saved-state-adapter.json.gz": {
+      "bytes": 181827,
+      "sha256": "d4b558c57fc325e165aa83cfdc8bef9a9e3c1ee8c1fd780f392cf7f394dc86b2"
+    },
+    "inputs/stress.json.gz": {
+      "bytes": 957492,
+      "sha256": "fffcee7517761451082c163d88330024d86e2cfbe3914495cc2f5ff27529be8e"
+    },
+    "master-before/notion-target.json.gz": {
+      "bytes": 2555,
+      "sha256": "a95f6846ba29742521117ce9c4267df10c069c41cf1b219196452c821da31e9f"
+    },
+    "master-before/strategy-master.csv.gz": {
+      "bytes": 71139,
+      "sha256": "396cc4744ad65aecf78a8d3a88d359312b1907f0129ca1260a1745768a6b8b2d"
+    },
+    "master-before/strategy-master.json.gz": {
+      "bytes": 313126,
+      "sha256": "14eacbc2b30c95218b20f1d23520d65e7df35351793aba4a27631b1ae9ccfe2f"
+    },
+    "master-before/validation-report.json.gz": {
+      "bytes": 2021,
+      "sha256": "8e3126914f2d015af176eba4b7e0f86017ee3617521ea493b90c219dfe389df1"
+    },
+    "record_results.py": {
+      "bytes": 6854,
+      "sha256": "d11b806ad605ad548d172aa78389df9a0f73e0a4e45ac1a9f61e77bbed47bb91"
+    }
+  },
+  "mirrored_paths": [
+    "ARCHIVE_METADATA_PRINT_ERROR.json",
+    "ARCHIVE_RECEIPT.json",
+    "CHECK_RECEIPT.json",
+    "COMPARISON_METRICS.csv",
+    "COMPARISON_METRICS.original-crlf.csv.gz",
+    "CSV_FORMAT_CORRECTION.json",
+    "DECLARATION.json",
+    "HANDOFF.md",
+    "INPUT_PROVENANCE.json",
+    "MASTER_RECEIPT.json",
+    "MASTER_ROWS.json",
+    "MECHANISM_REVIEW.md",
+    "METADATA_SOURCE_BINDING_CORRECTION.json",
+    "ORIGINAL_NATIVE_ACCOUNT_REPORTS.json",
+    "PRE_COMPARISON_COMMITS.json",
+    "README.md",
+    "REPORT.md",
+    "RUN_RECEIPT.json",
+    "SAVED_AUDIT.json",
+    "SOURCE_SCOPE_NOTICE.json",
+    "STDERR.txt",
+    "STDOUT.txt",
+    "SUMMARY.json",
+    "TECHNICAL_FREEZE.json",
+    "accounts.json",
+    "audit_saved_comparison.py",
+    "comparison/evidence.json",
+    "comparison/result.json.gz",
+    "inputs/catalogue19.json.gz",
+    "inputs/qual-saved-state-adapter.json.gz",
+    "inputs/stress.json.gz",
+    "record_results.py"
+  ],
+  "workspace_only_paths": [
+    "master-before/notion-target.json.gz",
+    "master-before/strategy-master.csv.gz",
+    "master-before/strategy-master.json.gz",
+    "master-before/validation-report.json.gz"
+  ],
+  "manifest_self_excluded": true,
+  "full_master_working_files_not_staged": true
+}
