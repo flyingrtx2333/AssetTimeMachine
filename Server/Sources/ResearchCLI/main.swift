@@ -40,6 +40,7 @@ struct ResearchCLI {
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
             "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
             "saved-account-compare": ["--accounts", "--output", "--source-commit"],
+            "saved-catalogue-common-compare": ["--accounts", "--output", "--source-commit"],
             "qqq-reversal-screen": ["--prices", "--history", "--control-history", "--macro", "--output", "--source-commit"],
             "single-indicator-screen": ["--history", "--macro", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -81,6 +82,9 @@ struct ResearchCLI {
             try RecoveredTermStructureScreen.run(mode:argument("--mode"),curvePath:argument("--curve"),
                 historyPath:argument("--history"),preparedPath:argument("--prepared"),
                 outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "saved-catalogue-common-compare":
+            try SavedCatalogueCommonComparison.run(accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "saved-account-compare":
             try SavedAccountComparison.run(accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))

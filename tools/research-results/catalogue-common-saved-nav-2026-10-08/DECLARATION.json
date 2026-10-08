@@ -1,0 +1,21 @@
+{
+  "study_id": "POSTHOC-CATALOGUE20-STRESS2-COMMON-20261008",
+  "created_at": "2026-10-08T12:34:00.823162+00:00",
+  "evidence_class": "POSTHOC_SAVED_NAV_SUPPLEMENT_NOT_PRIMARY_LONG_HISTORY_RESCUE",
+  "new_candidates": 0,
+  "funded_runs": 0,
+  "parameter_searches": 0,
+  "comparison_read_budget": 1,
+  "scope": "20 App-visible comparators without forbidden money-fund holdings, plus 2 already-viewed stress cash-tax diagnostics",
+  "calendar": "Exact full intersection of all22 saved continuous account dates; no chosen start/end or favorable slice",
+  "primary_old_long_history_failure_preserved": true,
+  "user_history_range_question": "Optional pending; this is separately labeled supplemental diagnostic, not an assumed answer",
+  "metrics": "Shared Swift full common Rf0 Sharpe/CAGR/MDD, each native full history; since2020/2022 and crisis2020/2022 as fixed diagnostics",
+  "ranking": "20 comparator maximum; stress minus that maximum on all exact common dates; no universal frontier, causal alpha or economic-equivalence claim",
+  "limits": [
+    "Stress rule has eight external market components, not a simple own-price single indicator.",
+    "Stress funded QQQ cash dividends differs from App price/adjusted hybrid proxies; numeric NAV ordering cannot certify matched instruments or total returns.",
+    "Continuous accounts begin on different native dates, preserve existing positions at common first date; no fresh initial funding/reset.",
+    "No G0-G6/OOS/source-vintage certification."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-08T12:35:03.592755+00:00",
+  "build": "PASS release AssetTimeMachineResearch 31.49seconds",
+  "binary_sha256": "311f03731979060d30a3eee655a570f3fa3c875af5fdeeeec62c6b5ae3062b13",
+  "code": {
+    "Sources/AssetTimeMachineResearchSupport/Commands/SavedCatalogueCommonComparison.swift": "e87ac9e17f46af46e409186db694be79c755ddb068f7cea9dc20e4b22d375742",
+    "Server/Sources/ResearchCLI/main.swift": "698d701b3d7a13d7cf8d3f99ea287385fb43f23f7b30e4b502ccdd599563015f"
+  },
+  "previous82_source_files_unchanged_except_CLI_dispatch": true,
+  "account_generator_changed": false,
+  "comparison_metrics_viewed": false,
+  "funded_runs": 0,
+  "accounts_sha256": "9b43fa6de90eca93c427eea36a12d12b631cf83c6c55a385f337dca93116e069"
+}
