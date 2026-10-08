@@ -1,0 +1,12 @@
+{
+  "prepared_at": "2026-10-08T13:17:27.014064+00:00",
+  "fixture_sha256": "d4847318758c8a677147b5d3f7be7bc5f32c87689a51882fd9df8e5eef4ed910",
+  "original_classifier_sha256": "d00a2b3975d84c79d7cd178749373c89e38fb7202565e62d0f2def72f4b9e08a",
+  "source_commit": "ad1b13da2f7ea02ee24ae6097d8451a634e4ee97",
+  "full_estimator_audit_sha256": "63670965152f523f51e2c293d92726f4920f208a3eedaebdecc2584909c7789f",
+  "cases": 11,
+  "reference_states": 8882,
+  "raw_estimator_runs": 0,
+  "account_runs": 0,
+  "actual_market_data": false
+}
