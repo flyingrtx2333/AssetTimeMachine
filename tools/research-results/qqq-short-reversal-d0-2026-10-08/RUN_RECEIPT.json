@@ -1,0 +1,22 @@
+{
+  "exit_code": 0,
+  "completed_at": "2026-10-08T09:02:32.792999+00:00",
+  "source_commit": "573dd02e5472fe69bec06aee7daaf0c84c766c18",
+  "binary_sha256": "0a2834e3c92b598cc8ba04601703df2f1d04264b0cee88b7235cd766ea6ce835",
+  "command": [
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "qqq-reversal-screen",
+    "--prices",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/qqq-short-reversal-indicators-2026-10-08/prices.json",
+    "--history",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/qqq-short-reversal-indicators-2026-10-08/history-with-early-fx.json",
+    "--control-history",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/qqq-short-reversal-indicators-2026-10-08/history.json",
+    "--macro",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/qqq-short-reversal-indicators-2026-10-08/nfci.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/qqq-short-reversal-indicators-2026-10-08/run",
+    "--source-commit",
+    "573dd02e5472fe69bec06aee7daaf0c84c766c18"
+  ]
+}

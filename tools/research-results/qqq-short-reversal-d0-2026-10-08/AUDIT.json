@@ -1,0 +1,53 @@
+{
+  "status": "PASS_BOUNDED_EVIDENCE_CHECKS",
+  "state_checks": 168530,
+  "metric_checks": 252,
+  "single_asset_fills_checked": 8493,
+  "single_asset_units_marks_checked": 55480,
+  "single_asset_cash_ledger_checks": 55480,
+  "source_quote_fx_checks": 6935,
+  "split_accounts_checked": 8,
+  "unchanged_native_control_prefixes": 6,
+  "asset_set_execution_checks": {
+    "QQQ:rsi3:open": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:rsi3:close": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:ibs02:open": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:ibs02:close": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:rsi3-ibs05:open": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:rsi3-ibs05:close": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:buy-hold:open": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    },
+    "QQQ:cash:open": {
+      "desired_accepted_mismatches": 0,
+      "asset_set_mismatched_sessions": 0
+    }
+  },
+  "not_certified": [
+    "provider historical revisions",
+    "dividend total return",
+    "independent cash-rate source",
+    "funded USD wallet",
+    "out-of-sample alpha",
+    "G0-G6"
+  ]
+}
