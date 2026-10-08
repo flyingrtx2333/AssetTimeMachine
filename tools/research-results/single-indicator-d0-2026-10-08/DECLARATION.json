@@ -1,0 +1,87 @@
+{
+  "study_id": "D0-SINGLE-BOLL-GOLD-NASDAQ-20261008",
+  "evidence_class": "D0_FIXED_SINGLE_INDICATOR_SCREEN",
+  "formal_validation": false,
+  "frozen_at": "2026-10-08T08:27:09.730333+00:00",
+  "performance_viewed": false,
+  "primary_metric": "App whole-account daily NAV Sharpe Rf=0; mechanically common full available history with current six product comparators",
+  "user_metric_confirmation": "App full-history Sharpe Rf=0",
+  "primary_threshold": "strictly exceed maximum full-history Rf=0 Sharpe among all six current product strategies, with all accounts on the same exact common observed valuation dates",
+  "secondary": "report native full histories, since2020, since2022, trailing10Y and crisis2008/2020/2022; no weighted average selection",
+  "costs": {
+    "fee_percent_per_fill": 0.025,
+    "slippage_percent": 0,
+    "cash": "CashYieldCNY demand deposits"
+  },
+  "evaluation_end": "2026-10-06 (min latest observed gold/Nasdaq dates from frozen response; no moving date after returns)",
+  "evaluation_start": "mechanical maximum first daily-state date across all current product controls and candidate accounts; no return-based start selection",
+  "candidate_count": 6,
+  "run_budget": 15,
+  "parameter_search_budget": 0,
+  "period": 20,
+  "sigma_multiplier": 2,
+  "sigma": "population standard deviation of 20 observed CNY closes including signal date",
+  "candidates": [
+    {
+      "id": "gold_cny:lower-downcross",
+      "asset": "gold_cny",
+      "rule": "lower-downcross"
+    },
+    {
+      "id": "gold_cny:lower-reentry",
+      "asset": "gold_cny",
+      "rule": "lower-reentry"
+    },
+    {
+      "id": "gold_cny:upper-breakout",
+      "asset": "gold_cny",
+      "rule": "upper-breakout"
+    },
+    {
+      "id": "nasdaq:lower-downcross",
+      "asset": "nasdaq",
+      "rule": "lower-downcross"
+    },
+    {
+      "id": "nasdaq:lower-reentry",
+      "asset": "nasdaq",
+      "rule": "lower-reentry"
+    },
+    {
+      "id": "nasdaq:upper-breakout",
+      "asset": "nasdaq",
+      "rule": "upper-breakout"
+    }
+  ],
+  "rule_semantics": {
+    "lower-downcross": "previous close > previous lower, current <= lower: enter; cross above middle: exit",
+    "lower-reentry": "previous close <= previous lower, current > lower: enter; cross above middle: exit; if entry already exceeds middle, stay flat",
+    "upper-breakout": "previous close < previous upper, current >= upper: enter; cross below middle: exit"
+  },
+  "holdings": "100% single-asset target or RMB cash; no short/leverage/financing; retain latest known target",
+  "clock": "strict T-1 observed close; next actual observed close; FX follows unchanged current App conversion",
+  "warmup": "252 aligned observations before starting, signals from asset own observed CNY price series, flat until simulator start",
+  "controls": [
+    "all six current product strategies via unchanged BacktestCoreEngine rotation runtime",
+    "gold buy-hold",
+    "Nasdaq buy-hold",
+    "RMB cash"
+  ],
+  "falsification": "entry/exit hand vectors; future-truncation/perturbation invariance; all desired vs accepted targets and fills audited; no parameter or cost rescue after viewing results",
+  "multiple_testing": "all six recorded; existing indicator history exposed; neither complete historical trial count nor independent holdout certified",
+  "limitations": [
+    "Gold COMEX-derived CNY price proxy and Nasdaq price index are not independently verified physical gold or ETF funded total-return accounts.",
+    "Rf0 cash-only Sharpe is reported as diagnostic and cannot qualify as indicator alpha.",
+    "Native current product controls replay continuously from earliest observations. Comparison is on common continuous-history daily NAV, not new funded 2008 accounts.",
+    "No untouched OOS, no G0-G6 certification, no product promotion from D0."
+  ],
+  "sources": [
+    "https://www.bollingerbands.com/bollinger-band-rules",
+    "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551"
+  ],
+  "data_source": "DATA_SOURCE.json",
+  "symbol_mapping": {
+    "nasdaq_composite": "nasdaq",
+    "gold_cny": "gold_cny"
+  }
+}

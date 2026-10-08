@@ -1,0 +1,154 @@
+[
+  {
+    "endpoint": "https://api.flyingrtx.com/api/v1/money/public/history?symbols=gold_cny%2Cnasdaq_composite%2Csp500%2Cdow_jones%2Chang_seng%2Cnikkei225%2Coil_wti_cny%2Ccsi300%2Cshanghai_composite%2Cshenzhen_component%2Cchinext%2Cusd_per_cny&period=all&include_ohlc=true&history_quality=provider-trade-date-v1",
+    "queried_at": "2026-10-08T08:25:22.615634+00:00",
+    "sha256": "7b41a7802c79cb3c5088055ad766973d5be85ae09e34a17582cc7064866ef846",
+    "bytes": 5198669,
+    "keys": [
+      "success",
+      "history_quality_policy",
+      "symbols",
+      "period",
+      "start_date",
+      "end_date",
+      "series",
+      "available_symbols",
+      "catalog"
+    ],
+    "series": [
+      {
+        "symbol": "gold_cny",
+        "currency": "CNY",
+        "source": "CME Group · COMEX",
+        "start_date": "2001-06-25",
+        "end_date": "2026-10-07",
+        "n": 6424,
+        "first": "2001-06-25",
+        "last": "2026-10-07"
+      },
+      {
+        "symbol": "nasdaq_composite",
+        "currency": "USD",
+        "source": "Nasdaq · Yahoo Finance",
+        "start_date": "2000-01-03",
+        "end_date": "2026-10-06",
+        "n": 6732,
+        "first": "2000-01-03",
+        "last": "2026-10-06"
+      },
+      {
+        "symbol": "sp500",
+        "currency": "USD",
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start_date": "2000-01-03",
+        "end_date": "2026-10-06",
+        "n": 6743,
+        "first": "2000-01-03",
+        "last": "2026-10-06"
+      },
+      {
+        "symbol": "dow_jones",
+        "currency": "USD",
+        "source": "S&P Dow Jones Indices · Yahoo Finance",
+        "start_date": "2000-01-03",
+        "end_date": "2026-10-06",
+        "n": 6733,
+        "first": "2000-01-03",
+        "last": "2026-10-06"
+      },
+      {
+        "symbol": "hang_seng",
+        "currency": "HKD",
+        "source": "Yahoo Finance",
+        "start_date": "2000-01-03",
+        "end_date": "2026-10-07",
+        "n": 6596,
+        "first": "2000-01-03",
+        "last": "2026-10-07"
+      },
+      {
+        "symbol": "nikkei225",
+        "currency": "JPY",
+        "source": "Nikkei Indexes · Yahoo Finance",
+        "start_date": "2000-01-04",
+        "end_date": "2026-09-02",
+        "n": 6538,
+        "first": "2000-01-04",
+        "last": "2026-09-02"
+      },
+      {
+        "symbol": "oil_wti_cny",
+        "currency": "CNY",
+        "source": "CME Group · NYMEX",
+        "start_date": "2000-01-04",
+        "end_date": "2026-10-07",
+        "n": 6891,
+        "first": "2000-01-04",
+        "last": "2026-10-07"
+      },
+      {
+        "symbol": "csi300",
+        "currency": "CNY",
+        "source": "Yahoo Finance",
+        "start_date": "2002-01-04",
+        "end_date": "2026-09-30",
+        "n": 6003,
+        "first": "2002-01-04",
+        "last": "2026-09-30"
+      },
+      {
+        "symbol": "shanghai_composite",
+        "currency": "CNY",
+        "source": "Yahoo Finance",
+        "start_date": "2000-01-04",
+        "end_date": "2026-09-30",
+        "n": 6482,
+        "first": "2000-01-04",
+        "last": "2026-09-30"
+      },
+      {
+        "symbol": "shenzhen_component",
+        "currency": "CNY",
+        "source": "Yahoo Finance",
+        "start_date": "2000-01-04",
+        "end_date": "2026-09-30",
+        "n": 6482,
+        "first": "2000-01-04",
+        "last": "2026-09-30"
+      },
+      {
+        "symbol": "chinext",
+        "currency": "CNY",
+        "source": "Yahoo Finance",
+        "start_date": "2010-06-01",
+        "end_date": "2026-09-30",
+        "n": 3968,
+        "first": "2010-06-01",
+        "last": "2026-09-30"
+      },
+      {
+        "symbol": "usd_per_cny",
+        "currency": "USD",
+        "source": "Frankfurter · ECB reference rates",
+        "start_date": "2000-01-13",
+        "end_date": "2026-10-07",
+        "n": 6842,
+        "first": "2000-01-13",
+        "last": "2026-10-07"
+      }
+    ]
+  },
+  {
+    "endpoint": "https://api.flyingrtx.com/api/v1/money/public/nfci-asof",
+    "queried_at": "2026-10-08T08:25:22.615634+00:00",
+    "sha256": "d6a5dd149f7d799a19b5164e1d72ae1b9ac02bb92c1e2557886cbd425690144b",
+    "bytes": 241195,
+    "keys": [
+      "success",
+      "source",
+      "latest_available_at",
+      "series",
+      "available_series"
+    ]
+  }
+]
