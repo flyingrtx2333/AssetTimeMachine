@@ -1,0 +1,63 @@
+{
+  "audited_at": "2026-10-08T09:58:03.229646+00:00",
+  "result_sha256": "13b98b1e2e506483e3d124d623cb66f61745d0b3da9db206607134c17b723de3",
+  "features_checked": 4930,
+  "extreme_trigger_counts": {
+    "negative_FXF_minus_FXA": 186,
+    "SHY": 218,
+    "IGE": 193,
+    "negative_UUP": 244,
+    "negative_GLD_minus_SLV": 196,
+    "DBB": 211,
+    "XLI": 211,
+    "negative_XLU_minus_XLI": 178
+  },
+  "max_feature_error": 0,
+  "max_threshold_error": 0,
+  "rows": [
+    {
+      "id": "cross-market-extreme-qqq-cash",
+      "states_checked": 4677,
+      "fills_checked": 114,
+      "cash_reconstruction_max_error": 1.1641532182693481e-10,
+      "desired_accepted_mismatches": 0,
+      "missing_target_member_sessions": 0,
+      "fills_outside_state_changes": 0,
+      "status": "PASS_SAVED_LEDGER_AND_PRIOR_DAY_STRESS_SIGNAL"
+    },
+    {
+      "id": "inverse-stress-control",
+      "states_checked": 4677,
+      "fills_checked": 113,
+      "cash_reconstruction_max_error": 2.9103830456733704e-11,
+      "desired_accepted_mismatches": 0,
+      "missing_target_member_sessions": 0,
+      "fills_outside_state_changes": 0,
+      "status": "PASS_SAVED_LEDGER_AND_PRIOR_DAY_STRESS_SIGNAL"
+    },
+    {
+      "id": "qqq-buyhold",
+      "states_checked": 4677,
+      "fills_checked": 1,
+      "cash_reconstruction_max_error": 0.0,
+      "desired_accepted_mismatches": 0,
+      "missing_target_member_sessions": 0,
+      "fills_outside_state_changes": 0,
+      "status": "PASS_SAVED_LEDGER_AND_PRIOR_DAY_STRESS_SIGNAL"
+    },
+    {
+      "id": "cny-cash-control",
+      "states_checked": 4677,
+      "fills_checked": 0,
+      "cash_reconstruction_max_error": 0.0,
+      "desired_accepted_mismatches": 0,
+      "missing_target_member_sessions": 0,
+      "fills_outside_state_changes": 0,
+      "status": "PASS_SAVED_LEDGER_AND_PRIOR_DAY_STRESS_SIGNAL"
+    }
+  ],
+  "formal_validation": false,
+  "scope": "Saved stress signal/target/quote/fees/cash/units audit only; original quote vintages uncertified.",
+  "cash_control_metric_warning": "First seed interval receives no cash interest; near-zero excess-return variance makes cash-control Sharpe uninformative. Keep raw output, do not rank or publish cash Sharpe.",
+  "timestamp_note": "ISO dates are shared-engine China-midnight session labels, not physical New York execution timestamps."
+}

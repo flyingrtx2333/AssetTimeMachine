@@ -1,0 +1,184 @@
+{
+  "study_id": "AUDIT-CROSS-MARKET-CURRENT-ENGINE-PARITY-20261008",
+  "completed_at": "2026-10-08T09:54:18Z",
+  "parity_status": "PASS_FROZEN_INPUT_CURRENT_ENGINE_PARITY",
+  "full_window_seed": "2008-03-02",
+  "funded_start": "2008-03-03",
+  "end": "2026-10-02",
+  "accounts": [
+    {
+      "id": "cross-market-extreme-qqq-cash",
+      "slices": {
+        "full": {
+          "annualizedReturn": 0.12702943154024537,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.005839369490912,
+          "maxDrawdown": 0.20629860277174886,
+          "pointCount": 4678,
+          "sharpeRF0": 1.036515608786345,
+          "start": "2008-03-01T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.1184127658716847,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.9015517985196658,
+          "maxDrawdown": 0.20629860277174922,
+          "pointCount": 1698,
+          "sharpeRF0": 0.9285325842265416,
+          "start": "2019-12-30T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.08398085047962267,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.6662735299927448,
+          "maxDrawdown": 0.18893162734151292,
+          "pointCount": 1193,
+          "sharpeRF0": 0.6935977054941912,
+          "start": "2021-12-30T16:00:00Z"
+        },
+        "since2025": {
+          "annualizedReturn": 0.07195253935446844,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.727024385025279,
+          "maxDrawdown": 0.07713721323178113,
+          "pointCount": 440,
+          "sharpeRF0": 0.7628987688805242,
+          "start": "2024-12-30T16:00:00Z"
+        }
+      },
+      "fills": 114,
+      "mean_exposure": 0.443565626336041
+    },
+    {
+      "id": "inverse-stress-control",
+      "slices": {
+        "full": {
+          "annualizedReturn": 0.03236217365835614,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.2426855312406164,
+          "maxDrawdown": 0.5283000497269148,
+          "pointCount": 4678,
+          "sharpeRF0": 0.26241369324509306,
+          "start": "2008-03-01T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.07175737297518481,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.4107213526874983,
+          "maxDrawdown": 0.28707624917352814,
+          "pointCount": 1698,
+          "sharpeRF0": 0.4267643816085741,
+          "start": "2019-12-30T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.06616600828295827,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.4035502773671176,
+          "maxDrawdown": 0.26220249027280856,
+          "pointCount": 1193,
+          "sharpeRF0": 0.42114107131199097,
+          "start": "2021-12-30T16:00:00Z"
+        },
+        "since2025": {
+          "annualizedReturn": 0.10696986640954753,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.582341526425032,
+          "maxDrawdown": 0.22907270860991885,
+          "pointCount": 440,
+          "sharpeRF0": 0.5995162045517617,
+          "start": "2024-12-30T16:00:00Z"
+        }
+      },
+      "fills": 113,
+      "mean_exposure": 0.55622060709705
+    },
+    {
+      "id": "qqq-buyhold",
+      "slices": {
+        "full": {
+          "annualizedReturn": 0.1626663841219187,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.76229448132867,
+          "maxDrawdown": 0.5024138338253954,
+          "pointCount": 4678,
+          "sharpeRF0": 0.7789071099881429,
+          "start": "2008-03-01T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.1977557252290285,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.8264994741818908,
+          "maxDrawdown": 0.30151538456566795,
+          "pointCount": 1698,
+          "sharpeRF0": 0.8403385425057707,
+          "start": "2019-12-30T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.15482036846568437,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.7145960017414695,
+          "maxDrawdown": 0.294081496086756,
+          "pointCount": 1193,
+          "sharpeRF0": 0.7294793720724511,
+          "start": "2021-12-30T16:00:00Z"
+        },
+        "since2025": {
+          "annualizedReturn": 0.18517605805980653,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.856726745522069,
+          "maxDrawdown": 0.2258120458870276,
+          "pointCount": 440,
+          "sharpeRF0": 0.872390579123385,
+          "start": "2024-12-30T16:00:00Z"
+        }
+      },
+      "fills": 1,
+      "mean_exposure": 0.999786233433091
+    },
+    {
+      "id": "cny-cash-control",
+      "slices": {
+        "full": {
+          "annualizedReturn": 0.0037665427871507173,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": -0.2319659262158159,
+          "maxDrawdown": 0,
+          "pointCount": 4678,
+          "sharpeRF0": 24.347463770122864,
+          "start": "2008-03-01T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.0035061153241049414,
+          "end": "2026-10-01T16:00:00Z",
+          "maxDrawdown": 0,
+          "pointCount": 1698,
+          "sharpeRF0": 26.07362861795533,
+          "start": "2019-12-30T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.0035061153241058296,
+          "end": "2026-10-01T16:00:00Z",
+          "maxDrawdown": 0,
+          "pointCount": 1193,
+          "sharpeRF0": 26.07579570027691,
+          "start": "2021-12-30T16:00:00Z"
+        },
+        "since2025": {
+          "annualizedReturn": 0.0035061153241042753,
+          "end": "2026-10-01T16:00:00Z",
+          "maxDrawdown": 0,
+          "pointCount": 440,
+          "sharpeRF0": 26.07695191404184,
+          "start": "2024-12-30T16:00:00Z"
+        }
+      },
+      "fills": 0,
+      "mean_exposure": 0
+    }
+  ],
+  "objective_complete": false,
+  "formal_validation": false,
+  "scope": "Old exact price-only accounts reproduced under current shared core, not live current data, total return, PIT or formal validation.",
+  "parent_original_status_unchanged": true,
+  "parity_audit_sha256": "04be2bbf0721b5d6e27d84010d0bb4a0644341217a1a83c20dd0b00449a508ff"
+}

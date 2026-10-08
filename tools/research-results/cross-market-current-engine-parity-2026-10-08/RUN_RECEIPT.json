@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-08T09:54:18.071776+00:00",
+  "command": [
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "cross-market-stress-screen",
+    "--prices",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-stress-parity-v4a09yrw/prices.json",
+    "--history",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-stress-parity-v4a09yrw/history.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-current-engine-parity-2026-10-08/run",
+    "--source-commit",
+    "bfd86f3b6027ac786e34c7db2ff16bf36714a784"
+  ],
+  "app_commit": "bfd86f3b6027ac786e34c7db2ff16bf36714a784",
+  "root_freeze_commit": "5b812773b5994cce7b515964062df2d31a045136",
+  "status": "COMPLETED",
+  "funded_accounts": 4,
+  "parameter_searches": 0,
+  "completed_at": "2026-10-08T09:54:18.920287+00:00",
+  "exit_code": 0
+}

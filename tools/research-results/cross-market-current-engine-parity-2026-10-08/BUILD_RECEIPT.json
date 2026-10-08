@@ -1,0 +1,17 @@
+{
+  "status": "SUCCESS",
+  "exit_code": 0,
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "build",
+    "-c",
+    "release",
+    "--product",
+    "AssetTimeMachineResearch"
+  ],
+  "actual_tool_session": 99738,
+  "stdout_presentation": "Build.txt records tool-displayed build lines, duration localized in original output",
+  "completed_at": "2026-10-08T09:53:19.885158+00:00"
+}
