@@ -1,0 +1,295 @@
+{
+  "study_id": "POSTHOC-STRESS-VS-BARBELL-ETF-20261008",
+  "completed_at": "2026-10-08T11:05:54Z",
+  "audit_completed_at": "2026-10-08T11:06:01.852885+00:00",
+  "funded_start": "2008-03-03",
+  "funded_end": "2026-10-02",
+  "metric_seed": "2008-03-02",
+  "primary_metric": "App full history sharpeRF0 Rf=0",
+  "fee_percent": 0.025,
+  "slippage_percent": 0,
+  "new_economic_candidates": 0,
+  "new_benchmark_accounts": 2,
+  "candidate_accounts_reused": true,
+  "candidate_result_gzip_sha256": "fffcee7517761451082c163d88330024d86e2cfbe3914495cc2f5ff27529be8e",
+  "benchmarks": [
+    {
+      "id": "barbell-gld-qqq-adaptation:gross",
+      "slices": {
+        "full": {
+          "annualizedReturn": 0.10758590237056964,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.8749507088934348,
+          "maxDrawdown": 0.1710380393669031,
+          "pointCount": 4678,
+          "sharpeRF0": 0.9060616887231672,
+          "start": "2008-03-01T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.1530009679752784,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.0175504024462632,
+          "maxDrawdown": 0.17103803936690273,
+          "pointCount": 1698,
+          "sharpeRF0": 1.0413188974530792,
+          "start": "2019-12-30T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.16014561036199826,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.1270014194943792,
+          "maxDrawdown": 0.15848269459519532,
+          "pointCount": 1193,
+          "sharpeRF0": 1.1525260767915881,
+          "start": "2021-12-30T16:00:00Z"
+        },
+        "since2025": {
+          "annualizedReturn": 0.20493135921603,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.1484936514673652,
+          "maxDrawdown": 0.15848269459519537,
+          "pointCount": 440,
+          "sharpeRF0": 1.168736261374215,
+          "start": "2024-12-30T16:00:00Z"
+        }
+      },
+      "fills": 65
+    },
+    {
+      "id": "barbell-gld-qqq-adaptation:withhold30",
+      "slices": {
+        "full": {
+          "annualizedReturn": 0.10662314834704567,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 0.8673513277958474,
+          "maxDrawdown": 0.17116361693920937,
+          "pointCount": 4678,
+          "sharpeRF0": 0.8984456929915251,
+          "start": "2008-03-01T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.15239676572059246,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.0134180207896988,
+          "maxDrawdown": 0.17116361693920926,
+          "pointCount": 1698,
+          "sharpeRF0": 1.0371714209451808,
+          "start": "2019-12-30T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.1596004356760483,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.1229758521443798,
+          "maxDrawdown": 0.15873771568297268,
+          "pointCount": 1193,
+          "sharpeRF0": 1.1484856936288705,
+          "start": "2021-12-30T16:00:00Z"
+        },
+        "since2025": {
+          "annualizedReturn": 0.20458671419530372,
+          "end": "2026-10-01T16:00:00Z",
+          "excessSharpeCNYCash": 1.1461457465898912,
+          "maxDrawdown": 0.15873771568297135,
+          "pointCount": 440,
+          "sharpeRF0": 1.1663745792635831,
+          "start": "2024-12-30T16:00:00Z"
+        }
+      },
+      "fills": 65
+    }
+  ],
+  "comparisons": [
+    {
+      "tax": "gross",
+      "window": "full",
+      "candidate": {
+        "annualizedReturn": 0.1308078614252315,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.03469343816862,
+        "maxDrawdown": 0.20269454205630652,
+        "pointCount": 4678,
+        "sharpeRF0": 1.0654216805335541,
+        "start": "2008-03-01T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.10758590237056964,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.8749507088934348,
+        "maxDrawdown": 0.1710380393669031,
+        "pointCount": 4678,
+        "sharpeRF0": 0.9060616887231672,
+        "start": "2008-03-01T16:00:00Z"
+      },
+      "candidate_sharpe_greater": true
+    },
+    {
+      "tax": "gross",
+      "window": "since2020",
+      "candidate": {
+        "annualizedReturn": 0.12103407739726135,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.9202034913950472,
+        "maxDrawdown": 0.20269454205630674,
+        "pointCount": 1698,
+        "sharpeRF0": 0.9472013248997105,
+        "start": "2019-12-30T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.1530009679752784,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.0175504024462632,
+        "maxDrawdown": 0.17103803936690273,
+        "pointCount": 1698,
+        "sharpeRF0": 1.0413188974530792,
+        "start": "2019-12-30T16:00:00Z"
+      },
+      "candidate_sharpe_greater": false
+    },
+    {
+      "tax": "gross",
+      "window": "since2022",
+      "candidate": {
+        "annualizedReturn": 0.08653697331209331,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.6851128371591433,
+        "maxDrawdown": 0.1853397078043536,
+        "pointCount": 1193,
+        "sharpeRF0": 0.712457049467303,
+        "start": "2021-12-30T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.16014561036199826,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.1270014194943792,
+        "maxDrawdown": 0.15848269459519532,
+        "pointCount": 1193,
+        "sharpeRF0": 1.1525260767915881,
+        "start": "2021-12-30T16:00:00Z"
+      },
+      "candidate_sharpe_greater": false
+    },
+    {
+      "tax": "gross",
+      "window": "since2025",
+      "candidate": {
+        "annualizedReturn": 0.07408142344274071,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.7471914002805482,
+        "maxDrawdown": 0.07586863297277667,
+        "pointCount": 440,
+        "sharpeRF0": 0.7830477233759094,
+        "start": "2024-12-30T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.20493135921603,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.1484936514673652,
+        "maxDrawdown": 0.15848269459519537,
+        "pointCount": 440,
+        "sharpeRF0": 1.168736261374215,
+        "start": "2024-12-30T16:00:00Z"
+      },
+      "candidate_sharpe_greater": false
+    },
+    {
+      "tax": "withhold30",
+      "window": "full",
+      "candidate": {
+        "annualizedReturn": 0.12967430813103586,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.0260890290090943,
+        "maxDrawdown": 0.20377660954324953,
+        "pointCount": 4678,
+        "sharpeRF0": 1.0568034537611566,
+        "start": "2008-03-01T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.10662314834704567,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.8673513277958474,
+        "maxDrawdown": 0.17116361693920937,
+        "pointCount": 4678,
+        "sharpeRF0": 0.8984456929915251,
+        "start": "2008-03-01T16:00:00Z"
+      },
+      "candidate_sharpe_greater": true
+    },
+    {
+      "tax": "withhold30",
+      "window": "since2020",
+      "candidate": {
+        "annualizedReturn": 0.12024754286224426,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.9146289829628612,
+        "maxDrawdown": 0.2037766095432515,
+        "pointCount": 1698,
+        "sharpeRF0": 0.9416224087933308,
+        "start": "2019-12-30T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.15239676572059246,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.0134180207896988,
+        "maxDrawdown": 0.17116361693920926,
+        "pointCount": 1698,
+        "sharpeRF0": 1.0371714209451808,
+        "start": "2019-12-30T16:00:00Z"
+      },
+      "candidate_sharpe_greater": false
+    },
+    {
+      "tax": "withhold30",
+      "window": "since2022",
+      "candidate": {
+        "annualizedReturn": 0.08577002816384294,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.679476148521401,
+        "maxDrawdown": 0.1864180993434627,
+        "pointCount": 1193,
+        "sharpeRF0": 0.7068150749493226,
+        "start": "2021-12-30T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.1596004356760483,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.1229758521443798,
+        "maxDrawdown": 0.15873771568297268,
+        "pointCount": 1193,
+        "sharpeRF0": 1.1484856936288705,
+        "start": "2021-12-30T16:00:00Z"
+      },
+      "candidate_sharpe_greater": false
+    },
+    {
+      "tax": "withhold30",
+      "window": "since2025",
+      "candidate": {
+        "annualizedReturn": 0.0734427228236525,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.7411641546392116,
+        "maxDrawdown": 0.0762492041850528,
+        "pointCount": 440,
+        "sharpeRF0": 0.7770268705263119,
+        "start": "2024-12-30T16:00:00Z"
+      },
+      "benchmark": {
+        "annualizedReturn": 0.20458671419530372,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.1461457465898912,
+        "maxDrawdown": 0.15873771568297135,
+        "pointCount": 440,
+        "sharpeRF0": 1.1663745792635831,
+        "start": "2024-12-30T16:00:00Z"
+      },
+      "candidate_sharpe_greater": false
+    }
+  ],
+  "full_comparison_status": "DIAGNOSTIC_FULL_RF0_GREATER_BOTH_TAX_SCENARIOS_RECENT_ALL_LOWER_ORIGINAL_FRONTIER_UNPROVEN",
+  "conclusion": "两种分红口径的全历史Rf=0夏普都高于明确适配的GLD／QQQ杠铃对照，但2020+、2022+、2025+夏普均落后，且候选全历史最大回撤更大。这只支持该后验ETF对照的全历史数值比较；原App六策略完整总回报前沿、最初发布时间数据、未触碰留出期及正式G0—G6未完成。压力指标由多个市场合成，并非单一标的自身价格指标，用户原目标尚未证实。",
+  "formal_validation": false,
+  "goal_complete": false,
+  "single_own_price_indicator": false,
+  "validation_limits": "VALIDATION_LIMITATIONS.json",
+  "source_commit": "045eeb55c891b12bc7b70353dcf8a4487bd087b1",
+  "result_sha256": "619c9c6ef8d2a2f01b270beb16bfa3390f4ec4e547539bd4edd7ee6a8dc1dc19"
+}

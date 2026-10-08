@@ -1,0 +1,26 @@
+{
+  "started_at": "2026-10-08T11:05:53.904968+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "stress-barbell-etf-comparison",
+    "--prices",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-barbell-etf-vbul_c09/prices.json",
+    "--history",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-barbell-etf-vbul_c09/history.json",
+    "--cash",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/stress-barbell-etf-comparison-2026-10-08/cash.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/stress-barbell-etf-comparison-2026-10-08/run",
+    "--source-commit",
+    "045eeb55c891b12bc7b70353dcf8a4487bd087b1"
+  ],
+  "app_commit": "045eeb55c891b12bc7b70353dcf8a4487bd087b1",
+  "root_freeze_commit": "76a84940a0fadcbbdd624f132133484bdbce742e",
+  "status": "COMPLETED",
+  "funded_accounts": 2,
+  "parameter_searches": 0,
+  "completed_at": "2026-10-08T11:05:54.881944+00:00",
+  "exit_code": 0
+}
