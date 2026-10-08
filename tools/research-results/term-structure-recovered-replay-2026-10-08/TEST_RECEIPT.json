@@ -1,0 +1,14 @@
+{
+  "started_at": "2026-10-08T11:16:05.743787+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "test",
+    "--filter",
+    "RecoveredCurveSignalTests|SettlementExecutionTests"
+  ],
+  "completed_at": "2026-10-08T11:16:16.647877+00:00",
+  "exit_code": 0,
+  "observed_passed_tests": 9
+}

@@ -1,0 +1,13 @@
+Building for production...
+[Pre-planning 1 / 182]
+[9 / 26]
+[11 / 28] AssetTimeMachineBacktestCore
+[15 / 30] Crypto
+[17 / 26] AssetTimeMachineBacktestCore
+[20 / 27] AssetTimeMachineResearchSupport
+[22 / 28] AssetTimeMachineResearchSupport
+[28 / 30] AssetTimeMachineResearch-product
+[29 / 32] AssetTimeMachineResearch-product
+[31 / 32] AssetTimeMachineResearch-product
+[32 / 32] AssetTimeMachineResearch-product
+Build complete! (57.75秒)

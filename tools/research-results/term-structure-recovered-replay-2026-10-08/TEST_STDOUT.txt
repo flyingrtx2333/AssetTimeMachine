@@ -1,0 +1,36 @@
+Test Suite 'Selected tests' started at 2026-10-08 19:16:16.425.
+Test Suite 'AssetTimeMachineBacktestWorkerTests.xctest' started at 2026-10-08 19:16:16.426.
+Test Suite 'AssetTimeMachineBacktestWorkerTests.xctest' passed at 2026-10-08 19:16:16.426.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-08 19:16:16.426.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-08 19:16:16.500.
+Test Suite 'AssetTimeMachineBacktestCoreTests.xctest' started at 2026-10-08 19:16:16.501.
+Test Suite 'RecoveredCurveSignalTests' started at 2026-10-08 19:16:16.501.
+Test Case '-[AssetTimeMachineBacktestCoreTests.RecoveredCurveSignalTests testOnlyLatestJointPriorObservationAndStalenessAreUsable]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.RecoveredCurveSignalTests testOnlyLatestJointPriorObservationAndStalenessAreUsable]' passed (0.002 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.RecoveredCurveSignalTests testOriginalFrozenSignalContract]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.RecoveredCurveSignalTests testOriginalFrozenSignalContract]' passed (0.001 seconds).
+Test Suite 'RecoveredCurveSignalTests' passed at 2026-10-08 19:16:16.504.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'SettlementExecutionTests' started at 2026-10-08 19:16:16.504.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testCostsAndBandsKeepAccountingAndCompletePurchases]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testCostsAndBandsKeepAccountingAndCompletePurchases]' passed (0.003 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testExistingCashBuysDespiteRepeatedRisingAssetSales]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testExistingCashBuysDespiteRepeatedRisingAssetSales]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testNewOneShotTargetDuringClosureIsNotLost]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testNewOneShotTargetDuringClosureIsNotLost]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testOneShotCashSignalDuringSettlementCancelsObsoleteBuy]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testOneShotCashSignalDuringSettlementCancelsObsoleteBuy]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testPendingBuyWaitsForNextObservedSession]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testPendingBuyWaitsForNextObservedSession]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testPriceOnlyPublicCatalogDoesNotRequireMissingMacroData]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testPriceOnlyPublicCatalogDoesNotRequireMissingMacroData]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testSaleProceedsCannotFundSameDayFullRotation]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.SettlementExecutionTests testSaleProceedsCannotFundSameDayFullRotation]' passed (0.000 seconds).
+Test Suite 'SettlementExecutionTests' passed at 2026-10-08 19:16:16.508.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+Test Suite 'AssetTimeMachineBacktestCoreTests.xctest' passed at 2026-10-08 19:16:16.508.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.007 (0.007) seconds
+Test Suite 'Selected tests' passed at 2026-10-08 19:16:16.508.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.007 (0.008) seconds

@@ -33,6 +33,7 @@ struct ResearchCLI {
             "cross-market-stress-screen": ["--prices", "--history", "--output", "--source-commit"],
             "cross-market-cash-screen": ["--prices", "--history", "--cash", "--output", "--source-commit"],
             "stress-barbell-etf-comparison": ["--prices", "--history", "--cash", "--output", "--source-commit"],
+            "recovered-term-structure": ["--mode", "--curve", "--history", "--prepared", "--output", "--source-commit"],
             "olmar-prediction-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
             "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -66,6 +67,10 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "recovered-term-structure":
+            try RecoveredTermStructureScreen.run(mode:argument("--mode"),curvePath:argument("--curve"),
+                historyPath:argument("--history"),preparedPath:argument("--prepared"),
+                outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
         case "saved-account-compare":
             try SavedAccountComparison.run(accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))

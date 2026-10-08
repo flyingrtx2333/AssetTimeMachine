@@ -1,0 +1,42 @@
+{
+  "source": {
+    "url": "https://api.flyingrtx.com/api/v1/money/public/history?symbols=gold_cny%2Cnasdaq%2Cusd_per_cny&period=all&include_ohlc=true",
+    "final_url": "https://api.flyingrtx.com/api/v1/money/public/history?symbols=gold_cny%2Cnasdaq%2Cusd_per_cny&period=all&include_ohlc=true",
+    "queried_at": "2026-09-06T13:55:42+08:00",
+    "status": 200,
+    "content_type": "application/json",
+    "bytes": 1249380,
+    "sha256": "c5879e7e8ad09ce33297d74c22adc4350fd4be7d0106646f3e65634aa5b065b3"
+  },
+  "coverage": [
+    {
+      "symbol": "gold_cny",
+      "currency": "CNY",
+      "source": "CME Group · COMEX",
+      "start": "2001-06-25",
+      "end": "2026-09-04",
+      "rows": 6402
+    },
+    {
+      "symbol": "nasdaq_composite",
+      "currency": "USD",
+      "source": "Nasdaq · Yahoo Finance",
+      "start": "2000-01-03",
+      "end": "2026-09-04",
+      "rows": 6711
+    },
+    {
+      "symbol": "usd_per_cny",
+      "currency": "USD",
+      "source": "Frankfurter · ECB reference rates",
+      "start": "2000-01-13",
+      "end": "2026-09-04",
+      "rows": 6819
+    }
+  ],
+  "no_refresh": true,
+  "normalized_sha256": "9a1684d04eb50c832e8a1dd2bdd3f8dd1c8860baea19ffb54bd738448d123c13",
+  "fixed_start": "2010-01-01",
+  "evaluation_end": "2026-09-04",
+  "signal_or_pnl_computed": false
+}

@@ -1,0 +1,86 @@
+{
+  "study_id": "POSTHOC-TERM-STRUCTURE-RECOVERED-2008-20261008",
+  "frozen_at": "2026-10-08T11:13:19.540422+00:00",
+  "evidence_class": "POSTHOC_EXISTING_FAMILY_SOURCE_RECOVERY_CURRENT_SHARED_ENGINE",
+  "formal_validation": false,
+  "original_parent_status": "DATA_BLOCKED_UNCHANGED",
+  "existing_2010_returns_exposed": true,
+  "new_2008_account_returns_viewed": false,
+  "new_economic_mechanisms": 0,
+  "original_candidates": [
+    "defensive_gold",
+    "panic_premium"
+  ],
+  "original_controls": [
+    "defensive_cash",
+    "reverse_rotation",
+    "nasdaq",
+    "product"
+  ],
+  "cost_scenarios_slippage_percent": [
+    0,
+    0.05
+  ],
+  "fee_percent": 0.025,
+  "funded_accounts": 12,
+  "parameter_searches": 0,
+  "input_sha256": {
+    "history": "9a1684d04eb50c832e8a1dd2bdd3f8dd1c8860baea19ffb54bd738448d123c13",
+    "curve": "b8b7ee2468fe78ca3f641e28e2cbee0fa974825b199143bbc732c11af84b01b2"
+  },
+  "initial_cny": 100000,
+  "cash": "CashYieldCNY",
+  "start": "2008-01-01",
+  "end": "2026-09-04",
+  "signal": "latest real joint VIX/VIX3M close dated strictly before App signal date; max7calendar days stale; ratio>1 stress, equality normal",
+  "execution": "original App previous-date signal / next genuinely observed App quote; price proxies and historical FX, not next-open ETF adaptation; current settlement-v4 preserves latest change events while pending",
+  "cold_start": "original signal schedule starts on first simulation day; first execution day has no preceding schedule event and remains cash for five curve mappings; product remains original native cold start",
+  "comparisons": "retain original eight product comparison conditions, original CAGR>=20%/MDD<=10% objective, original A/B direction checks; additionally report user full-history App Rf0 Sharpe objective independently",
+  "windows": [
+    [
+      "full_2008",
+      "2008-01-01",
+      "2026-09-04"
+    ],
+    [
+      "2008-2015",
+      "2008-01-01",
+      "2015-12-31"
+    ],
+    [
+      "2016-2019",
+      "2016-01-01",
+      "2019-12-31"
+    ],
+    [
+      "since2016",
+      "2016-01-01",
+      "2026-09-04"
+    ],
+    [
+      "since2020",
+      "2020-01-01",
+      "2026-09-04"
+    ],
+    [
+      "since2022",
+      "2022-01-01",
+      "2026-09-04"
+    ]
+  ],
+  "additional_grid_or_rescue": false,
+  "limitations": [
+    "SPX option-based single ratio, Nasdaq/gold trading mapping; not an own-asset price indicator.",
+    "Pre-exposed2010 evidence, recovered prefix does not restart pristine OOS.",
+    "Final-vintage index price proxies do not certify publication PIT or funded ETF total returns.",
+    "Only originally specified product control; complete current six-product frontier not certified."
+  ],
+  "original_bindings": {
+    "option-term-structure-2026-09-06/BRIEF.md": "a9379f8ff34d39eb99aceec4bbd00d18f34f8eb3b7edb80182036d5d36982a8f",
+    "option-term-structure-2026-09-06/DATA_SCOPE_ADDENDUM.md": "b95b5679435e4c1234e951eae8711b6376b89438880150d687648faf2c67c26e",
+    "option-term-structure-2026-09-06/CurveSignals.swift": "44fc001809cc81db2566c8bdd708726617db93830985887089d0fbd01db91390",
+    "option-term-structure-2026-09-06/DATA_BLOCKED_RESULT.json": "d0ad003e08c519c5b39f606dce9eba6a0a174b01b200fcc89dc8d176087f5e56",
+    "term-structure-execution-correction-2026-09-06/MARKET_SOURCE.json": "c84b48ca3fb82a1502ef3ec28f134a8e2e5dfb3049974867069d4dda13cd9777",
+    "term-structure-source-recovery-2026-10-08/RECONCILIATION.json": "172b8b9b495de6a369e0bf1ab8118263cf2841f7c8feb61e99f78ff74ff75d62"
+  }
+}

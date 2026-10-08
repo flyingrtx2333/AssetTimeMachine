@@ -1,0 +1,24 @@
+{
+  "started_at": "2026-10-08T11:19:16.679387+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "recovered-term-structure",
+    "--mode",
+    "prepare",
+    "--curve",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-recovered-prepare-9d56dz7m/curve.json",
+    "--history",
+    "/var/folders/1q/_x91_2p56ws4xp30g58rf0m80000gn/T/atm-recovered-prepare-9d56dz7m/history.json",
+    "--prepared",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/term-structure-recovered-replay-2026-10-08/prepare",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/term-structure-recovered-replay-2026-10-08/prepare",
+    "--source-commit",
+    "UNCOMMITTED_PREPARE_NO_CAPITAL"
+  ],
+  "historical_pnl_computed": false,
+  "completed_at": "2026-10-08T11:19:17.430609+00:00",
+  "exit_code": 1
+}
