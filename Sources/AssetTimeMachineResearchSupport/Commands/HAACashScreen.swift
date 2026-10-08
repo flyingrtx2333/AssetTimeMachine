@@ -116,6 +116,7 @@ public enum HAACashScreen {
                 splitRatiosByDate: Dictionary(uniqueKeysWithValues: splits.map { ($0.effective_date, $0.new_units_per_old_unit) }))
         }
         let schedule = try signals(dates: days, indicesBySymbol: signalIndices)
+            .filter { $0.executionDate >= days[first] }
         guard schedule.first?.executionDate == days[first] else {
             throw BacktestConfigurationError.missingData("HAA thirteen completed month closes")
         }
