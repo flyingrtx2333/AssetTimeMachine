@@ -47,6 +47,7 @@ struct ResearchCLI {
             "single-indicator-screen": ["--history", "--macro", "--output", "--source-commit"],
             "single-indicator-policy8": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-rsi-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-sar-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "bollinger-parameter-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -93,6 +94,9 @@ struct ResearchCLI {
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "fixed-rsi-screen":
             try FixedRSIScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-sar-screen":
+            try ParabolicSARScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "close-indicator-screen":
             try CloseIndicatorScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
