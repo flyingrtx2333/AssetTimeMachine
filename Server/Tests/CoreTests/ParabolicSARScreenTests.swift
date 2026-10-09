@@ -55,4 +55,17 @@ final class ParabolicSARScreenTests: XCTestCase {
         let b=bars([[100,101,99,100],[100,101,99,100]])
         XCTAssertThrowsError(try ParabolicSARScreen.signals(bars:Array(b.reversed())))
     }
+    func testPriorUSDBarSurvivesMissingFXCalendarDateWithoutSameDayLeak() throws {
+        // USD sessions Dec24/26/27; the CNY calendar omits Dec26.
+        let dates=["2002-12-24","2002-12-26","2002-12-27"].map {
+            ISO8601DateFormatter().date(from:$0+"T00:00:00Z")!
+        }
+        let b=dates.enumerated().map { i,d in
+            Bar(date:d,open:100+Double(i),high:102+Double(i),low:99+Double(i),close:101+Double(i))
+        }
+        let s=try ParabolicSARScreen.signals(bars:b)
+        XCTAssertEqual(ParabolicSARScreen.latestSignal(s,before:dates[2]),s[1])
+        XCTAssertEqual(ParabolicSARScreen.latestSignal(s,before:dates[1]),s[0])
+        XCTAssertNil(ParabolicSARScreen.latestSignal(s,before:dates[0]))
+    }
 }

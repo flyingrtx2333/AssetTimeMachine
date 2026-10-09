@@ -61,6 +61,16 @@ public enum ParabolicSARScreen {
         }
         return result
     }
+    /// USD observations may exist on dates omitted by the CNY execution calendar.
+    /// Use every completed prior USD bar while excluding execution-day information.
+    public static func latestSignal(_ signals: [Signal], before date: Date) -> Signal? {
+        var lo = 0, hi = signals.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if signals[mid].date < date { lo = mid + 1 } else { hi = mid }
+        }
+        return lo > 0 ? signals[lo - 1] : nil
+    }
     private struct Sources: Decodable {
         let schema: String; let files: [File]
         struct File: Decodable { let path: String; let sha256: String; let ids: [String] }
@@ -119,10 +129,8 @@ public enum ParabolicSARScreen {
                 guard c.index > native.simulationRange.lowerBound else { return 0 }
                 if id == "cny-cash-native2000" { return 0 }
                 if id == "nasdaq:buy-hold-native2000" { return 1 }
-                var lo = 0, hi = signalEvidence.count
-                while lo < hi { let mid = (lo+hi)/2; if signalEvidence[mid].date <= c.signalDate { lo = mid+1 } else { hi = mid } }
-                guard lo > 0, signalEvidence[lo-1].sar != nil else { return 0 }
-                let w = signalEvidence[lo-1].weight
+                guard let signal = latestSignal(signalEvidence,before:c.date),signal.sar != nil else { return 0 }
+                let w = signal.weight
                 return id == "nasdaq:sar002-020" ? w : 1-w
             }
             var submitted: Double?
@@ -141,7 +149,7 @@ public enum ParabolicSARScreen {
                 if offset>0 {
                     if id=="nasdaq:buy-hold-native2000" { known=1 }
                     else if id != "cny-cash-native2000",
-                        let signal=signalEvidence.last(where:{ $0.date<=native.dates[i-1] }),signal.sar != nil {
+                        let signal=signalEvidence.last(where:{ $0.date<native.dates[i] }),signal.sar != nil {
                         known=id=="nasdaq:sar002-020" ? signal.weight : 1-signal.weight
                     }
                 }
