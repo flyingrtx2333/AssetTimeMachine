@@ -60,6 +60,7 @@ struct ResearchCLI {
             "fixed-force13-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-rp63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "mdp250-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "cwmr-stdev-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "cover-q20-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "gmv63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
@@ -142,6 +143,9 @@ struct ResearchCLI {
         case "fixed-force13-screen":
             try ForceIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "cwmr-stdev-core-screen":
+            try ConfidenceWeightedMeanReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "mdp250-core-screen":
             try MaximumDiversificationCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
