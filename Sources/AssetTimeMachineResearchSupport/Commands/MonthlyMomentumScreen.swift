@@ -3,7 +3,7 @@ import AssetTimeMachineBacktestCore
 
 /// Single252-session raw-price momentum, monthly review; related D0 adaptation only.
 public enum MonthlyMomentumScreen {
-    public enum Rule: String, CaseIterable { case strongest, weaker, equalMix }
+    public enum Rule: String, CaseIterable { case strongest, weaker, equalMix, absoluteEqual, negativeEqual }
     public struct Signal: Codable, Equatable {
         public let date: Date
         public let signalDate: Date
@@ -29,6 +29,11 @@ public enum MonthlyMomentumScreen {
             if review {
                 reviewSignalDate=known
                 if rule == .equalMix { weights=["gold_cny":0.5,"nasdaq":0.5] }
+                else if rule == .absoluteEqual || rule == .negativeEqual {
+                    weights=Dictionary(uniqueKeysWithValues:["gold_cny","nasdaq"].filter {
+                        rule == .absoluteEqual ? (scores[$0] ?? 0)>0 : (scores[$0] ?? 0)<0
+                    }.map { ($0,0.5) })
+                }
                 else {
                     let eligible=["gold_cny","nasdaq"].filter { (scores[$0] ?? 0)>0 }
                     let chosen=eligible.sorted { a,b in
@@ -75,7 +80,7 @@ public enum MonthlyMomentumScreen {
         var accounts: [Account] = [], signalEvidence: [String:[CloseIndicatorScreen.Signal]] = [:], schedules: [String:[Signal]] = [:]
         var audits: [String:[String:Int]] = [:]
         let nativeIDs = ["gold-nasdaq:roc252-monthly-strongest","gold-nasdaq:roc252-monthly-weaker-diagnostic","gold-nasdaq:monthly-50-50-control"]
-        for (id,rule) in zip(nativeIDs,Rule.allCases) {
+        for (id,rule) in zip(nativeIDs,[Rule.strongest,.weaker,.equalMix]) {
             let schedule = try self.schedule(dates:fullFrame.dates,gold:fullFrame.pricesBySymbol["gold_cny"]!,
                 nasdaq:fullFrame.pricesBySymbol["nasdaq"]!,startIndex:fullFrame.simulationRange.lowerBound,rule:rule)
             schedules[id] = schedule

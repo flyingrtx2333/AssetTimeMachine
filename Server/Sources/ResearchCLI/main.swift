@@ -47,6 +47,7 @@ struct ResearchCLI {
             "single-indicator-screen": ["--history", "--macro", "--output", "--source-commit"],
             "single-indicator-policy8": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-rsi-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-absolute-momentum": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-monthly-momentum": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-sar-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
@@ -95,6 +96,9 @@ struct ResearchCLI {
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "fixed-rsi-screen":
             try FixedRSIScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-absolute-momentum":
+            try AbsoluteMomentumScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "fixed-monthly-momentum":
             try MonthlyMomentumScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
