@@ -59,6 +59,7 @@ struct ResearchCLI {
             "fixed-mfi14-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-force13-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-rp63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "gmv63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "bollinger-parameter-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -139,6 +140,9 @@ struct ResearchCLI {
         case "fixed-force13-screen":
             try ForceIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "gmv63-core-screen":
+            try MinimumVarianceCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "fixed-rp63-core-screen":
             try RiskParityCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
