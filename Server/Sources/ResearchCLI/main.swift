@@ -54,6 +54,7 @@ struct ResearchCLI {
             "fixed-g17-screen": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
             "fixed-monthly-momentum": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-sar-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-dmi-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "bollinger-parameter-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -121,6 +122,9 @@ struct ResearchCLI {
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "fixed-sar-screen":
             try ParabolicSARScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-dmi-screen":
+            try WilderDMIScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "close-indicator-screen":
             try CloseIndicatorScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
