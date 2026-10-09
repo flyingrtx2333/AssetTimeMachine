@@ -138,6 +138,9 @@ struct ResearchCLI {
         case "fixed-force13-screen":
             try ForceIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-nvi255-additive-screen":
+            try NegativeVolumeIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "close-indicator-screen":
             try CloseIndicatorScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
