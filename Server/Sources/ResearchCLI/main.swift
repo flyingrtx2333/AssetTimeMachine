@@ -45,6 +45,7 @@ struct ResearchCLI {
             "qqq-reversal-screen": ["--prices", "--history", "--control-history", "--macro", "--output", "--source-commit"],
             "qqq-reversal-cash-correction": ["--prices", "--history", "--cash", "--accounts", "--output", "--source-commit"],
             "single-indicator-screen": ["--history", "--macro", "--output", "--source-commit"],
+            "bollinger-parameter-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
@@ -84,6 +85,9 @@ struct ResearchCLI {
             try RecoveredTermStructureScreen.run(mode:argument("--mode"),curvePath:argument("--curve"),
                 historyPath:argument("--history"),preparedPath:argument("--prepared"),
                 outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "bollinger-parameter-screen":
+            try BollingerParameterScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "qqq-reversal-cash-correction":
             try QQQReversalCashCorrection.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 cashPath: argument("--cash"), accountsPath: argument("--accounts"),
