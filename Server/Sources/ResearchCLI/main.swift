@@ -55,6 +55,7 @@ struct ResearchCLI {
             "fixed-monthly-momentum": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-sar-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-dmi-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-cmf20-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "bollinger-parameter-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
@@ -126,6 +127,9 @@ struct ResearchCLI {
         case "fixed-dmi-screen":
             try WilderDMIScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-cmf20-screen":
+            try ChaikinMoneyFlowScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "close-indicator-screen":
             try CloseIndicatorScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
