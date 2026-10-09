@@ -48,6 +48,7 @@ struct ResearchCLI {
             "single-indicator-policy8": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-rsi-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "fixed-absolute-momentum": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-world-grain-balance": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
             "fixed-housing-revision": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
             "fixed-g17-screen": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
             "fixed-monthly-momentum": ["--history", "--accounts", "--output", "--source-commit"],
@@ -102,6 +103,9 @@ struct ResearchCLI {
         case "fixed-absolute-momentum":
             try AbsoluteMomentumScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-world-grain-balance":
+            try WorldGrainBalanceScreen.run(historyPath:argument("--history"),observationsPath:argument("--observations"),
+                accountsPath:argument("--accounts"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
         case "fixed-housing-revision":
             try HousingRevisionScreen.run(historyPath:argument("--history"),observationsPath:argument("--observations"),
                 accountsPath:argument("--accounts"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
