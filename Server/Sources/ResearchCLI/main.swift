@@ -64,6 +64,7 @@ struct ResearchCLI {
             "anticor1-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "ons-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "eg-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "rmr-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "cover-q20-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "gmv63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
@@ -154,6 +155,9 @@ struct ResearchCLI {
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "eg-core-screen":
             try ExponentiatedGradientCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "rmr-core-screen":
+            try RobustMedianReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "anticor1-core-screen":
             try AnticorrelationCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
