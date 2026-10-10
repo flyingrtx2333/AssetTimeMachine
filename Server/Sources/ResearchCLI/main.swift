@@ -66,6 +66,8 @@ struct ResearchCLI {
             "eg-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "mvu-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "rmr-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "corn-core-source-export": ["--primitives", "--output", "--source-commit", "--source-admission"],
+            "corn-core-screen": ["--primitives", "--accounts", "--output", "--source-commit", "--qualified-source", "--source-manifest"],
             "cover-q20-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "gmv63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
@@ -160,6 +162,13 @@ struct ResearchCLI {
         case "mvu-core-screen":
             try MeanVarianceUtilityCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "corn-core-source-export":
+            try CORNCoreScreen.exportSource(primitivesPath: argument("--primitives"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"), sourceAdmissionPath: argument("--source-admission"))
+        case "corn-core-screen":
+            try CORNCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"),
+                qualifiedSourcePath: argument("--qualified-source"), sourceManifestPath: argument("--source-manifest"))
         case "rmr-core-screen":
             try RobustMedianReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
