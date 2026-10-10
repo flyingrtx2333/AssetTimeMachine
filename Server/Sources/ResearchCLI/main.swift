@@ -62,6 +62,8 @@ struct ResearchCLI {
             "fixed-mama-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-frama-source-export": ["--prices", "--output", "--source-commit"],
             "fixed-frama-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-fisher-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-fisher-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-rp63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "mdp250-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "cwmr-stdev-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
@@ -165,6 +167,12 @@ struct ResearchCLI {
                 sourceCommit: argument("--source-commit"))
         case "fixed-frama-screen":
             try FRAMAAdaptiveScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-fisher-source-export":
+            try FisherTransformScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-fisher-screen":
+            try FisherTransformScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "cwmr-stdev-core-screen":
             try ConfidenceWeightedMeanReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
