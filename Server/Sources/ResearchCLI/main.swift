@@ -68,6 +68,8 @@ struct ResearchCLI {
             "fixed-laguerre-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-ulcer-energy-source-export": ["--prices", "--output", "--source-commit"],
             "fixed-ulcer-energy-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-latent2-gaussian-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-latent2-gaussian-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
             "fixed-rp63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "mdp250-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
             "cwmr-stdev-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
@@ -189,6 +191,12 @@ struct ResearchCLI {
                 sourceCommit: argument("--source-commit"))
         case "fixed-ulcer-energy-screen":
             try UlcerEnergyScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-latent2-gaussian-source-export":
+            try LatentGaussianScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-latent2-gaussian-screen":
+            try LatentGaussianScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "cwmr-stdev-core-screen":
             try ConfidenceWeightedMeanReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
