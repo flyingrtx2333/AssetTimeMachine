@@ -63,6 +63,17 @@ enum NativeRecordEditorProbe {
     static func run(container: ModelContainer) -> [String: Bool] {
         guard AppPreviewSession.isActive else { return ["isolatedStore": false] }
         var results: [String: Bool] = [:]
+        func sample(amount: Double?, quantity: Double? = nil, price: Double? = nil) -> NativeRecordEditor.Row {
+            .init(id: UUID(), name: "fixture", category: "资产", group: .financial, icon: nil,
+                  method: quantity == nil ? .directAmount : .quantityAndUnitPrice, autoPriceSymbol: nil,
+                  amount: amount, quantity: quantity, price: price, note: "", entryUpdatedAt: nil)
+        }
+        results["zeroBalanceClassification"] = sample(amount: 0).isZeroBalance
+            && sample(amount: nil, quantity: 0, price: 10).isZeroBalance
+            && !sample(amount: nil).isZeroBalance
+            && !sample(amount: nil, price: 10).isZeroBalance
+            && !sample(amount: nil, quantity: 10, price: 0).isZeroBalance
+            && !sample(amount: -10).isZeroBalance
         do {
             let context = ModelContext(container)
             context.autosaveEnabled = false
@@ -93,6 +104,7 @@ enum NativeRecordEditorProbe {
                 let item = AssetItem(name: spec.0, valuationMethod: spec.4 ? .quantityAndUnitPrice : .directAmount,
                                      sortOrder: index, category: spec.1)
                 item.iconName = spec.2
+                if spec.4 { item.marketAssetSymbol = "gold" }
                 context.insert(item)
                 let entry = AssetEntry(amount: spec.4 ? nil : spec.3,
                     quantity: spec.4 ? 200 : nil, unitPrice: spec.4 ? 100 : nil,
@@ -123,6 +135,23 @@ enum NativeRecordEditorProbe {
                 && fresh.rows.first { $0.id == gold.id }?.total == 21000
             results["notePreserved"] = fresh.rows.allSatisfy { $0.note == "fixture note" }
             results["saveReleasesDraftBarrier"] = !ModelContextMutationBarrier.shared.hasBlockingEditorDraft
+            let pricedGold = editor.rows.first { $0.id == gold.id }!
+            var editedQuote = pricedGold.draft
+            editedQuote.price = "99999"
+            editor.update(pricedGold, draft: editedQuote)
+            results["marketPriceOnlyEditIgnored"] = !editor.isDirty
+            editedQuote.quantity = "212"
+            editor.update(pricedGold, draft: editedQuote)
+            results["marketPriceProtectedOnQuantitySave"] = editor.save(container: container)
+                && editor.rows.first { $0.id == gold.id }?.price == 100
+                && editor.rows.first { $0.id == gold.id }?.quantity == 212
+            let updatedGold = editor.rows.first { $0.id == gold.id }!
+            var clearedQuantity = updatedGold.draft; clearedQuantity.quantity = ""
+            editor.update(updatedGold, draft: clearedQuantity)
+            results["clearQuantityRetainsMarketPrice"] = editor.save(container: container)
+                && editor.rows.first { $0.id == gold.id }?.quantity == nil
+                && editor.rows.first { $0.id == gold.id }?.price == 100
+                && editor.rows.first { $0.id == gold.id }?.isEmpty == true
             let currentCash = editor.rows.first { $0.id == cash.id }!
             var blank = currentCash.draft; blank.amount = ""
             editor.update(currentCash, draft: blank)

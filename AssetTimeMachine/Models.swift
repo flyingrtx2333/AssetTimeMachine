@@ -1,4 +1,4 @@
-#if !os(macOS) || targetEnvironment(macCatalyst)
+#if canImport(AssetTimeMachineBacktestCore)
 import AssetTimeMachineBacktestCore
 #endif
 import Foundation

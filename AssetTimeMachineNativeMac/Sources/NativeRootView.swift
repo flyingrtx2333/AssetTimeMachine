@@ -90,15 +90,22 @@ final class NativeHistoryModel: ObservableObject {
 
 struct NativeRootView: View {
     let startsOffline: Bool
+    var isWorkspaceFixtureHost = false
     @Environment(\.modelContext) private var context
     @StateObject private var cloud = NativeRootView.makeCloudStore()
     @StateObject private var history = NativeHistoryModel()
+    @StateObject private var quant = NativeQuantStore()
     @State private var page: NativePage = .home
     @State private var recordEditor = NativeRecordEditor()
     @State private var showsAccountChoice = false
     @State private var hasMadeAccountChoice = UserDefaults.standard.bool(forKey: "nativeMac.hasMadeAccountChoice")
     @Environment(\.scenePhase) private var scenePhase
     @State private var performanceTourStarted = false
+    @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
+    private var reducedMotion: Bool {
+        systemReducedMotion || (AppPreviewSession.isActive && ProcessInfo.processInfo.arguments.contains("-macHomeReduceMotion"))
+    }
+    @Namespace private var sidebarSelection
 
     private static func makeCloudStore() -> AssetTimeMachineCloudStore {
         guard AppPreviewSession.isActive else { return AssetTimeMachineCloudStore() }
@@ -110,25 +117,60 @@ struct NativeRootView: View {
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-            Rectangle().fill(NativePalette.line).frame(width: 1)
+            Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7)
             Group {
                 switch page {
-                case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records })
+                case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records }, openSettings: { page = .settings })
                 case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor)
                 case .timeMachine: NativeTimeMachineView(history: history)
-                case .quant: NativeQuantView(history: history)
+                case .quant: NativeQuantView(store: quant)
                 case .settings: NativeSettingsView(history: history, cloud: cloud)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(NativePalette.canvas)
+            .transition(.opacity)
         }
-        .frame(minWidth: 900, minHeight: 620)
+        .overlay(alignment: .bottom) {
+            if page != .settings { NativeHomeEdgeLight().frame(height: 65) }
+        }
+        .animation(NativeStyle.Motion.home(reducedMotion), value: page)
+        .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: 620)
+        .tint(NativePalette.accent)
         .onAppear {
-            if AppPreviewSession.isActive { NSApplication.shared.activate(ignoringOtherApps: true) }
+            if ProcessInfo.processInfo.arguments.contains("-openQuantTab") { page = .quant }
+            if AppPreviewSession.isActive {
+                NSApplication.shared.activate(ignoringOtherApps: true)
+                if ProcessInfo.processInfo.arguments.contains("-macHomeSmallWindow") {
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .seconds(1))
+                        NSApp.windows.first(where: { $0.isVisible })?.setContentSize(NSSize(width: 900, height: 620))
+                    }
+                }
+            }
         }
         .task {
             await history.load(from: context.container)
+            let captureArgs = ProcessInfo.processInfo.arguments
+            if AppPreviewSession.isActive, captureArgs.contains("-macWorkspaceInMemory"),
+               let i = captureArgs.firstIndex(of: "-macQuantProbe"), captureArgs.indices.contains(i + 1) {
+                guard isWorkspaceFixtureHost else { return }
+                let proof = await NativeQuantProbe.run(store: quant, context: context, fixture: URL(fileURLWithPath: captureArgs[i + 1]))
+                if let data = try? JSONSerialization.data(withJSONObject: proof) {
+                    FileHandle.standardOutput.write(data); FileHandle.standardOutput.write(Data([10]))
+                }
+                var transaction = Transaction(); transaction.disablesAnimations = true
+                withTransaction(transaction) { page = .quant }
+                if let window = NSApp.windows.first(where: { $0.title == "资产时光机 · 独立样例" }) {
+                    await NativeQuantProbe.capture(window: window, store: quant)
+                }
+                return
+            }
+            if AppPreviewSession.isActive,
+               let i = captureArgs.firstIndex(of: "-macWorkspaceCaptureDir"), captureArgs.indices.contains(i + 1) {
+                if captureArgs.contains("-macWorkspaceInMemory") && !isWorkspaceFixtureHost { return }
+                await captureWorkspace(to: URL(fileURLWithPath: captureArgs[i + 1], isDirectory: true))
+            }
             let recordArguments = ProcessInfo.processInfo.arguments
             if AppPreviewSession.isActive,
                let index = recordArguments.firstIndex(of: "-macCloudSyncProbe"), recordArguments.indices.contains(index + 1) {
@@ -202,6 +244,59 @@ struct NativeRootView: View {
         }
     }
 
+    // Isolated fixture-only native capture: never operates an authenticated account.
+    private func captureWorkspace(to directory: URL) async {
+        let stdoutCapture = ProcessInfo.processInfo.arguments.contains("-macWorkspaceCaptureStdout")
+        if !stdoutCapture {
+            do { try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true) }
+            catch { NSLog("[WorkspaceCapture] directory: %@", error.localizedDescription); return }
+        }
+        try? await Task.sleep(for: .milliseconds(700))
+        guard let window = NSApp.windows.first(where: { $0.title == "资产时光机 · 独立样例" })
+                ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
+        let small = ProcessInfo.processInfo.arguments.contains("-macHomeSmallWindow")
+        window.setContentSize(NSSize(width: small ? NativeStyle.Layout.windowMinWidth : 1040, height: small ? 620 : 688))
+        if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") {
+            page = .settings
+            try? await Task.sleep(for: .seconds(1))
+            if let view = window.attachedSheet?.contentView,
+               let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
+                view.cacheDisplay(in: view.bounds, to: rep)
+                if let data = rep.representation(using: .png, properties: [:]),
+                   let encoded = try? JSONSerialization.data(withJSONObject: ["page": "login", "png": data.base64EncodedString()]) {
+                    FileHandle.standardOutput.write(encoded); FileHandle.standardOutput.write(Data([10]))
+                }
+            }
+            return
+        }
+        if ProcessInfo.processInfo.arguments.contains("-macWorkspaceEditorCheck") {
+            let result = NativeRecordEditorProbe.run(container: context.container)
+            if let encoded = try? JSONSerialization.data(withJSONObject: ["recordEditorChecks": result]) {
+                FileHandle.standardOutput.write(encoded); FileHandle.standardOutput.write(Data([10]))
+            }
+            await history.load(from: context.container, force: true)
+            recordEditor.load(id: history.summaries.last?.id, container: context.container)
+        }
+        for destination in [NativePage.records, .timeMachine, .quant, .settings, .home] {
+            page = destination
+            try? await Task.sleep(for: .milliseconds(850))
+            guard let view = window.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
+            view.cacheDisplay(in: view.bounds, to: rep)
+            if let data = rep.representation(using: .png, properties: [:]) {
+                if stdoutCapture {
+                    let record = ["page": destination.rawValue, "png": data.base64EncodedString()]
+                    if let encoded = try? JSONSerialization.data(withJSONObject: record) {
+                        FileHandle.standardOutput.write(encoded); FileHandle.standardOutput.write(Data([10]))
+                    }
+                } else {
+                    do { try data.write(to: directory.appending(path: "\(destination.rawValue).png"), options: .atomic) }
+                    catch { NSLog("[WorkspaceCapture] file: %@", error.localizedDescription) }
+                }
+            }
+        }
+        page = .records
+
+    }
     private func runPerformanceTour() async {
         let arguments = ProcessInfo.processInfo.arguments
         let rounds: Int = {
@@ -227,82 +322,65 @@ struct NativeRootView: View {
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 10) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 21, weight: .semibold))
-                    .foregroundStyle(AssetTheme.gold)
-                    .frame(width: 34, height: 34)
-                    .background(NativePalette.softGold, in: RoundedRectangle(cornerRadius: 9))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("资产时光机").font(.system(size: 14, weight: .semibold))
-                    Text("记录资产 · 看见时间")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 24)
-            .padding(.bottom, 20)
-
-            ForEach(NativePage.allCases) { item in
-                NativeSidebarButton(item: item, isSelected: page == item) {
-                    guard page != item else { return }
-                    var transaction = Transaction()
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) { page = item }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: NativeStyle.Space.sm) {
+                Image("brand_logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .clipShape(RoundedRectangle(cornerRadius: NativeStyle.Radius.panel))
+                    .accessibilityHidden(true)
+                Text("资产时光机").font(NativeStyle.FontRole.captionStrong).lineLimit(1)
+            }.foregroundStyle(NativeHomeStyle.text).frame(maxWidth: .infinity).frame(height: NativeStyle.Layout.brandHeight)
+            VStack(spacing: NativeStyle.Space.xxs) {
+                ForEach(NativePage.allCases.filter { $0 != .settings }) { item in
+                    NativeSidebarButton(item: item, isSelected: page == item, selection: sidebarSelection) {
+                        page = item
+                    }
                 }
             }
             Spacer()
-            Button { page = .settings } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: cloud.indicatorState.cloudSymbolName)
-                        .font(.system(size: 13))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(cloud.indicatorLabel).font(.system(size: 10, weight: .medium))
-                        Text(cloud.currentUser == nil ? "登录后跨设备同步" : "查看云同步")
-                            .font(.system(size: 9)).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 9))
-                }
-                .lineLimit(1)
-                .foregroundStyle(cloud.currentUser == nil ? AssetTheme.gold : AssetTheme.positive)
-                .padding(9)
-                .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 9))
-                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(NativePalette.line))
+            NativeSidebarButton(item: .settings, isSelected: page == .settings, selection: sidebarSelection) {
+                page = .settings
             }
-            .buttonStyle(.plain)
-            .padding(10)
+            .padding(.bottom, NativeStyle.Space.md)
         }
-        .frame(width: 184)
-        .background(NativePalette.sidebar)
+        .frame(width: NativeStyle.Layout.sidebarWidth)
+        .background(NativeHomeStyle.sidebar)
     }
 }
 
 private struct NativeSidebarButton: View {
     let item: NativePage
     let isSelected: Bool
+    let selection: Namespace.ID
     let action: () -> Void
-    @State private var isHovered = false
+    @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
+    private var reducedMotion: Bool { systemReducedMotion || NativeHomeStyle.previewReduced }
 
     var body: some View {
         Button(action: action) {
             Label(item.rawValue, systemImage: item.symbol)
-                .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                .font(NativeStyle.FontRole.input)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .frame(height: 32)
-                .background(
-                    isSelected ? NativePalette.softGold :
-                        (isHovered ? AssetTheme.gold.opacity(0.09) : .clear),
-                    in: RoundedRectangle(cornerRadius: 7)
-                )
-                .foregroundStyle(isSelected || isHovered ? AssetTheme.gold : .primary)
+                .padding(.horizontal, NativeStyle.Space.md)
+                .frame(height: NativeStyle.Layout.navigationHeight)
+                .background {
+                    if isSelected {
+                        if reducedMotion { highlight }
+                        else { highlight.matchedGeometryEffect(id: "sidebar", in: selection) }
+                    }
+                }
+                .foregroundStyle(isSelected ? NativeHomeStyle.accent : NativeHomeStyle.secondary)
         }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .padding(.horizontal, 8)
+        .buttonStyle(NativeHomeButtonStyle())
+        .keyboardShortcut(KeyEquivalent(Character(String((NativePage.allCases.firstIndex(of: item) ?? 0) + 1))), modifiers: .command)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .padding(.horizontal, NativeStyle.Space.sm)
+    }
+    private var highlight: some View {
+        RoundedRectangle(cornerRadius: NativeStyle.Radius.control).fill(NativeHomeStyle.accent.opacity(0.105))
+            .overlay(alignment: .leading) { Capsule().fill(NativeHomeStyle.accent).frame(width: 2) }
     }
 }
 
@@ -311,8 +389,8 @@ struct NativePageHeader: View {
     let subtitle: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.system(size: 24, weight: .semibold))
-            if let subtitle { Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary) }
+            Text(title).font(NativeStyle.FontRole.pageTitle)
+            if let subtitle { Text(subtitle).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -324,8 +402,8 @@ struct NativeCard<Content: View>: View {
         content
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(NativePalette.line))
+            .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: NativeStyle.Radius.panel))
+            .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.panel).strokeBorder(NativePalette.line))
     }
 }
 
@@ -335,251 +413,6 @@ private func money(_ value: Double) -> String {
 
 private func displayDate(_ date: Date) -> String {
     date.formatted(Date.FormatStyle().year().month().day().locale(Locale(identifier: "zh_CN")))
-}
-
-struct NativeHomeView: View {
-    @Environment(\.modelContext) private var context
-    @ObservedObject var history: NativeHistoryModel
-    @ObservedObject var cloud: AssetTimeMachineCloudStore
-    let openRecords: () -> Void
-    @AppStorage("dashboard.monthlyExpense") private var monthlyExpense = 3000.0
-    @AppStorage("dashboard.monthlySalary") private var monthlySalary = 10000.0
-    @AppStorage("dashboard.annualReturnRate") private var annualReturnRate = 0.03
-    @AppStorage("dashboard.inflationRate") private var inflationRate = 0.05
-    @State private var latestSnapshot: AssetSnapshot?
-    @State private var latestSnapshotContext: ModelContext?
-    @State private var showsFreedomSettings = false
-    @State private var trendRange = 2
-
-    private var latest: TimeMachineSnapshotProjection? { history.summaries.last }
-    private var visibleTrend: [TimeMachineSnapshotProjection] {
-        let days = [7, 30, 365, Int.max][trendRange]
-        guard days < history.summaries.count else { return history.summaries }
-        return Array(history.summaries.suffix(days))
-    }
-    private var freedomProgress: Double {
-        let net = (latest?.totalAssets ?? 0) - (latest?.totalLiabilities ?? 0)
-        return monthlyExpense > 0 ? max(0, net * annualReturnRate / 12 / monthlyExpense) : 0
-    }
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    NativePageHeader(title: "资产总览", subtitle: nil)
-                    Label(cloud.indicatorLabel, systemImage: cloud.indicatorState.cloudSymbolName)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(cloud.currentUser == nil ? AssetTheme.gold : AssetTheme.positive)
-                }
-                NativeCard {
-                    HStack(spacing: 12) {
-                        metric("总资产 (CNY)", latest?.totalAssets ?? 0)
-                        Divider().frame(height: 38)
-                        metric("净资产 (CNY)", (latest?.totalAssets ?? 0) - (latest?.totalLiabilities ?? 0))
-                        Divider().frame(height: 38)
-                        metric("总负债 (CNY)", latest?.totalLiabilities ?? 0)
-                        Button("记录今日资产", systemImage: "plus.circle.fill", action: openRecords)
-                            .font(.system(size: 11, weight: .semibold))
-                            .buttonStyle(.borderedProminent)
-                            .tint(AssetTheme.gold)
-                            .controlSize(.regular)
-                    }
-                }
-                HStack(alignment: .top, spacing: 12) {
-                    NativeCard {
-                        VStack(alignment: .leading, spacing: 10) {
-                            HStack {
-                                Text("资产趋势").font(.system(size: 14, weight: .semibold))
-                                Spacer()
-                                Picker("时间范围", selection: $trendRange) {
-                                    Text("近 7 天").tag(0)
-                                    Text("近 30 天").tag(1)
-                                    Text("近 1 年").tag(2)
-                                    Text("全部").tag(3)
-                                }
-                                .pickerStyle(.segmented)
-                                .labelsHidden()
-                                .tint(AssetTheme.gold)
-                                .frame(width: 250)
-                                .controlSize(.small)
-                            }
-                            NativeHomeTrendChart(summaries: visibleTrend)
-                                .id(trendRange)
-                        }
-                    }
-                    NativeCard { NativeAssetCompositionView(snapshot: latestSnapshot) }
-                    .frame(width: 315)
-                }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("财务自由进度").font(.system(size: 14, weight: .semibold))
-                            ProgressView(value: min(freedomProgress, 1))
-                                .tint(AssetTheme.gold)
-                            Text("\(Int(min(freedomProgress, 1) * 100))%")
-                                .font(.system(size: 15, weight: .semibold)).foregroundStyle(AssetTheme.gold)
-                            Button("调整", systemImage: "slider.horizontal.3") { showsFreedomSettings = true }
-                                .labelStyle(.iconOnly)
-                        }
-                        HStack {
-                            freedomMetric("月开销", money(monthlyExpense))
-                            freedomMetric("月薪", money(monthlySalary))
-                            freedomMetric("年化收益", annualReturnRate.formatted(.percent.precision(.fractionLength(1))))
-                            freedomMetric("通胀率", inflationRate.formatted(.percent.precision(.fractionLength(1))))
-                            freedomMetric("年初至今结余", money((monthlySalary - monthlyExpense) * Double(Calendar.current.component(.month, from: .now))))
-                        }
-                    }
-                }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("最近的资产记录").font(.system(size: 14, weight: .semibold))
-                        HStack {
-                            Text("日期").frame(maxWidth: .infinity, alignment: .leading)
-                            Text("总资产").frame(maxWidth: .infinity, alignment: .trailing)
-                            Text("净资产").frame(maxWidth: .infinity, alignment: .trailing)
-                            Text("总负债").frame(maxWidth: .infinity, alignment: .trailing)
-                        }
-                        .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
-                        ForEach(history.summaries.suffix(5).reversed(), id: \.id) { snapshot in
-                            HStack {
-                                Text(displayDate(snapshot.date)).frame(maxWidth: .infinity, alignment: .leading)
-                                Text(money(snapshot.totalAssets)).frame(maxWidth: .infinity, alignment: .trailing)
-                                Text(money(snapshot.totalAssets - snapshot.totalLiabilities)).frame(maxWidth: .infinity, alignment: .trailing)
-                                Text(money(snapshot.totalLiabilities)).frame(maxWidth: .infinity, alignment: .trailing)
-                            }
-                            .font(.system(size: 11)).monospacedDigit()
-                            Divider()
-                        }
-                        if history.summaries.isEmpty { Text("暂无资产记录").foregroundStyle(.secondary) }
-                    }
-                }
-                if let error = history.error { Text(error).foregroundStyle(.red) }
-            }
-            .padding(22)
-        }
-        .task(id: history.generation) { loadLatestSnapshot() }
-        .onDisappear { latestSnapshot = nil; latestSnapshotContext = nil }
-        .sheet(isPresented: $showsFreedomSettings) {
-            NativeFreedomSettings(
-                monthlyExpense: $monthlyExpense, monthlySalary: $monthlySalary,
-                annualReturnRate: $annualReturnRate, inflationRate: $inflationRate
-            )
-        }
-    }
-    private func metric(_ title: String, _ value: Double) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.system(size: 10)).foregroundStyle(.secondary)
-            Text(money(value)).font(.system(size: 18, weight: .semibold)).monospacedDigit().minimumScaleFactor(0.75)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    private func freedomMetric(_ title: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.system(size: 11)).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 13, weight: .semibold)).monospacedDigit()
-        }.frame(maxWidth: .infinity, alignment: .leading)
-    }
-    private func loadLatestSnapshot() {
-        guard let id = latest?.id else { latestSnapshot = nil; return }
-        do {
-            var descriptor = FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.id == id })
-            descriptor.fetchLimit = 1
-            let reader = ModelContext(context.container)
-            reader.autosaveEnabled = false
-            latestSnapshotContext = reader
-            latestSnapshot = try reader.fetch(descriptor).first
-        } catch { latestSnapshot = nil; latestSnapshotContext = nil }
-    }
-}
-
-private struct NativeAssetCompositionView: View {
-    let snapshot: AssetSnapshot?
-    private struct Slice: Identifiable {
-        let id: String
-        let amount: Double
-        let color: Color
-    }
-    private var slices: [Slice] {
-        guard let snapshot else { return [] }
-        let grouped = Dictionary(grouping: snapshot.entries.filter {
-            $0.item?.category?.group != .liability && $0.resolvedAmount > 0
-        }, by: { $0.item?.name ?? "其他" })
-        let sorted = grouped.map { (name: $0.key, amount: $0.value.reduce(0) { $0 + $1.resolvedAmount }) }
-            .sorted { $0.amount > $1.amount }
-        let colors: [Color] = [AssetTheme.gold, .cyan, .green, .purple, .orange, .pink]
-        if sorted.count <= 5 {
-            return sorted.enumerated().map { Slice(id: $0.element.name, amount: $0.element.amount,
-                                                   color: colors[$0.offset]) }
-        }
-        var result = sorted.prefix(5).enumerated().map {
-            Slice(id: $0.element.name, amount: $0.element.amount, color: colors[$0.offset])
-        }
-        result.append(Slice(id: "__other__", amount: sorted.dropFirst(5).reduce(0) { $0 + $1.amount }, color: colors[5]))
-        return result
-    }
-    var body: some View {
-        let values = slices
-        let total = values.reduce(0) { $0 + $1.amount }
-        VStack(alignment: .leading, spacing: 14) {
-            Text("资产构成").font(.system(size: 14, weight: .semibold))
-            if total > 0 {
-                HStack(alignment: .center, spacing: 15) {
-                    ZStack {
-                        ForEach(values.indices, id: \.self) { index in
-                            let start = values.prefix(index).reduce(0) { $0 + $1.amount } / total
-                            let end = start + values[index].amount / total
-                            Circle()
-                                .trim(from: start, to: end)
-                                .stroke(values[index].color, style: StrokeStyle(lineWidth: 15, lineCap: .butt))
-                                .rotationEffect(.degrees(-90))
-                        }
-                        Text("总资产").font(.system(size: 10)).foregroundStyle(.secondary)
-                    }
-                    .frame(width: 116, height: 116)
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(values) { slice in
-                            HStack(spacing: 5) {
-                                Circle().fill(slice.color).frame(width: 6, height: 6)
-                                Text(slice.id == "__other__" ? "其他" : slice.id).lineLimit(1)
-                                Spacer(minLength: 2)
-                                Text((slice.amount / total).formatted(.percent.precision(.fractionLength(0))))
-                                    .monospacedDigit()
-                            }
-                            .font(.system(size: 10))
-                        }
-                    }
-                }
-                .frame(height: 238)
-            } else {
-                ContentUnavailableView("暂无资产分布", systemImage: "chart.pie")
-                    .frame(height: 220)
-            }
-        }
-    }
-}
-
-private struct NativeFreedomSettings: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var monthlyExpense: Double
-    @Binding var monthlySalary: Double
-    @Binding var annualReturnRate: Double
-    @Binding var inflationRate: Double
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("财务自由假设").font(.system(size: 18, weight: .semibold))
-            Form {
-                TextField("月开销", value: $monthlyExpense, format: .number)
-                TextField("月薪", value: $monthlySalary, format: .number)
-                TextField("年化收益率", value: $annualReturnRate, format: .percent)
-                TextField("通胀率", value: $inflationRate, format: .percent)
-            }
-            HStack {
-                Spacer()
-                Button("完成") { dismiss() }.buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(22)
-        .frame(width: 360)
-    }
 }
 
 struct NativeTimeMachineView: View {
@@ -605,6 +438,7 @@ struct NativeTimeMachineView: View {
     @State private var visibleMonths = 6
     @State private var chartData: [TimeMachineSnapshotProjection] = []
     @State private var chartStart = 0
+    @State private var chartRevision = 0
 
     private var summaries: [TimeMachineSnapshotProjection] { history.summaries }
     private var activeIndex: Int? { hoveredIndex ?? selectedIndex }
@@ -628,153 +462,95 @@ struct NativeTimeMachineView: View {
         return Array(lower..<min(lower + 9, summaries.count))
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reducedMotion
+    @Namespace private var dateSelection
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    NativePageHeader(title: "时光机", subtitle: "移动鼠标预览，单击固定日期")
-                    if history.loading || isExportingVideo { ProgressView().controlSize(.small) }
-                    Picker("时间范围", selection: $visibleMonths) {
-                        Text("近 6 个月").tag(6)
-                        Text("近 1 年").tag(12)
-                        Text("近 5 年").tag(60)
-                        Text("全部").tag(1200)
-                    }
-                    .labelsHidden().frame(width: 120)
-                    Button("导出趋势视频", systemImage: "play.rectangle") { startVideoExport() }
-                        .labelStyle(.iconOnly)
-                        .disabled(isExportingVideo || summaries.count < 2)
-                }
-                NativeCard {
-                    HStack(alignment: .firstTextBaseline, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(active.map { displayDate($0.date) } ?? "选择日期")
-                                .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
-                            Text(money((active?.totalAssets ?? 0) - (active?.totalLiabilities ?? 0)))
-                                .font(.system(size: 24, weight: .semibold)).monospacedDigit()
-                            Text("净资产").font(.system(size: 10)).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 8)
-                        summaryMetric("总资产", active?.totalAssets ?? 0)
-                        summaryMetric("总负债", active?.totalLiabilities ?? 0)
-                        if let index = activeIndex, index > 0 {
-                            let current = summaries[index]
-                            let previous = summaries[index - 1]
-                            let difference = current.totalAssets - current.totalLiabilities
-                                - previous.totalAssets + previous.totalLiabilities
-                            summaryMetric("较上次", difference)
-                        }
-                    }
-                }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 7) {
-                        HStack {
-                            Text("资产趋势").font(.system(size: 14, weight: .semibold))
-                            Spacer()
-                            Label("总资产", systemImage: "circle.fill").foregroundStyle(AssetTheme.gold)
-                            Label("净资产", systemImage: "circle.fill").foregroundStyle(AssetTheme.positive)
-                        }
-                        .font(.system(size: 10))
-                        NativeTrendCanvas(
-                            summaries: chartData,
-                            selectedIndex: chartSelectedIndex,
-                            hoveredIndex: Binding(
-                                get: {
-                                    guard let hoveredIndex else { return nil }
-                                    let local = hoveredIndex - chartStart
-                                    return chartData.indices.contains(local) ? local : nil
-                                },
-                                set: { local in
-                                    let global = local.map { $0 + chartStart }
-                                    if hoveredIndex != global { hoveredIndex = global }
-                                }
-                            ),
-                            onSelect: { selectedIndex = $0 + chartStart; hoveredIndex = nil }
-                        )
-                        .frame(height: 220)
-                        HStack {
-                            Text("移动鼠标预览 · 单击曲线固定日期")
-                            Spacer()
-                            Text("共 \(summaries.count) 条记录")
-                        }
-                        .font(.system(size: 10)).foregroundStyle(.secondary)
-                    }
-                }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("历史日期").font(.system(size: 13, weight: .semibold))
-                            Spacer()
-                            Button { selectedIndex = max(0, (selectedIndex ?? summaries.count - 1) - 1) } label: {
-                                Image(systemName: "chevron.left")
-                            }.disabled((selectedIndex ?? 0) <= 0)
-                            Button { selectedIndex = min(summaries.count - 1, (selectedIndex ?? 0) + 1) } label: {
-                                Image(systemName: "chevron.right")
-                            }.disabled((selectedIndex ?? 0) >= summaries.count - 1)
-                        }
-                        HStack(spacing: 5) {
-                            ForEach(dateRailIndices, id: \.self) { index in
-                                let day = summaries[index]
-                                Button { selectedIndex = index; hoveredIndex = nil } label: {
-                                    VStack(spacing: 3) {
-                                        Text(dateRailLabel(at: index))
-                                            .font(.system(size: 11, weight: .semibold))
-                                        Text(money(day.totalAssets - day.totalLiabilities))
-                                            .font(.system(size: 9)).monospacedDigit().lineLimit(1)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 7)
-                                    .foregroundStyle(selectedIndex == index ? AssetTheme.gold : .primary)
-                                    .background(selectedIndex == index ? NativePalette.softGold : NativePalette.canvas,
-                                                in: RoundedRectangle(cornerRadius: 7))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                }
-                HStack(alignment: .top, spacing: 12) {
-                    NativeCard {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("当天资产明细").font(.system(size: 14, weight: .semibold))
-                            Divider()
-                            if selectedSnapshot != nil {
-                                ForEach(detailRows) { entry in
-                                    HStack {
-                                        Text(entry.name).lineLimit(1)
-                                        Spacer()
-                                        Text(money(entry.amount)).monospacedDigit()
-                                    }
-                                    .font(.system(size: 11))
-                                    .padding(.vertical, 4)
-                                    Divider()
-                                }
-                            } else {
-                                Text(detailError ?? "选择日期查看明细")
-                                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    NativeCard {
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("当日概览").font(.system(size: 14, weight: .semibold))
+                            Text("时光机").font(NativeStyle.FontRole.pageTitle)
+                            HStack(spacing: NativeStyle.Space.md) {
+                                Button { stepDate(-1) } label: { Image(systemName: "chevron.left") }
+                                    .disabled((selectedIndex ?? 0) <= 0)
+                                Text(active.map { displayDate($0.date) } ?? "选择日期").font(NativeStyle.FontRole.body).monospacedDigit()
+                                Button { stepDate(1) } label: { Image(systemName: "chevron.right") }
+                                    .disabled(summaries.isEmpty || (selectedIndex ?? 0) >= summaries.count - 1)
+                            }
+                        }
+                        Spacer()
+                        if history.loading || isExportingVideo { ProgressView().controlSize(.small) }
+                        Picker("时间范围", selection: $visibleMonths) {
+                            Text("近6个月").tag(6); Text("近1年").tag(12); Text("近5年").tag(60); Text("全部").tag(1200)
+                        }.labelsHidden().frame(width: 120)
+                        Button("导出视频", systemImage: "play.rectangle") { startVideoExport() }
+                            .modifier(NativeWorkspacePrimary()).disabled(isExportingVideo || summaries.count < 2)
+                    }
+                    HStack(spacing: NativeStyle.Space.section) {
+                        NativeWorkspaceMetric(title: "净资产", value: (active?.totalAssets ?? 0) - (active?.totalLiabilities ?? 0), primary: true)
+                        NativeWorkspaceMetric(title: "总资产", value: active?.totalAssets ?? 0)
+                        NativeWorkspaceMetric(title: "负债", value: active?.totalLiabilities ?? 0)
+                        NativeWorkspaceMetric(title: "较上次", value: activeDifference)
+                    }
+                    NativePanoramaTrend(summaries: chartData, revision: "\(chartRevision)", selection: chartSelectedIndex,
+                        onHover: { local in hoveredIndex = local.map { $0 + chartStart } },
+                        onSelect: { selectedIndex = $0 + chartStart; hoveredIndex = nil })
+                        .frame(height: max(130, geometry.size.height - 490))
+                    HStack(spacing: NativeStyle.Space.xxs) {
+                        ForEach(dateRailIndices, id: \.self) { index in
+                            Button { selectedIndex = index; hoveredIndex = nil } label: {
+                                Text(dateRailLabel(at: index)).font(NativeStyle.FontRole.caption).lineLimit(1).minimumScaleFactor(0.75)
+                                    .frame(maxWidth: .infinity).frame(height: NativeStyle.Control.height)
+                                    .foregroundStyle(selectedIndex == index ? NativeHomeStyle.accent : NativeHomeStyle.secondary)
+                                    .overlay(alignment: .bottom) {
+                                        if selectedIndex == index {
+                                            if reducedMotion || NativeHomeStyle.previewReduced { Rectangle().fill(NativeHomeStyle.accent).frame(height: 1) }
+                                            else { Rectangle().fill(NativeHomeStyle.accent).frame(height: 1).matchedGeometryEffect(id: "date", in: dateSelection) }
+                                        }
+                                    }
+                            }.help(money(summaries[index].totalAssets - summaries[index].totalLiabilities))
+                                .accessibilityAddTraits(selectedIndex == index ? .isSelected : [])
+                        }
+                    }
+                    Divider()
+                    HStack(alignment: .top, spacing: 26) {
+                        VStack(alignment: .leading, spacing: NativeStyle.Space.sm) {
+                            Text("当天资产明细").font(NativeStyle.FontRole.subheadingStrong)
                             Divider()
+                            ScrollView {
+                                LazyVStack(spacing: 2) {
+                                if selectedSnapshot != nil {
+                                    ForEach(detailRows) { entry in
+                                        NativeHomeHoverRow {
+                                            HStack { Text(entry.name).lineLimit(1); Spacer(); Text(money(entry.amount)).monospacedDigit() }
+                                                .font(NativeStyle.FontRole.caption).frame(height: 18)
+                                        }
+                                        Divider()
+                                    }
+                                } else { Text(detailError ?? "选择日期查看明细").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary) }
+                                }
+                            }
+                        }.frame(maxWidth: .infinity)
+                        Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7)
+                        VStack(alignment: .leading, spacing: NativeStyle.Space.md) {
+                            Text("当日概览").font(NativeStyle.FontRole.subheadingStrong)
                             reportRow("净资产", money(selectedNet))
                             if let index = selectedIndex, index > 0 {
                                 let previous = summaries[index - 1]
-                                reportRow("较上次变化", money(selectedNet - previous.totalAssets + previous.totalLiabilities))
+                                reportRow("较上次", money(selectedNet - previous.totalAssets + previous.totalLiabilities))
                             }
                             reportRow("资产项目", "\(detailRows.count) 项")
                             reportRow("记录时间", selectedSnapshot.map { displayDate($0.date) } ?? "—")
-                        }
-                    }
-                    .frame(width: 250)
-                }
-                if let detailError { Text(detailError).font(.system(size: 10)).foregroundStyle(.red) }
-                if let videoError { Text(videoError).font(.system(size: 10)).foregroundStyle(.red) }
+                        }.frame(width: 250)
+                    }.frame(height: 190)
+                    if let detailError { Text(detailError).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange) }
+                    if let videoError { Text(videoError).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange) }
+                }.padding(NativeStyle.Layout.pageInset)
             }
-            .padding(22)
-        }
+        }.modifier(NativeWorkspaceSurface())
+        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedIndex)
+        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: isExportingVideo)
         .overlay(alignment: .topLeading) {
             if AppPreviewSession.isActive,
                ProcessInfo.processInfo.arguments.contains("-macPerfInteractionOutput") {
@@ -836,7 +612,19 @@ struct NativeTimeMachineView: View {
             }
         }
     }
+    private var activeDifference: Double {
+        guard let index = activeIndex, index > 0 else { return 0 }
+        let current = summaries[index], previous = summaries[index - 1]
+        return current.totalAssets - current.totalLiabilities - previous.totalAssets + previous.totalLiabilities
+    }
+    private func stepDate(_ delta: Int) {
+        guard !summaries.isEmpty else { return }
+        selectedIndex = min(summaries.count - 1, max(0, (selectedIndex ?? summaries.count - 1) + delta))
+        hoveredIndex = nil
+    }
     private func rebuildChartData() {
+        chartRevision &+= 1
+        hoveredIndex = nil
         guard !summaries.isEmpty else {
             chartStart = 0
             chartData = []
@@ -858,11 +646,11 @@ struct NativeTimeMachineView: View {
     }
     private func reportRow(_ title: String, _ value: String) -> some View {
         HStack {
-            Text(title).foregroundStyle(.secondary)
+            Text(title).foregroundStyle(NativePalette.secondary)
             Spacer()
             Text(value).monospacedDigit()
         }
-        .font(.system(size: 11))
+        .font(NativeStyle.FontRole.caption)
     }
     private func dateRailLabel(at index: Int) -> String {
         let day = summaries[index].date
@@ -872,9 +660,9 @@ struct NativeTimeMachineView: View {
         return day.formatted(.dateTime.month(.twoDigits).day(.twoDigits))
     }
     private func summaryMetric(_ title: String, _ value: Double) -> some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            Text(title).font(.system(size: 10)).foregroundStyle(.secondary)
-            Text(money(value)).font(.system(size: 12, weight: .semibold)).monospacedDigit()
+        VStack(alignment: .trailing, spacing: NativeStyle.Space.xxs) {
+            Text(title).font(NativeStyle.FontRole.micro).foregroundStyle(NativePalette.secondary)
+            Text(money(value)).font(NativeStyle.FontRole.bodyStrong).monospacedDigit()
         }.padding(.leading, 18)
     }
     private func loadDetail(at index: Int?) {
@@ -937,39 +725,6 @@ struct NativeTimeMachineView: View {
             isExportingVideo = false
             videoTask = nil
         }
-    }
-}
-
-private struct NativeHomeTrendChart: View {
-    let summaries: [TimeMachineSnapshotProjection]
-    @State private var hoveredIndex: Int?
-
-    private var activeSummary: TimeMachineSnapshotProjection? {
-        if let hoveredIndex, summaries.indices.contains(hoveredIndex) {
-            return summaries[hoveredIndex]
-        }
-        return summaries.last
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            NativeTrendCanvas(summaries: summaries, selectedIndex: nil,
-                              hoveredIndex: $hoveredIndex, allowsHover: true)
-                .frame(height: 205)
-            HStack(spacing: 12) {
-                Text(activeSummary.map { displayDate($0.date) } ?? "暂无记录")
-                    .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
-                Text("总资产 " + money(activeSummary?.totalAssets ?? 0))
-                    .foregroundStyle(AssetTheme.gold)
-                Text("净资产 " + money((activeSummary?.totalAssets ?? 0)
-                                      - (activeSummary?.totalLiabilities ?? 0)))
-                    .foregroundStyle(Color(red: 0.32, green: 0.72, blue: 0.51))
-            }
-            .font(.system(size: 10))
-            .monospacedDigit()
-        }
-        .onChange(of: summaries.count) { _, _ in hoveredIndex = nil }
     }
 }
 
@@ -1047,11 +802,11 @@ private struct NativeTrendCanvas: View {
     }
 }
 
-private struct NativeStaticTrendCanvas: View, Equatable {
+struct NativeStaticTrendCanvas: View, Equatable {
     let summaries: [TimeMachineSnapshotProjection]
     let revision: UInt64
-    private let gold = Color(red: 0.86, green: 0.7, blue: 0.45)
-    private let green = Color(red: 0.32, green: 0.72, blue: 0.51)
+    private let gold = NativePalette.chartSecondary
+    private let green = NativePalette.accent
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.revision == rhs.revision
@@ -1079,7 +834,7 @@ private struct NativeStaticTrendCanvas: View, Equatable {
                 graphics.stroke(grid, with: .color(.secondary.opacity(0.22)), lineWidth: 0.7)
                 let amount = low + fraction * (high - low)
                 let label = amount.formatted(.number.notation(.compactName).precision(.fractionLength(0)))
-                graphics.draw(Text(label).font(.system(size: 9)).foregroundStyle(.secondary),
+                graphics.draw(Text(label).font(NativeStyle.FontRole.chartLabel).foregroundStyle(NativePalette.secondary),
                               at: CGPoint(x: 0, y: y), anchor: .leading)
             }
             for tick in 0...3 {
@@ -1087,7 +842,7 @@ private struct NativeStaticTrendCanvas: View, Equatable {
                 let x = plot.minX + ratio * plot.width
                 let date = Date(timeIntervalSinceReferenceDate: start + ratio * (end - start))
                 graphics.draw(Text(date.formatted(.dateTime.month(.abbreviated).year()))
-                    .font(.system(size: 9)).foregroundStyle(.secondary),
+                    .font(NativeStyle.FontRole.chartLabel).foregroundStyle(NativePalette.secondary),
                               at: CGPoint(x: x, y: plot.maxY + 11),
                               anchor: tick == 0 ? .leading : (tick == 3 ? .trailing : .center))
             }
@@ -1126,7 +881,7 @@ private struct NativeStaticTrendCanvas: View, Equatable {
     }
 
     /// Keeps the first, last, and both extrema of each bucket; at most 600 points.
-    private static func sample(_ source: [TimeMachineSnapshotProjection], limit: Int) -> [EnumeratedSequence<[TimeMachineSnapshotProjection]>.Element] {
+    static func sample(_ source: [TimeMachineSnapshotProjection], limit: Int) -> [EnumeratedSequence<[TimeMachineSnapshotProjection]>.Element] {
         if source.count <= limit { return Array(source.enumerated()) }
         let interior = source.count - 2
         let buckets = max(1, (limit - 2) / 4)
@@ -1144,80 +899,5 @@ private struct NativeStaticTrendCanvas: View, Equatable {
         }
         indices.append(source.count - 1)
         return indices.map { (offset: $0, element: source[$0]) }
-    }
-}
-
-struct NativeQuantView: View {
-    @ObservedObject var history: NativeHistoryModel
-    @State private var launcherError: String?
-    var body: some View {
-        let values = history.summaries.map { $0.totalAssets - $0.totalLiabilities }
-        let first = values.first ?? 0
-        let last = values.last ?? 0
-        let change = last - first
-        ScrollView {
-            VStack(alignment: .leading, spacing: 15) {
-                NativePageHeader(title: "量化", subtitle: "基于本机历史记录的轻量分析")
-                NativeCard {
-                    HStack {
-                        quantMetric("记录天数", "\(values.count)")
-                        quantMetric("期间净值变化", money(change))
-                        quantMetric("最高净资产", money(values.max() ?? 0))
-                        quantMetric("最低净资产", money(values.min() ?? 0))
-                    }
-                }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 9) {
-                        Text("净资产走势").font(.system(size: 15, weight: .semibold))
-                        NativeTrendCanvas(summaries: history.summaries, selectedIndex: nil, hoveredIndex: .constant(nil))
-                            .frame(height: 260)
-                    }
-                }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("完整策略回测").font(.system(size: 14, weight: .semibold))
-                        Text("完整回测和行情计算使用现有 Mac 版，按需启动；切换后本窗口会退出以释放内存。")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
-                        Button("打开完整量化", systemImage: "arrow.up.forward.app", action: launchFullQuant)
-                        if let launcherError { Text(launcherError).font(.caption).foregroundStyle(.red) }
-                    }
-                }
-            }.padding(24)
-        }
-    }
-    private func quantMetric(_ name: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(name).font(.system(size: 11)).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 15, weight: .semibold)).monospacedDigit()
-        }.frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func launchFullQuant() {
-        let sibling = Bundle.main.bundleURL.deletingLastPathComponent()
-            .appending(path: "AssetTimeMachine-Mac-Signed.app")
-        let destination: URL
-        if FileManager.default.fileExists(atPath: sibling.path) {
-            destination = sibling
-        } else {
-            let panel = NSOpenPanel()
-            panel.allowedContentTypes = [.application]
-            panel.message = "选择已有的资产时光机 Mac 完整版"
-            guard panel.runModal() == .OK, let selected = panel.url else { return }
-            destination = selected
-        }
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.createsNewApplicationInstance = true
-        configuration.arguments = ["-openQuantTab"]
-        let sharedDefaults = UserDefaults(suiteName: "group.com.flyingrtx.AssetTimeMachine")
-        sharedDefaults?.set(Date().timeIntervalSince1970, forKey: "nativeMac.openFullQuantAt")
-        NSWorkspace.shared.openApplication(at: destination, configuration: configuration) { _, error in
-            DispatchQueue.main.async {
-                if let error {
-                    sharedDefaults?.removeObject(forKey: "nativeMac.openFullQuantAt")
-                    launcherError = error.localizedDescription
-                }
-                else { NSApp.terminate(nil) }
-            }
-        }
     }
 }

@@ -6,9 +6,35 @@ import AuthenticationServices
 struct AssetTimeMachineNativeApp: App {
     @State private var store = NativeStoreBootstrap()
     @State private var startsOffline = false
+    @MainActor private static var workspaceFixtureWindow: NSWindow?
 
     init() {
         let arguments = ProcessInfo.processInfo.arguments
+        if AppPreviewSession.isActive {
+            DispatchQueue.main.async {
+                if arguments.contains("-macAppearanceLight") { NSApplication.shared.appearance = NSAppearance(named: .aqua) }
+                if arguments.contains("-macAppearanceDark") { NSApplication.shared.appearance = NSAppearance(named: .darkAqua) }
+            }
+        }
+        // Explicit in-memory evidence session; production WindowGroup/auth remain unchanged.
+        if AppPreviewSession.isActive, arguments.contains("-macWorkspaceInMemory"),
+           arguments.contains("-macWorkspaceCaptureDir") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                let fixture = NativeStoreBootstrap()
+                guard let container = fixture.container else {
+                    FileHandle.standardError.write(Data(("Workspace fixture: " + (fixture.error ?? "unavailable") + "\n").utf8))
+                    return
+                }
+                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 688),
+                    styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+                window.title = "资产时光机 · 独立样例"
+                window.contentView = NSHostingView(rootView: NativeRootView(startsOffline: true, isWorkspaceFixtureHost: true).modelContainer(container))
+                window.contentMinSize = NSSize(width: NativeStyle.Layout.windowMinWidth, height: 620)
+                window.center(); window.makeKeyAndOrderFront(nil)
+                Self.workspaceFixtureWindow = window
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        }
         if !AppPreviewSession.isActive, !arguments.contains("-macCloudRecovery"),
            !arguments.contains("-macRecoveryReport"),
            let bundleID = Bundle.main.bundleIdentifier,
@@ -36,9 +62,9 @@ struct AssetTimeMachineNativeApp: App {
                 }
             } else if AppPreviewSession.isActive, store.container == nil {
                 VStack(spacing: 14) {
-                    Text("选择独立性能测试文件夹").font(.headline)
+                    Text("选择独立性能测试文件夹").font(NativeStyle.FontRole.sectionStrong)
                     Text("仅访问指定的测试数据与测量结果，不读取或同步账户数据。")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
                     Button("选择测试文件夹") {
                         let panel = NSOpenPanel()
                         panel.canChooseDirectories = true
@@ -51,11 +77,11 @@ struct AssetTimeMachineNativeApp: App {
                             } catch { NSLog("[NativeMac] test access failed: %@", error.localizedDescription) }
                         }
                     }
-                }.padding(28)
+                }.padding(NativeStyle.Space.page)
             } else if let container = store.container {
                 NativeRootView(startsOffline: startsOffline)
                     .modelContainer(container)
-                    .frame(minWidth: 900, minHeight: 620)
+                    .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: 620)
             } else if store.isMissingStore {
                 NativeFreshStartView { useOffline in
                     let opened = NativeStoreBootstrap(createFresh: true)
@@ -70,7 +96,7 @@ struct AssetTimeMachineNativeApp: App {
                     .frame(width: 820, height: 560)
             }
         }
-        .defaultSize(width: 1040, height: 720)
+        .defaultSize(width: 820, height: 660)
     }
 }
 
@@ -80,13 +106,13 @@ private struct NativeFreshStartView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 15) {
             Image(systemName: "clock.arrow.circlepath")
-                .font(.system(size: 31))
+                .font(NativeStyle.FontRole.brandSymbol)
                 .foregroundStyle(AssetTheme.gold)
             Text("欢迎使用资产时光机")
-                .font(.system(size: 21, weight: .semibold))
+                .font(NativeStyle.FontRole.dialogTitle)
             Text("选择开始方式。已有手机数据可以登录同步；也可以先在本机记录，之后随时登录。")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
+                .font(NativeStyle.FontRole.input)
+                .foregroundStyle(NativePalette.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("登录并同步手机数据") { start(false) }
                 .buttonStyle(.borderedProminent)
@@ -107,11 +133,11 @@ private struct NativeCloudRecoveryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("核对手机与 Mac 数据").font(.system(size: 20, weight: .semibold))
+            Text("核对手机与 Mac 数据").font(NativeStyle.FontRole.dialogTitle)
             Text(ProcessInfo.processInfo.arguments.contains("-macRecoverFromCloud")
                  ? "本机记录已备份。将以已核对的手机云端版本更新 Mac，不上传资产数据。"
                  : "本机记录已备份。请登录手机使用的同一个账户，读取云端历史。此页面不会上传或恢复资产数据。")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if !archived {
                 SignInWithAppleButton(.signIn) { request in
@@ -130,10 +156,10 @@ private struct NativeCloudRecoveryView: View {
                     }
                 }
             }
-            if let message = cloud.statusMessage { Text(message).font(.system(size: 12)) }
-            if let error = cloud.errorMessage { Text(error).font(.system(size: 12)).foregroundStyle(.red) }
+            if let message = cloud.statusMessage { Text(message).font(NativeStyle.FontRole.body) }
+            if let error = cloud.errorMessage { Text(error).font(NativeStyle.FontRole.body).foregroundStyle(AssetTheme.negative) }
         }
-        .padding(28)
+        .padding(NativeStyle.Space.page)
         .frame(width: 420)
         .task {
             if cloud.hasToken {

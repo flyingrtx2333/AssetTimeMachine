@@ -13,6 +13,9 @@ settings:
     INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.finance
     CODE_SIGN_ENTITLEMENTS: ../AssetTimeMachine/AssetTimeMachineMac.entitlements
     PRODUCT_BUNDLE_IDENTIFIER: com.flyingrtx.AssetTimeMachine.mac
+packages:
+  BacktestCore:
+    path: ..
 targets:
   AssetTimeMachineNativeMac:
     type: application
@@ -20,6 +23,7 @@ targets:
     sources:
       - path: Sources
       - path: ../AssetTimeMachine/Assets.xcassets
+      - path: ../AssetTimeMachine/Localizable.xcstrings
       - path: ../AssetTimeMachine/Models.swift
       - path: ../AssetTimeMachine/AppLanguage.swift
       - path: ../AssetTimeMachine/AppPreviewSession.swift
@@ -31,6 +35,22 @@ targets:
       - path: ../AssetTimeMachine/Services/TimeMachineSnapshotProjectionStore.swift
       - path: ../AssetTimeMachine/ImportExport.swift
       - path: ../AssetTimeMachine/CloudSync.swift
+      - path: ../AssetTimeMachine/RemoteMarket.swift
+      - path: ../AssetTimeMachine/MarketAssetCatalog.swift
+      - path: ../AssetTimeMachine/Views/Shared/AppFormatters.swift
+      - path: ../AssetTimeMachine/Services/AssetItemService.swift
+      - path: ../AssetTimeMachine/AssetIconRegistry.swift
+      - path: ../AssetTimeMachine/Backtest/BacktestCoreAliases.swift
+      - path: ../AssetTimeMachine/Backtest/BacktestModels.swift
+      - path: ../AssetTimeMachine/Backtest/BacktestEngine.swift
+      - path: ../AssetTimeMachine/Backtest/BacktestRecordAdapter.swift
+      - path: ../AssetTimeMachine/Backtest/AdvancedBacktestDataSupport.swift
+      - path: ../AssetTimeMachine/Backtest/BacktestPresentation.swift
+      - path: ../AssetTimeMachine/Backtest/StrategyAdviceService.swift
+      - path: ../AssetTimeMachine/Backtest/StrategyAdviceProjectionStore.swift
+    dependencies:
+      - package: BacktestCore
+        product: AssetTimeMachineBacktestCore
     settings:
       base:
         PRODUCT_NAME: AssetTimeMachine
