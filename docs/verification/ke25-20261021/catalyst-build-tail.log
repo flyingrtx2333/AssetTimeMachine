@@ -1,0 +1,12 @@
+RegisterWithLaunchServices /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-catalyst.dIW3uX/Build/Products/Release-maccatalyst/AssetTimeMachine.app (in target 'AssetTimeMachine' from project 'AssetTimeMachine')
+    cd /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine
+    builtin-lsregisterurl --record-path /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-catalyst.dIW3uX/Build/Intermediates.noindex/XCBuildData/registered-launchservices.txt -- /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-catalyst.dIW3uX/Build/Products/Release-maccatalyst/AssetTimeMachine.app
+
+PruneExplicitPrecompiledModules /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-catalyst.dIW3uX/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-catalyst.dIW3uX/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-catalyst.dIW3uX/SDKExplicitPrecompiledModules
+
+** BUILD SUCCEEDED **
+

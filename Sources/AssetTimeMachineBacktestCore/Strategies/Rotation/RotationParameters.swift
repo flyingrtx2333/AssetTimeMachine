@@ -329,6 +329,7 @@ nonisolated enum RotationParameters {
              .riskContributionRecoveryRouter,
              .riskContributionCashConfidenceRouter,
              .riskContributionCashConfidenceLowNoise,
+             .ke25,
              .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
              .recentGoldEquityRelativeZ252Shift25,

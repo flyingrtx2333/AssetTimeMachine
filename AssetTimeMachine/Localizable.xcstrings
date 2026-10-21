@@ -1,6 +1,72 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "KE25": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        }
+      }
+    },
+    "五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unlevered five-asset strategy combining 75% defensive targets with 25% breakout holdings. Components keep independent signal state and recalculate daily from completed observations; remaining capital stays in cash. Your fees and slippage apply. The live extension awaits forward validation; past performance does not predict future returns."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五資產無槓桿策略：按75%防守組合與25%突破持倉合成目標倉位，保留各部分的獨立訊號狀態；每日使用上一已完成觀察期重新計算，其餘資金留現金。手續費與滑點採用你的設定。實時延伸尚待前瞻驗證，歷史表現不代表未來收益。"
+          }
+        }
+      }
+    },
+    "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25: 75% defensive targets and 25% breakout holdings, recalculated from the previous completed observation. Exposure is capped at 100%; remaining capital stays in cash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25：使用上一已完成觀察期計算75%防守組合與25%突破持倉，總倉位不超過100%，其餘留現金。"
+          }
+        }
+      }
+    },
     "": {},
     " · %d日动量 %@": {
       "extractionState": "manual",

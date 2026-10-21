@@ -286,6 +286,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
     case riskContributionRecoveryRouter
     case riskContributionCashConfidenceRouter
     case riskContributionCashConfidenceLowNoise
+    case ke25
     case recentVolatilityManagedIdleCash
     case recentPairSpreadZ252Shift25
     case recentGoldEquityRelativeZ252Shift25
@@ -401,6 +402,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
             return BacktestText.string("无融资置信度恢复")
         case .riskContributionCashConfidenceLowNoise:
             return BacktestText.string("低噪增强")
+        case .ke25:
+            return BacktestText.string("KE25")
         case .recentVolatilityManagedIdleCash:
             return BacktestText.string("近期研究·闲置现金控波部署")
         case .recentPairSpreadZ252Shift25:
@@ -526,6 +529,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
             return BacktestText.string("当前无融资夏普冠军：保留15%快速桥接和最高20.75%的恢复袖套；高波动时自动收缩至19%，并按95日动量、下行波动与趋势效率在纳指/标普间分配。恢复袖套在双指数3日同时下跌5%时退出，退出后冷却150日。领导资产切换继续使用Beta(2,2)兑现率校准；非清仓减仓且基础净值距252日高点不足4%时，按总仓位下降与总换手冲击保留最多25%的缓冲，广泛减仓时分散到本次卖出资产。全部信号严格使用T−1数据，总仓位封顶100%，现金不得为负，统一计入1%交易费与0.05%滑点。")
         case .riskContributionCashConfidenceLowNoise:
             return BacktestText.string("严格无杠杆增强策略：沿用置信度恢复底层和20.75%恢复袖套，以100%总仓硬上限运行；关闭历史上冗余的宽度微刹车与成熟纳指刹车，在低波且趋势确认时更充分使用闲置现金。领导资产保持不变且总风险变化不超过2%时，按组合波动采用20%/30%/50%的分级换手过滤；黄金领导且60日组合波动达到12%时恢复更快调仓。近峰减仓执行80%，并保留5%的A股退出哨兵。全部信号严格使用T−1数据，禁止融资和负现金，统一计入1%交易费与0.05%滑点。")
+        case .ke25:
+            return BacktestText.string("五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。")
         case .recentVolatilityManagedIdleCash:
             return BacktestText.string("近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。")
         case .recentPairSpreadZ252Shift25:
@@ -551,7 +556,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var defaultFeeRatePercent: Double {
         switch self {
-        case .recentVolatilityManagedIdleCash,
+        case .ke25,
+             .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
              .recentGoldEquityRelativeZ252Shift25:
             return 0.025
@@ -562,7 +568,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var defaultSlippageRatePercent: Double {
         switch self {
-        case .recentVolatilityManagedIdleCash,
+        case .ke25,
+             .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
              .recentGoldEquityRelativeZ252Shift25:
             return 0
@@ -623,7 +630,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
              .nfciDualCoreV1,
              .nfciDualCoreSimplifiedV11:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
-        case .recentVolatilityManagedIdleCash,
+        case .ke25,
+             .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
              .recentGoldEquityRelativeZ252Shift25:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
@@ -636,6 +644,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var dateBoundaryAssetSymbols: Set<String>? {
         switch self {
+        case .ke25:
+            return ["gold_cny", "nasdaq"]
         case .riskContributionReallocation,
              .riskContributionRegimeRouter,
              .riskContributionRecoveryRouter,
@@ -1918,6 +1928,16 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             takeProfitRatio: 0
         ),
         .init(
+            id: "ke25", mode: .ke25,
+            selectedAssetSymbols: ["gold_cny", "sp500", "nasdaq", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "近期研究（探索）", titleLocalizationKey: "KE25",
+            annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
+            buyRule: .init(direction: .alwaysBuy, days: 1),
+            sellRule: .init(direction: .neverSell, days: 1),
+            tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0,
+            stopLossRatio: 0, takeProfitRatio: 0
+        ),
+        .init(
             id: "recent-volatility-managed-idle-cash",
             mode: .recentVolatilityManagedIdleCash,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
@@ -2333,6 +2353,7 @@ public enum BacktestProductStrategyCatalog {
     ]
 
     public static let experimentalTemplateIDs: [String] = [
+        "ke25",
         "nfci-dual-core-v11-qual-role",
         "recent-volatility-managed-idle-cash",
         "recent-pair-spread-z252-shift25",

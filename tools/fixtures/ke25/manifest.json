@@ -1,0 +1,35 @@
+{
+  "historyStart": "2002-02-05",
+  "historyEnd": "2026-09-30",
+  "initialCash": 100000,
+  "feeRatePercent": 0.025,
+  "slippageRatePercent": 0,
+  "rebalanceBand": 0.04,
+  "sourceStudy": "k-fixed-entry-stop-convex-sensitivity-method-audit-2026-10-21",
+  "sourceCandidate": "ke-b25-mix-control",
+  "researchRole": "control-not-relabelled-as-predeclared-primary",
+  "fullHistoryStateCount": 5735,
+  "nativeMetricReference": {
+    "path": "/Users/xiangjunsheng/.codex/visualizations/2026/10/12/01a130c5-5da1-72a3-89e3-7f4edf4d43cb/technical-ke-convex-sensitivity-20261021/raw/run/ke-b25-mix-control/metrics.json",
+    "sha256": "a5b42a1ccf3ff8554d0fab24d0f3f540fb4c0c323cbd6d045e0f4a72f3b63133"
+  },
+  "nativeDailyStatesReference": {
+    "path": "/Users/xiangjunsheng/.codex/visualizations/2026/10/12/01a130c5-5da1-72a3-89e3-7f4edf4d43cb/technical-ke-convex-sensitivity-20261021/raw/run/ke-b25-mix-control/states.json",
+    "sha256": "303dc6fa36cf3cd42e8c77c5d82f167080b2ddff796426338eda70acd2267e20"
+  },
+  "files": {
+    "frame.json": {
+      "source": "/Volumes/江波龙/Allprojects/FlyingrtxFast/research/asset-time-machine/workspace/studies/related-lownoise-core-causal-close-2026-10-11/run/frame-quotes.json",
+      "sha256": "198c66741bb77e52c0eba30dbeb74923f29d721f02280ef703e9754a02983302"
+    },
+    "targets.json": {
+      "source": "/Users/xiangjunsheng/.codex/visualizations/2026/10/12/01a130c5-5da1-72a3-89e3-7f4edf4d43cb/technical-ke-convex-sensitivity-20261021/raw/source-books/ke-b25-mix-control-targets.json",
+      "sha256": "2b55b7126ef47b8afe0ff34784d6f60e407f9aef8f90f301e431cfcd70b72f2a"
+    }
+  },
+  "fixtureID": "ke25-original-research-regression-2026-09-30",
+  "productStrategyID": "ke25",
+  "productRulesVersion": "ke25-forward-v1-2026-10-21",
+  "fixtureScope": "original historical real data and original desired targets, test-only; never production signal input",
+  "nativeHistorySHA256": "7b41a7802c79cb3c5088055ad766973d5be85ae09e34a17582cc7064866ef846"
+}

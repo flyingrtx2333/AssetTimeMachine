@@ -43,6 +43,9 @@ nonisolated enum StrategyRuntimeRegistry {
             guard let run = GoldNasdaqBarbellStrategy.runGoldNasdaqDualTrendBarbellWithTrace(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds) else { return nil }
             return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates)
         },
+        .ke25: { input in
+            KE25LiveStrategy.run(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds)
+        },
         .recentVolatilityManagedIdleCash: { input in
             RecentWindowStrategies.runRecentWindowOverlayStrategyWithTrace(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, mode: .recentVolatilityManagedIdleCash, dateBounds: input.dateBounds)
         },
