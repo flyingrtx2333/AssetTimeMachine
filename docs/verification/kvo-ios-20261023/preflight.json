@@ -1,0 +1,46 @@
+{
+  "status": "FOCUSED_KVO_AND_PRODUCTION_ENTRY_VERIFIED",
+  "checkedAt": "2026-10-22T16:32:31.745405+00:00",
+  "releaseVersion": "1.14",
+  "releaseBuild": "207",
+  "sourceCommit": "eb8acc64a1b91d10240117072ba971d0d5778351",
+  "releaseBaselineCommit": "20076b6",
+  "sourcePushed": true,
+  "kvoRealResearchTests": {
+    "tests": 3,
+    "failures": 0,
+    "all5735TargetKeysAndFloat64BitsMatch": true,
+    "physicalNativeQuantityPrefixRebuild": true,
+    "originalKVOAccountMetricsAndFillsMatch": true,
+    "unchangedKE25ControlMetricsMatch": true
+  },
+  "productionDataEntry": {
+    "tests": 1,
+    "failures": 0,
+    "asOf": "2026-10-21",
+    "states": 5751,
+    "fills": 12203,
+    "dailyAdviceAndAppBacktestEntryPassed": true
+  },
+  "simulatorDebugCompilation": "PASS",
+  "nativeMacProjectCompilation": "PASS_NOT_DEVICE_UI_ACCEPTANCE",
+  "localizationAudit": "PASS_1453_KEYS",
+  "additionalChecks": {
+    "debugConfigurationTests": "EXISTING_THREAD_STACK_LIMIT_RETAINED",
+    "releaseConfigurationTests": "10_PASS_ON_PREINTEGRATION_BASE",
+    "legacyPinnedMetricDump": "FAILED_LEGACY_EXPECTED_SNAPSHOT_COMPARISON_RETAINED_NOT_CLAIMED_PASS"
+  },
+  "original73ResearchCoreSourcesUnchanged": true,
+  "canonicalResearchCheckoutHEAD": "aae8bfcc8425456bd3b0ae8fb29b10fb0e4e0d16",
+  "physicalDeviceUIAcceptanceClaimed": false,
+  "logs": {
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/kvo-live-final-tests.log": "b449568db6c1d28c2aaa72ae687942832b2c989438a26ee9a7522b973c265fee",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/kvo-production-entry-tests.log": "c45fb6497277a6d1e6d4ae63285067afa012445a156b307cfe4dfccde357f84b",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/ios-preupload.log": "fe6914e7c03f542b4b33bb0723b1f4b591eee666d05850cd9701e33f807f337c",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/native-live-validation.log": "04b9bd50b90c1abdc604283da9ed8c7b70f7a75f5918523df2d1884521deeb09",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/configuration-tests-release.log": "725faca4117b4fbe7adb9eb7e6be301c42aa9befb43f28bd7b0e9db8e26547e6",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/configuration-tests.log": "e4c5c4b27b8ce90afa46e9fb63c5128c0010df3815a503f1242a535d32a7d252",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/baseline-verification.log": "e88e19315ca0841b61c89707ff2a6776eec9f07f2526425b3a0dcfbb1ca13841",
+    "/Volumes/江波龙/Allprojects/AssetTimeMachine-kvo-release/build/push207.log": "cea2b1f4d9452841cdf10e7047d5f2aff95b8f820eaf7b2851ef8dd38222a1c2"
+  }
+}
