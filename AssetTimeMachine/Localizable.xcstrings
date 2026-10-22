@@ -33299,46 +33299,68 @@
         }
       }
     },
-    "KVO研究组合的历史回测：黄金、纳指、标普500、沪深300与上证综指；原始数据截至2026年9月30日。默认每笔手续费0.025%、零滑点，不提供当前持仓建议。": {
+    "KVO量价组合": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Historical KVO research portfolio using gold, Nasdaq Composite, S&P 500, CSI 300 and Shanghai Composite. Data ends September 30, 2026. Defaults: 0.025% fee per fill and zero slippage. Current allocation advice is unavailable."
+            "value": "KVO Price–Volume Portfolio"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVO研究组合的历史回测：黄金、纳指、标普500、沪深300与上证综指；原始数据截至2026年9月30日。默认每笔手续费0.025%、零滑点，不提供当前持仓建议。"
+            "value": "KVO量价组合"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVO研究組合的歷史回測：黃金、納指、標普500、滬深300與上證綜指；原始資料截至2026年9月30日。預設每筆手續費0.025%、零滑點，不提供目前持倉建議。"
+            "value": "KVO量價組合"
           }
         }
       }
     },
-    "KVO量价组合·历史回测": {
+    "黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVO Portfolio · Historical Backtest"
+            "value": "A gold, Nasdaq Composite, S&P 500, CSI 300 and Shanghai Composite portfolio. Combines a 75% defensive sleeve with 25% breakout positions; KVO 34/55 with a 13-session signal confirms China-equity entries. Defaults to 0.025% per fill, zero slippage and no leverage."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVO量价组合·历史回测"
+            "value": "黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "KVO量價組合·歷史回測"
+            "value": "黃金、納指、標普500、滬深300與上證綜指的量價組合。以75%防守組合搭配25%突破持倉，KVO34/55與13日訊號線確認A股入場；預設每筆手續費0.025%、零滑點，不使用槓桿。"
+          }
+        }
+      }
+    },
+    "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO combines a 75% defensive sleeve with 25% price–volume-confirmed breakouts using the latest completed observation; gross exposure is capped at 100%."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO：以75%防守組合搭配25%量價確認突破，使用上一已完成觀察期資料，總倉位不超過100%。"
           }
         }
       }

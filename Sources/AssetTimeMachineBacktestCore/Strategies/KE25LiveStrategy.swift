@@ -7,7 +7,8 @@ nonisolated public enum KE25LiveStrategy {
     public static let anchorDate = "2002-01-04"
 
     /// Returns source-indexed desired weights, retaining explicit zero keys and causal source clocks.
-    public static func targets(frame: MarketDataFrame, nativeHistory: Data) throws -> [Int: [String: Double]] {
+    public static func targets(frame: MarketDataFrame, nativeHistory: Data,
+                               quantityRawBySymbol: [String: Data]? = nil) throws -> [Int: [String: Double]] {
         guard frame.tradableSymbols == symbols, frame.dates.count > 21,
               frame.simulationRange.lowerBound >= 0, frame.simulationRange.upperBound < frame.dates.count,
               symbols.allSatisfy({ frame.pricesBySymbol[$0]?.count == frame.dates.count && frame.observedBySymbol[$0]?.count == frame.dates.count }),
@@ -31,6 +32,10 @@ nonisolated public enum KE25LiveStrategy {
             observedBySymbol:f.observedBySymbol,pause:0,control:0)
         let gap = try IslandGapSignal.build(frameDates:civil,historyData:nativeHistory,pause:3,control:2)
         let breakout = try BreakoutSARExitSignal.build(frameDates:civil,historyData:nativeHistory,control:2)
+        let kvo = try quantityRawBySymbol.map {
+            try VendorKVOEpisodeRangeEntrySignal.permissions(frameDates: civil, historyData: nativeHistory,
+                baselineBySymbol: breakout, quantityRawBySymbol: $0)
+        }
         var priorB=[String:Double](),out=[Int:[String:Double]]()
         for i in 21..<count {
             let p=parent[i-21]
@@ -44,7 +49,7 @@ nonisolated public enum KE25LiveStrategy {
                     k[symbol]=min(min(a,b[symbol]!),d)
                 }
                 let row=breakout[symbol]![i]
-                e[symbol]=row.known && row.permission ? 1.0/6.0:0.0
+                e[symbol]=row.known && (kvo?[symbol]?[i] ?? row.permission) ? 1.0/6.0:0.0
             }
             if let gold=p["gold_cny"] { e["gold_cny"]=gold/3.0 }
             var mixed=[String:Double]()
@@ -94,34 +99,72 @@ nonisolated public enum KE25LiveStrategy {
 
     public static func run(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)],
-        initialCash: Double, settings: AdvancedBacktestRiskSettings, dateBounds: ClosedRange<Date>? = nil
+        initialCash: Double, settings: AdvancedBacktestRiskSettings, dateBounds: ClosedRange<Date>? = nil,
+        useKVO: Bool = false
     ) -> AdvancedRotationStrategyRun? {
         guard let prepared=prepare(assetInputs:assetInputs,dateBounds:dateBounds) else{return nil}
-        return run(frame:prepared.frame,nativeHistory:prepared.history,initialCash:initialCash,settings:settings)
+        let quantities: [String: Data]?
+        if useKVO {
+            guard let raw = quantityData(assetInputs, through: prepared.frame.dates[prepared.frame.simulationRange.upperBound].backtestDateString) else { return nil }
+            quantities = raw
+        } else { quantities = nil }
+        return run(frame:prepared.frame,nativeHistory:prepared.history,initialCash:initialCash,settings:settings,
+                   quantityRawBySymbol: quantities)
+    }
+
+    /// Public-history quantities are usable only when their integer value is exactly representable.
+    /// Missing/zero remains UNKNOWN in the original KVO kernel; no forward fill or estimated volume.
+    private static func quantityData(_ inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)], through cutoff: String) -> [String: Data]? {
+        var result = [String: Data]()
+        for symbol in ["csi300", "shanghai_composite"] {
+            guard let series = inputs.first(where: { $0.assetOption.symbol == symbol })?.assetSeries else { return nil }
+            guard series.volumes.map({ $0.count == series.dates.count }) ?? true else { return nil }
+            var rows = [[String: Any]]()
+            for (i, date) in series.dates.enumerated() {
+                guard date <= cutoff else { continue }
+                var row: [String: Any] = ["day": date, "volume": NSNull()]
+                if let volumes = series.volumes, let volume = volumes[i] {
+                    guard volume.isFinite, volume >= 0, volume <= 9_007_199_254_740_992,
+                          let integer = UInt64(exactly: volume), Double(integer) == volume else { return nil }
+                    row["volume"] = String(integer)
+                }
+                rows.append(row)
+            }
+            guard let data = try? JSONSerialization.data(withJSONObject: rows, options: [.sortedKeys]) else { return nil }
+            result[symbol] = data
+        }
+        return result
     }
 
     /// Advice publishes the latest desired target, even when a simulated order is still pending.
     public static func advice(
-        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)]
+        assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)],
+        useKVO: Bool = false
     ) -> StrategyRebalanceAdvice? {
-        guard let p=prepare(assetInputs:assetInputs,dateBounds:nil),
-              let source=try? targets(frame:p.frame,nativeHistory:p.history),
+        guard let p=prepare(assetInputs:assetInputs,dateBounds:nil) else { return nil }
+        let quantities: [String: Data]?
+        if useKVO {
+            guard let raw = quantityData(assetInputs, through: p.frame.dates[p.frame.simulationRange.upperBound].backtestDateString) else { return nil }
+            quantities = raw
+        } else { quantities = nil }
+        guard let source=try? targets(frame:p.frame,nativeHistory:p.history,quantityRawBySymbol:quantities),
               let i=source.keys.max(),let weights=source[i] else{return nil}
         let allocations=symbols.compactMap{symbol -> StrategyRebalanceAllocation? in
             guard let w=weights[symbol],w>0.0001,let option=p.frame.optionBySymbol[symbol] else{return nil}
             return .init(symbol:symbol,title:option.title,targetWeight:w,momentum:nil,annualizedVolatility:nil)
         }.sorted{$0.targetWeight==$1.targetWeight ? $0.symbol<$1.symbol:$0.targetWeight>$1.targetWeight}
-        return .init(strategyTitle:BacktestText.string("KE25"),asOfDate:p.frame.dates[i],lookbackSessions:313,
+        return .init(strategyTitle:BacktestText.string(useKVO ? "KVO量价组合" : "KE25"),asOfDate:p.frame.dates[i],lookbackSessions:313,
             rebalanceSessions:1,targetAnnualVolatility:nil,allocations:allocations,
-            signalReason:BacktestText.string("KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。"),
+            signalReason:BacktestText.string(useKVO ? "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。" : "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。"),
             nextReviewDate:BacktestSeriesAlignment.nextStrategyWeekday(after:p.frame.dates[i]))
     }
 
     /// Explicit real-data entry for replay and causal-prefix verification, sharing production policy and execution.
     public static func run(frame:MarketDataFrame,nativeHistory:Data,initialCash:Double,
-                           settings:AdvancedBacktestRiskSettings) -> AdvancedRotationStrategyRun? {
+                           settings:AdvancedBacktestRiskSettings, quantityRawBySymbol:[String:Data]? = nil) -> AdvancedRotationStrategyRun? {
         guard initialCash.isFinite,initialCash>0,settings.feeRate.isFinite,settings.slippageRate.isFinite,
-              let source=try? targets(frame:frame,nativeHistory:nativeHistory) else{return nil}
+              let source=try? targets(frame:frame,nativeHistory:nativeHistory,quantityRawBySymbol:quantityRawBySymbol) else{return nil}
+        let title = BacktestText.string(quantityRawBySymbol == nil ? "KE25" : "KVO量价组合")
         let normalizedInitialCash=initialCash,tradableSymbols=frame.tradableSymbols
         let commonDates=frame.dates,pricesBySymbol=frame.pricesBySymbol,optionBySymbol=frame.optionBySymbol
         let simulationRange=frame.simulationRange
@@ -132,7 +175,7 @@ nonisolated public enum KE25LiveStrategy {
         }
         let execution=BacktestExecutionConfig(initialCash:initialCash,feeRate:max(settings.feeRate,0)/100,
             slippageRate:max(settings.slippageRate,0)/100,rebalanceBand:0.04,tradeToBandBoundary:false,
-            financingAnnualRate:0,allowsFinancedExposure:false,buyReason:"KE25")
+            financingAnnualRate:0,allowsFinancedExposure:false,buyReason:title)
         guard let simulation=BacktestDailySimulator.run(frame:frame,execution:execution,provider:provider,
             rebalanceDecision:{_,_ in .init(shouldRebalance:false,refreshOverlay:false)},
             contextualRebalanceDecision:{context in
@@ -168,8 +211,8 @@ nonisolated public enum KE25LiveStrategy {
         }
 
         let syntheticReport = AdvancedBacktestAssetReport(
-            symbol: "ke25",
-            title: BacktestText.string("KE25"),
+            symbol: quantityRawBySymbol == nil ? "ke25" : "kvo",
+            title: title,
             points: simulation.points,
             benchmarkPoints: simulation.benchmarkPoints,
             pricePoints: [],
@@ -208,6 +251,6 @@ nonisolated public enum KE25LiveStrategy {
             )
         )
         return AdvancedRotationStrategyRun(report:report,dailyStates:simulation.dailyStates,
-            latestSignalReason:BacktestText.string("KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。"))
+            latestSignalReason:BacktestText.string(quantityRawBySymbol == nil ? "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。" : "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。"))
     }
 }

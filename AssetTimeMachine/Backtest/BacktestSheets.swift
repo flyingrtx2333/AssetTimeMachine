@@ -1689,7 +1689,7 @@ extension AdvancedBacktestStrategyTemplate {
         }
 
         switch mode {
-        case .kvoResearchSnapshot:
+        case .kvo:
             break
         case .ultraDefensiveRotation:
             growth = 0.36; stability = 0.93; defense = 0.94; flexibility = 0.74

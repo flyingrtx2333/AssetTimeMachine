@@ -290,7 +290,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
     case recentVolatilityManagedIdleCash
     case recentPairSpreadZ252Shift25
     case recentGoldEquityRelativeZ252Shift25
-    case kvoResearchSnapshot
+    case kvo
     case nfciDualCoreV1
     case nfciDualCoreSimplifiedV11
     case nfciDualCoreSimplifiedV11QualRole
@@ -299,8 +299,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     public var title: String {
         switch self {
-        case .kvoResearchSnapshot:
-            return BacktestText.string("KVO量价组合·历史回测")
+        case .kvo:
+            return BacktestText.string("KVO量价组合")
         case .ruleBased:
             return BacktestText.string("自定义策略")
         case .ultraDefensiveRotation:
@@ -428,8 +428,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     public var detail: String {
         switch self {
-        case .kvoResearchSnapshot:
-            return BacktestText.string("KVO研究组合的历史回测：黄金、纳指、标普500、沪深300与上证综指；原始数据截至2026年9月30日。默认每笔手续费0.025%、零滑点，不提供当前持仓建议。")
+        case .kvo:
+            return BacktestText.string("黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。")
         case .ruleBased:
             return BacktestText.string("按买入/卖出条件独立回测每个资产")
         case .ultraDefensiveRotation:
@@ -559,11 +559,9 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         self != .ruleBased
     }
 
-    nonisolated public var supportsDailyAdvice: Bool { self != .kvoResearchSnapshot }
-
     nonisolated public var defaultFeeRatePercent: Double {
         switch self {
-        case .kvoResearchSnapshot,
+        case .kvo,
              .ke25,
              .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
@@ -576,7 +574,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var defaultSlippageRatePercent: Double {
         switch self {
-        case .kvoResearchSnapshot,
+        case .kvo,
              .ke25,
              .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
@@ -589,7 +587,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var requiredSignalAssetSymbols: [String] {
         switch self {
-        case .kvoResearchSnapshot:
+        case .kvo:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         case .recentLossVolatilityMetaMomentum,
              .coreGoldSatelliteConservativeMomentum,
@@ -655,7 +653,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var dateBoundaryAssetSymbols: Set<String>? {
         switch self {
-        case .ke25:
+        case .ke25, .kvo:
             return ["gold_cny", "nasdaq"]
         case .riskContributionReallocation,
              .riskContributionRegimeRouter,
@@ -1633,9 +1631,9 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
 
     public static let all: [AdvancedBacktestStrategyTemplate] = [
         .init(
-            id: "research-kvo-quarter", mode: .kvoResearchSnapshot,
+            id: "kvo", mode: .kvo,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            categoryLocalizationKey: "研究策略", titleLocalizationKey: "KVO量价组合·历史回测",
+            categoryLocalizationKey: "研究策略", titleLocalizationKey: "KVO量价组合",
             annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
             buyRule: .init(direction: .alwaysBuy, days: 1),
             sellRule: .init(direction: .neverSell, days: 1),
@@ -2374,7 +2372,7 @@ public enum BacktestProductStrategyCatalog {
 
     public static let experimentalTemplateIDs: [String] = [
         "ke25",
-        "research-kvo-quarter",
+        "kvo",
         "nfci-dual-core-v11-qual-role",
         "recent-volatility-managed-idle-cash",
         "recent-pair-spread-z252-shift25",
@@ -2703,7 +2701,7 @@ public enum BacktestCoreStrategyDefaults {
     public static let recommendedTemplateID = "gold-nasdaq-dual-trend-barbell"
 
     public static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
-        AdvancedBacktestStrategyTemplate.productCatalog.filter { $0.mode.supportsDailyAdvice }
+        AdvancedBacktestStrategyTemplate.productCatalog
     }
 
     public static func migratedTemplateID(_ id: String) -> String {

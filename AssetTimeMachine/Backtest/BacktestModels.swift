@@ -202,7 +202,7 @@ enum StrategyRebalanceDefaults {
     static let recommendedTemplateID = "gold-nasdaq-dual-trend-barbell"
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
-        AdvancedBacktestStrategyTemplate.productCatalog.filter { $0.mode.supportsDailyAdvice }
+        AdvancedBacktestStrategyTemplate.productCatalog
     }
 
     static func migratedTemplateID(_ id: String) -> String {

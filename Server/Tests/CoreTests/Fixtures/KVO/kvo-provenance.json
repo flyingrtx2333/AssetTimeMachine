@@ -1,0 +1,16 @@
+{
+  "strategyID": "research-kvo-quarter",
+  "sourceResultSHA256": "5a4c20c6695a65aa09c0c86461e2a7bcce5bedf65ed0240abec03ba03551e745",
+  "sourceStudy": "cn-vendor-kvo-episode-range-fixed-quarter-method-audit-2026-10-22",
+  "historicalOnly": true,
+  "endDate": "2026-09-30",
+  "files": {
+    "kvo-frame.json": "198c66741bb77e52c0eba30dbeb74923f29d721f02280ef703e9754a02983302",
+    "kvo-targets.json": "8982bd02d079eaa0db6988d525d9d58371884ef41cfa546caef957513d297400",
+    "native-history.json": "2195b9c88d4c5f0e4293dd58ed6473f0dee5fd39a5310b3f00e2e8588f9a07f7",
+    "quantity-csi300.json": "9461c228d56df57b5cf15aa70d9c6d4e8111b43db314078b28f6158e2844b3f4",
+    "quantity-shanghai_composite.json": "f1a3c3976fd192f546596571248b6922222d6d22dc0c3f786b37a9906b4517f1"
+  },
+  "nativeHistoryOriginalSHA256": "7b41a7802c79cb3c5088055ad766973d5be85ae09e34a17582cc7064866ef846",
+  "nativeFixtureRetainsWholeNativeDatesAndOHLCForAllFourStocks": true
+}

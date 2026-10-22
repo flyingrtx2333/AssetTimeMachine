@@ -11,8 +11,8 @@ nonisolated enum StrategyRuntimeRegistry {
     }
     typealias Factory = (Input) -> AdvancedRotationStrategyRun?
     static let specialized: [AdvancedBacktestStrategyMode: Factory] = [
-        .kvoResearchSnapshot: { input in
-            KVOResearchSnapshot.run(initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds)
+        .kvo: { input in
+            KE25LiveStrategy.run(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds, useKVO: true)
         },
         .riskContributionCashConfidenceLowNoise: { input in
             guard let run = CashConfidenceStrategy.runRiskContributionCashConfidenceRouterWithTrace(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds, profile: .lowNoiseNoLeverage) else { return nil }
