@@ -321,6 +321,8 @@ nonisolated enum RotationParameters {
 
     static func advancedRotationConfig(for mode: AdvancedBacktestStrategyMode) -> AdvancedRotationConfig? {
         switch mode {
+        case .kvoResearchSnapshot:
+            return nil
         case .goldNasdaqDualTrendBarbell,
              .convexCrashHedgeComposite,
              .onlineStrategyAllocator,

@@ -33298,6 +33298,50 @@
           }
         }
       }
+    },
+    "KVO研究组合的历史回测：黄金、纳指、标普500、沪深300与上证综指；原始数据截至2026年9月30日。默认每笔手续费0.025%、零滑点，不提供当前持仓建议。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historical KVO research portfolio using gold, Nasdaq Composite, S&P 500, CSI 300 and Shanghai Composite. Data ends September 30, 2026. Defaults: 0.025% fee per fill and zero slippage. Current allocation advice is unavailable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO研究组合的历史回测：黄金、纳指、标普500、沪深300与上证综指；原始数据截至2026年9月30日。默认每笔手续费0.025%、零滑点，不提供当前持仓建议。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO研究組合的歷史回測：黃金、納指、標普500、滬深300與上證綜指；原始資料截至2026年9月30日。預設每筆手續費0.025%、零滑點，不提供目前持倉建議。"
+          }
+        }
+      }
+    },
+    "KVO量价组合·历史回测": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO Portfolio · Historical Backtest"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO量价组合·历史回测"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO量價組合·歷史回測"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

@@ -1,0 +1,11 @@
+{
+  "strategyID": "research-kvo-quarter",
+  "sourceResultSHA256": "5a4c20c6695a65aa09c0c86461e2a7bcce5bedf65ed0240abec03ba03551e745",
+  "sourceStudy": "cn-vendor-kvo-episode-range-fixed-quarter-method-audit-2026-10-22",
+  "historicalOnly": true,
+  "endDate": "2026-09-30",
+  "files": {
+    "kvo-frame.json": "198c66741bb77e52c0eba30dbeb74923f29d721f02280ef703e9754a02983302",
+    "kvo-targets.json": "8982bd02d079eaa0db6988d525d9d58371884ef41cfa546caef957513d297400"
+  }
+}
