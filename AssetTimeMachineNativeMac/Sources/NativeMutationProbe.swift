@@ -434,9 +434,11 @@ enum NativeCloudSyncProbe {
             try freshContext.save()
             _ = await fresh.runIsolatedSync(from: freshContext)
             checks["unclaimedLocalDataNeedsConfirmation"] = fresh.requiresLocalOwnershipConfirmation && server.uploads == emptyUploads && fresh.errorMessage != nil
+            server.payload = try await ImportExportService.exportPayloadCooperatively(from: freshContext).payload
+            server.change(freshItem.id, to: 999)
             server.noHead = false
             await fresh.authorizeLocalDataForCurrentAccount(from: freshContext)
-            checks["cloudAppearsBeforeAssociationBlocksUpload"] = fresh.errorMessage != nil && server.uploads == emptyUploads && freshDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
+            checks["conflictingCloudAppearsBeforeAssociationBlocksUpload"] = fresh.errorMessage != nil && server.uploads == emptyUploads && freshDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
             server.noHead = true
             _ = await fresh.runIsolatedSync(from: freshContext)
             await fresh.authorizeLocalDataForCurrentAccount(from: freshContext)
@@ -445,6 +447,58 @@ enum NativeCloudSyncProbe {
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
             checks["explicitAssociationBacksUpThenUploads"] = server.acceptedUploads == 4 && fresh.errorMessage == nil && freshDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && freshDefaults.string(forKey: "assettimemachine.cloud.lastLocalSafetyBackup").map { FileManager.default.fileExists(atPath: $0) } == true
+            // Legacy phone: prior sync metadata exists, but no owner/baseline; both
+            // devices have since added different days. No production store or token.
+            let legacySuite = "CloudSyncLegacy-" + UUID().uuidString
+            let legacyDefaults = UserDefaults(suiteName: legacySuite)!
+            defer { legacyDefaults.removePersistentDomain(forName: legacySuite) }
+            legacyDefaults.set(Date(), forKey: "assettimemachine.cloud.lastSyncAt")
+            legacyDefaults.set("legacy-signature", forKey: "assettimemachine.cloud.lastUploadedSignature")
+            server.payload = try await local()
+            let legacyRemote = server.payload
+            let legacyDate = legacyRemote.snapshots.first { $0.id == snapshotID }!.date
+            let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: legacyDate)!
+            let newDay = AssetSnapshot(date: nextDay)
+            let currentA = try context.fetch(FetchDescriptor<AssetItem>()).first { $0.id == aID }!
+            let newDayID = newDay.id
+            context.insert(newDay)
+            context.insert(AssetEntry(amount: 55, snapshot: newDay, item: currentA))
+            try context.save()
+            let legacyLocal = try await local(), legacyUploads = server.uploads
+            let legacy = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: legacyDefaults, isolatedTest: true)
+            legacy.currentUser = cloud.currentUser
+            _ = await legacy.runIsolatedSync(from: context)
+            let afterLegacyBlocked = try await local()
+            checks["legacyDivergenceOffersAssociationWithoutUpload"] = legacy.requiresLocalOwnershipConfirmation && server.uploads == legacyUploads && SyncMergeService.isSameContent(afterLegacyBlocked, legacyLocal)
+            server.change(aID, to: 999)
+            let conflictingRemote = server.payload
+            await legacy.authorizeLocalDataForCurrentAccount(from: context)
+            let afterLegacyConflict = try await local()
+            checks["legacyConflictPreservesBothCopiesAndOwner"] = legacy.errorMessage != nil && legacy.requiresLocalOwnershipConfirmation && legacyDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil && server.uploads == legacyUploads && SyncMergeService.isSameContent(afterLegacyConflict, legacyLocal) && SyncMergeService.isSameContent(server.payload, conflictingRemote)
+            server.payload = legacyRemote
+            // Add a cloud-only day as well; successful association must preserve both.
+            let cloudDay = ExportPayload.SnapshotPayload(id: UUID(), date: Calendar.current.date(byAdding: .day, value: 2, to: legacyDate)!, note: "", createdAt: .now, updatedAt: .now,
+                goldAnchorPriceCNY: nil, goldAnchorPriceDate: nil, btcAnchorPriceUSD: nil, btcAnchorPriceDate: nil,
+                nasdaqAnchorPriceUSD: nil, nasdaqAnchorPriceDate: nil, usdPerCNY: nil, usdPerCNYDate: nil,
+                marketAnchorsUpdatedAt: nil, entries: [.init(id: UUID(), amount: 77, quantity: nil, unitPrice: nil, note: "", createdAt: .now, updatedAt: .now, itemID: bID)])
+            server.payload = ExportPayload(exportedAt: .now, categories: legacyRemote.categories, items: legacyRemote.items, snapshots: legacyRemote.snapshots + [cloudDay], deletions: legacyRemote.deletions)
+            await legacy.authorizeLocalDataForCurrentAccount(from: context)
+            for _ in 0..<100 {
+                if server.uploads > legacyUploads && !legacy.isWorking { break }
+                try await Task.sleep(nanoseconds: 50_000_000)
+            }
+            let joined = try await local()
+            checks["legacyAssociationPreservesLocalAndCloudDays"] = legacy.errorMessage == nil && legacyDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && Set(joined.snapshots.map(\.id)).contains(newDayID) && Set(joined.snapshots.map(\.id)).contains(cloudDay.id) && SyncMergeService.isSameContent(joined, server.payload)
+            checks["legacyAssociationBacksUpBeforeSync"] = legacyDefaults.string(forKey: "assettimemachine.cloud.lastLocalSafetyBackup").map { FileManager.default.fileExists(atPath: $0) } == true
+            let emptyBase = ExportPayload(exportedAt: .now, categories: [], items: [], snapshots: [], deletions: [])
+            var deletionConflicts = 0
+            let targets = [("category", legacyRemote.categories[0].id), ("item", aID), ("snapshot", legacyRemote.snapshots[0].id), ("entry", legacyRemote.snapshots[0].entries[0].id)]
+            for (kind, id) in targets {
+                let deleting = ExportPayload(exportedAt: .now, categories: [], items: [], snapshots: [], deletions: [.init(entityID: id, entityKind: kind, deletedAt: .now)])
+                do { _ = try SyncMergeService.reconciledPayload(local: deleting, remote: legacyRemote, baseline: emptyBase) }
+                catch SyncMergeService.Conflict.divergentEdits { deletionConflicts += 1 }
+            }
+            checks["unbasedDeletionsCannotEraseOtherCopy"] = deletionConflicts == targets.count
             return ["checks": checks, "allPassed": checks.values.allSatisfy { $0 }, "count": checks.count,
                     "latestReads": server.latestReads, "uploads": server.uploads, "acceptedUploads": server.acceptedUploads]
         } catch { return ["checks": checks, "allPassed": false, "error": error.localizedDescription] }

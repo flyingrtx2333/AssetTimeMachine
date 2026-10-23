@@ -32957,6 +32957,52 @@
         }
       }
     },
+    "本机记录尚未关联当前账户，已暂停同步。请确认账户后合并。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync paused: local records are not linked to this account. Confirm the account to merge."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机记录尚未关联当前账户，已暂停同步。请确认账户后合并。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機記錄尚未關聯目前帳戶，已暫停同步。請確認帳戶後合併。"
+          }
+        }
+      }
+    },
+    "确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do these local records belong to this account? A backup is saved before merging. Conflicts pause sync without overwriting either copy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認本機記錄屬於目前帳戶？合併前會保留備份；衝突時暫停，不覆蓋兩端記錄。"
+          }
+        }
+      }
+    },
     "本机记录尚未确认账户归属，已暂停上传。请先核对并恢复当前账户的云端数据，或导出本机记录。": {
       "extractionState": "manual",
       "localizations": {

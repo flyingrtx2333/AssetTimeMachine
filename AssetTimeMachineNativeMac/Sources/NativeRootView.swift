@@ -176,6 +176,8 @@ struct NativeRootView: View {
                let index = recordArguments.firstIndex(of: "-macCloudSyncProbe"), recordArguments.indices.contains(index + 1) {
                 let result = await NativeCloudSyncProbe.run()
                 if let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted]) {
+                    FileHandle.standardOutput.write(data)
+                    FileHandle.standardOutput.write(Data([10]))
                     try? data.write(to: URL(fileURLWithPath: recordArguments[index + 1]))
                 }
                 return

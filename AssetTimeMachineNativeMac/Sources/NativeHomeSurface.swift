@@ -3,24 +3,19 @@ import SwiftData
 import SwiftUI
 
 struct NativeHomeEdgeLight: View {
-    @Environment(\.accessibilityReduceMotion) private var systemReduced
-    private var reduced: Bool { systemReduced || NativeHomeStyle.previewReduced }
-    @Environment(\.scenePhase) private var phase
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduced || phase != .active)) { context in
-            Canvas { graphics, size in
-                let lift = reduced ? 0 : sin(context.date.timeIntervalSinceReferenceDate * 0.55) * 1.6
-                var curve = Path()
-                curve.move(to: CGPoint(x: 0, y: size.height - 3))
-                curve.addQuadCurve(to: CGPoint(x: size.width, y: size.height - 3),
-                                   control: CGPoint(x: size.width * 0.5, y: size.height - 64 + lift))
-                var bloom = graphics
-                bloom.addFilter(.blur(radius: 13))
-                bloom.stroke(curve, with: .color(NativeHomeStyle.accent.opacity(0.18)), lineWidth: 12)
-                var edge = graphics
-                edge.addFilter(.blur(radius: 1))
-                edge.stroke(curve, with: .color(NativeHomeStyle.accent.opacity(0.27)), lineWidth: 1)
-            }
+        // Decorative lighting stays static so an untouched window has no animation clock.
+        Canvas { graphics, size in
+            var curve = Path()
+            curve.move(to: CGPoint(x: 0, y: size.height - 3))
+            curve.addQuadCurve(to: CGPoint(x: size.width, y: size.height - 3),
+                               control: CGPoint(x: size.width * 0.5, y: size.height - 64))
+            var bloom = graphics
+            bloom.addFilter(.blur(radius: 13))
+            bloom.stroke(curve, with: .color(NativeHomeStyle.accent.opacity(0.18)), lineWidth: 12)
+            var edge = graphics
+            edge.addFilter(.blur(radius: 1))
+            edge.stroke(curve, with: .color(NativeHomeStyle.accent.opacity(0.27)), lineWidth: 1)
         }.allowsHitTesting(false).accessibilityHidden(true)
     }
 }

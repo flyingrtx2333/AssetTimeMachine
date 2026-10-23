@@ -1113,26 +1113,33 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             }
         } else if !SyncMergeService.isEmptyUserData(local), !SyncMergeService.looksLikeSeedOnly(local),
                   remote.map({ SyncMergeService.isSameContent(local, $0) }) != true {
-            requiresLocalOwnershipConfirmation = remote == nil
+            requiresLocalOwnershipConfirmation = true
             throw NSError(domain: "CloudSyncOwner", code: 409,
-                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("本机记录尚未确认账户归属，已暂停上传。请先核对并恢复当前账户的云端数据，或导出本机记录。")])
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("本机记录尚未关联当前账户，已暂停同步。请确认账户后合并。")])
         }
     }
 
-    /// Explicit first-account association, offered only when no cloud backup exists.
+    /// Explicit association also repairs legacy installs without an owner or merge baseline.
+    /// An empty baseline permits additions and identical records, never divergent edits.
     func authorizeLocalDataForCurrentAccount(from context: ModelContext) async {
         guard !AppPreviewSession.isActive || isolatedTest,
               requiresLocalOwnershipConfirmation, defaults.object(forKey: localOwnerKey) == nil,
               !context.hasChanges, !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return }
         let result = await perform { [self] in
-            guard try await self.fetchLatestBackupIfAvailable() == nil else {
-                self.requiresLocalOwnershipConfirmation = false
-                throw NSError(domain: "CloudSyncOwner", code: 409,
-                    userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("云端已出现新记录，请先核对。未上传本机数据。")])
-            }
+            let latest = try await self.fetchLatestBackupIfAvailable()
             let payload = try await ImportExportService.exportPayloadCooperatively(from: context)
-            try await self.saveLocalSafetyBackup(payload.payload)
             let emptyBase = ExportPayload(exportedAt: .now, categories: [], items: [], snapshots: [], deletions: [])
+            // Check before binding the account or changing either copy. The normal sync
+            // fetches the head again and retains its revision checks and upload CAS.
+            if let latest {
+                _ = try await SyncPayloadWork.detached {
+                    try SyncMergeService.reconciledPayload(local: payload.payload, remote: latest.payload, baseline: emptyBase)
+                }
+            }
+            guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+                  !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                  ModelStoreRevisionClock.shared.currentRevision() == payload.storeRevision else { throw CancellationError() }
+            try await self.saveLocalSafetyBackup(payload.payload)
             try await self.persistSyncBaseline(emptyBase)
             self.requiresLocalOwnershipConfirmation = false
         }
@@ -1478,7 +1485,7 @@ struct AssetTimeMachineCloudPage: View {
         .alert(AppLocalization.string("确认关联到当前账户？"), isPresented: $showOwnershipConfirm) {
             Button(AppLocalization.string("取消"), role: .cancel) {}
             Button(AppLocalization.string("确认并同步")) { Task { await store.authorizeLocalDataForCurrentAccount(from: modelContext) } }
-        } message: { Text(AppLocalization.string("本机记录将上传到当前账户的云端备份。请确认这是你的账户。")) }
+        } message: { Text(AppLocalization.string("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。")) }
         .alert(AppLocalization.string("确认恢复云端备份？"), isPresented: $showRestoreConfirm) {
             Button(AppLocalization.string("取消"), role: .cancel) {}
             Button(AppLocalization.string("覆盖本机"), role: .destructive) {

@@ -252,6 +252,7 @@ struct NativeRecordsView: View {
         .frame(maxWidth: NativeStyle.Layout.ledgerMaxWidth, alignment: .leading)
         .padding(.horizontal, NativeStyle.Layout.pageInset).padding(.top, NativeStyle.Layout.pageInset).padding(.bottom, NativeStyle.Space.md)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(NativeOutsideClickDismissal())
         .buttonStyle(NativeRecordsButtonStyle())
         .modifier(NativeWorkspaceSurface())
         .animation(NativeStyle.Motion.records(reduced), value: editor.isDirty)
@@ -395,7 +396,7 @@ struct NativeRecordsView: View {
                 Group {
                     if let error = editor.error { Text(error).foregroundStyle(AssetTheme.negative) }
                     else if editor.isDirty { Text("修改 \(editor.drafts.count) 项").foregroundStyle(NativeHomeStyle.secondary) }
-                    else { Text(editor.savedAt == nil ? "已载入本机记录" : "已保存至本机").foregroundStyle(NativeHomeStyle.secondary) }
+                    else { Text(savedStatus).foregroundStyle(NativeHomeStyle.secondary).help(cloud.errorMessage ?? cloud.indicatorLabel) }
                 }.font(NativeStyle.FontRole.caption).transition(.opacity)
                 Spacer(minLength: 4)
                 if editor.isDirty {
@@ -404,11 +405,24 @@ struct NativeRecordsView: View {
                 }
                 Button("保存更改") {
                     withAnimation(NativeStyle.Motion.records(reduced)) {
+                        NSApp.keyWindow?.makeFirstResponder(nil)
                         if editor.save(container: context.container) { refresh() }
                     }
                 }.keyboardShortcut("s", modifiers: .command).modifier(NativeRecordsPrimary()).disabled(!editor.isDirty)
             }.frame(minHeight: 34)
         }
+    }
+
+    private var savedStatus: String {
+        guard let savedAt = editor.savedAt else { return "已载入本机记录" }
+        if cloud.isSessionPending { return "已存本机 · 正在连接云端" }
+        guard cloud.currentUser != nil, cloud.hasToken else { return "已存本机 · 未登录" }
+        if cloud.requiresLocalOwnershipConfirmation { return "已存本机 · 待确认同步" }
+        if cloud.errorMessage?.isEmpty == false { return "已存本机 · 同步失败" }
+        if cloud.isWorking { return "已存本机 · 正在同步" }
+        if cloud.indicatorState == .checking { return "已存本机 · 等待同步" }
+        if let syncedAt = cloud.lastSyncAt, syncedAt >= savedAt { return "已同步云端" }
+        return "已存本机 · 等待同步"
     }
 
     private func moveDate(_ offset: Int) {
@@ -702,7 +716,7 @@ struct NativeSettingsView: View {
         .alert("确认关联到当前账户？", isPresented: $showOwnershipConfirmation) {
             Button("取消", role: .cancel) {}
             Button("确认并同步") { Task { await cloud.authorizeLocalDataForCurrentAccount(from: context) } }
-        } message: { Text("本机记录将上传到当前账户的云端备份。请确认这是你的账户。") }
+        } message: { Text("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。") }
         .confirmationDialog("从云端恢复最新备份？", isPresented: $showRestoreConfirmation) {
             Button("恢复备份") {
                 Task {
