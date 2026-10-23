@@ -76,6 +76,65 @@ nonisolated public enum RecentWindowOverlayStrategy {
         return target
     }
 
+    /// Corrective native-index policy: no archived targets, ETF mapping or cash deployment.
+    /// Invalid source weights stop the policy; unavailable pair information leaves that pair unchanged.
+    public static func indexPairTarget(base: [String: Double], usZ: Double?, chinaZ: Double?) -> [String: Double]? {
+        let symbols = requiredSymbols.sorted()
+        guard Set(base.keys).isSubset(of: requiredSymbols),
+              base.values.allSatisfy({ $0.isFinite && $0 >= 0 }) else { return nil }
+        let original = Dictionary(uniqueKeysWithValues: symbols.map { ($0, base[$0] ?? 0) })
+        let baseGross = symbols.reduce(0.0) { $0 + original[$1]! }
+        guard baseGross.isFinite, baseGross <= 1 else { return nil }
+        var target = original
+        shiftPair(&target, numerator: "nasdaq", denominator: "sp500", zScore: usZ)
+        shiftPair(&target, numerator: "csi300", denominator: "shanghai_composite", zScore: chinaZ)
+        guard Set(target.keys) == requiredSymbols,
+              target.values.allSatisfy({ $0.isFinite && $0 >= 0 }),
+              symbols.reduce(0.0, { $0 + target[$1]! }) <= 1,
+              target[goldSymbol]!.bitPattern == original[goldSymbol]!.bitPattern else { return nil }
+        for (first, second) in [("nasdaq", "sp500"), ("csi300", "shanghai_composite")] {
+            let before = original[first]! + original[second]!
+            let after = target[first]! + target[second]!
+            guard abs(after - before) <= 1e-12 * max(1, abs(before)) else { return nil }
+        }
+        return target
+    }
+
+    /// Fresh source-close decisions, exposed for raw pre-engine target verification.
+    public static func indexPairSchedule(
+        frame: MarketDataFrame,
+        baseByExecutionIndex: [Int: [String: Double]]
+    ) -> FrozenTargetSchedule? {
+        guard frame.dates.count > 1, Set(frame.tradableSymbols) == requiredSymbols,
+              requiredSymbols.allSatisfy({ symbol in
+                  frame.pricesBySymbol[symbol]?.count == frame.dates.count
+                      && frame.observedBySymbol[symbol]?.count == frame.dates.count
+              }),
+              let csiPublicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08") else { return nil }
+        var events: [FrozenTargetEvent] = []
+        var currentBase: [String: Double]?
+        var priorTarget: [String: Double]?
+        for executionIndex in 1..<frame.dates.count {
+            if let refreshed = baseByExecutionIndex[executionIndex] { currentBase = refreshed }
+            guard let base = currentBase else { continue }
+            let signalIndex = executionIndex - 1
+            let usZ = ratioZScore(frame: frame, numerator: "nasdaq", denominator: "sp500", through: signalIndex)
+            let start = signalIndex - spreadLookback + 1
+            let chinaZ = start >= 0 && frame.dates[start] >= csiPublicDate
+                ? ratioZScore(frame: frame, numerator: "csi300", denominator: "shanghai_composite", through: signalIndex)
+                : nil
+            guard let target = indexPairTarget(base: base, usZ: usZ, chinaZ: chinaZ) else { return nil }
+            if let priorTarget, distance(target, priorTarget) <= epsilon { continue }
+            let usText = usZ.map { String(format: "%.6f", $0) } ?? "unavailable"
+            let chinaText = chinaZ.map { String(format: "%.6f", $0) } ?? "unavailable"
+            events.append(FrozenTargetEvent(signalIndex: signalIndex, signalDate: frame.dates[signalIndex],
+                targetWeights: target,
+                reason: "T-1 native-index pair z252: Nasdaq/SP500 \(usText), CSI300/Shanghai \(chinaText); bounded 25% transfer, threshold ±1"))
+            priorTarget = target
+        }
+        return FrozenTargetSchedule(events: events, reviewClockFingerprint: "native-index-pair-z252-bounded-shift25-correction-v1")
+    }
+
     public static func goldEquityOverlayTarget(base: [String: Double], zScore: Double?) -> [String: Double] {
         guard let zScore, zScore.isFinite, abs(zScore) > zThreshold else { return base }
         var target = base.mapValues { max($0, 0) }
@@ -305,7 +364,17 @@ nonisolated public enum RecentWindowStrategies {
         let inputBySymbol = Dictionary(uniqueKeysWithValues: assetInputs.map { ($0.assetOption.symbol, $0) })
         guard RecentWindowOverlayStrategy.requiredSymbols.allSatisfy({ inputBySymbol[$0] != nil }) else { return nil }
         let sourceMode = AdvancedBacktestStrategyMode.riskContributionCashConfidenceLowNoise
-        let sourceInputs = sourceMode.requiredSignalAssetSymbols.compactMap { inputBySymbol[$0] }
+        var sourceInputs = sourceMode.requiredSignalAssetSymbols.compactMap { inputBySymbol[$0] }
+        if mode == .pairSpreadZ252Shift25 {
+            // CSI300's retrospectively backcalculated pre-launch prices are not available to the parent.
+            guard let publicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08"),
+                  let position = sourceInputs.firstIndex(where: { $0.assetOption.symbol == "csi300" }),
+                  let eligible = BacktestSeriesAlignment.filteredHistorySeries(
+                    sourceInputs[position].assetSeries, within: publicDate...Date.distantFuture),
+                  !eligible.dates.isEmpty else { return nil }
+            let original = sourceInputs[position]
+            sourceInputs[position] = (eligible, original.assetOption, original.fxSeries)
+        }
         guard sourceInputs.count == sourceMode.requiredSignalAssetSymbols.count,
               let source = BacktestCoreEngine.runAdvancedRotationStrategyWithTrace(
                 assetInputs: sourceInputs,
@@ -314,6 +383,39 @@ nonisolated public enum RecentWindowStrategies {
                 mode: sourceMode,
                 dateBounds: dateBounds
               ) else { return nil }
+
+        // Correct the pair implementation under the original five-index/CNY-demand-cash scope.
+        // Keep the original LowNoise parent and 0.244 execution band; rebuild all history causally.
+        if mode == .pairSpreadZ252Shift25 {
+            let config = ResearchTargetStrategyConfig(
+                symbol: appMode.rawValue, title: appMode.title,
+                warmupSessions: 21, rebalanceSessions: 1, rebalanceBand: 0.244,
+                tradeToBandBoundary: false, zeroFillBeforeFirstSymbols: ["csi300"], maxGrossExposure: 1,
+                allowsFinancedExposure: false, financingAnnualRate: 0, buyReason: appMode.title
+            )
+            let sourceByExecutionDate = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.backtestDateString, $0.targetWeights)
+            })
+            var resolvedSchedule: FrozenTargetSchedule?
+            guard let run = TargetProviderBacktest.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: sourceInputs, initialCash: initialCash, settings: settings,
+                config: config, dateBounds: dateBounds,
+                frozenSchedule: { frame in
+                    var baseByExecutionIndex: [Int: [String: Double]] = [:]
+                    for index in 1..<frame.dates.count {
+                        if let weights = sourceByExecutionDate[frame.dates[index].backtestDateString] {
+                            baseByExecutionIndex[index] = weights
+                        }
+                    }
+                    let schedule = RecentWindowOverlayStrategy.indexPairSchedule(
+                        frame: frame, baseByExecutionIndex: baseByExecutionIndex)
+                    resolvedSchedule = schedule
+                    return schedule
+                }, targetWeights: { _, _ in [:] }
+            ), let schedule = resolvedSchedule else { return nil }
+            return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates,
+                latestSignalReason: schedule.events.last?.reason)
+        }
 
         guard let strategyInputs = RecentWindowProductSeries.appendingProductInputs(to: assetInputs) else { return nil }
 

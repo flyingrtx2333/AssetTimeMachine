@@ -2996,7 +2996,10 @@ struct TimeMachineHorizontalPanGestureView: UIViewRepresentable {
             _ gestureRecognizer: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
         ) -> Bool {
-            true
+            if otherGestureRecognizer is UIPanGestureRecognizer {
+                return false
+            }
+            return true
         }
     }
 }
@@ -3009,8 +3012,6 @@ struct TimeMachineDragOverlay<SelectableValue>: View {
     var onEnded: (() -> Void)? = nil
 
     @State private var interactionState = TimeMachineDragInteractionState()
-
-    private let minimumReportInterval: TimeInterval = 1.0 / 30.0
 
     var body: some View {
         GeometryReader { geometry in
@@ -3037,13 +3038,7 @@ struct TimeMachineDragOverlay<SelectableValue>: View {
         interactionState.pendingDate = reportedDate
         guard reportedDate != interactionState.lastReportedDate else { return }
 
-        let now = ProcessInfo.processInfo.systemUptime
-        if interactionState.lastReportUptime > 0,
-           now - interactionState.lastReportUptime < minimumReportInterval {
-            return
-        }
-
-        emit(reportedDate, at: now)
+        emit(reportedDate, at: ProcessInfo.processInfo.systemUptime)
     }
 
     private func finishInteraction() {

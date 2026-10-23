@@ -1253,25 +1253,15 @@ struct AdvancedStrategyTemplateRow: View {
                         .background(strategyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(template.title)
-                            .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
-                            .foregroundStyle(AssetTheme.textPrimary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(alignment: .center, spacing: 6) {
+                            Text(template.title)
+                                .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
+                                .foregroundStyle(AssetTheme.textPrimary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
 
-                        if isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive {
-                            HStack(spacing: 5) {
-                                if isExperimentalStrategy {
-                                    strategyBadge(AppLocalization.string("前瞻观察"), accent: AssetTheme.accentOrange)
-                                }
-                                if isRecommendedStrategy {
-                                    strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
-                                } else if isDefaultStrategy {
-                                    strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
-                                }
-                                if isActive {
-                                    strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
-                                }
+                            if hasBadges {
+                                strategyBadgesView
                             }
                         }
 
@@ -1319,14 +1309,36 @@ struct AdvancedStrategyTemplateRow: View {
         }
     }
 
+    private var hasBadges: Bool {
+        isExperimentalStrategy || isRecommendedStrategy || isDefaultStrategy || isActive
+    }
+
+    @ViewBuilder
+    private var strategyBadgesView: some View {
+        HStack(spacing: 4) {
+            if isExperimentalStrategy {
+                strategyBadge(AppLocalization.string("前瞻观察"), accent: AssetTheme.accentOrange)
+            }
+            if isRecommendedStrategy {
+                strategyBadge(AppLocalization.string("推荐"), accent: AssetTheme.positive)
+            } else if isDefaultStrategy {
+                strategyBadge(AppLocalization.string("默认"), accent: AssetTheme.gold)
+            }
+            if isActive {
+                strategyBadge(AppLocalization.string("使用中"), accent: AssetTheme.positive)
+            }
+        }
+        .layoutPriority(2)
+    }
+
     private func strategyBadge(_ title: String, accent: Color) -> some View {
         Text(title)
-            .font(AppTypography.chartAxisStrip)
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(accent)
             .lineLimit(1)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 4)
-            .background(accent.opacity(0.11), in: Capsule())
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2.5)
+            .background(accent.opacity(0.12), in: Capsule())
     }
 
     private var strategyMetricsView: some View {

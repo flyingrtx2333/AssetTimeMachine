@@ -539,7 +539,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         case .recentVolatilityManagedIdleCash:
             return BacktestText.string("精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。")
         case .recentPairSpreadZ252Shift25:
-            return BacktestText.string("精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。")
+            return BacktestText.string("配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。")
         case .recentGoldEquityRelativeZ252Shift25:
             return BacktestText.string("近期窗口探索策略（未通过正式验证、非推荐）：比较黄金与当时已上市权益产品篮子的严格T−1相对价格，按252日Z分数在超过±1时转移黄金与权益合计仓位的25%；总仓不变、不融资、不做空，每日复核。")
         case .nfciDualCoreV1:
@@ -1633,7 +1633,7 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
         .init(
             id: "kvo", mode: .kvo,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            categoryLocalizationKey: "研究策略", titleLocalizationKey: "KVO量价组合",
+            categoryLocalizationKey: "探索策略", titleLocalizationKey: "KVO量价组合",
             annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
             buyRule: .init(direction: .alwaysBuy, days: 1),
             sellRule: .init(direction: .neverSell, days: 1),
@@ -1948,7 +1948,7 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
         .init(
             id: "ke25", mode: .ke25,
             selectedAssetSymbols: ["gold_cny", "sp500", "nasdaq", "csi300", "shanghai_composite"],
-            categoryLocalizationKey: "近期研究（探索）", titleLocalizationKey: "KE25",
+            categoryLocalizationKey: "探索策略", titleLocalizationKey: "KE25",
             annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
             buyRule: .init(direction: .alwaysBuy, days: 1),
             sellRule: .init(direction: .neverSell, days: 1),
@@ -1978,9 +1978,9 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
             categoryLocalizationKey: "精选策略",
             titleLocalizationKey: "跨市场配对回归",
-            annualizedReturn: 0.1792,
-            maxDrawdown: 0.0827,
-            sharpeRatio: 1.806,
+            annualizedReturn: 0,
+            maxDrawdown: 0,
+            sharpeRatio: 0,
             buyRule: .init(direction: .priceAboveMA60, days: 1),
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1,
