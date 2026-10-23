@@ -615,9 +615,7 @@ struct InteractiveBacktestChart: View, Equatable {
                     selectedValuePopover
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                updateSelection(nil)
-                            }
+                            updateSelection(nil)
                         }
                 }
         }
@@ -921,9 +919,7 @@ struct InteractiveBacktestChart: View, Equatable {
                     .simultaneousGesture(
                         TapGesture()
                             .onEnded {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    updateSelection(nil)
-                                }
+                                updateSelection(nil)
                             }
                     )
 
@@ -1279,17 +1275,25 @@ enum BacktestChartData {
 
 struct BacktestValueChartSection: View {
     let points: [BacktestSeriesPoint]
-    var comparisonSeries: [BacktestChartComparisonSeries] = []
-    var valueStyle: BacktestChartValueStyle = .multiple
-    var title: String = AppLocalization.string("净值走势")
+    let comparisonSeries: [BacktestChartComparisonSeries]
+    let valueStyle: BacktestChartValueStyle
+    let title: String
+    private let chartPoints: [BacktestSeriesPoint]
+    private let chartComparisonSeries: [BacktestChartComparisonSeries]
     @State private var visibleSeriesIDs: Set<String> = []
 
-    private var chartPoints: [BacktestSeriesPoint] {
-        BacktestChartData.sampledPoints(from: points)
-    }
-
-    private var chartComparisonSeries: [BacktestChartComparisonSeries] {
-        comparisonSeries.compactMap { series in
+    init(
+        points: [BacktestSeriesPoint],
+        comparisonSeries: [BacktestChartComparisonSeries] = [],
+        valueStyle: BacktestChartValueStyle = .multiple,
+        title: String = AppLocalization.string("净值走势")
+    ) {
+        self.points = points
+        self.comparisonSeries = comparisonSeries
+        self.valueStyle = valueStyle
+        self.title = title
+        self.chartPoints = BacktestChartData.sampledPoints(from: points)
+        self.chartComparisonSeries = comparisonSeries.compactMap { series in
             let sampledPoints = BacktestChartData.sampledPoints(from: series.points)
             guard !sampledPoints.isEmpty else { return nil }
             return BacktestChartComparisonSeries(
@@ -1417,43 +1421,39 @@ struct AdvancedBacktestCombinedChartSection: View {
     let exposurePoints: [BacktestExposurePoint]
     let assetExposureSeries: [BacktestAssetExposureSeries]
     let averageExposureRatio: Double
-    var selectedDateBinding: Binding<Date?>? = nil
+
+    private let chartPoints: [BacktestSeriesPoint]
+    private let chartComparisonSeries: [BacktestChartComparisonSeries]
+    private let chartAssetExposureSeries: [BacktestAssetExposureSeries]
+    private let assetSymbols: [String]
+    private let assetColors: [String: Color]
 
     @State private var hiddenLegendItemIDs: Set<String> = []
     @State private var visibleDateDomain: ClosedRange<Date>?
     @State private var showsLegend = false
-    @State private var localSelectedDate: Date?
+    @State private var selectedDate: Date? = nil
 
-    private var activeSelectedDateBinding: Binding<Date?> {
-        selectedDateBinding ?? $localSelectedDate
-    }
+    init(
+        points: [BacktestSeriesPoint],
+        comparisonSeries: [BacktestChartComparisonSeries],
+        exposurePoints: [BacktestExposurePoint],
+        assetExposureSeries: [BacktestAssetExposureSeries],
+        averageExposureRatio: Double
+    ) {
+        self.points = points
+        self.comparisonSeries = comparisonSeries
+        self.exposurePoints = exposurePoints
+        self.assetExposureSeries = assetExposureSeries
+        self.averageExposureRatio = averageExposureRatio
 
-    private var chartPoints: [BacktestSeriesPoint] {
-        BacktestChartData.sampledPoints(from: points)
-    }
+        self.chartPoints = BacktestChartData.sampledPoints(from: points)
 
-    private var chartComparisonSeries: [BacktestChartComparisonSeries] {
-        comparisonSeries.compactMap { series in
-            let sampledPoints = BacktestChartData.sampledPoints(from: series.points)
-            guard !sampledPoints.isEmpty else { return nil }
-            let symbol = BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id)
-            return BacktestChartComparisonSeries(
-                id: series.id,
-                title: series.title,
-                points: sampledPoints,
-                color: symbol.flatMap { assetColors[$0] } ?? series.color
-            )
-        }
-    }
-
-    private var chartAssetExposureSeries: [BacktestAssetExposureSeries] {
         var seenSymbols: Set<String> = []
-        return assetExposureSeries.filter { seenSymbols.insert($0.symbol).inserted }
-    }
+        let uniqueExposure = assetExposureSeries.filter { seenSymbols.insert($0.symbol).inserted }
+        self.chartAssetExposureSeries = uniqueExposure
 
-    private var assetSymbols: [String] {
         var symbols: [String] = []
-        for series in chartAssetExposureSeries where !symbols.contains(series.symbol) {
+        for series in uniqueExposure where !symbols.contains(series.symbol) {
             symbols.append(series.symbol)
         }
         for series in comparisonSeries {
@@ -1461,13 +1461,24 @@ struct AdvancedBacktestCombinedChartSection: View {
                   !symbols.contains(symbol) else { continue }
             symbols.append(symbol)
         }
-        return symbols
-    }
+        self.assetSymbols = symbols
 
-    private var assetColors: [String: Color] {
-        Dictionary(uniqueKeysWithValues: assetSymbols.enumerated().map { index, symbol in
+        let colors = Dictionary(uniqueKeysWithValues: symbols.enumerated().map { index, symbol in
             (symbol, BacktestChartPalette.exposureLine(at: index))
         })
+        self.assetColors = colors
+
+        self.chartComparisonSeries = comparisonSeries.compactMap { series in
+            let sampledPoints = BacktestChartData.sampledPoints(from: series.points)
+            guard !sampledPoints.isEmpty else { return nil }
+            let symbol = BacktestChartSeriesKey.assetSymbol(fromBenchmarkID: series.id)
+            return BacktestChartComparisonSeries(
+                id: series.id,
+                title: series.title,
+                points: sampledPoints,
+                color: symbol.flatMap { colors[$0] } ?? series.color
+            )
+        }
     }
 
     private var legendItems: [CombinedBacktestLegendItem] {
@@ -1536,7 +1547,7 @@ struct AdvancedBacktestCombinedChartSection: View {
     }
 
     private var selectedAmountItems: [BacktestChartSelectionItem] {
-        guard let selectedDate = activeSelectedDateBinding.wrappedValue,
+        guard let selectedDate,
               let portfolioPoint = nearestChartPoint(points, to: selectedDate, date: \.date) else {
             return []
         }
@@ -1637,8 +1648,8 @@ struct AdvancedBacktestCombinedChartSection: View {
                     onVisibleDateDomainChange: { domain in
                         visibleDateDomain = domain
                     },
-                    selectionDate: activeSelectedDateBinding.wrappedValue,
-                    onSelectionChange: { activeSelectedDateBinding.wrappedValue = $0 },
+                    selectionDate: selectedDate,
+                    onSelectionChange: { selectedDate = $0 },
                     selectionItems: selectedAmountItems,
                     showsDateRuler: true,
                     showsXAxis: false,
@@ -1651,7 +1662,7 @@ struct AdvancedBacktestCombinedChartSection: View {
                     dateDomain: visibleDateDomain,
                     visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
                     assetColors: assetColors,
-                    selectedDate: activeSelectedDateBinding
+                    selectedDate: $selectedDate
                 )
             }
 
@@ -1685,14 +1696,6 @@ struct AdvancedBacktestCombinedChartSection: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if activeSelectedDateBinding.wrappedValue != nil {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    activeSelectedDateBinding.wrappedValue = nil
-                }
-            }
-        }
         .onChange(of: legendItems.map(\.id)) { _, itemIDs in
             hiddenLegendItemIDs.formIntersection(itemIDs)
         }
@@ -1703,7 +1706,7 @@ struct AdvancedBacktestCombinedChartSection: View {
                 let testDate = points[points.count / 2].date
                 Task { @MainActor in
                     await Task.yield()
-                    activeSelectedDateBinding.wrappedValue = testDate
+                    selectedDate = testDate
                 }
             }
         }
@@ -1961,9 +1964,7 @@ struct BacktestExposureChartSection: View {
                 .simultaneousGesture(
                     TapGesture()
                         .onEnded {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                selectedDate = nil
-                            }
+                            selectedDate = nil
                         }
                 )
             }

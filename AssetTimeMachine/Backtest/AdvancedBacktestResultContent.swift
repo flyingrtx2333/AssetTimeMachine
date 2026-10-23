@@ -60,7 +60,6 @@ struct AdvancedBacktestResultPage: View {
     @State private var showsCashYieldSheet = false
     @State private var showsRiskSignalSheet = false
     @State private var showsSharePoster = false
-    @State private var selectedChartDate: Date? = nil
 
     var body: some View {
         ZStack {
@@ -80,8 +79,7 @@ struct AdvancedBacktestResultPage: View {
                         showsRebalanceAdvice: presentation.showsRebalanceAdvice,
                         showsSupplementalRows: true,
                         onShowCashYield: { showsCashYieldSheet = true },
-                        onShowRiskSignal: { showsRiskSignalSheet = true },
-                        selectedChartDateBinding: $selectedChartDate
+                        onShowRiskSignal: { showsRiskSignalSheet = true }
                     )
 
                     if let record = presentation.record {
@@ -91,14 +89,6 @@ struct AdvancedBacktestResultPage: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
                 .padding(.bottom, TabScrollLayout.sheetBottomPadding)
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if selectedChartDate != nil {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        selectedChartDate = nil
-                    }
-                }
             }
         }
         .sheet(isPresented: $showsCashYieldSheet) {
@@ -209,7 +199,6 @@ struct AdvancedBacktestResultContent: View {
     var showsSupplementalRows: Bool = true
     var onShowCashYield: (() -> Void)? = nil
     var onShowRiskSignal: (() -> Void)? = nil
-    var selectedChartDateBinding: Binding<Date?>? = nil
 
     @State private var showsAllRecentTrades = false
     @State private var showsRebalanceAmounts = false
@@ -222,14 +211,6 @@ struct AdvancedBacktestResultContent: View {
         VStack(alignment: .leading, spacing: 18) {
             resultSection
             tradeSection
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if let binding = selectedChartDateBinding, binding.wrappedValue != nil {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    binding.wrappedValue = nil
-                }
-            }
         }
     }
 
@@ -246,8 +227,7 @@ struct AdvancedBacktestResultContent: View {
                         comparisonSeries: comparisonSeries,
                         exposurePoints: report.exposurePoints,
                         assetExposureSeries: report.assetExposureSeries,
-                        averageExposureRatio: report.averageExposureRatio,
-                        selectedDateBinding: selectedChartDateBinding
+                        averageExposureRatio: report.averageExposureRatio
                     )
                 } else {
                     BacktestValueChartSection(
@@ -734,13 +714,16 @@ struct AdvancedBacktestResultContent: View {
         }
     }
 
-    private var rotationTradeEvents: [AdvancedBacktestTradeEvent] {
+    private func computeRotationTradeEvents(limit: Int?) -> [AdvancedBacktestTradeEvent] {
         var events: [AdvancedBacktestTradeEvent] = []
-        for trade in report.trades {
+        for trade in report.trades.reversed() {
             let eventID = trade.date.recordDateString
             if events.last?.id == eventID {
-                events[events.count - 1].trades.append(trade)
+                events[events.count - 1].trades.insert(trade, at: 0)
             } else {
+                if let limit, events.count >= limit {
+                    break
+                }
                 events.append(
                     AdvancedBacktestTradeEvent(
                         id: eventID,
@@ -750,11 +733,13 @@ struct AdvancedBacktestResultContent: View {
                 )
             }
         }
-        return Array(events.reversed())
+        return events
     }
 
     private var displayedRotationTradeEvents: [AdvancedBacktestTradeEvent] {
-        showsAllRecentTrades ? rotationTradeEvents : Array(rotationTradeEvents.prefix(3))
+        showsAllRecentTrades
+            ? computeRotationTradeEvents(limit: nil)
+            : computeRotationTradeEvents(limit: 3)
     }
 
     private var displayedRuleBasedTrades: [AdvancedBacktestTrade] {
@@ -765,7 +750,7 @@ struct AdvancedBacktestResultContent: View {
 
     private var hasMoreRecentTrades: Bool {
         strategyMode.isRotation
-            ? rotationTradeEvents.count > 3
+            ? computeRotationTradeEvents(limit: 4).count > 3
             : report.trades.count > 6
     }
 
