@@ -1,0 +1,16 @@
+{
+  "status": "LOCAL_APPEND_VERIFIED_NOTION_QUERY_ENTITLEMENT_PENDING",
+  "previous_rows_unchanged": 336,
+  "previous_overrides_unchanged": 14,
+  "new_rows": 23,
+  "total_rows": 359,
+  "previous_pending_keys_retained": 70,
+  "total_pending_keys": 93,
+  "remote_new_pages_created": 0,
+  "master_before_sha256": {
+    "strategy-master.json": "c9335648e5c04cc968d5af4b6ccbf73a1cb5c52e3800edff7ec91926c3c74b57",
+    "strategy-master.csv": "8147d7df58b3b7d47b1bc4e1b19619cc8c239317b2affac5d876dc630e916a80",
+    "notion-target.json": "ee66fef583e684697651f17d10456cbe436891177cefc0aa5b1a580ddfe5ba20",
+    "validation-report.json": "360de3e64f069be1101616bb76d2ae8208a925f5d8115032fc72753a67469836"
+  }
+}

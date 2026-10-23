@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-08T12:06:06.835120+00:00",
+  "study_type": "existing App diagnostic QUAL comparator; zero new candidate",
+  "source_qualification": "INPUT_QUALIFICATION.json",
+  "retained_old19_sha256": "61590e4509ab62001908056cf321dcae50363f264c0c64c15691183ed7d67b9b",
+  "rule": "exact current App implementation; not changing V11/QUAL parameters, dates, weights, or costs to beat a comparator",
+  "new_funded_runs": 1,
+  "saved_comparison_capital_runs": 0,
+  "comparison_date_count": 5595,
+  "pure_App_scope": "23visible minus3forbidden cash-fund policies =>20 App diagnostic comparators after QUAL replay; independently executable frontier not certified"
+}

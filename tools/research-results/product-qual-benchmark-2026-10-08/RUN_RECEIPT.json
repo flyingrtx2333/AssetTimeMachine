@@ -1,0 +1,23 @@
+{
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "run",
+    "--config",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/configuration.json",
+    "--history",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/combined-history.json",
+    "--macro",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/nfci.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/qual-run",
+    "--source-commit",
+    "40df1c12702e1a2157b50ecce48c5fe9f2d49c42"
+  ],
+  "started_at": "2026-10-08T12:07:13.027099+00:00",
+  "source_commit": "40df1c12702e1a2157b50ecce48c5fe9f2d49c42",
+  "binary_sha256": "eb3a520b3c3c66f8b47b42c597e90a4eb1e7eaa73cca69320a43af6e73f8676d",
+  "finished_at": "2026-10-08T12:07:34.305355+00:00",
+  "exit_code": 0
+}

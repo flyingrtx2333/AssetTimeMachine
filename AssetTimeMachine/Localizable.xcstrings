@@ -1,6 +1,72 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "KE25": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        }
+      }
+    },
+    "五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unlevered five-asset strategy combining 75% defensive targets with 25% breakout holdings. Components keep independent signal state and recalculate daily from completed observations; remaining capital stays in cash. Your fees and slippage apply. The live extension awaits forward validation; past performance does not predict future returns."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五資產無槓桿策略：按75%防守組合與25%突破持倉合成目標倉位，保留各部分的獨立訊號狀態；每日使用上一已完成觀察期重新計算，其餘資金留現金。手續費與滑點採用你的設定。實時延伸尚待前瞻驗證，歷史表現不代表未來收益。"
+          }
+        }
+      }
+    },
+    "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25: 75% defensive targets and 25% breakout holdings, recalculated from the previous completed observation. Exposure is capped at 100%; remaining capital stays in cash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25：使用上一已完成觀察期計算75%防守組合與25%突破持倉，總倉位不超過100%，其餘留現金。"
+          }
+        }
+      }
+    },
     "": {},
     " · %d日动量 %@": {
       "extractionState": "manual",
@@ -33275,6 +33341,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "首條記錄後新增訊號數"
+          }
+        }
+      }
+    },
+    "KVO量价组合": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO Price–Volume Portfolio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO量价组合"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO量價組合"
+          }
+        }
+      }
+    },
+    "黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A gold, Nasdaq Composite, S&P 500, CSI 300 and Shanghai Composite portfolio. Combines a 75% defensive sleeve with 25% breakout positions; KVO 34/55 with a 13-session signal confirms China-equity entries. Defaults to 0.025% per fill, zero slippage and no leverage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黃金、納指、標普500、滬深300與上證綜指的量價組合。以75%防守組合搭配25%突破持倉，KVO34/55與13日訊號線確認A股入場；預設每筆手續費0.025%、零滑點，不使用槓桿。"
+          }
+        }
+      }
+    },
+    "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO combines a 75% defensive sleeve with 25% price–volume-confirmed breakouts using the latest completed observation; gross exposure is capped at 100%."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO：以75%防守組合搭配25%量價確認突破，使用上一已完成觀察期資料，總倉位不超過100%。"
           }
         }
       }

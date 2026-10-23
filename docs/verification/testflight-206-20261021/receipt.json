@@ -1,0 +1,80 @@
+{
+  "status": "TESTFLIGHT_VALID_INTERNAL_BETA_TESTING",
+  "completedAt": "2026-10-21T02:01:23.541020+00:00",
+  "version": "1.14",
+  "build": "206",
+  "bundleID": "com.flyingrtx.AssetTimeMachine",
+  "appID": "6764277773",
+  "sourceCommit": "6844c72cdedc32ece3fb5e2503b4246ee7a17ed2",
+  "featureCommit": "d55d7d835e55de5f4d4a13749a8a7af210bf22af",
+  "releaseBranch": "codex/testflight-1-14-206-20261021",
+  "releaseSourcePushed": true,
+  "deliveryUUID": "aecc6d81-038f-4298-9b60-87acc0107e5f",
+  "appleProcessingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "externalBuildState": "READY_FOR_BETA_SUBMISSION",
+  "externalBetaSubmitted": false,
+  "artifactDirectory": "/Users/xiangjunsheng/.codex/worktrees/atm-testflight-206/AssetTimeMachine/build/TestFlight-1.14-206",
+  "signedArchive": "/Users/xiangjunsheng/.codex/worktrees/atm-testflight-206/AssetTimeMachine/build/TestFlight-1.14-206/AssetTimeMachine-DesktopSigned.xcarchive",
+  "ipa": "/Users/xiangjunsheng/.codex/worktrees/atm-testflight-206/AssetTimeMachine/build/TestFlight-1.14-206/export-desktop/AssetTimeMachine.ipa",
+  "ipaSHA256": "56ba29fec17cd393c49f92f77ba5ed0a4e2d7e78001e6f9f6020b5564da534da",
+  "ipaBytes": 17060080,
+  "preflight": {
+    "checkedAt": "2026-10-21T01:47:01.795657+00:00",
+    "releaseVersion": "1.14",
+    "releaseBuild": "206",
+    "featureCommit": "d55d7d8",
+    "originalResearchCheckoutHEAD": "aae8bfcc8425456bd3b0ae8fb29b10fb0e4e0d16",
+    "debugUnitRun": {
+      "status": "CRASH_SIGNAL_10",
+      "cause": "Thread stack size exceeded in strategy configuration call chain",
+      "log": "build/testflight-206-unit-tests.log",
+      "crashReport": "/Users/xiangjunsheng/Library/Logs/DiagnosticReports/xctest-2026-10-21-093845.ips"
+    },
+    "releaseFullUnitRun": {
+      "status": "27_MISSING_FROZEN_INPUT_ENV_FAILURES_OTHER_CASES_PASSED",
+      "tests": 513,
+      "skipped": 2,
+      "log": "build/testflight-206-release-tests.log"
+    },
+    "focusedConfiguredReleaseRerun": {
+      "status": "PASS",
+      "tests": 27,
+      "failures": 0,
+      "log": "build/testflight-206-focused-tests.log",
+      "inputBindings": "build/testflight-206-frozen-fixture-receipt.json"
+    },
+    "sourceOrTestCodeChangedToForcePass": false,
+    "files": {
+      "build/testflight-206-unit-tests.log": "d18b5b0241fa038fe84f015536620b2e3c7e83d8a3be1607d47928131b2498b2",
+      "build/testflight-206-release-tests.log": "c6bf0d60a9f558a6c0b61d255a73d803d005f9ef4bbb8dbb07f17e2707928c39",
+      "build/testflight-206-focused-tests.log": "575988903c159a8dde32e447bdaeda8f8854c429e45b10aac42bedd8fcc5c42d",
+      "build/testflight-206-frozen-fixture-receipt.json": "33f5aa03e1fcb439a8283844613afc86a1a72ada2c4c46a08f9b1b47647da112"
+    }
+  },
+  "simulatorDebugCompilation": "PASS",
+  "signedReleaseArchiveAndExport": "PASS",
+  "appleValidationAndUpload": "PASS",
+  "desktopLoginSessionSigning": "PASS",
+  "initialHeadlessArchive": "FAILED_errSecInternalComponent",
+  "manualDistributionArchiveOverride": "FAILED_CONFLICTING_AUTOMATIC_PROVISIONING",
+  "unsignedArchiveIsDistributionProof": false,
+  "keychainPermissionsChanged": false,
+  "passwordCollectedOrDisclosed": false,
+  "canonicalResearchCheckoutHEAD": "aae8bfcc8425456bd3b0ae8fb29b10fb0e4e0d16",
+  "originalFeatureCheckoutHEAD": "d55d7d835e55de5f4d4a13749a8a7af210bf22af",
+  "canonicalAndFeatureCheckoutUnchanged": true,
+  "deviceUIAcceptanceClaimed": false,
+  "logSHA256": {
+    "archive.log": "4fd419484195d9c4bcca78b38d4d9b5d0c843e49a40fe443548b0448ee9fd6ec",
+    "archive-distribution.log": "dc9b82e840c579162afba4b7aec20056be4edec5f6cb272aa4e5b037f5f7815b",
+    "archive-unsigned.log": "7fbe5d9aa0e076261d2e1b0b0759da64d0b61d3d13b12d38fc2c449e7aac5eb9",
+    "archive-desktop.log": "c7442bfd025a83dc6875626927f0e60fa5694feb6f954c9b1093e8dd51918187",
+    "export-desktop.log": "b774244becce50693912de9f1a3d35317b70e1035c50f79e4660f547f97a0903",
+    "codesign-archive-verify.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "validate-desktop.log": "52cbf9924bc49baf8e4e77ba50d664cfc21314802f56090670272d90a93eac11",
+    "upload-desktop.log": "09277a10f5d21720e4b18a9c6b504ed3ddd9ff8d31141679f7283568b47b754e",
+    "build-status-desktop.log": "841d8bfeaba40fda6a35d9d4c709bd242be3c942b7d3f44b6d7d41334e664bff",
+    "keychain-desktop-session.log": "99676c0055485ca42c5da94ebd492eb1c2df075bc19d1305497cb6022ee61b1a"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS_RAW_NATIVE_FRAME_AND_ORIGINAL_SIGNALS",
+  "audited_at": "2026-10-08T11:21:22.520477+00:00",
+  "frame_dates": 6264,
+  "funded_dates": 4656,
+  "signal_audits_checked": 23280,
+  "cash_paths_computed": false,
+  "source_date_isolation": "jointCboeDate < AppSignalDate < AppExecutionDate",
+  "new_economic_mechanisms": 0
+}

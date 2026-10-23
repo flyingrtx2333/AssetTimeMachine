@@ -1,0 +1,16 @@
+{
+  "status": "PASS_SAVED_NAV_COMPARISON_CHECKS",
+  "common_states_checked": 43420,
+  "metrics_checked": 70,
+  "unchanged_source_accounts": 10,
+  "new_strategy_simulations": 0,
+  "source_hashes_verified": true,
+  "not_certified": [
+    "Funded dividend total return",
+    "Original historical numeric vintage",
+    "Current-engine replay parity",
+    "Matched tradable instrument and execution clock",
+    "Independent OOS",
+    "Complete eligible frontier"
+  ]
+}

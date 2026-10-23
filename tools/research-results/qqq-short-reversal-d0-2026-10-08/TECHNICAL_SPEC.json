@@ -1,0 +1,7 @@
+{
+  "frozen_at": "2026-10-08T08:59:24.940151+00:00",
+  "performance_viewed": false,
+  "control_history": "Exact unmodified Oct8 App all-history snapshot, separate CLI --control-history, so early FX augmentation cannot move native product warmups.",
+  "qqq_history": "Same snapshot plus exactly 222 earlier FRED FX observations only; stored separately.",
+  "prior_test": "3 debug indicator tests passed. First release build overlapped final interface edit and failed module signature compilation; original failed build log retained, no performance run occurred."
+}

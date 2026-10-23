@@ -1,0 +1,12 @@
+Test Suite 'Selected tests' started at 2026-10-08 18:57:48.868.
+Test Suite 'AssetTimeMachineBacktestWorkerTests.xctest' started at 2026-10-08 18:57:48.869.
+Test Suite 'AssetTimeMachineBacktestWorkerTests.xctest' passed at 2026-10-08 18:57:48.869.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-08 18:57:48.870.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-08 18:57:48.905.
+Test Suite 'AssetTimeMachineBacktestCoreTests.xctest' started at 2026-10-08 18:57:48.905.
+Test Suite 'BacktestRunConfigurationTests' started at 2026-10-08 18:57:48.905.
+Test Case '-[AssetTimeMachineBacktestCoreTests.BacktestRunConfigurationTests testConcurrentParametersAndMacroSnapshotsMatchSerialRuns]' started.
+Note: Some test targets reported failures:
+  - AssetTimeMachineBacktestCoreTests (XCTest)

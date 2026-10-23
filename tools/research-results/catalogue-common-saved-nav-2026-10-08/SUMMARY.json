@@ -1,0 +1,55 @@
+{
+  "status": "SAVED_COMMON20_COMPARISON_COMPLETE_STRESS2_NOT_SUPERIOR",
+  "audited_at": "2026-10-08T12:38:04.566799+00:00",
+  "common_start": "2013-07-18",
+  "common_end": "2026-09-30",
+  "common_point_count": 3086,
+  "catalogue_comparator_count": 20,
+  "highest_catalogue_id": "gold-nasdaq-dual-trend-barbell",
+  "highest_catalogue_full": {
+    "annualizedReturn": 0.11288290644684684,
+    "end": "2026-09-29T16:00:00Z",
+    "excessSharpeCNYCash": 1.0018262326786742,
+    "maxDrawdown": 0.17368299818261637,
+    "pointCount": 3086,
+    "sharpeRF0": 1.033773377431354,
+    "start": "2013-07-17T16:00:00Z"
+  },
+  "stress_diagnostics": [
+    {
+      "id": "cross-market-extreme-qqq-cash:gross",
+      "metrics": {
+        "annualizedReturn": 0.10767751422142458,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.9532485310435143,
+        "maxDrawdown": 0.19736024959566564,
+        "pointCount": 3086,
+        "sharpeRF0": 0.9850533479207421,
+        "start": "2013-07-17T16:00:00Z"
+      },
+      "difference_from_catalogue_max": -0.04872002951061194,
+      "numeric_common_history_outperformance": false
+    },
+    {
+      "id": "cross-market-extreme-qqq-cash:withhold30",
+      "metrics": {
+        "annualizedReturn": 0.10664635712117954,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.9444881574901162,
+        "maxDrawdown": 0.19844686236787532,
+        "pointCount": 3086,
+        "sharpeRF0": 0.9762829116169852,
+        "start": "2013-07-17T16:00:00Z"
+      },
+      "difference_from_catalogue_max": -0.057490465814368785,
+      "numeric_common_history_outperformance": false
+    }
+  ],
+  "funded_runs": 0,
+  "new_candidates": 0,
+  "history_range_user_choice_assumed": false,
+  "original_long_failure_preserved": true,
+  "objective_complete": false,
+  "recommendation_eligible": false,
+  "conclusion": "The longest exact shared saved-NAV calendar is2013-07-18 to2026-09-30. Both already-viewed stress cash-tax diagnostics have lower Rf0 Sharpe than the maximum among all20 eligible App catalogue comparators. This supplemental post-hoc comparison neither rescues the original2002 full-calendar failure nor certifies economic comparability or a simple single-indicator winner."
+}

@@ -1,0 +1,87 @@
+{
+  "study_id": "D0-QQQ-SHORT-REVERSAL-20261008",
+  "evidence_class": "D0_FIXED_QQQ_SHORT_REVERSAL_SCREEN",
+  "formal_validation": false,
+  "frozen_at": "2026-10-08T08:56:39.744368+00:00",
+  "performance_viewed": false,
+  "user_metric_confirmation": "App full-history Sharpe Rf=0",
+  "primary_metric": "Whole account daily NAV Sharpe Rf=0 over mechanically maximal common history; separately retain QQQ inception full history",
+  "primary_threshold": "Pure single-indicator next-open candidate must strictly exceed highest six current curated controls on identical common dates. Any apparent win is provisional pending complete eligible frontier and dividend/source/forward validation.",
+  "mechanism": "Short-horizon overreaction in QQQ; oversold short RSI or close near session low forecasts reversal.",
+  "candidate_count": 3,
+  "single_indicator_candidate_count": 2,
+  "account_count": 14,
+  "parameter_search_budget": 0,
+  "candidates": [
+    {
+      "id": "QQQ:rsi3:open",
+      "single_indicator": true,
+      "rule": "Cutler simple 3-change RSI <10 enter; held maintain if RSI<=40, otherwise exit. No trend filter."
+    },
+    {
+      "id": "QQQ:ibs02:open",
+      "single_indicator": true,
+      "rule": "(close-low)/(high-low)<=0.2: next-session 100% target; otherwise cash. Consecutive signals retain position."
+    },
+    {
+      "id": "QQQ:rsi3-ibs05:open",
+      "single_indicator": false,
+      "rule": "Latent RSI base position AND IBS<=0.5. RSI base held state persists through IBS veto; this is an auxiliary two-indicator reference."
+    }
+  ],
+  "edge_cases": {
+    "rsi_losses_zero": "RSI=100, including all-flat three changes",
+    "ibs_range_zero": "IBS=0.5 neutral",
+    "rsi_thresholds": "strict <10 entry; >40 exit",
+    "rsi_warmup": "first valid after 3 changes; warmup cash; no pre-inception prices"
+  },
+  "controls": [
+    "Three unchanged rules at next-close clock",
+    "QQQ next-open buy-hold",
+    "CNY cash diagnostic",
+    "All six current curated product strategies via unchanged Swift runtime"
+  ],
+  "funded_start": "1999-03-10 initial cash close baseline; no same-date trade. First eligible signal is known prior NYSE session. Full QQQ end 2026-10-02 from fetched complete file.",
+  "comparison_start": "Intersection of daily states across all 14 continuously run accounts; no performance-based date choice",
+  "comparison_end": "Mechanical intersection (product China dates last 2026-09-30)",
+  "clock": "Previous actual NYSE session close -> next actual NYSE session open; explicit open quotes. Close clock is diagnostic, not selected after results.",
+  "costs": {
+    "fee_percent_per_fill": 0.025,
+    "slippage_percent": 0,
+    "cash": "CashYieldCNY RMB demand deposits",
+    "initial_cash_cny": 100000
+  },
+  "exposure": "100% single QQQ or RMB cash; no leverage/short/financing or constant cash dilution",
+  "price_policy": "Yahoo split-adjusted OHLC undone before effective split. Simulator doubles units 2000-03-20. Signal-only index applies splits effective as of signal day; no adjusted-close dividends.",
+  "fx_policy": "Original App FX unchanged after its first date. Earlier FRED DEXCHUS appended inverted; strict-prior date within 14 days used for open/close. No same-session close FX in opening fill.",
+  "secondary_windows": [
+    "native full inception",
+    "post original paper 2014-04-01",
+    "since2020",
+    "since2022",
+    "crisis2000-2002",
+    "crisis2008",
+    "crisis2020",
+    "crisis2022"
+  ],
+  "falsification": [
+    "Hand vectors distinguish Cutler RSI from Wilder and latent IBS filtering",
+    "Flat-range guard",
+    "Split-adjusted signal no artificial drawdown",
+    "Future prefix and perturbation invariance",
+    "All saved desired vs accepted targets, actual asset sets, units, historical denomination splits and quotes independently audited",
+    "No parameter rescue or branch reinterpretation after results"
+  ],
+  "multiple_testing": "All 3 rules and 2 clocks retained. Existing public-rule and project history exposed; no untouched holdout, no complete G3 count certified.",
+  "sources": [
+    "https://www.naaim.org/wp-content/uploads/2014/04/00V_Alexander_Pagonidis_The-IBS-Effect-Mean-Reversion-in-Equity-ETFs-1.pdf",
+    "https://www.govinfo.gov/content/pkg/FR-2002-01-10/pdf/02-635.pdf"
+  ],
+  "limitations": [
+    "Price-only exploratory replay omits dividends and withholding tax; current Yahoo/FRED snapshots not certified vintages.",
+    "Prior-calendar FX closes lack separate UTC release timestamps or a funded USD wallet; opening auction all-in availability not broker verified.",
+    "Native product benchmarks are index/gold proxies with native next-close, distinct from QQQ auction timing.",
+    "Rf0 cash-only Sharpe diagnostic cannot qualify.",
+    "No formal G0-G6 pass, new product registration or promotion."
+  ]
+}

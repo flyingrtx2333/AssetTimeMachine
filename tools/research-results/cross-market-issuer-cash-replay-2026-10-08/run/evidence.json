@@ -1,0 +1,32 @@
+{
+  "binary_sha256" : "ac48df60f2f551b21b7eeb6f2b1fc4134de79917b0dc49371d78912c22bbd91d",
+  "candidate_count" : 1,
+  "cash" : "CashYieldCNY",
+  "cash_sha256" : "f0ed5704bd4a67c1456cc4c168f91d49fcb7bfe782c50b5b9d0114e719d33d6f",
+  "completed_at" : "2026-10-08T10:35:47Z",
+  "data_sha256" : "c89a17e0523d1882c55c93bdcde2edf2b0592251f900cb793919b1a4bfcb33aa",
+  "evidence_class" : "POST_HOC_FIXED_RULE_ISSUER_CORPORATE_CASH_DIAGNOSTIC",
+  "execution_version" : "settlement-v4\/dividend-cash-v1\/next-open\/symbol-order-v1",
+  "features_sha256" : "954547da6a397c909f2218a9f2c60aca146eb3a51bee60b4e3db427a50ec6906",
+  "fee_percent" : 0.025000000000000001,
+  "formal_validation" : false,
+  "history_sha256" : "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa",
+  "limitations" : [
+    "Final-vintage adjusted signal inputs preserved; not historical quote\/announcement PIT certification.",
+    "Gross and uniform30% withholding are diagnostics, not personal tax advice; cash components unknown are preserved in source evidence.",
+    "No formal G0-G6 PASS or matched total-return product superiority certification.",
+    "Single-asset switch, fractional shares; cash payments credited after first observed session on\/after payment date with prior FX.",
+    "No funded-period split, no auto reinvestment, no leverage; cash balances accrue only CashYieldCNY."
+  ],
+  "maximum_target_gross" : 1,
+  "parameter_search_count" : 0,
+  "recommendation_eligible" : false,
+  "result_sha256" : "fdc2422910871a584931c4ec88b538d5445fb6c55096eb898f4c8acd9100261c",
+  "run_count" : 8,
+  "slippage_percent" : 0,
+  "source_commit" : "48a304f07978a468cf603f4665333394f4403872",
+  "withholding_scenarios" : [
+    0,
+    0.29999999999999999
+  ]
+}

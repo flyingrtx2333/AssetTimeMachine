@@ -1,0 +1,111 @@
+Test Suite 'Selected tests' started at 2026-10-08 18:53:36.712.
+Test Suite 'AssetTimeMachineBacktestWorkerTests.xctest' started at 2026-10-08 18:53:36.713.
+Test Suite 'AssetTimeMachineBacktestWorkerTests.xctest' passed at 2026-10-08 18:53:36.713.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-08 18:53:36.713.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-08 18:53:36.749.
+Test Suite 'AssetTimeMachineBacktestCoreTests.xctest' started at 2026-10-08 18:53:36.750.
+Test Suite 'CashDistributionTests' started at 2026-10-08 18:53:36.750.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testClosingFXDoesNotChangeSameDayRebalance]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testClosingFXDoesNotChangeSameDayRebalance]' passed (0.005 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testExDateReceivablePreservesNAVWithoutSpendingOrInterest]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testExDateReceivablePreservesNAVWithoutSpendingOrInterest]' passed (0.001 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testExDateSaleRetainsClaimAndExDatePurchaseDoesNotEarnIt]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testExDateSaleRetainsClaimAndExDatePurchaseDoesNotEarnIt]' passed (0.002 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testFutureFXDoesNotChangeEarlierTradesOrStates]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testFutureFXDoesNotChangeEarlierTradesOrStates]' passed (0.002 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testInvalidOrDuplicateEventsAndMissingFXAreRejected]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testInvalidOrDuplicateEventsAndMissingFXAreRejected]' passed (0.007 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testPayDateCashCannotFundSameSessionAndCanFundNextSession]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testPayDateCashCannotFundSameSessionAndCanFundNextSession]' passed (0.002 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testPriceOnlyEncodingAndOldSavedStateRemainCompatible]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testPriceOnlyEncodingAndOldSavedStateRemainCompatible]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testSplitPreservesNAVAndCostBasisAndDoesNotResizeExistingClaim]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testSplitPreservesNAVAndCostBasisAndDoesNotResizeExistingClaim]' passed (0.002 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testWithholdingFXAndUnpaidTerminalReceivable]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.CashDistributionTests testWithholdingFXAndUnpaidTerminalReceivable]' passed (0.002 seconds).
+Test Suite 'CashDistributionTests' passed at 2026-10-08 18:53:36.773.
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.023 (0.023) seconds
+Test Suite 'GoldNasdaqBarbellSignalTests' started at 2026-10-08 18:53:36.773.
+Test Case '-[AssetTimeMachineBacktestCoreTests.GoldNasdaqBarbellSignalTests testFrozenStrongWeakNeutralAndUnavailableInformation]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.GoldNasdaqBarbellSignalTests testFrozenStrongWeakNeutralAndUnavailableInformation]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.GoldNasdaqBarbellSignalTests testLaterQuotesCannotChangeFrozenDecision]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.GoldNasdaqBarbellSignalTests testLaterQuotesCannotChangeFrozenDecision]' passed (0.000 seconds).
+Test Suite 'GoldNasdaqBarbellSignalTests' passed at 2026-10-08 18:53:36.774.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'PublicBacktestCoreTests' started at 2026-10-08 18:53:36.774.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testAdvancedRecordRoundTripPreservesCombinedAndAssetCurves]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testAdvancedRecordRoundTripPreservesCombinedAndAssetCurves]' passed (0.001 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testBasicStrategyRequestRoundTripsWithoutLosingParameters]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testBasicStrategyRequestRoundTripsWithoutLosingParameters]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testCashAccrualUsesCalendarTimeRatherThanFrameCount]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testCashAccrualUsesCalendarTimeRatherThanFrameCount]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testClosedMarketDefersPendingTargetUntilARealObservation]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testClosedMarketDefersPendingTargetUntilARealObservation]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testComputeInvocationRoundTripsWithoutLosingAcronymKeys]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testComputeInvocationRoundTripsWithoutLosingAcronymKeys]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testCrossMarketRotationSettlesSellsBeforeFundingBuys]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testCrossMarketRotationSettlesSellsBeforeFundingBuys]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testEngineVersionIsPinned]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testEngineVersionIsPinned]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testFixedAllocationBasicStrategyRunsInsidePublicConstraints]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testFixedAllocationBasicStrategyRunsInsidePublicConstraints]' passed (0.810 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testForeignUnitsPerCNYSupportsHighJPYRates]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testForeignUnitsPerCNYSupportsHighJPYRates]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testForwardSnapshotsUseLatestRealSessionAsSignalAndKeepFrozenVersionsDistinct]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testForwardSnapshotsUseLatestRealSessionAsSignalAndKeepFrozenVersionsDistinct]' passed (134.536 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testFXConverterRejectsAnIndefinitelyStaleRate]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testFXConverterRejectsAnIndefinitelyStaleRate]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoricalDateParserRejectsImpossibleAndNonCanonicalDates]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoricalDateParserRejectsImpossibleAndNonCanonicalDates]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryMergeKeepsValidCachedPointWhenOverlapRevisionIsAnOutlier]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryMergeKeepsValidCachedPointWhenOverlapRevisionIsAnOutlier]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryMergeRejectsCanonicalOutlierButKeepsIndependentValidOHLC]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryMergeRejectsCanonicalOutlierButKeepsIndependentValidOHLC]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryRefreshPlannerUsesOverlapOnlyWhenEverySymbolHasCache]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryRefreshPlannerUsesOverlapOnlyWhenEverySymbolHasCache]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryRefreshPlannerUsesPerSymbolFreshness]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHistoryRefreshPlannerUsesPerSymbolFreshness]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHypotheticalDecisionSessionCannotExecute]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testHypotheticalDecisionSessionCannotExecute]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testIncrementalHistoryMergeDoesNotEraseExistingOHLCWithCloseOnlyOverlap]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testIncrementalHistoryMergeDoesNotEraseExistingOHLCWithCloseOnlyOverlap]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testIncrementalHistoryMergePreservesEarlyRowsAndRevisesOverlap]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testIncrementalHistoryMergePreservesEarlyRowsAndRevisesOverlap]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testLateInceptionBenchmarkKeepsReservedSleeve]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testLateInceptionBenchmarkKeepsReservedSleeve]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testMacroFreshnessUsesReleaseAvailabilityAge]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testMacroFreshnessUsesReleaseAvailabilityAge]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testMarketFreshnessUsesCutoffAge]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testMarketFreshnessUsesCutoffAge]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testMetricsAnnualizeUsingObservedFrequency]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testMetricsAnnualizeUsingObservedFrequency]' passed (0.001 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testOHLCFeaturePreparationKeepsIndependentCloseWithoutChangingCanonicalPrices]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testOHLCFeaturePreparationKeepsIndependentCloseWithoutChangingCanonicalPrices]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPrewarmInvocationRoundTripsStrategyID]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPrewarmInvocationRoundTripsStrategyID]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPublicBacktestFixedCostsUseCurrentProductDefaults]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPublicBacktestFixedCostsUseCurrentProductDefaults]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPublicCatalogUsesTheCuratedRotationRegistry]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPublicCatalogUsesTheCuratedRotationRegistry]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPublicHistoryFixtureKeepsGoldCanonicalPricesAndIndependentOHLCBars]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testPublicHistoryFixtureKeepsGoldCanonicalPricesAndIndependentOHLCBars]' passed (0.251 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testQuantStrategyProxyOverridesRecordedMarketSymbol]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testQuantStrategyProxyOverridesRecordedMarketSymbol]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testRotationDecisionClockIgnoresWeekendDatesFromAuxiliarySeries]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testRotationDecisionClockIgnoresWeekendDatesFromAuxiliarySeries]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testStatefulSliceDoesNotAttributePreWindowCostBasisToTheSelectedWindow]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testStatefulSliceDoesNotAttributePreWindowCostBasisToTheSelectedWindow]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testStrategyHistorySymbolsFollowSelectedTemplateDependencies]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testStrategyHistorySymbolsFollowSelectedTemplateDependencies]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testTargetProviderCannotSeeExecutionDayPortfolioMove]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testTargetProviderCannotSeeExecutionDayPortfolioMove]' passed (0.000 seconds).
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testUSDAssetOHLCUsesTheSameCNYConversionAsClosePrices]' started.
+Test Case '-[AssetTimeMachineBacktestCoreTests.PublicBacktestCoreTests testUSDAssetOHLCUsesTheSameCNYConversionAsClosePrices]' passed (0.000 seconds).
+Test Suite 'PublicBacktestCoreTests' passed at 2026-10-08 18:55:52.379.
+	 Executed 34 tests, with 0 failures (0 unexpected) in 135.604 (135.605) seconds
+Test Suite 'AssetTimeMachineBacktestCoreTests.xctest' passed at 2026-10-08 18:55:52.379.
+	 Executed 45 tests, with 0 failures (0 unexpected) in 135.628 (135.629) seconds
+Test Suite 'Selected tests' passed at 2026-10-08 18:55:52.379.
+	 Executed 45 tests, with 0 failures (0 unexpected) in 135.628 (135.630) seconds

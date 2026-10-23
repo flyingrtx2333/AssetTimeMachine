@@ -1,0 +1,11 @@
+{
+  "status": "PASS_READONLY_SWIFT_PATH_SUPPLEMENT",
+  "audited_at": "2026-10-08T11:30:57.407872+00:00",
+  "accounts": 12,
+  "yearly_records": 228,
+  "capital_runs": 0,
+  "primary_cagr_sharpe_unchanged": true,
+  "script_sha256": "c9f614b80d49a140882df7c576fbfbb0e350b6e35d42c977e724ca2284bd7670",
+  "input_result_sha256": "c6b3eef365fb466300b33fa3cc5a4c19b4482bb6ac60be57dbe8683e99e04940",
+  "output_sha256": "32389a892bb89144c5ae110fceae59ed874492a67991b73bdade845ce01c095b"
+}

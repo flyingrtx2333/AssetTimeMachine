@@ -1,0 +1,9 @@
+{
+  "command": "rtk proxy swift test --filter CashDistributionTests|CrossMarketStressTests",
+  "exit_code": 0,
+  "observed_tests": 11,
+  "cash_tests": 9,
+  "stress_tests": 2,
+  "observed_completion_local": "2026-10-08T18:32:47.805+08:00",
+  "status": "PASS_FOCUSED_CASH_AND_PRIOR_CLOCK_TESTS"
+}

@@ -1,0 +1,18 @@
+{
+  "frozen_at": "2026-10-08T09:24:51.192945+00:00",
+  "matched_comparison_viewed": false,
+  "source_commit": "7b56db589e68aa1c74c5b14a95cbcaa04309d420",
+  "binary_sha256": "8c80e29abfb8d4c93c4f4708b21c3b83c0b022e55c8319b9341bf8e6e51f9f43",
+  "command": [
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "saved-account-compare",
+    "--accounts",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-saved-nav-audit-2026-10-08/ACCOUNTS.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/cross-market-saved-nav-audit-2026-10-08/run",
+    "--source-commit",
+    "7b56db589e68aa1c74c5b14a95cbcaa04309d420"
+  ],
+  "accounts_sha256": "bcf71c64bbb8c9d2bff9763b419d3ffc7286da4e73469b97625eb81fad9debb0",
+  "declaration_sha256": "bc39e297a7060d830b3793c63dd06a0bfea6e2a1b139aa16286d8d603fbb42ce"
+}

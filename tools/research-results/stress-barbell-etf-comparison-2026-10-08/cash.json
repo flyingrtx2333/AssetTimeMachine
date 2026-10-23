@@ -1,0 +1,467 @@
+{
+  "schema": "qqq-issuer-cash-fixed-diagnostic-v1",
+  "events": [
+    {
+      "symbol": "QQQ",
+      "ex_date": "2008-03-20",
+      "payment_date": "2008-04-30",
+      "amount_usd": 0.03252
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2008-06-20",
+      "payment_date": "2008-07-31",
+      "amount_usd": 0.03441
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2008-09-19",
+      "payment_date": "2008-09-30",
+      "amount_usd": 0.02807
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2008-12-19",
+      "payment_date": "2008-12-31",
+      "amount_usd": 0.04346
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2009-03-20",
+      "payment_date": "2009-04-30",
+      "amount_usd": 0.04888
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2009-06-19",
+      "payment_date": "2009-07-31",
+      "amount_usd": 0.04394
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2009-09-18",
+      "payment_date": "2009-10-30",
+      "amount_usd": 0.04076
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2009-12-18",
+      "payment_date": "2009-12-31",
+      "amount_usd": 0.0776
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2010-03-19",
+      "payment_date": "2010-04-30",
+      "amount_usd": 0.05146
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2010-06-18",
+      "payment_date": "2010-07-30",
+      "amount_usd": 0.0893
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2010-09-17",
+      "payment_date": "2010-10-29",
+      "amount_usd": 0.11155
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2010-12-17",
+      "payment_date": "2010-12-31",
+      "amount_usd": 0.10832
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2011-03-18",
+      "payment_date": "2011-04-29",
+      "amount_usd": 0.07687
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2011-06-17",
+      "payment_date": "2011-07-29",
+      "amount_usd": 0.12079
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2011-09-16",
+      "payment_date": "2011-10-31",
+      "amount_usd": 0.10434
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2011-12-16",
+      "payment_date": "2011-12-30",
+      "amount_usd": 0.16052
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2012-03-16",
+      "payment_date": "2012-04-30",
+      "amount_usd": 0.11283
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2012-06-15",
+      "payment_date": "2012-07-31",
+      "amount_usd": 0.14312
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2012-09-21",
+      "payment_date": "2012-10-31",
+      "amount_usd": 0.2002
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2012-12-21",
+      "payment_date": "2012-12-31",
+      "amount_usd": 0.36663
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2013-03-15",
+      "payment_date": "2013-04-30",
+      "amount_usd": 0.15931
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2013-06-21",
+      "payment_date": "2013-07-31",
+      "amount_usd": 0.22361
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2013-09-20",
+      "payment_date": "2013-10-31",
+      "amount_usd": 0.23771
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2013-12-20",
+      "payment_date": "2013-12-31",
+      "amount_usd": 0.27241
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2014-02-27",
+      "payment_date": "2014-03-07",
+      "amount_usd": 0.37313
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2014-03-21",
+      "payment_date": "2014-04-30",
+      "amount_usd": 0.20606
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2014-06-20",
+      "payment_date": "2014-07-31",
+      "amount_usd": 0.2491
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2014-09-19",
+      "payment_date": "2014-10-31",
+      "amount_usd": 0.2378
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2014-12-19",
+      "payment_date": "2014-12-31",
+      "amount_usd": 0.38681
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2015-03-20",
+      "payment_date": "2015-04-30",
+      "amount_usd": 0.24806
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2015-06-19",
+      "payment_date": "2015-07-31",
+      "amount_usd": 0.25416
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2015-09-18",
+      "payment_date": "2015-10-30",
+      "amount_usd": 0.26002
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2015-12-18",
+      "payment_date": "2015-12-31",
+      "amount_usd": 0.34233
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2016-03-18",
+      "payment_date": "2016-04-29",
+      "amount_usd": 0.3178
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2016-06-17",
+      "payment_date": "2016-07-29",
+      "amount_usd": 0.28665
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2016-09-16",
+      "payment_date": "2016-10-31",
+      "amount_usd": 0.29387
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2016-12-16",
+      "payment_date": "2016-12-30",
+      "amount_usd": 0.35494
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2017-03-17",
+      "payment_date": "2017-04-28",
+      "amount_usd": 0.27415
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2017-06-16",
+      "payment_date": "2017-07-31",
+      "amount_usd": 0.37842
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2017-09-18",
+      "payment_date": "2017-10-31",
+      "amount_usd": 0.31938
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2017-12-18",
+      "payment_date": "2017-12-29",
+      "amount_usd": 0.32941
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2018-03-19",
+      "payment_date": "2018-04-30",
+      "amount_usd": 0.27655
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2018-06-18",
+      "payment_date": "2018-07-31",
+      "amount_usd": 0.37837
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2018-09-24",
+      "payment_date": "2018-10-31",
+      "amount_usd": 0.32975
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2018-12-24",
+      "payment_date": "2018-12-31",
+      "amount_usd": 0.4206
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2019-03-18",
+      "payment_date": "2019-04-30",
+      "amount_usd": 0.32421
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2019-06-24",
+      "payment_date": "2019-07-31",
+      "amount_usd": 0.41558
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2019-09-23",
+      "payment_date": "2019-10-31",
+      "amount_usd": 0.38415
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2019-12-23",
+      "payment_date": "2019-12-31",
+      "amount_usd": 0.45765
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2020-03-23",
+      "payment_date": "2020-04-30",
+      "amount_usd": 0.36269
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2020-06-22",
+      "payment_date": "2020-07-31",
+      "amount_usd": 0.42426
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2020-09-21",
+      "payment_date": "2020-10-30",
+      "amount_usd": 0.38824
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2020-12-21",
+      "payment_date": "2020-12-31",
+      "amount_usd": 0.56133
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2021-03-22",
+      "payment_date": "2021-04-30",
+      "amount_usd": 0.39468
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2021-06-21",
+      "payment_date": "2021-07-30",
+      "amount_usd": 0.39679
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2021-09-20",
+      "payment_date": "2021-10-29",
+      "amount_usd": 0.41391
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2021-12-20",
+      "payment_date": "2021-12-31",
+      "amount_usd": 0.49141
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2022-03-21",
+      "payment_date": "2022-04-29",
+      "amount_usd": 0.43369
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2022-06-21",
+      "payment_date": "2022-07-29",
+      "amount_usd": 0.5274
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2022-09-19",
+      "payment_date": "2022-10-31",
+      "amount_usd": 0.51856
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2022-12-19",
+      "payment_date": "2022-12-30",
+      "amount_usd": 0.65541
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2023-03-20",
+      "payment_date": "2023-04-28",
+      "amount_usd": 0.47223
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2023-06-20",
+      "payment_date": "2023-07-31",
+      "amount_usd": 0.50395
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2023-09-18",
+      "payment_date": "2023-10-31",
+      "amount_usd": 0.53555
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2023-12-18",
+      "payment_date": "2023-12-29",
+      "amount_usd": 0.80826
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2023-12-27",
+      "payment_date": "2024-01-15",
+      "amount_usd": 0.21584
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2024-03-18",
+      "payment_date": "2024-04-30",
+      "amount_usd": 0.57345
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2024-06-24",
+      "payment_date": "2024-07-31",
+      "amount_usd": 0.7615
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2024-09-23",
+      "payment_date": "2024-10-31",
+      "amount_usd": 0.67686
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2024-12-23",
+      "payment_date": "2024-12-31",
+      "amount_usd": 0.83466
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2025-03-24",
+      "payment_date": "2025-04-30",
+      "amount_usd": 0.71571
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2025-06-23",
+      "payment_date": "2025-07-31",
+      "amount_usd": 0.59111
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2025-09-22",
+      "payment_date": "2025-10-31",
+      "amount_usd": 0.69395
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2025-12-22",
+      "payment_date": "2025-12-31",
+      "amount_usd": 0.79408
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2026-03-23",
+      "payment_date": "2026-03-27",
+      "amount_usd": 0.73282
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2026-06-22",
+      "payment_date": "2026-07-10",
+      "amount_usd": 0.81349
+    },
+    {
+      "symbol": "QQQ",
+      "ex_date": "2026-09-21",
+      "payment_date": "2026-10-08",
+      "amount_usd": 0.75143
+    }
+  ]
+}

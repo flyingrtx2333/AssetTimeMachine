@@ -1,0 +1,36 @@
+{
+  "study_id": "POSTHOC-PRODUCT-BENCHMARK-SCOPE-20261008",
+  "frozen_at": "2026-10-08T11:46:21.251665+00:00",
+  "status": "EXISTING_COMPARATORS_ONLY_BEFORE_NEW_CAPITAL_REPLAY",
+  "scope": "App ordered catalogue:6 curated+4 experimental+13 basic, not CLI publicProduct boolean or 72-template research registry",
+  "new_candidate_count": 0,
+  "parameter_search_budget": 0,
+  "ready_replay_budget": 19,
+  "cash_constraint_excluded": [
+    "recent-volatility-managed-idle-cash",
+    "recent-pair-spread-z252-shift25",
+    "recent-gold-equity-relative-z252-shift25"
+  ],
+  "pending": [
+    "nfci-dual-core-v11-qual-role"
+  ],
+  "pending_rule": "Do not replace QUAL, suppress missing competitor, or certify complete frontier. Fixed benchmark replays do not create or promote new alpha.",
+  "metric": "Shared App full common continuous-account NAV Sharpe Rf=0; preserve native full accounts and 2020+/2022+/10Y/2008/2020/2022 slices",
+  "end": "2026-10-06, retained original indicator screen endpoint; exact common dates derived by intersection, no start-date tuning",
+  "start": "1900 sentinel means earliest available natural App warmup, not funded 1900; same Registry stateful replay semantics",
+  "costs": {
+    "fee_percent": 0.025,
+    "slippage_percent": 0,
+    "cash": "CashYieldCNY demand deposits"
+  },
+  "inputs": "same frozen public market+NFCI as-of responses as prior six-control screen; no fresh request or return-driven substitution",
+  "formal_validation": false,
+  "promotion": false,
+  "falsification": [
+    "prepare binds all 23 rule snapshots and hashes with exactly19 ready/1 missing/3 excluded",
+    "run requires byte-identical prepared contract",
+    "independent saved accounting and native/slice SHA/readback, all accounts retained",
+    "six curated previous saved paths compared for parity on exact common dates; differences retained if any"
+  ],
+  "limit": "Existing returns were already exposed; no independent OOS/G0-G6/total-return or current-online claim."
+}

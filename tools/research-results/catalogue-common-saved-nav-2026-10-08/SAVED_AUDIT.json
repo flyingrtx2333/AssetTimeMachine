@@ -1,0 +1,21 @@
+{
+  "status": "PASS_SAVED_STATES_AND_OFFICIAL_RF0_METRICS",
+  "audited_at": "2026-10-08T12:38:04.566799+00:00",
+  "states_checked": 67892,
+  "metric_groups_checked": 151,
+  "original_states_values_dates_and_positions_unchanged": true,
+  "QUAL_adapter_only_renamed_JSON_field_and_added_id": true,
+  "complete_saved_source_history_metrics_retained": true,
+  "original19_native_reports_separately_retained": "ORIGINAL_NATIVE_ACCOUNT_REPORTS.json",
+  "original_2002_comparison_failure_preserved": true,
+  "funded_runs": 0,
+  "new_candidates": 0,
+  "formal_validation": false,
+  "not_certified": [
+    "same instruments and total-return accounting across catalogue and stress",
+    "single own-price indicator",
+    "historical PIT/source vintage",
+    "G0-G6/OOS",
+    "complete executable strategy frontier"
+  ]
+}

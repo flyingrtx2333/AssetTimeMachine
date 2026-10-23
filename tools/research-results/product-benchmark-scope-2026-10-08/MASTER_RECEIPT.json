@@ -1,0 +1,22 @@
+{
+  "status": "LOCAL_APPEND_VERIFIED_NOTION_QUERY_ENTITLEMENT_PENDING",
+  "previous_rows_unchanged": 313,
+  "previous_overrides_unchanged": 9,
+  "new_rows": 21,
+  "total_rows": 334,
+  "new_cash_constraint_overrides": [
+    "REPLAY:SETTLEMENT-V4:2026-10-04:recent-gold-equity-relative-z252-shift25:SLIP0.05",
+    "REPLAY:SETTLEMENT-V4:2026-10-04:recent-gold-equity-relative-z252-shift25:SLIP0",
+    "REPLAY:SETTLEMENT-V4:2026-10-04:recent-volatility-managed-idle-cash:SLIP0.05",
+    "REPLAY:SETTLEMENT-V4:2026-10-04:recent-volatility-managed-idle-cash:SLIP0"
+  ],
+  "pending_keys_retained": 47,
+  "total_pending_keys": 68,
+  "remote_new_pages_created": 0,
+  "master_before_sha256": {
+    "strategy-master.json": "1e8b1b8e168525c00d5340464fc3a9fa7ab72171c4ba3a0ed267c1eb36df1286",
+    "strategy-master.csv": "a5405e492c77f03abc9ab4358a9cca197e5be66f5609c4d9370a8e385932761d",
+    "notion-target.json": "d534b807c6672312c2eb338b0f024fd98625bc075832593798341ac1c2d6cae4",
+    "validation-report.json": "1f6655872a75b07f7440d57e8aeb7fc2873756b9c6b89df4be094818100129eb"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "queried_at": "2026-10-08T12:01:55.794090+00:00",
+  "endpoint": "https://api.flyingrtx.com/api/v1/money/public/history?symbols=qual&period=all&include_ohlc=true&history_quality=provider-trade-date-v1",
+  "http_status": 200,
+  "response_sha256": "b0c72b50de552641bf42635b66a05255f3fdb3ca53c401814b58074b09fb5d28",
+  "bytes": 186233,
+  "success": true,
+  "history_quality_policy": "provider-trade-date-v1",
+  "series": [
+    {
+      "symbol": "qual",
+      "category": "fund",
+      "currency": "USD",
+      "unit": "share",
+      "source": "Yahoo Finance",
+      "start_date": "2013-07-18",
+      "end_date": "2026-10-06",
+      "has_ohlc": false,
+      "ohlc_source": null,
+      "rows": 3325
+    }
+  ],
+  "new_online_request": true,
+  "new_request_only_QUAL": true
+}

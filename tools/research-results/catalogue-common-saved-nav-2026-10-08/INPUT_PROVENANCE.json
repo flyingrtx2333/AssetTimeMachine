@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-08T12:34:00.821763+00:00",
+  "source_accounts": {
+    "catalogue19": {
+      "path": "research/asset-time-machine/workspace/studies/product-benchmark-scope-replay-2026-10-08/run/result.json",
+      "raw_sha256": "61590e4509ab62001908056cf321dcae50363f264c0c64c15691183ed7d67b9b"
+    },
+    "qual": {
+      "path": "research/asset-time-machine/workspace/studies/product-qual-benchmark-2026-10-08/qual-run/result.json",
+      "raw_sha256": "c449252097b054c0ec77e98c9bf3c07a87f53f49389013c1e0251d2c7c93124e"
+    },
+    "stress": {
+      "path": "research/asset-time-machine/workspace/studies/cross-market-issuer-cash-replay-2026-10-08/run/result.json",
+      "raw_sha256": "fdc2422910871a584931c4ec88b538d5445fb6c55096eb898f4c8acd9100261c"
+    }
+  },
+  "adapter": "QUAL output spelling daily_states -> dailyStates and external id only; values and dates unmodified",
+  "funded_account_generation": false
+}

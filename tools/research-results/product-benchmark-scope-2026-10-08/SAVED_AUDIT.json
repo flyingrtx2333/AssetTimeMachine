@@ -1,0 +1,125 @@
+{
+  "status": "PASS_SAVED_ACCOUNTING_METRICS_AND_ASSET_QUOTE_DATES",
+  "audited_at": "2026-10-08T11:53:30.607260+00:00",
+  "counts": {
+    "native_states": 118259,
+    "fills_with_real_asset_date_and_units_checked": 17922,
+    "metric_groups": 152
+  },
+  "curated_common_path_readback": [
+    {
+      "id": "gold-nasdaq-dual-trend-barbell",
+      "raw_byte_identity": false,
+      "target_weights_exact_identity": true,
+      "target_weights_nonidentical_states": 0,
+      "max_target_weight_delta": 0.0,
+      "numeric_comparison_tolerance": 1e-12,
+      "normalized_nav_ratio_min": 1.0001487721298543,
+      "normalized_nav_ratio_max": 1.0001487721298543,
+      "max_cash_or_holding_fraction_delta": 2.220446049250313e-16,
+      "primary_full_metric_max_delta": 5.329070518200751e-15,
+      "prior_fill_count": 81,
+      "new_fill_count": 81,
+      "extra_dust_fills": [],
+      "exact_fill_identity_claimed": false
+    },
+    {
+      "id": "nfci-dual-core-v11",
+      "raw_byte_identity": false,
+      "target_weights_exact_identity": false,
+      "target_weights_nonidentical_states": 871,
+      "max_target_weight_delta": 1.1102230246251565e-16,
+      "numeric_comparison_tolerance": 1e-12,
+      "normalized_nav_ratio_min": 0.9999999999999983,
+      "normalized_nav_ratio_max": 1.0,
+      "max_cash_or_holding_fraction_delta": 3.3306690738754696e-16,
+      "primary_full_metric_max_delta": 3.219646771412954e-15,
+      "prior_fill_count": 467,
+      "new_fill_count": 468,
+      "extra_dust_fills": [
+        {
+          "action": "buy",
+          "cashAmount": 7.405484478349361e-12,
+          "date": "2008-01-03T16:00:00Z",
+          "price": 18216.29877450089,
+          "symbol": "nasdaq",
+          "units": 4.0642905558802935e-16
+        }
+      ],
+      "exact_fill_identity_claimed": false
+    },
+    {
+      "id": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "raw_byte_identity": true,
+      "target_weights_exact_identity": true,
+      "target_weights_nonidentical_states": 0,
+      "max_target_weight_delta": 0.0,
+      "numeric_comparison_tolerance": 1e-12,
+      "normalized_nav_ratio_min": 1.0,
+      "normalized_nav_ratio_max": 1.0,
+      "max_cash_or_holding_fraction_delta": 0.0,
+      "primary_full_metric_max_delta": 0.0,
+      "prior_fill_count": 284,
+      "new_fill_count": 284,
+      "extra_dust_fills": [],
+      "exact_fill_identity_claimed": false
+    },
+    {
+      "id": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "raw_byte_identity": true,
+      "target_weights_exact_identity": true,
+      "target_weights_nonidentical_states": 0,
+      "max_target_weight_delta": 0.0,
+      "numeric_comparison_tolerance": 1e-12,
+      "normalized_nav_ratio_min": 1.0,
+      "normalized_nav_ratio_max": 1.0,
+      "max_cash_or_holding_fraction_delta": 0.0,
+      "primary_full_metric_max_delta": 0.0,
+      "prior_fill_count": 291,
+      "new_fill_count": 291,
+      "extra_dust_fills": [],
+      "exact_fill_identity_claimed": false
+    },
+    {
+      "id": "core-gold-satellite-profit-lock-momentum",
+      "raw_byte_identity": true,
+      "target_weights_exact_identity": true,
+      "target_weights_nonidentical_states": 0,
+      "max_target_weight_delta": 0.0,
+      "numeric_comparison_tolerance": 1e-12,
+      "normalized_nav_ratio_min": 1.0,
+      "normalized_nav_ratio_max": 1.0,
+      "max_cash_or_holding_fraction_delta": 0.0,
+      "primary_full_metric_max_delta": 0.0,
+      "prior_fill_count": 307,
+      "new_fill_count": 307,
+      "extra_dust_fills": [],
+      "exact_fill_identity_claimed": false
+    },
+    {
+      "id": "risk-contribution-cash-confidence-low-noise",
+      "raw_byte_identity": false,
+      "target_weights_exact_identity": false,
+      "target_weights_nonidentical_states": 676,
+      "max_target_weight_delta": 4.440892098500626e-16,
+      "numeric_comparison_tolerance": 1e-12,
+      "normalized_nav_ratio_min": 0.9999999999999987,
+      "normalized_nav_ratio_max": 1.0000000000000002,
+      "max_cash_or_holding_fraction_delta": 5.551115123125783e-16,
+      "primary_full_metric_max_delta": 7.216449660063518e-16,
+      "prior_fill_count": 482,
+      "new_fill_count": 482,
+      "extra_dust_fills": [],
+      "exact_fill_identity_claimed": false
+    }
+  ],
+  "new_capital_replay_in_audit": false,
+  "not_certified": [
+    "QUAL comparator or complete frontier",
+    "macro historical publication-vintage reconstruction",
+    "economic target regeneration audit for complex controls",
+    "complete settlement intent reconstruction",
+    "tradable funded ETF/gold total return",
+    "independent OOS or formal G0-G6"
+  ]
+}

@@ -20,6 +20,8 @@ struct ResearchCLI {
         let args = Array(CommandLine.arguments.dropFirst())
         let optionsByCommand: [String: Set<String>] = [
             "catalog": [], "configuration": ["--strategy"],
+            "qual-product-compare": ["--comparators", "--qual-directory", "--bindings", "--output", "--source-commit"],
+            "product-benchmark-scope": ["--mode", "--history", "--macro", "--output", "--prepared", "--source-commit"],
             "verify-cost-invariance": ["--history", "--strategy", "--macro"],
             "run": ["--config", "--history", "--macro", "--observations", "--output", "--source-commit"],
             "published-rule-screen": ["--history", "--output", "--source-commit"],
@@ -31,9 +33,59 @@ struct ResearchCLI {
             "credit-lead-screen": ["--prices", "--history", "--output", "--source-commit"],
             "spf-growth-revision-screen": ["--prices", "--history", "--output", "--source-commit"],
             "cross-market-stress-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "cross-market-cash-screen": ["--prices", "--history", "--cash", "--output", "--source-commit"],
+            "stress-barbell-etf-comparison": ["--prices", "--history", "--cash", "--output", "--source-commit"],
+            "recovered-term-structure": ["--mode", "--curve", "--history", "--prepared", "--output", "--source-commit"],
             "olmar-prediction-screen": ["--prices", "--history", "--output", "--source-commit"],
             "olmar-funded-screen": ["--prices", "--history", "--output", "--source-commit"],
             "haa-cash-screen": ["--prices", "--history", "--output", "--source-commit"],
+            "saved-account-compare": ["--accounts", "--output", "--source-commit"],
+            "saved-catalogue-common-compare": ["--accounts", "--output", "--source-commit"],
+            "saved-technical-indicator-compare": ["--accounts", "--output", "--source-commit"],
+            "qqq-reversal-screen": ["--prices", "--history", "--control-history", "--macro", "--output", "--source-commit"],
+            "qqq-reversal-cash-correction": ["--prices", "--history", "--cash", "--accounts", "--output", "--source-commit"],
+            "single-indicator-screen": ["--history", "--macro", "--output", "--source-commit"],
+            "single-indicator-policy8": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-rsi-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-absolute-momentum": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-capacity-tightness": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
+            "fixed-world-grain-balance": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
+            "fixed-housing-revision": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
+            "fixed-g17-screen": ["--history", "--observations", "--accounts", "--output", "--source-commit"],
+            "fixed-monthly-momentum": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-sar-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-dmi-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "fixed-cmf20-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-mfi14-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-force13-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-mama-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-mama-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-frama-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-frama-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-fisher-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-fisher-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-laguerre-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-laguerre-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-ulcer-energy-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-ulcer-energy-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-latent2-gaussian-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-latent2-gaussian-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit"],
+            "fixed-vortex14-source-export": ["--prices", "--output", "--source-commit"],
+            "fixed-vortex14-screen": ["--prices", "--history", "--accounts", "--output", "--source-commit", "--source-signals"],
+            "fixed-rp63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "mdp250-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "cwmr-stdev-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "anticor1-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "ons-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "eg-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "mvu-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "rmr-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "corn-core-source-export": ["--primitives", "--output", "--source-commit", "--source-admission"],
+            "corn-core-screen": ["--primitives", "--accounts", "--output", "--source-commit", "--qualified-source", "--source-manifest"],
+            "cover-q20-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "gmv63-core-screen": ["--primitives", "--accounts", "--output", "--source-commit"],
+            "close-indicator-screen": ["--history", "--accounts", "--output", "--source-commit"],
+            "bollinger-parameter-screen": ["--history", "--accounts", "--output", "--source-commit"],
             "dix-demand-screen": ["--prices", "--history", "--output", "--source-commit"],
             "ibs-open-screen": ["--spy", "--history", "--output", "--source-commit"],
             "fomc-cycle-screen": ["--spy", "--history", "--calendar", "--output", "--source-commit"],
@@ -61,6 +113,165 @@ struct ResearchCLI {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         switch args.first {
+        case "qual-product-compare":
+            try SavedQUALProductComparison.run(comparatorsPath: argument("--comparators"),
+                qualDirectory: argument("--qual-directory"), bindingsPath: argument("--bindings"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "product-benchmark-scope":
+            try ProductBenchmarkScopeReplay.run(mode: argument("--mode"), historyPath: argument("--history"),
+                macroPath: argument("--macro"), outputPath: argument("--output"),
+                preparedPath: argument("--prepared"), sourceCommit: argument("--source-commit"))
+        case "recovered-term-structure":
+            try RecoveredTermStructureScreen.run(mode:argument("--mode"),curvePath:argument("--curve"),
+                historyPath:argument("--history"),preparedPath:argument("--prepared"),
+                outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "single-indicator-policy8":
+            try SingleIndicatorPolicyScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-rsi-screen":
+            try FixedRSIScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-absolute-momentum":
+            try AbsoluteMomentumScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-capacity-tightness":
+            try CapacityTightnessScreen.run(historyPath:argument("--history"),observationsPath:argument("--observations"),
+                accountsPath:argument("--accounts"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "fixed-world-grain-balance":
+            try WorldGrainBalanceScreen.run(historyPath:argument("--history"),observationsPath:argument("--observations"),
+                accountsPath:argument("--accounts"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "fixed-housing-revision":
+            try HousingRevisionScreen.run(historyPath:argument("--history"),observationsPath:argument("--observations"),
+                accountsPath:argument("--accounts"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "fixed-g17-screen":
+            try IndustrialProductionScreen.run(historyPath:argument("--history"),observationsPath:argument("--observations"),
+                accountsPath:argument("--accounts"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
+        case "fixed-monthly-momentum":
+            try MonthlyMomentumScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-sar-screen":
+            try ParabolicSARScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-dmi-screen":
+            try WilderDMIScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-cmf20-screen":
+            try ChaikinMoneyFlowScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-mfi14-screen":
+            try MoneyFlowIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-force13-screen":
+            try ForceIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-mama-source-export":
+            try MAMAAdaptiveScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-mama-screen":
+            try MAMAAdaptiveScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-frama-source-export":
+            try FRAMAAdaptiveScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-frama-screen":
+            try FRAMAAdaptiveScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-fisher-source-export":
+            try FisherTransformScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-fisher-screen":
+            try FisherTransformScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-laguerre-source-export":
+            try LaguerreRSIScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-laguerre-screen":
+            try LaguerreRSIScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-ulcer-energy-source-export":
+            try UlcerEnergyScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-ulcer-energy-screen":
+            try UlcerEnergyScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-latent2-gaussian-source-export":
+            try LatentGaussianScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-latent2-gaussian-screen":
+            try LatentGaussianScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-vortex14-source-export":
+            try VortexDirectionScreen.exportSource(pricesPath: argument("--prices"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"))
+        case "fixed-vortex14-screen":
+            try VortexDirectionScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"),
+                sourceSignalsPath: argument("--source-signals"))
+        case "cwmr-stdev-core-screen":
+            try ConfidenceWeightedMeanReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "ons-core-screen":
+            try OnlineNewtonCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "eg-core-screen":
+            try ExponentiatedGradientCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "mvu-core-screen":
+            try MeanVarianceUtilityCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "corn-core-source-export":
+            try CORNCoreScreen.exportSource(primitivesPath: argument("--primitives"), outputPath: argument("--output"),
+                sourceCommit: argument("--source-commit"), sourceAdmissionPath: argument("--source-admission"))
+        case "corn-core-screen":
+            try CORNCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"),
+                qualifiedSourcePath: argument("--qualified-source"), sourceManifestPath: argument("--source-manifest"))
+        case "rmr-core-screen":
+            try RobustMedianReversionCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "anticor1-core-screen":
+            try AnticorrelationCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "mdp250-core-screen":
+            try MaximumDiversificationCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "cover-q20-core-screen":
+            try CoverUniversalCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "gmv63-core-screen":
+            try MinimumVarianceCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-rp63-core-screen":
+            try RiskParityCoreScreen.run(primitivesPath: argument("--primitives"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "fixed-nvi255-additive-screen":
+            try NegativeVolumeIndexScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                accountsPath: argument("--accounts"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "close-indicator-screen":
+            try CloseIndicatorScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "bollinger-parameter-screen":
+            try BollingerParameterScreen.run(historyPath: argument("--history"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "qqq-reversal-cash-correction":
+            try QQQReversalCashCorrection.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                cashPath: argument("--cash"), accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "saved-technical-indicator-compare":
+            try SavedTechnicalIndicatorComparison.run(accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "saved-catalogue-common-compare":
+            try SavedCatalogueCommonComparison.run(accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "saved-account-compare":
+            try SavedAccountComparison.run(accountsPath: argument("--accounts"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "qqq-reversal-screen":
+            try QQQReversalScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"), controlHistoryPath: argument("--control-history"), macroPath: argument("--macro"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "single-indicator-screen":
+            try SingleIndicatorScreen.run(historyPath: argument("--history"), macroPath: argument("--macro"),
+                outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
         case "haa-cash-screen":
             try HAACashScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
@@ -73,6 +284,12 @@ struct ResearchCLI {
         case "cross-market-stress-screen":
             try CrossMarketStressScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "cross-market-cash-screen":
+            try CrossMarketCashScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
+                cashPath: argument("--cash"), outputPath: argument("--output"), sourceCommit: argument("--source-commit"))
+        case "stress-barbell-etf-comparison":
+            try StressBarbellETFComparison.run(pricesPath:argument("--prices"),historyPath:argument("--history"),
+                cashPath:argument("--cash"),outputPath:argument("--output"),sourceCommit:argument("--source-commit"))
         case "spf-growth-revision-screen":
             try SPFGrowthRevisionScreen.run(pricesPath: argument("--prices"), historyPath: argument("--history"),
                 outputPath: argument("--output"), sourceCommit: argument("--source-commit"))

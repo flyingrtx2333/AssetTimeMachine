@@ -1,0 +1,64 @@
+{
+  "study_id": "option-term-structure-2026-09-06",
+  "closed_at": "2026-09-06T12:42:04+08:00",
+  "research_stage": "DATA_SOURCE_AUDIT",
+  "status": "DATA_BLOCKED",
+  "historical_pnl_computed": false,
+  "economic_candidates_prepared": 2,
+  "historical_executions": 0,
+  "planned_executions": 12,
+  "candidates": [
+    {
+      "key": "DISCOVERY:OPTION-TERM-DEFENSIVE-GOLD-001",
+      "name": "期限倒挂金纳防守001",
+      "status": "DATA_BLOCKED",
+      "validation": "NOT_EVALUATED_DATA_BLOCKED",
+      "objective": "NOT_EVALUATED",
+      "comparison": "NOT_EVALUATED",
+      "cagr": null,
+      "mdd": null,
+      "sharpe": null
+    },
+    {
+      "key": "DISCOVERY:OPTION-TERM-PANIC-PREMIUM-001",
+      "name": "期限倒挂恐慌承接001",
+      "status": "DATA_BLOCKED",
+      "validation": "NOT_EVALUATED_DATA_BLOCKED",
+      "objective": "NOT_EVALUATED",
+      "comparison": "NOT_EVALUATED",
+      "cagr": null,
+      "mdd": null,
+      "sharpe": null
+    }
+  ],
+  "reason": "Modern VIX3M starts 2009-09-18; frozen 2008 start unavailable. Legacy official URLs unavailable. FRED prefix transport timed out twice, overlap not verified. No shortened window or silent source substitution.",
+  "synthetic_checks": {
+    "engine_scenarios": 3,
+    "historical_pnl_computed": false,
+    "signal_checks": 18,
+    "status": "PASS_SYNTHETIC_ONLY"
+  },
+  "independent_review": "PENDING",
+  "evidence_sha256": {
+    "acquire_prefix.py": "3340373e32ed3aa83b9968729c7dcf8f9bbadf2bc4243efe98f760a7b9987ebe",
+    "LEGACY_ARCHIVE_AUDIT.json": "1efaa2a48cb68c7f6a4b99fe07eac4bc1d0598379ca3d36e9e146a1e771ce7d7",
+    "audit_archive.py": "59fb0aabd0a6df396b20e255402f2c066d68e019e574dc41dc6443989e4ce347",
+    "run.py": "9a7901ddd61ec4bda0043d2674c00af2e39793b2194540f08d21d629bceb5cd0",
+    "prepare_tools.py": "b70c84cb2bd07a1dfc833e49330ed50b090e3b606a71659b1418f70e0b26848d",
+    "FRED_TRANSPORT_RETRY.json": "5973e2eb3d1ce4f1bdcecb70b59235edaa0da6f1558f5bd291c08e39da21f6dc",
+    "DATA_SCOPE_ADDENDUM.md": "b95b5679435e4c1234e951eae8711b6376b89438880150d687648faf2c67c26e",
+    "HARNESS_ORIGIN.json": "f94efa9acf002e410337cfba191dff5ddc20633b2e9b536a62cf6d78a87b56ba",
+    "fetch_fred_transport.py": "6a2d39ee9bab93916b7353327f2664079e17d1f4763fa0a7f94d5bf177deb4db",
+    "CurveSignals.swift": "44fc001809cc81db2566c8bdd708726617db93830985887089d0fbd01db91390",
+    "CurveScreen.swift": "fe232987b1188ff94567232a700232be5a60c58fe66c205f91f3061d6996df63",
+    "BRIEF.md": "a9379f8ff34d39eb99aceec4bbd00d18f34f8eb3b7edb80182036d5d36982a8f",
+    "execution/BUILD_METADATA.json": "23df47eb87b480c2174e781acb298887282698f690c4eaa569a711df23d4c272",
+    "execution/SYNTHETIC_PREFLIGHT.json": "166778e86aeae94212dfd9ae3817a1736a35d7c42815cd7bfabec4707ce730c8",
+    "data/VIX3M.csv": "0c4c36992e253bef5cb4853a25a439ec44e1ea06daf48d1e3acc213fe0d39db4",
+    "data/VIX.csv.meta.json": "7b59e4db25f4467b03a6d05f19a4c5c6a7f5d890ab332aa09aa58a3d668fce7c",
+    "data/VIX3M.csv.meta.json": "30bed8d730030affd4e8f9b940dc7dfea52b13160f0e460ad433c8ce82c63761",
+    "data/legacy-archive-2.raw": "7e45c05fac001e9d5043a4e71fc9ffb0ff8ea95dc7296a629f0cd51574cba413",
+    "data/VIX.csv": "9258a25814fb936e7df32a96bcf3914fdbf342afb33cdf8759cdfbc8064ddb72",
+    "data/legacy-archive-1.raw": "7e45c05fac001e9d5043a4e71fc9ffb0ff8ea95dc7296a629f0cd51574cba413"
+  }
+}

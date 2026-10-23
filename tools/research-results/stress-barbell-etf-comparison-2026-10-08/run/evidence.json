@@ -1,0 +1,24 @@
+{
+  "binary_sha256" : "6a33e16560198f61f3a1740bb04137536f528465e201cfa5e96e566419237798",
+  "cash" : "CashYieldCNY",
+  "cash_sha256" : "f0ed5704bd4a67c1456cc4c168f91d49fcb7bfe782c50b5b9d0114e719d33d6f",
+  "completed_at" : "2026-10-08T11:05:54Z",
+  "evidence_class" : "POSTHOC_ETF_BENCHMARK_ADAPTATION_NOT_PRODUCT_PARITY",
+  "execution_version" : "settlement-v4\/dividend-cash-v1\/next-open\/symbol-order-v1",
+  "fee_percent" : 0.025000000000000001,
+  "formal_validation" : false,
+  "funded_benchmark_accounts" : 2,
+  "history_sha256" : "f184497f905fcbae3c96c139d782dd1ef3c05f5e742983288960bcf589c55daa",
+  "input_sha256" : "79d0a154886faa7b6b3c5eee9ee7060e3dfb9eba027f18b184acbf0598ba4756",
+  "limitations" : [
+    "GLD\/QQQ ETF\/CNY signal and next-open benchmark adaptation; not original App source\/clock parity.",
+    "Complete existing six-product total-return frontier, final-vintage PIT, untouched OOS and formal G0-G6 not certified.",
+    "QQQ cash gross\/uniform30% diagnostics only; no capital-gain\/FX tax estimates."
+  ],
+  "new_economic_candidates" : 0,
+  "parameter_searches" : 0,
+  "parameters" : "{\"goldNeutralScale\":0.65,\"goldStrongScale\":1,\"goldWeakScale\":0.15,\"goldWeight\":0.55,\"movingAverageSessions\":200,\"nasdaqNeutralScale\":0.6,\"nasdaqStrongScale\":1,\"nasdaqWeakScale\":0.1,\"nasdaqWeight\":0.45,\"rebalanceBand\":0.1,\"rebalanceSessions\":63,\"strongMomentumSessions\":126,\"warmupSessions\":300,\"weakMomentumSessions\":252}",
+  "result_sha256" : "619c9c6ef8d2a2f01b270beb16bfa3390f4ec4e547539bd4edd7ee6a8dc1dc19",
+  "slippage_percent" : 0,
+  "source_commit" : "045eeb55c891b12bc7b70353dcf8a4487bd087b1"
+}

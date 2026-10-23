@@ -1,0 +1,81 @@
+{
+  "audited_at": "2026-10-08T13:23:20.977323+00:00",
+  "status": "CLASSIFIER_IMPLEMENTED_REAL_DATA_IDENTITY_CLOCK_ROLL_AND_MISSINGNESS_CONTRACT_BLOCKED",
+  "current_production_base_catalog_count": 38,
+  "catalog_raw_sha256": "dfa1bb4acaeda9ad8784c7e8cfdcb064407e18a45ae59aa5876cc488665a7f77",
+  "universe_selection_verified": {
+    "source_commit": "ad1b13da2f7ea02ee24ae6097d8451a634e4ee97",
+    "default_primary": [
+      "SPX",
+      "NDX",
+      "SX5E",
+      "ES"
+    ],
+    "default_network": "all supplied columns",
+    "fallback_if_primary_set_incomplete": "all supplied columns; reject this implicit model change for any proposed replication"
+  },
+  "source_mapping": [
+    {
+      "role": "SPX",
+      "paper_public_ticker": "^GSPC",
+      "base_catalog_alias": "sp500",
+      "alias_listed": true,
+      "identity_clock_not_certified": true
+    },
+    {
+      "role": "NDX",
+      "paper_public_ticker": "^NDX",
+      "base_catalog_alias": null,
+      "local_nasdaq_composite_yahoo_mapping": "^IXIC",
+      "substitution_allowed": false
+    },
+    {
+      "role": "SX5E",
+      "paper_public_ticker": "^STOXX50E",
+      "base_catalog_alias": null
+    },
+    {
+      "role": "ES",
+      "paper_public_ticker": "ES=F",
+      "base_catalog_alias": null,
+      "continuous_roll_and_settlement_vs_close_unqualified": true
+    },
+    {
+      "role": "provider_config_other_columns",
+      "columns": [
+        "VIX",
+        "XLK",
+        "XLF",
+        "XLV",
+        "XLE"
+      ],
+      "base_catalog_aliases_not_established": true
+    }
+  ],
+  "qualification_limits": [
+    "This38-item base-history catalog is not proof that no other ETF endpoint or authorized source exists.",
+    "Local source alias is not live upstream identity certification; Eastmoney local identifier100.NDX remains ambiguous.",
+    "Day-only prices/manifest acquisition time are not each historical bar publication time.",
+    "Data adapter bounded forward fill5 is followed by estimator unbounded forward fill, so source option alone does not enforce a5-observation freshness bound.",
+    "CSV drops timezone/time detail; actual UTC availability mapping and exchange calendars need independent source proof.",
+    "Default software network all columns differs from a sector-only network unless explicitly requested; do not silently choose one after returns."
+  ],
+  "required_before_market_feature_estimation": [
+    "exact primary and network columns frozen",
+    "qualified actual source identity and covered histories",
+    "ES roll construction and historical convention",
+    "same-as-of quote availability and holiday/missing/stale handling",
+    "unaltered snapshot provenance and adjustment/revision policy"
+  ],
+  "source_files_sha256": {
+    "backend/services/money_service.py": "cc15c1a1541f369cb3b31cb70bf76c064382794e42235e498e687a50e932f383",
+    "backend/schemas/public_market.py": "04d40b356e0b8c635c5aee90df58ccfc4868a8a84a61b1a1c5c49af43b5a9628",
+    "research/asset-time-machine/workspace/studies/marketmind-causal-classifier-swift-2026-10-08/source-readback/cli.py": "1f0e6923fcffce448f14248eaa457e9892d54982d4b61a2a2cd20dd6279f3ba1",
+    "research/asset-time-machine/workspace/studies/marketmind-causal-classifier-swift-2026-10-08/source-readback/data.py": "f72ee221e3326dc66977174cde2386c58c58216bf91d62e835f5b6d762aa8f9a",
+    "research/asset-time-machine/workspace/studies/marketmind-causal-classifier-swift-2026-10-08/source-readback/pipeline.py": "4a3676ccdb16057816c872a96767c6f3e5cf69b37a178de09c80dc47f549cdcb"
+  },
+  "full_history_requests": 0,
+  "new_market_features": 0,
+  "funded_runs": 0,
+  "objective_complete": false
+}

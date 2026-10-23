@@ -1,0 +1,54 @@
+{
+  "fetchedAt": "2026-10-21T00:19:14.115456+00:00",
+  "sha256": "16f088eb334602ffe3f127f07d8c2b365529e11d401fbd3dc952fb58eab1ce8f",
+  "series": {
+    "gold_cny": {
+      "lastDate": "2026-10-20",
+      "rows": 6470
+    },
+    "nasdaq_composite": {
+      "lastDate": "2026-10-19",
+      "rows": 6741
+    },
+    "sp500": {
+      "lastDate": "2026-10-19",
+      "rows": 6752
+    },
+    "dow_jones": {
+      "lastDate": "2026-10-19",
+      "rows": 6742
+    },
+    "hang_seng": {
+      "lastDate": "2026-10-20",
+      "rows": 6604
+    },
+    "nikkei225": {
+      "lastDate": "2026-10-13",
+      "rows": 6563
+    },
+    "oil_wti_cny": {
+      "lastDate": "2026-10-20",
+      "rows": 6900
+    },
+    "csi300": {
+      "lastDate": "2026-10-20",
+      "rows": 6012
+    },
+    "shanghai_composite": {
+      "lastDate": "2026-10-20",
+      "rows": 6491
+    },
+    "shenzhen_component": {
+      "lastDate": "2026-10-20",
+      "rows": 6491
+    },
+    "chinext": {
+      "lastDate": "2026-10-20",
+      "rows": 3977
+    },
+    "usd_per_cny": {
+      "lastDate": "2026-10-20",
+      "rows": 6851
+    }
+  }
+}

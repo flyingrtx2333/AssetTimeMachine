@@ -1,0 +1,267 @@
+{
+  "scope": "Classifier implementation and source-profile audit only; no actual market feature or funded candidate",
+  "files": [
+    {
+      "path": "BINARY_RECEIPT.json",
+      "bytes": 242,
+      "sha256": "38890a572a208f33c2d90f015d3e2186483ee468f9c6d82e87a0980df0576445",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/BINARY_RECEIPT.json",
+      "mirror_sha256": "38890a572a208f33c2d90f015d3e2186483ee468f9c6d82e87a0980df0576445"
+    },
+    {
+      "path": "CATALOG_REQUEST_RECEIPT.json",
+      "bytes": 501,
+      "sha256": "0716ebbf00392265cda220766e36e671ffbbdb8a453aa3a7035beac822c4a763",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/CATALOG_REQUEST_RECEIPT.json",
+      "mirror_sha256": "0716ebbf00392265cda220766e36e671ffbbdb8a453aa3a7035beac822c4a763"
+    },
+    {
+      "path": "DECLARATION.json",
+      "bytes": 1395,
+      "sha256": "e7422081454e17b849f20d61a7a9ee6270574f15a4292bf71a05c643855c3237",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/DECLARATION.json",
+      "mirror_sha256": "e7422081454e17b849f20d61a7a9ee6270574f15a4292bf71a05c643855c3237"
+    },
+    {
+      "path": "FIXTURE.json",
+      "bytes": 1322909,
+      "sha256": "d4847318758c8a677147b5d3f7be7bc5f32c87689a51882fd9df8e5eef4ed910",
+      "mirror_transform": "lossless_gzip",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/FIXTURE.json.gz",
+      "mirror_sha256": "5de9532bdb343fb4ddd88315984a44517191a7c4914d31635ab42a3e008d7adb"
+    },
+    {
+      "path": "FIXTURE_RECEIPT.json",
+      "bytes": 530,
+      "sha256": "7cd14316e24a919addef44e1ed46df9712bac0de3cc4ac15592cdb1f7350802a",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/FIXTURE_RECEIPT.json",
+      "mirror_sha256": "7cd14316e24a919addef44e1ed46df9712bac0de3cc4ac15592cdb1f7350802a"
+    },
+    {
+      "path": "HANDOFF.md",
+      "bytes": 2198,
+      "sha256": "c0123e925e9625f0679a38211a23e7681e79713fba720e7d14ec106747880530",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/HANDOFF.md",
+      "mirror_sha256": "c0123e925e9625f0679a38211a23e7681e79713fba720e7d14ec106747880530"
+    },
+    {
+      "path": "LICENSE_COPY_RECEIPT.json",
+      "bytes": 361,
+      "sha256": "c2d5d9ab5f04818c855b436083ce0b1f6b7bc6bd3eb4ce2632b86c8c37aa43e2",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/LICENSE_COPY_RECEIPT.json",
+      "mirror_sha256": "c2d5d9ab5f04818c855b436083ce0b1f6b7bc6bd3eb4ce2632b86c8c37aa43e2"
+    },
+    {
+      "path": "MASTER_RECEIPT.json",
+      "bytes": 1119,
+      "sha256": "bed57fb510b43914a261d9ab3fb5fa4161339e33198b42da0e02822c89a897d0",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/MASTER_RECEIPT.json",
+      "mirror_sha256": "bed57fb510b43914a261d9ab3fb5fa4161339e33198b42da0e02822c89a897d0"
+    },
+    {
+      "path": "MASTER_ROWS.json",
+      "bytes": 1680,
+      "sha256": "561c6aaaab0661f54b7fa45402b75d140afb2e8c7d2f444af7c748c37834a394",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/MASTER_ROWS.json",
+      "mirror_sha256": "561c6aaaab0661f54b7fa45402b75d140afb2e8c7d2f444af7c748c37834a394"
+    },
+    {
+      "path": "PRODUCTION_CATALOG.response.gz",
+      "bytes": 1264,
+      "sha256": "effd874f116d4671ff37d40c26b49511aa9ae002139330ca89942e274a6c8b2b",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/PRODUCTION_CATALOG.response.gz",
+      "mirror_sha256": "effd874f116d4671ff37d40c26b49511aa9ae002139330ca89942e274a6c8b2b"
+    },
+    {
+      "path": "README.md",
+      "bytes": 920,
+      "sha256": "a568466171310610666a4e7de85ce8279d807fe611412ca3653357bda66c319a",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/README.md",
+      "mirror_sha256": "a568466171310610666a4e7de85ce8279d807fe611412ca3653357bda66c319a"
+    },
+    {
+      "path": "REPORT.md",
+      "bytes": 3781,
+      "sha256": "c5cf89c81a1bf7c734554144c0ce551579519d90c06f11c34d15bfca29546e55",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/REPORT.md",
+      "mirror_sha256": "c5cf89c81a1bf7c734554144c0ce551579519d90c06f11c34d15bfca29546e55"
+    },
+    {
+      "path": "RUN_RECEIPT.json",
+      "bytes": 1501,
+      "sha256": "b4abd67289f7ac7ec6894e303e32a40ca1d9c5666d85478027b92707424469b0",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/RUN_RECEIPT.json",
+      "mirror_sha256": "b4abd67289f7ac7ec6894e303e32a40ca1d9c5666d85478027b92707424469b0"
+    },
+    {
+      "path": "SAVED_AUDIT.json",
+      "bytes": 640,
+      "sha256": "13bf6f32f01e74a56904f1b21bf31dbcc0a95d9f89538150c1d30ba0dd9cdf1a",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/SAVED_AUDIT.json",
+      "mirror_sha256": "13bf6f32f01e74a56904f1b21bf31dbcc0a95d9f89538150c1d30ba0dd9cdf1a"
+    },
+    {
+      "path": "SOURCE_PROFILE.json",
+      "bytes": 3642,
+      "sha256": "9e434355f4f730e89344706e2723e28961ae9a903bf0f6136c45a7b117a30a15",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/SOURCE_PROFILE.json",
+      "mirror_sha256": "9e434355f4f730e89344706e2723e28961ae9a903bf0f6136c45a7b117a30a15"
+    },
+    {
+      "path": "SOURCE_READBACK_RECEIPT.json",
+      "bytes": 954,
+      "sha256": "db8d703a000d242699bdb9c674a6e81422352f04708b9e16605f194d852cde8e",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/SOURCE_READBACK_RECEIPT.json",
+      "mirror_sha256": "db8d703a000d242699bdb9c674a6e81422352f04708b9e16605f194d852cde8e"
+    },
+    {
+      "path": "SUMMARY.json",
+      "bytes": 783,
+      "sha256": "7a3fe4d74c7b9eb0c9eee8a3f5ad036d7ca14aa63a776b9ca8c982074db339cb",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/SUMMARY.json",
+      "mirror_sha256": "7a3fe4d74c7b9eb0c9eee8a3f5ad036d7ca14aa63a776b9ca8c982074db339cb"
+    },
+    {
+      "path": "SWIFT_STATES.json",
+      "bytes": 1297918,
+      "sha256": "73399295598911cee8061f7bc4e29b310d218cdbc464cc74548e3c3ec462e6d5",
+      "mirror_transform": "lossless_gzip",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/SWIFT_STATES.json.gz",
+      "mirror_sha256": "566ef7ec105a7647b59cebcd7ac28c0d89088b0e56408ee69e7af2d8bf65d517"
+    },
+    {
+      "path": "build.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/build.stderr.txt",
+      "mirror_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build.stdout.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/build.stdout.txt",
+      "mirror_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "classifier.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/classifier.stderr.txt",
+      "mirror_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "classifier.stdout.txt",
+      "bytes": 94,
+      "sha256": "9190f43e1a0d7e7d4e6ce5c823c910731dd2ac279f1a941d299f304be4e9248b",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/classifier.stdout.txt",
+      "mirror_sha256": "9190f43e1a0d7e7d4e6ce5c823c910731dd2ac279f1a941d299f304be4e9248b"
+    },
+    {
+      "path": "master-before/notion-target.json.gz",
+      "bytes": 2725,
+      "sha256": "1d941efec7738f2537c419719f2680d69d3b4cef76656d97d554fa3e24624810"
+    },
+    {
+      "path": "master-before/strategy-master.csv.gz",
+      "bytes": 74459,
+      "sha256": "20ce52f65485bd78af3871bb49b1674ed272752a910f09117fd65223a1c6c04c"
+    },
+    {
+      "path": "master-before/strategy-master.json.gz",
+      "bytes": 317936,
+      "sha256": "eb4a80377f21962a8dc16d774574e03dab8a8b5597e0499273edec2fa76286aa"
+    },
+    {
+      "path": "master-before/validation-report.json.gz",
+      "bytes": 2192,
+      "sha256": "dc09674d96a8cd8e1939fc8c9afd13d0649517150744f7e6d6794bc81fd564e3"
+    },
+    {
+      "path": "prepare_fixture.py",
+      "bytes": 3387,
+      "sha256": "f72163f292d4414800a4a4123c289db4aebb7543b09f2cd693a7dd7ce975e39b",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/prepare_fixture.py",
+      "mirror_sha256": "f72163f292d4414800a4a4123c289db4aebb7543b09f2cd693a7dd7ce975e39b"
+    },
+    {
+      "path": "record_results.py",
+      "bytes": 5034,
+      "sha256": "d113424fbbdf7159ac90e39b6f01482816a9f7d1dfc1b1f2b53e9a8acc31b0b6",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/record_results.py",
+      "mirror_sha256": "d113424fbbdf7159ac90e39b6f01482816a9f7d1dfc1b1f2b53e9a8acc31b0b6"
+    },
+    {
+      "path": "source-readback/cli.py",
+      "bytes": 3953,
+      "sha256": "1f0e6923fcffce448f14248eaa457e9892d54982d4b61a2a2cd20dd6279f3ba1",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/source-readback/cli.py",
+      "mirror_sha256": "1f0e6923fcffce448f14248eaa457e9892d54982d4b61a2a2cd20dd6279f3ba1"
+    },
+    {
+      "path": "source-readback/data.py",
+      "bytes": 5585,
+      "sha256": "f72ee221e3326dc66977174cde2386c58c58216bf91d62e835f5b6d762aa8f9a",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/source-readback/data.py",
+      "mirror_sha256": "f72ee221e3326dc66977174cde2386c58c58216bf91d62e835f5b6d762aa8f9a"
+    },
+    {
+      "path": "source-readback/pipeline.py",
+      "bytes": 2506,
+      "sha256": "4a3676ccdb16057816c872a96767c6f3e5cf69b37a178de09c80dc47f549cdcb",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/source-readback/pipeline.py",
+      "mirror_sha256": "4a3676ccdb16057816c872a96767c6f3e5cf69b37a178de09c80dc47f549cdcb"
+    },
+    {
+      "path": "verify_saved.py",
+      "bytes": 2593,
+      "sha256": "446876d356c66b0ebad47fedd8c5e8b5b283738939c4ab4fd3daf0e9cf6a69fe",
+      "mirror_transform": "byte_copy",
+      "mirror_path": "tools/research-results/marketmind-causal-classifier-swift-2026-10-08/verify_saved.py",
+      "mirror_sha256": "446876d356c66b0ebad47fedd8c5e8b5b283738939c4ab4fd3daf0e9cf6a69fe"
+    }
+  ],
+  "app_source_bindings": [
+    {
+      "path": "tools/marketmind_causal_classifier.swift",
+      "source_commit": "2b5b5290efba462fd31ff2ffa67e8f958af97675",
+      "sha256": "5134e1a1d32fa886b4862011b07af40b0ec561d73284e11392955410841619f9"
+    },
+    {
+      "path": "tools/marketmind_causal_classifier_audit.swift",
+      "source_commit": "2b5b5290efba462fd31ff2ffa67e8f958af97675",
+      "sha256": "0df3004393e09d856aba171437f4b003d19d39dd92d4770f2a5b2e7f8899ad3d"
+    },
+    {
+      "path": "tools/marketmind_source_LICENSE.txt",
+      "source_commit": "2b5b5290efba462fd31ff2ffa67e8f958af97675",
+      "sha256": "657270efa3b644207e7696cee8660160741d93ae1d2ee56adebda7109898dab9"
+    }
+  ],
+  "master_before_scope": "workspace_only"
+}

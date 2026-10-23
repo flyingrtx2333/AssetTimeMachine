@@ -1,0 +1,1 @@
+Pre-run existing-family source-recovery diagnostic. No capital returns exposed yet. Workspace launcher/auditor copies are archival; execute in verified sibling workspace. Independent review and formal validation pending.

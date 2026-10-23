@@ -1,0 +1,9 @@
+{
+  "recorded_at": "2026-10-08T11:20:05.950846+00:00",
+  "stage": "SIGNALS_ONLY_NO_CAPITAL_PATH",
+  "first_prepare_failure": "Generic public dataset loader required csi300/shanghai/sp500 absent by original three-series contract.",
+  "correction": "Decode/validate original native response directly with shared public series/instrument/frame APIs, without adding data or changing signals/calendar/costs.",
+  "first_failed_attempt_preserved": true,
+  "historical_pnl_computed": false,
+  "auditor_attempt": "No frame existed after failed preparation; auditor returned missing-input rather than a result."
+}

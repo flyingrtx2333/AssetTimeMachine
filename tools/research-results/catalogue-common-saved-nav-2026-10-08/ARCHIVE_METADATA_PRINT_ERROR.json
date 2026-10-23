@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-08T12:42:30.016858+00:00",
+  "initial_exit": 1,
+  "error": "TypeError: PosixPath object is not subscriptable",
+  "stage": "Final console summary after archive/manifest/mirror completed; loop variable target shadowed master target metadata.",
+  "account_or_metric_comparison_rerun": false,
+  "remedy": "Read authoritative archived files and master metadata; verify existing archives without recomputing or overwriting accounts."
+}

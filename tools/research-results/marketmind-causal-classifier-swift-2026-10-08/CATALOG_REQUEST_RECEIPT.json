@@ -1,0 +1,13 @@
+{
+  "requested_at": "2026-10-08T13:20:03.404769+00:00",
+  "completed_at": "2026-10-08T13:20:03.462128+00:00",
+  "url": "https://api.flyingrtx.com/api/v1/money/public/history-catalog",
+  "final_url": "https://api.flyingrtx.com/api/v1/money/public/history-catalog",
+  "http_status": 200,
+  "raw_sha256": "dfa1bb4acaeda9ad8784c7e8cfdcb064407e18a45ae59aa5876cc488665a7f77",
+  "bytes": 6941,
+  "requests": 1,
+  "full_history_requests": 0,
+  "refresh_requested": false,
+  "market_returns_computed": false
+}

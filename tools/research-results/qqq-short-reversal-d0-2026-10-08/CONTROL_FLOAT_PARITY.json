@@ -1,0 +1,36 @@
+{
+  "status": "PASS_NUMERICAL_PREFIX_PARITY",
+  "reason": "Swift dictionary summation order differs at floating precision, including tiny cash residual versus integer zero. Exact dates, keys and nonnumeric fields retained. Initial bytewise audit stopped; corrected numeric tolerance 1e-12 relative plus 1e-8 CNY absolute (target abs1e-12). Saved outputs and rules untouched.",
+  "controls": {
+    "gold-nasdaq-dual-trend-barbell": {
+      "maximum_normalized_financial_difference": 0.0,
+      "maximum_target_weight_difference": 0.0,
+      "matched_states": 5982
+    },
+    "nfci-dual-core-v11": {
+      "maximum_normalized_financial_difference": 7.003981646607501e-11,
+      "maximum_target_weight_difference": 1.1102230246251565e-16,
+      "matched_states": 5735
+    },
+    "core-gold-satellite-equity-curve-state-gate-momentum": {
+      "maximum_normalized_financial_difference": 0.0,
+      "maximum_target_weight_difference": 0.0,
+      "matched_states": 5756
+    },
+    "core-gold-satellite-risk-budget-state-gate-momentum": {
+      "maximum_normalized_financial_difference": 0.0,
+      "maximum_target_weight_difference": 0.0,
+      "matched_states": 5756
+    },
+    "core-gold-satellite-profit-lock-momentum": {
+      "maximum_normalized_financial_difference": 0.0,
+      "maximum_target_weight_difference": 0.0,
+      "matched_states": 5756
+    },
+    "risk-contribution-cash-confidence-low-noise": {
+      "maximum_normalized_financial_difference": 3.9756401272366416e-15,
+      "maximum_target_weight_difference": 1.1102230246251565e-16,
+      "matched_states": 5735
+    }
+  }
+}

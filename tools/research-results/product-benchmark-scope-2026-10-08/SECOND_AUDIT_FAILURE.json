@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-08T11:53:26.816051+00:00",
+  "status": "STRICT_BYTE_PARITY_ASSERTION_FAILED",
+  "script_sha256": "da87aced3d6d0fd0567e6816c10d5c3e262ae864bf1de33851cc2d55acd24d83",
+  "error": "a[targetWeights] == b[targetWeights] false",
+  "readback": "NFCI871 rows maxdelta1.1102230246251565e-16; lowNoise676 rows maxdelta4.440892098500626e-16. Full metric deltas <=5.33e-15; NFCI adds one7.405484478349361e-12CNY buy. Raw-byte identity must remain false.",
+  "revision": "Report numeric/common-NAV parity separately, fixed1e-12 floating tolerance, preserve count/delta/dust and exact identity false. No economy/account or alpha changed.",
+  "account_replay_changed": false,
+  "funded_rerun": false
+}

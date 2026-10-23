@@ -1,0 +1,21 @@
+{
+  "source": {
+    "app_checkout": "/Users/xiangjunsheng/AssetTimeMachine",
+    "remote": "https://github.com/flyingrtx2333/AssetTimeMachine.git",
+    "branch": "codex/single-indicator-gold-nasdaq-20261008",
+    "head": "96a7cee557655a23746af3f82cde1ab38c4dd2bd"
+  },
+  "snapshots": [
+    {
+      "parent": "research/asset-time-machine/workspace/studies/single-indicator-gold-nasdaq-2026-10-08/history.json.gz",
+      "raw_sha256": "7b41a7802c79cb3c5088055ad766973d5be85ae09e34a17582cc7064866ef846",
+      "bytes": 5198669
+    },
+    {
+      "parent": "research/asset-time-machine/workspace/studies/single-indicator-gold-nasdaq-2026-10-08/nfci.json.gz",
+      "raw_sha256": "d6a5dd149f7d799a19b5164e1d72ae1b9ac02bb92c1e2557886cbd425690144b",
+      "bytes": 241195
+    }
+  ],
+  "online_request_performed": false
+}

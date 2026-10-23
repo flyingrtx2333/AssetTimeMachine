@@ -1,6 +1,25 @@
 import Foundation
 
 nonisolated public enum GoldNasdaqBarbellStrategy {
+    /// Shared frozen signal formula; execution/instrument adaptation is separate.
+    public static func frozenTargetWeights(goldPrices gold: [Double], nasdaqPrices nasdaq: [Double], signalIndex: Int) -> [String: Double] {
+        let parameters = GoldNasdaqBarbellParameters.frozenV1
+        guard gold.indices.contains(signalIndex), nasdaq.indices.contains(signalIndex),
+              let goldMA200 = PortfolioIndicators.movingAverageAt(values: gold, at: signalIndex, period: parameters.movingAverageSessions),
+              let nasdaqMA200 = PortfolioIndicators.movingAverageAt(values: nasdaq, at: signalIndex, period: parameters.movingAverageSessions),
+              let goldMomentum126 = TechnicalIndicators.priceMomentum(values: gold, at: signalIndex, lookback: parameters.strongMomentumSessions),
+              let nasdaqMomentum126 = TechnicalIndicators.priceMomentum(values: nasdaq, at: signalIndex, lookback: parameters.strongMomentumSessions),
+              let goldMomentum252 = TechnicalIndicators.priceMomentum(values: gold, at: signalIndex, lookback: parameters.weakMomentumSessions),
+              let nasdaqMomentum252 = TechnicalIndicators.priceMomentum(values: nasdaq, at: signalIndex, lookback: parameters.weakMomentumSessions) else { return [:] }
+        let goldStrong = gold[signalIndex] > goldMA200 && goldMomentum126 > 0
+        let nasdaqStrong = nasdaq[signalIndex] > nasdaqMA200 && nasdaqMomentum126 > 0
+        let goldWeak = gold[signalIndex] < goldMA200 && goldMomentum252 < 0
+        let nasdaqWeak = nasdaq[signalIndex] < nasdaqMA200 && nasdaqMomentum252 < 0
+        let goldScale = goldStrong ? parameters.goldStrongScale : (goldWeak ? parameters.goldWeakScale : parameters.goldNeutralScale)
+        let nasdaqScale = nasdaqStrong ? parameters.nasdaqStrongScale : (nasdaqWeak ? parameters.nasdaqWeakScale : parameters.nasdaqNeutralScale)
+        return ["gold_cny": parameters.goldWeight * goldScale, "nasdaq": parameters.nasdaqWeight * nasdaqScale]
+    }
+
     static func runGoldNasdaqDualTrendBarbellWithTrace(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)],
         initialCash: Double,
@@ -27,27 +46,8 @@ nonisolated public enum GoldNasdaqBarbellStrategy {
             targetWeights: { context, data in
                 let signalIndex = context.signalIndex
                 guard let gold = data.pricesBySymbol["gold_cny"],
-                      let nasdaq = data.pricesBySymbol["nasdaq"],
-                      gold.indices.contains(signalIndex),
-                      nasdaq.indices.contains(signalIndex),
-                      let goldMA200 = PortfolioIndicators.movingAverageAt(values: gold, at: signalIndex, period: parameters.movingAverageSessions),
-                      let nasdaqMA200 = PortfolioIndicators.movingAverageAt(values: nasdaq, at: signalIndex, period: parameters.movingAverageSessions),
-                      let goldMomentum126 = TechnicalIndicators.priceMomentum(values: gold, at: signalIndex, lookback: parameters.strongMomentumSessions),
-                      let nasdaqMomentum126 = TechnicalIndicators.priceMomentum(values: nasdaq, at: signalIndex, lookback: parameters.strongMomentumSessions),
-                      let goldMomentum252 = TechnicalIndicators.priceMomentum(values: gold, at: signalIndex, lookback: parameters.weakMomentumSessions),
-                      let nasdaqMomentum252 = TechnicalIndicators.priceMomentum(values: nasdaq, at: signalIndex, lookback: parameters.weakMomentumSessions) else { return [:] }
-
-                let goldStrong = gold[signalIndex] > goldMA200 && goldMomentum126 > 0
-                let nasdaqStrong = nasdaq[signalIndex] > nasdaqMA200 && nasdaqMomentum126 > 0
-                let goldWeak = gold[signalIndex] < goldMA200 && goldMomentum252 < 0
-                let nasdaqWeak = nasdaq[signalIndex] < nasdaqMA200 && nasdaqMomentum252 < 0
-
-                let goldScale = goldStrong ? parameters.goldStrongScale : (goldWeak ? parameters.goldWeakScale : parameters.goldNeutralScale)
-                let nasdaqScale = nasdaqStrong ? parameters.nasdaqStrongScale : (nasdaqWeak ? parameters.nasdaqWeakScale : parameters.nasdaqNeutralScale)
-                return [
-                    "gold_cny": parameters.goldWeight * goldScale,
-                    "nasdaq": parameters.nasdaqWeight * nasdaqScale
-                ]
+                      let nasdaq = data.pricesBySymbol["nasdaq"] else { return [:] }
+                return frozenTargetWeights(goldPrices: gold, nasdaqPrices: nasdaq, signalIndex: signalIndex)
             }
         )
     }

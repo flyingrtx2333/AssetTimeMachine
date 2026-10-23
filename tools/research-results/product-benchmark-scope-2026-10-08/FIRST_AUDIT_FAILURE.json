@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-08T11:52:44.365338+00:00",
+  "status": "AUDITOR_FEE_CONVENTION_ASSUMPTION_FAILED",
+  "script_sha256": "a4027040d63fc69cdb39b558eadcd709a48a04e00ca438f732fb5f2a89335f9c",
+  "error": "cashAmount 55008.182467141996 differs from units*price 54994.43042152521",
+  "cause": "Saved buy cashAmount is the fee-inclusive budget; buys invest cashAmount*(1-fee). Sells report fee-net proceeds. Readback must check the shared existing convention.",
+  "account_replay_changed": false,
+  "funded_rerun": false
+}

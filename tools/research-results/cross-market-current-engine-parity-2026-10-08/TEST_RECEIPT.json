@@ -1,0 +1,22 @@
+{
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "test",
+    "--filter",
+    "CrossMarketStressTests"
+  ],
+  "tool_session": 34764,
+  "exit_code": 0,
+  "core_tests": 2,
+  "failures": 0,
+  "completed_at_observed_local": "2026-10-08T17:53:56.097+08:00",
+  "tests": [
+    "testLinearQuantileAndWaitDecay",
+    "testPriorDayClockFuturePoisonPrefixAndScaling"
+  ],
+  "status": "PASS",
+  "worker_selected_tests": 0,
+  "log_note": "Exact test case names and completion observed in tool output. No full compiler stdout archive claimed."
+}

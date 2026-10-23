@@ -1,0 +1,45 @@
+{
+  "schema": "catalogue20-stress2-saved-nav-v1",
+  "files": [
+    {
+      "path": "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/catalogue-common-saved-nav-2026-10-08/inputs/catalogue19.json",
+      "sha256": "61590e4509ab62001908056cf321dcae50363f264c0c64c15691183ed7d67b9b",
+      "ids": [
+        "gold-nasdaq-dual-trend-barbell",
+        "nfci-dual-core-v11",
+        "core-gold-satellite-equity-curve-state-gate-momentum",
+        "core-gold-satellite-risk-budget-state-gate-momentum",
+        "core-gold-satellite-profit-lock-momentum",
+        "risk-contribution-cash-confidence-low-noise",
+        "basic-buy-and-hold",
+        "basic-gold-nasdaq-hold",
+        "basic-gold-trend",
+        "basic-us-trend",
+        "basic-china-trend",
+        "basic-ma60-trend",
+        "basic-ma20-trend",
+        "basic-ma20-hold",
+        "basic-ma-golden-cross",
+        "basic-boll-breakout",
+        "basic-three-day-trend",
+        "basic-boll-mean-reversion",
+        "basic-three-day-reversal"
+      ]
+    },
+    {
+      "path": "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/catalogue-common-saved-nav-2026-10-08/inputs/qual-saved-state-adapter.json",
+      "sha256": "ca8b951b9f325fba3dfbb5452f76cf0d3f8410e07d046f8e528d2f90ab5fb46c",
+      "ids": [
+        "nfci-dual-core-v11-qual-role"
+      ]
+    },
+    {
+      "path": "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/catalogue-common-saved-nav-2026-10-08/inputs/stress.json",
+      "sha256": "fdc2422910871a584931c4ec88b538d5445fb6c55096eb898f4c8acd9100261c",
+      "ids": [
+        "cross-market-extreme-qqq-cash:gross",
+        "cross-market-extreme-qqq-cash:withhold30"
+      ]
+    }
+  ]
+}

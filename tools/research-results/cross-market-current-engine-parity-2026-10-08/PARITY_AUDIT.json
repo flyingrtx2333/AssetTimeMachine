@@ -1,0 +1,48 @@
+{
+  "schema": "saved-current-engine-parity-audit-v1",
+  "audited_at": "2026-10-08T09:54:24.378090+00:00",
+  "status": "PASS_FROZEN_INPUT_CURRENT_ENGINE_PARITY",
+  "old_app_commit": "55612ee3434d50c918b9778bfac3e162ad1f438f",
+  "current_app_commit": "bfd86f3b6027ac786e34c7db2ff16bf36714a784",
+  "inputs_byte_verified": [
+    "prices",
+    "history"
+  ],
+  "logical_files": {
+    "result.json": {
+      "mismatches": 0,
+      "old_raw_sha256": "13b98b1e2e506483e3d124d623cb66f61745d0b3da9db206607134c17b723de3",
+      "new_raw_sha256": "13b98b1e2e506483e3d124d623cb66f61745d0b3da9db206607134c17b723de3"
+    },
+    "features.json": {
+      "mismatches": 0,
+      "old_raw_sha256": "954547da6a397c909f2218a9f2c60aca146eb3a51bee60b4e3db427a50ec6906",
+      "new_raw_sha256": "954547da6a397c909f2218a9f2c60aca146eb3a51bee60b4e3db427a50ec6906"
+    },
+    "desired-targets.json": {
+      "mismatches": 0,
+      "old_raw_sha256": "b132fd46df4b0839ac852dfeb5a39b6a9facfe56b4183bd668998d72ebdeff60",
+      "new_raw_sha256": "b132fd46df4b0839ac852dfeb5a39b6a9facfe56b4183bd668998d72ebdeff60"
+    }
+  },
+  "raw_bytes_equal": {
+    "result.json": true,
+    "features.json": true,
+    "desired-targets.json": true
+  },
+  "compared": {
+    "numbers": 165749,
+    "scalars": 35858,
+    "containers": 94831
+  },
+  "max_numeric_absolute_difference": 0.0,
+  "max_numeric_relative_difference": 0.0,
+  "mismatches": [],
+  "accounts": 4,
+  "states": 18712,
+  "fills": 228,
+  "formal_validation": false,
+  "new_alpha_discovery": false,
+  "goal_achieved": false,
+  "scope": "Old exact price-only accounts reproduced under current shared core, not live current data, total return, PIT or formal validation."
+}

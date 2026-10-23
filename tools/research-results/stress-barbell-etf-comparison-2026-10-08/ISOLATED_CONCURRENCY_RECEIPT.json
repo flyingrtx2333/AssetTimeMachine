@@ -1,0 +1,13 @@
+{
+  "started_at": "2026-10-08T10:57:45.349077+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "test",
+    "--filter",
+    "BacktestRunConfigurationTests.testConcurrentParametersAndMacroSnapshotsMatchSerialRuns"
+  ],
+  "completed_at": "2026-10-08T10:57:49.444228+00:00",
+  "exit_code": 1
+}

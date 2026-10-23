@@ -1,0 +1,12 @@
+{
+  "status": "PASS_EXACT_FUNDED_QUOTES_DATES_FX_CASH",
+  "audited_at": "2026-10-08T11:01:54.047374+00:00",
+  "funded_dates": 4677,
+  "matched_bar_rows": 9860,
+  "warmup_index": 825,
+  "candidate_cash_source": "research/asset-time-machine/workspace/studies/cross-market-issuer-cash-replay-2026-10-08/cash.json",
+  "candidate_results_not_rerun": true,
+  "new_benchmark_accounts": 2,
+  "economic_candidates": 0,
+  "full_frontier_certified": false
+}

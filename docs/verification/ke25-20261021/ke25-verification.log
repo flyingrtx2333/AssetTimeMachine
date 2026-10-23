@@ -1,0 +1,6 @@
+KE25_REBUILT_POLICY_AND_FULL_STATE_PARITY_PASS states=5735 SharpeRF0=1.2604899693983074
+KE25_TRUE_PRICE_POLICY_FINANCIAL_PREFIX_PASS 313
+KE25_TRUE_PRICE_POLICY_FINANCIAL_PREFIX_PASS 744
+KE25_TRUE_PRICE_POLICY_FINANCIAL_PREFIX_PASS 2500
+KE25RealRecordCheck/verify_ke25_replay.swift:64: Fatal error: Registered production runtime failed
+[rtk] /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/.build/out/Products/Release/KE25RealRecordCheck: process terminated by signal 5

@@ -1,0 +1,1 @@
+Full immutable D0 inputs, all saved account trajectories, audit and original-master/Notion receipts are retained in the verified sibling FlyingrtxFast study `research/asset-time-machine/workspace/studies/qqq-short-reversal-indicators-2026-10-08/`. Result run source commit is 573dd02e5472fe69bec06aee7daaf0c84c766c18. No formal validation or product promotion.

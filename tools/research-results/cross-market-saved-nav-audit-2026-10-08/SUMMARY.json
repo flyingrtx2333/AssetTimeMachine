@@ -1,0 +1,729 @@
+{
+  "status": "POSTHOC_SAVED_NAV_AUDIT_COMPLETED",
+  "completed_at": "2026-10-08T09:24:53Z",
+  "common_start": "2008-03-03",
+  "common_end": "2026-09-30",
+  "common_point_count": 4342,
+  "primary_metric": "App full common saved NAV Sharpe Rf=0",
+  "candidate_id": "cross-market-extreme-qqq-cash",
+  "best_curated_id": "gold-nasdaq-dual-trend-barbell",
+  "candidate_sharpe": 1.0628654791122787,
+  "best_curated_sharpe": 0.8978883035948347,
+  "beats_all_six_curated": true,
+  "objective_complete": false,
+  "pure_single_price_indicator": false,
+  "strategy_replayed": false,
+  "reason": "Historical saved NAV comparison alone does not certify a complex stress composite as the requested simple single-indicator strategy or resolve source/dividend/engine/clock/frontier validity.",
+  "rows": [
+    {
+      "id": "cross-market-extreme-qqq-cash",
+      "cagr_percent": 12.74575356915415,
+      "mdd_percent": 20.09794601297588,
+      "sharpe_rf0": 1.0628654791122787,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": 0.005641603982766252,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 0.045887590902500476,
+          "maxDrawdown": 0.052721331298329455,
+          "pointCount": 200,
+          "sharpeRF0": 0.10595778320147763,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": 0.3898412079998883,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 2.272232156680436,
+          "maxDrawdown": 0.05942285471076401,
+          "pointCount": 234,
+          "sharpeRF0": 2.295660980276331,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.15669378650761345,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.990071876860848,
+          "maxDrawdown": 0.1764452180656971,
+          "pointCount": 232,
+          "sharpeRF0": -0.9686276310494933,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.1274575356915415,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 1.0314523472305133,
+          "maxDrawdown": 0.20097946012975879,
+          "pointCount": 4342,
+          "sharpeRF0": 1.0628654791122787,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.11646957316886941,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.918988173251295,
+          "maxDrawdown": 0.20097946012975787,
+          "pointCount": 1570,
+          "sharpeRF0": 0.9470526461760881,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.08568226056821593,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.6909184059732949,
+          "maxDrawdown": 0.18112963419939515,
+          "pointCount": 1100,
+          "sharpeRF0": 0.7188336775488181,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.12702943154024537,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 1.005839369490912,
+        "maxDrawdown": 0.20629860277174886,
+        "pointCount": 4678,
+        "sharpeRF0": 1.036515608786345,
+        "start": "2008-03-01T16:00:00Z"
+      }
+    },
+    {
+      "id": "inverse-stress-control",
+      "cagr_percent": 3.163590813405537,
+      "mdd_percent": 52.83000497269148,
+      "sharpe_rf0": 0.25897043044424145,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": -0.3841502816449619,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.9429218430605067,
+          "maxDrawdown": 0.5004530879328396,
+          "pointCount": 200,
+          "sharpeRF0": -0.9270107938905556,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": -0.01965907594222649,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 0.09270273963650517,
+          "maxDrawdown": 0.2870762491735283,
+          "pointCount": 234,
+          "sharpeRF0": 0.10340078357556404,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.13012602154697317,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.3947247601449681,
+          "maxDrawdown": 0.26220249027280773,
+          "pointCount": 232,
+          "sharpeRF0": -0.3817754118286394,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.03163590813405537,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.2392369571760366,
+          "maxDrawdown": 0.5283000497269148,
+          "pointCount": 4342,
+          "sharpeRF0": 0.25897043044424145,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.06975746616938294,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.4055127416972297,
+          "maxDrawdown": 0.2870762491735283,
+          "pointCount": 1570,
+          "sharpeRF0": 0.421842348296268,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.06350700799317299,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.39655388673243724,
+          "maxDrawdown": 0.26220249027280773,
+          "pointCount": 1100,
+          "sharpeRF0": 0.4146483120111431,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.03236217365835614,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.2426855312406164,
+        "maxDrawdown": 0.5283000497269148,
+        "pointCount": 4678,
+        "sharpeRF0": 0.26241369324509306,
+        "start": "2008-03-01T16:00:00Z"
+      }
+    },
+    {
+      "id": "qqq-buyhold",
+      "cagr_percent": 16.22906096161678,
+      "mdd_percent": 50.241383382539475,
+      "sharpe_rf0": 0.7823509348899972,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": -0.3830210819793235,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.8844462192569011,
+          "maxDrawdown": 0.5024138338253947,
+          "pointCount": 200,
+          "sharpeRF0": -0.8691710723097139,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": 0.3618516906818252,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 1.0275071434164202,
+          "maxDrawdown": 0.2870762491735281,
+          "pointCount": 234,
+          "sharpeRF0": 1.0371779327035642,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.26750783721253935,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.8472183844558647,
+          "maxDrawdown": 0.2811340912527648,
+          "pointCount": 232,
+          "sharpeRF0": -0.8361085082569667,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.1622906096161678,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7656077815780447,
+          "maxDrawdown": 0.5024138338253947,
+          "pointCount": 4342,
+          "sharpeRF0": 0.7823509348899972,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.19344884967631848,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.825689837532685,
+          "maxDrawdown": 0.30151538456566845,
+          "pointCount": 1570,
+          "sharpeRF0": 0.839845368958749,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.153637486733621,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7233080431460642,
+          "maxDrawdown": 0.2852230324316283,
+          "pointCount": 1100,
+          "sharpeRF0": 0.7385849959119348,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.1626663841219187,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.76229448132867,
+        "maxDrawdown": 0.5024138338253954,
+        "pointCount": 4678,
+        "sharpeRF0": 0.7789071099881429,
+        "start": "2008-03-01T16:00:00Z"
+      }
+    },
+    {
+      "id": "cny-cash-control",
+      "cagr_percent": 0.3767175735003292,
+      "mdd_percent": 0,
+      "sharpe_rf0": 18.683017000718472,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": 0.006831081750369616,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 0.8957006887184461,
+          "maxDrawdown": 0,
+          "pointCount": 200,
+          "sharpeRF0": 19.89216826177719,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": 0.0035061153241053855,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -1.001715561391585,
+          "maxDrawdown": 0,
+          "pointCount": 234,
+          "sharpeRF0": 18.98291755252867,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": 0.0035061153241051635,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -1.007265274559453,
+          "maxDrawdown": 0,
+          "pointCount": 232,
+          "sharpeRF0": 18.836665882204894,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.003767175735003292,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": -1.344569881844278,
+          "maxDrawdown": 0,
+          "pointCount": 4342,
+          "sharpeRF0": 18.683017000718472,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.0035061153241049414,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": -1.6427303812044969,
+          "maxDrawdown": 0,
+          "pointCount": 1570,
+          "sharpeRF0": 19.255655837552055,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.0035061153241053855,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": -1.791035603780739,
+          "maxDrawdown": 0,
+          "pointCount": 1100,
+          "sharpeRF0": 19.032608410968084,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.0037665427871507173,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": -0.2319659262158159,
+        "maxDrawdown": 0,
+        "pointCount": 4678,
+        "sharpeRF0": 24.347463770122864,
+        "start": "2008-03-01T16:00:00Z"
+      }
+    },
+    {
+      "id": "gold-nasdaq-dual-trend-barbell",
+      "cagr_percent": 9.833662434443259,
+      "mdd_percent": 17.36829981826162,
+      "sharpe_rf0": 0.8978883035948347,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": -0.14133312339579795,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -1.3501722828519565,
+          "maxDrawdown": 0.15270334268282099,
+          "pointCount": 200,
+          "sharpeRF0": -1.2901774787225944,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": 0.19093717242790653,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 1.0774446825042046,
+          "maxDrawdown": 0.16439844578384177,
+          "pointCount": 234,
+          "sharpeRF0": 1.0975623747334138,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.06408040232424306,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.789433705251468,
+          "maxDrawdown": 0.09900956585729881,
+          "pointCount": 232,
+          "sharpeRF0": -0.7478868207278987,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.09833662434443258,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.8642232222489682,
+          "maxDrawdown": 0.17368299818261618,
+          "pointCount": 4342,
+          "sharpeRF0": 0.8978883035948347,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.14381361974369256,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 1.049362898269771,
+          "maxDrawdown": 0.17368299818261573,
+          "pointCount": 1570,
+          "sharpeRF0": 1.075539177813861,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.1549124152381074,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 1.1388491541456864,
+          "maxDrawdown": 0.173682998182615,
+          "pointCount": 1100,
+          "sharpeRF0": 1.165463017944263,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.10351844630951423,
+        "end": "2026-10-01T16:00:00Z",
+        "excessSharpeCNYCash": 0.8862907963759873,
+        "maxDrawdown": 0.17368299818261662,
+        "pointCount": 5982,
+        "sharpeRF0": 0.9264627558485777,
+        "start": "2002-09-17T16:00:00Z"
+      }
+    },
+    {
+      "id": "nfci-dual-core-v11",
+      "cagr_percent": 7.340359020903264,
+      "mdd_percent": 14.424949082694235,
+      "sharpe_rf0": 0.830757373351068,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": -0.03919335325325235,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.8329318545151112,
+          "maxDrawdown": 0.05305979834388452,
+          "pointCount": 200,
+          "sharpeRF0": -0.7076385859127289,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": 0.06683697330602634,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 0.5048047737727257,
+          "maxDrawdown": 0.14424949082694194,
+          "pointCount": 234,
+          "sharpeRF0": 0.5295760172768466,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.023923776164944455,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.2846138458245489,
+          "maxDrawdown": 0.09120813914818338,
+          "pointCount": 232,
+          "sharpeRF0": -0.24338677256099672,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.07340359020903264,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7891400958696523,
+          "maxDrawdown": 0.14424949082694236,
+          "pointCount": 4342,
+          "sharpeRF0": 0.830757373351068,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.0868343354982195,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.8395666636307442,
+          "maxDrawdown": 0.14424949082694194,
+          "pointCount": 1570,
+          "sharpeRF0": 0.8741027933193146,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.1030900697657724,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 1.0404583618188095,
+          "maxDrawdown": 0.09180278044389922,
+          "pointCount": 1100,
+          "sharpeRF0": 1.0770746596659806,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.0881773381421127,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.9347941418159734,
+        "maxDrawdown": 0.14424949082694208,
+        "pointCount": 5735,
+        "sharpeRF0": 0.9860614099914933,
+        "start": "2002-02-04T16:00:00Z"
+      }
+    },
+    {
+      "id": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "cagr_percent": 5.857572831494573,
+      "mdd_percent": 14.392398988449498,
+      "sharpe_rf0": 0.7000206327914064,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": 0.0007423398962880245,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.5052129498871315,
+          "maxDrawdown": 0.011517974691931396,
+          "pointCount": 200,
+          "sharpeRF0": 0.06841944239343561,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": -0.020358214296989918,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.12322025891747912,
+          "maxDrawdown": 0.11432282740206726,
+          "pointCount": 234,
+          "sharpeRF0": -0.09593258429495777,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.009410298117368598,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.11196627882858894,
+          "maxDrawdown": 0.07165209033253683,
+          "pointCount": 232,
+          "sharpeRF0": -0.07041343934467899,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.05857572831494573,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.6567315661365571,
+          "maxDrawdown": 0.14392398988449498,
+          "pointCount": 4342,
+          "sharpeRF0": 0.7000206327914064,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.0629271478970781,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.623804788817073,
+          "maxDrawdown": 0.11432282740206726,
+          "pointCount": 1570,
+          "sharpeRF0": 0.6586156153001359,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.08539548708783884,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.820973819394712,
+          "maxDrawdown": 0.10637523591200498,
+          "pointCount": 1100,
+          "sharpeRF0": 0.8552368049784203,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.07961730291318836,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.8538731735846968,
+        "maxDrawdown": 0.14392398988449476,
+        "pointCount": 5756,
+        "sharpeRF0": 0.90580884101923,
+        "start": "2002-01-03T16:00:00Z"
+      }
+    },
+    {
+      "id": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "cagr_percent": 7.21595638155943,
+      "mdd_percent": 18.72370026701575,
+      "sharpe_rf0": 0.7676129113855449,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": 0.0007423338910161892,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.5052129425836228,
+          "maxDrawdown": 0.011517986876590065,
+          "pointCount": 200,
+          "sharpeRF0": 0.06841888080104029,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": -0.03566849123868332,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.12620295739746373,
+          "maxDrawdown": 0.1872370026701569,
+          "pointCount": 234,
+          "sharpeRF0": -0.10704735808963232,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.01776093341692986,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.1742827272312008,
+          "maxDrawdown": 0.09109109764040091,
+          "pointCount": 232,
+          "sharpeRF0": -0.13799675999623617,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.0721595638155943,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7288845994235755,
+          "maxDrawdown": 0.18723700267015753,
+          "pointCount": 4342,
+          "sharpeRF0": 0.7676129113855449,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.06438803814277527,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.5566202848999168,
+          "maxDrawdown": 0.1872370026701569,
+          "pointCount": 1570,
+          "sharpeRF0": 0.586116979709083,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.08763052706345564,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7826064802335819,
+          "maxDrawdown": 0.0970123905829795,
+          "pointCount": 1100,
+          "sharpeRF0": 0.8141552052013349,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.09321886780112121,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.91334866386131,
+        "maxDrawdown": 0.18723700267015694,
+        "pointCount": 5756,
+        "sharpeRF0": 0.9605942832386516,
+        "start": "2002-01-03T16:00:00Z"
+      }
+    },
+    {
+      "id": "core-gold-satellite-profit-lock-momentum",
+      "cagr_percent": 5.15017654961889,
+      "mdd_percent": 11.804557218171572,
+      "sharpe_rf0": 0.6723686568926326,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": 0.0008142922679825748,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.4810095590294538,
+          "maxDrawdown": 0.011872998042526341,
+          "pointCount": 200,
+          "sharpeRF0": 0.07226665875020184,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": -0.025316639203268876,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.17404170475830022,
+          "maxDrawdown": 0.10942696935277019,
+          "pointCount": 234,
+          "sharpeRF0": -0.1456757230880397,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.011865574459491546,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.1632959280072532,
+          "maxDrawdown": 0.07043568423380375,
+          "pointCount": 232,
+          "sharpeRF0": -0.11764946834496151,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.0515017654961889,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.6250904242944455,
+          "maxDrawdown": 0.11804557218171573,
+          "pointCount": 4342,
+          "sharpeRF0": 0.6723686568926326,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.05535651489131954,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.5910261119145259,
+          "maxDrawdown": 0.11564247262429432,
+          "pointCount": 1570,
+          "sharpeRF0": 0.6287837306457317,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.07751398413593247,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.8129870917536917,
+          "maxDrawdown": 0.0936300672390971,
+          "pointCount": 1100,
+          "sharpeRF0": 0.8505991508387232,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.06773815024472074,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.7979869752527174,
+        "maxDrawdown": 0.11804557218171567,
+        "pointCount": 5756,
+        "sharpeRF0": 0.8554748429193694,
+        "start": "2002-01-03T16:00:00Z"
+      }
+    },
+    {
+      "id": "risk-contribution-cash-confidence-low-noise",
+      "cagr_percent": 6.811474902037884,
+      "mdd_percent": 13.832654766816763,
+      "sharpe_rf0": 0.7640865155891652,
+      "slices": {
+        "crisis2008": {
+          "annualizedReturn": -0.0461575542403696,
+          "end": "2008-12-30T16:00:00Z",
+          "excessSharpeCNYCash": -0.8373257137357715,
+          "maxDrawdown": 0.059677324830369145,
+          "pointCount": 200,
+          "sharpeRF0": -0.7278237171006824,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "crisis2020": {
+          "annualizedReturn": 0.0899748792293229,
+          "end": "2020-12-30T16:00:00Z",
+          "excessSharpeCNYCash": 0.6829154177523729,
+          "maxDrawdown": 0.1357038432321869,
+          "pointCount": 234,
+          "sharpeRF0": 0.708900253874733,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "crisis2022": {
+          "annualizedReturn": -0.0622586673732447,
+          "end": "2022-12-29T16:00:00Z",
+          "excessSharpeCNYCash": -0.6853123323978426,
+          "maxDrawdown": 0.12929209719603774,
+          "pointCount": 232,
+          "sharpeRF0": -0.6476359605778161,
+          "start": "2022-01-03T16:00:00Z"
+        },
+        "full": {
+          "annualizedReturn": 0.06811474902037884,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7231951891882854,
+          "maxDrawdown": 0.13832654766816763,
+          "pointCount": 4342,
+          "sharpeRF0": 0.7640865155891652,
+          "start": "2008-03-02T16:00:00Z"
+        },
+        "since2020": {
+          "annualizedReturn": 0.07324534206321998,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.7253446688896147,
+          "maxDrawdown": 0.1383265476681675,
+          "pointCount": 1570,
+          "sharpeRF0": 0.7604559988208343,
+          "start": "2020-01-01T16:00:00Z"
+        },
+        "since2022": {
+          "annualizedReturn": 0.07527991275870005,
+          "end": "2026-09-29T16:00:00Z",
+          "excessSharpeCNYCash": 0.783617719411081,
+          "maxDrawdown": 0.12929209719603774,
+          "pointCount": 1100,
+          "sharpeRF0": 0.8208563587407893,
+          "start": "2022-01-03T16:00:00Z"
+        }
+      },
+      "native_full": {
+        "annualizedReturn": 0.08780116824639084,
+        "end": "2026-09-29T16:00:00Z",
+        "excessSharpeCNYCash": 0.9096311295065806,
+        "maxDrawdown": 0.1383265476681676,
+        "pointCount": 5735,
+        "sharpeRF0": 0.9595816043149799,
+        "start": "2002-02-04T16:00:00Z"
+      }
+    }
+  ]
+}

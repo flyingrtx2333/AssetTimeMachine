@@ -1,0 +1,6010 @@
+{
+  "status": "PASS_SAVED_CASH_FILLS_METRICS_AND_TARGET_READBACK",
+  "audited_at": "2026-10-08T11:23:15.318282+00:00",
+  "accounts": [
+    {
+      "id": "defensive_gold:slip0.0",
+      "states_checked": 4656,
+      "fills_checked": 369,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [
+        {
+          "start": "2008-01-08",
+          "end": "2008-01-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-10",
+          "end": "2008-01-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-18",
+          "end": "2008-01-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-05",
+          "end": "2008-02-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-15",
+          "end": "2008-02-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-20",
+          "end": "2008-02-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-22",
+          "end": "2008-02-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-26",
+          "end": "2008-02-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-04",
+          "end": "2008-03-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-06",
+          "end": "2008-03-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-10",
+          "end": "2008-03-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-14",
+          "end": "2008-03-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-20",
+          "end": "2008-03-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-26",
+          "end": "2008-03-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-02",
+          "end": "2008-07-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-07",
+          "end": "2008-07-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-23",
+          "end": "2008-07-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-30",
+          "end": "2008-07-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-04",
+          "end": "2008-08-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-06",
+          "end": "2008-08-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-11",
+          "end": "2008-09-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-15",
+          "end": "2008-09-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-12",
+          "end": "2008-12-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-17",
+          "end": "2008-12-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-23",
+          "end": "2008-12-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-30",
+          "end": "2008-12-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-01-22",
+          "end": "2009-01-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-03",
+          "end": "2009-02-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-10",
+          "end": "2009-02-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-13",
+          "end": "2009-02-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-18",
+          "end": "2009-02-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-24",
+          "end": "2009-03-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-26",
+          "end": "2009-03-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-30",
+          "end": "2009-03-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-04-01",
+          "end": "2009-04-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-10-30",
+          "end": "2009-10-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-03",
+          "end": "2009-11-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-05",
+          "end": "2009-11-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-26",
+          "end": "2010-01-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-28",
+          "end": "2010-01-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-08",
+          "end": "2010-02-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-11",
+          "end": "2010-02-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-04-29",
+          "end": "2010-04-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-10",
+          "end": "2010-05-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-12",
+          "end": "2010-05-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-18",
+          "end": "2010-05-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-27",
+          "end": "2010-05-27",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-01",
+          "end": "2010-06-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-04",
+          "end": "2010-06-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-08",
+          "end": "2010-06-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-11",
+          "end": "2010-06-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-11-30",
+          "end": "2010-11-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-17",
+          "end": "2011-03-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-23",
+          "end": "2011-03-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-06-20",
+          "end": "2011-06-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-07-29",
+          "end": "2011-07-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-02",
+          "end": "2011-09-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-07",
+          "end": "2011-09-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-16",
+          "end": "2011-09-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-23",
+          "end": "2011-09-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-07",
+          "end": "2011-10-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-21",
+          "end": "2011-10-21",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-25",
+          "end": "2011-10-25",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-03",
+          "end": "2011-11-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-11",
+          "end": "2011-11-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-01-02",
+          "end": "2013-01-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-02-27",
+          "end": "2013-02-27",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-17",
+          "end": "2013-04-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-22",
+          "end": "2013-04-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-06-24",
+          "end": "2013-06-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-09",
+          "end": "2013-10-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-14",
+          "end": "2013-10-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-17",
+          "end": "2013-10-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-28",
+          "end": "2014-01-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-30",
+          "end": "2014-01-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-03",
+          "end": "2014-02-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-10",
+          "end": "2014-02-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-04-15",
+          "end": "2014-04-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-04",
+          "end": "2014-08-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-06",
+          "end": "2014-08-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-13",
+          "end": "2014-10-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-22",
+          "end": "2014-10-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-16",
+          "end": "2014-12-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-18",
+          "end": "2014-12-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-16",
+          "end": "2015-01-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-21",
+          "end": "2015-01-21",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-01",
+          "end": "2015-07-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-10",
+          "end": "2015-07-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-14",
+          "end": "2015-07-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-08-24",
+          "end": "2015-08-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-04",
+          "end": "2015-09-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-16",
+          "end": "2015-09-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-28",
+          "end": "2015-09-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-30",
+          "end": "2015-09-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-10-02",
+          "end": "2015-10-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-12-15",
+          "end": "2015-12-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-11",
+          "end": "2016-01-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-13",
+          "end": "2016-01-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-15",
+          "end": "2016-01-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-21",
+          "end": "2016-01-21",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-10",
+          "end": "2016-02-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-16",
+          "end": "2016-02-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-24",
+          "end": "2016-06-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-28",
+          "end": "2016-06-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-30",
+          "end": "2016-06-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-04",
+          "end": "2016-11-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-11",
+          "end": "2016-11-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2017-04-18",
+          "end": "2017-04-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-06",
+          "end": "2018-02-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-16",
+          "end": "2018-02-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-23",
+          "end": "2018-02-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-05",
+          "end": "2018-03-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-26",
+          "end": "2018-03-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-06",
+          "end": "2018-04-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-10",
+          "end": "2018-04-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-13",
+          "end": "2018-04-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-12",
+          "end": "2018-10-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-18",
+          "end": "2018-10-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-22",
+          "end": "2018-10-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-24",
+          "end": "2018-10-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-05",
+          "end": "2018-11-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-08",
+          "end": "2018-11-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-14",
+          "end": "2018-11-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-16",
+          "end": "2018-11-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-23",
+          "end": "2018-11-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-10",
+          "end": "2018-12-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-14",
+          "end": "2018-12-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-19",
+          "end": "2018-12-19",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-08",
+          "end": "2019-01-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-24",
+          "end": "2019-01-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-09",
+          "end": "2019-05-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-14",
+          "end": "2019-05-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-16",
+          "end": "2019-05-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-06-05",
+          "end": "2019-06-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-07",
+          "end": "2019-08-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-09",
+          "end": "2019-08-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-14",
+          "end": "2019-08-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-16",
+          "end": "2019-08-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-20",
+          "end": "2019-08-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-01-29",
+          "end": "2020-01-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-04",
+          "end": "2020-02-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-26",
+          "end": "2020-02-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-04-28",
+          "end": "2020-04-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-06-15",
+          "end": "2020-06-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-10-28",
+          "end": "2020-10-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-11-06",
+          "end": "2020-11-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-01-29",
+          "end": "2021-01-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-12-03",
+          "end": "2021-12-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-01-28",
+          "end": "2022-01-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-02-25",
+          "end": "2022-02-25",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-01",
+          "end": "2022-03-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-04",
+          "end": "2022-03-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-09",
+          "end": "2022-03-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-11",
+          "end": "2022-03-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-04-28",
+          "end": "2022-04-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-05-03",
+          "end": "2022-05-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-28",
+          "end": "2022-09-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-04",
+          "end": "2022-10-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-13",
+          "end": "2022-10-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-18",
+          "end": "2022-10-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-06",
+          "end": "2024-08-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-12",
+          "end": "2024-08-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-10-09",
+          "end": "2024-10-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-04",
+          "end": "2024-11-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-06",
+          "end": "2024-11-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-08",
+          "end": "2024-11-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-12-20",
+          "end": "2024-12-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-05",
+          "end": "2025-03-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-18",
+          "end": "2025-03-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-02",
+          "end": "2025-04-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-04",
+          "end": "2025-04-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-29",
+          "end": "2025-04-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-10-20",
+          "end": "2025-10-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-20",
+          "end": "2025-11-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-24",
+          "end": "2025-11-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-05",
+          "end": "2026-03-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-10",
+          "end": "2026-03-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-12",
+          "end": "2026-03-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-16",
+          "end": "2026-03-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-25",
+          "end": "2026-03-25",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-27",
+          "end": "2026-03-27",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-02",
+          "end": "2026-04-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-09",
+          "end": "2026-04-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        }
+      ],
+      "longest_absent_target_opportunities": 1
+    },
+    {
+      "id": "panic_premium:slip0.0",
+      "states_checked": 4656,
+      "fills_checked": 260,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "defensive_cash:slip0.0",
+      "states_checked": 4656,
+      "fills_checked": 261,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "reverse_rotation:slip0.0",
+      "states_checked": 4656,
+      "fills_checked": 369,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [
+        {
+          "start": "2008-01-08",
+          "end": "2008-01-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-10",
+          "end": "2008-01-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-18",
+          "end": "2008-01-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-05",
+          "end": "2008-02-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-15",
+          "end": "2008-02-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-20",
+          "end": "2008-02-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-22",
+          "end": "2008-02-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-26",
+          "end": "2008-02-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-04",
+          "end": "2008-03-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-06",
+          "end": "2008-03-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-10",
+          "end": "2008-03-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-14",
+          "end": "2008-03-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-20",
+          "end": "2008-03-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-26",
+          "end": "2008-03-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-02",
+          "end": "2008-07-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-07",
+          "end": "2008-07-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-23",
+          "end": "2008-07-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-30",
+          "end": "2008-07-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-04",
+          "end": "2008-08-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-06",
+          "end": "2008-08-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-11",
+          "end": "2008-09-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-15",
+          "end": "2008-09-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-12",
+          "end": "2008-12-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-17",
+          "end": "2008-12-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-23",
+          "end": "2008-12-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-30",
+          "end": "2008-12-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-01-22",
+          "end": "2009-01-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-03",
+          "end": "2009-02-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-10",
+          "end": "2009-02-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-13",
+          "end": "2009-02-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-18",
+          "end": "2009-02-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-24",
+          "end": "2009-03-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-26",
+          "end": "2009-03-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-30",
+          "end": "2009-03-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-04-01",
+          "end": "2009-04-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-10-30",
+          "end": "2009-10-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-03",
+          "end": "2009-11-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-05",
+          "end": "2009-11-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-26",
+          "end": "2010-01-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-28",
+          "end": "2010-01-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-08",
+          "end": "2010-02-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-11",
+          "end": "2010-02-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-04-29",
+          "end": "2010-04-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-10",
+          "end": "2010-05-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-12",
+          "end": "2010-05-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-18",
+          "end": "2010-05-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-27",
+          "end": "2010-05-27",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-01",
+          "end": "2010-06-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-04",
+          "end": "2010-06-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-08",
+          "end": "2010-06-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-11",
+          "end": "2010-06-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-11-30",
+          "end": "2010-11-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-17",
+          "end": "2011-03-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-23",
+          "end": "2011-03-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-06-20",
+          "end": "2011-06-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-07-29",
+          "end": "2011-07-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-02",
+          "end": "2011-09-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-07",
+          "end": "2011-09-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-16",
+          "end": "2011-09-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-23",
+          "end": "2011-09-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-07",
+          "end": "2011-10-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-21",
+          "end": "2011-10-21",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-25",
+          "end": "2011-10-25",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-03",
+          "end": "2011-11-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-11",
+          "end": "2011-11-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-01-02",
+          "end": "2013-01-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-02-27",
+          "end": "2013-02-27",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-17",
+          "end": "2013-04-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-22",
+          "end": "2013-04-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-06-24",
+          "end": "2013-06-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-09",
+          "end": "2013-10-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-14",
+          "end": "2013-10-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-17",
+          "end": "2013-10-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-28",
+          "end": "2014-01-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-30",
+          "end": "2014-01-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-03",
+          "end": "2014-02-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-10",
+          "end": "2014-02-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-04-15",
+          "end": "2014-04-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-04",
+          "end": "2014-08-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-06",
+          "end": "2014-08-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-13",
+          "end": "2014-10-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-22",
+          "end": "2014-10-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-16",
+          "end": "2014-12-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-18",
+          "end": "2014-12-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-16",
+          "end": "2015-01-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-21",
+          "end": "2015-01-21",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-01",
+          "end": "2015-07-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-10",
+          "end": "2015-07-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-14",
+          "end": "2015-07-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-08-24",
+          "end": "2015-08-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-04",
+          "end": "2015-09-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-16",
+          "end": "2015-09-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-28",
+          "end": "2015-09-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-30",
+          "end": "2015-09-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-10-02",
+          "end": "2015-10-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-12-15",
+          "end": "2015-12-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-11",
+          "end": "2016-01-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-13",
+          "end": "2016-01-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-15",
+          "end": "2016-01-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-21",
+          "end": "2016-01-21",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-10",
+          "end": "2016-02-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-16",
+          "end": "2016-02-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-24",
+          "end": "2016-06-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-28",
+          "end": "2016-06-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-30",
+          "end": "2016-06-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-04",
+          "end": "2016-11-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-11",
+          "end": "2016-11-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2017-04-18",
+          "end": "2017-04-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-06",
+          "end": "2018-02-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-16",
+          "end": "2018-02-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-23",
+          "end": "2018-02-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-05",
+          "end": "2018-03-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-26",
+          "end": "2018-03-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-06",
+          "end": "2018-04-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-10",
+          "end": "2018-04-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-13",
+          "end": "2018-04-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-12",
+          "end": "2018-10-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-18",
+          "end": "2018-10-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-22",
+          "end": "2018-10-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-24",
+          "end": "2018-10-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-05",
+          "end": "2018-11-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-08",
+          "end": "2018-11-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-14",
+          "end": "2018-11-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-16",
+          "end": "2018-11-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-23",
+          "end": "2018-11-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-10",
+          "end": "2018-12-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-14",
+          "end": "2018-12-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-19",
+          "end": "2018-12-19",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-08",
+          "end": "2019-01-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-24",
+          "end": "2019-01-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-09",
+          "end": "2019-05-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-14",
+          "end": "2019-05-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-16",
+          "end": "2019-05-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-06-05",
+          "end": "2019-06-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-07",
+          "end": "2019-08-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-09",
+          "end": "2019-08-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-14",
+          "end": "2019-08-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-16",
+          "end": "2019-08-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-20",
+          "end": "2019-08-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-01-29",
+          "end": "2020-01-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-04",
+          "end": "2020-02-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-26",
+          "end": "2020-02-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-04-28",
+          "end": "2020-04-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-06-15",
+          "end": "2020-06-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-10-28",
+          "end": "2020-10-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-11-06",
+          "end": "2020-11-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-01-29",
+          "end": "2021-01-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-12-03",
+          "end": "2021-12-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-01-28",
+          "end": "2022-01-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-02-25",
+          "end": "2022-02-25",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-01",
+          "end": "2022-03-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-04",
+          "end": "2022-03-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-09",
+          "end": "2022-03-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-11",
+          "end": "2022-03-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-04-28",
+          "end": "2022-04-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-05-03",
+          "end": "2022-05-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-28",
+          "end": "2022-09-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-04",
+          "end": "2022-10-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-13",
+          "end": "2022-10-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-18",
+          "end": "2022-10-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-06",
+          "end": "2024-08-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-12",
+          "end": "2024-08-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-10-09",
+          "end": "2024-10-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-04",
+          "end": "2024-11-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-06",
+          "end": "2024-11-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-08",
+          "end": "2024-11-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-12-20",
+          "end": "2024-12-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-05",
+          "end": "2025-03-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-18",
+          "end": "2025-03-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-02",
+          "end": "2025-04-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-04",
+          "end": "2025-04-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-29",
+          "end": "2025-04-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-10-20",
+          "end": "2025-10-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-20",
+          "end": "2025-11-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-24",
+          "end": "2025-11-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-05",
+          "end": "2026-03-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-10",
+          "end": "2026-03-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-12",
+          "end": "2026-03-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-16",
+          "end": "2026-03-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-25",
+          "end": "2026-03-25",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-27",
+          "end": "2026-03-27",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-02",
+          "end": "2026-04-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-09",
+          "end": "2026-04-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        }
+      ],
+      "longest_absent_target_opportunities": 1
+    },
+    {
+      "id": "nasdaq:slip0.0",
+      "states_checked": 4656,
+      "fills_checked": 1,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "product:slip0.0",
+      "states_checked": 4656,
+      "fills_checked": 58,
+      "metric_groups": 6,
+      "accepted_target_mismatches": null,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "defensive_gold:slip0.05",
+      "states_checked": 4656,
+      "fills_checked": 369,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [
+        {
+          "start": "2008-01-08",
+          "end": "2008-01-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-10",
+          "end": "2008-01-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-18",
+          "end": "2008-01-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-05",
+          "end": "2008-02-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-15",
+          "end": "2008-02-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-20",
+          "end": "2008-02-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-22",
+          "end": "2008-02-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-26",
+          "end": "2008-02-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-04",
+          "end": "2008-03-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-06",
+          "end": "2008-03-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-10",
+          "end": "2008-03-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-14",
+          "end": "2008-03-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-20",
+          "end": "2008-03-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-26",
+          "end": "2008-03-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-02",
+          "end": "2008-07-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-07",
+          "end": "2008-07-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-23",
+          "end": "2008-07-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-30",
+          "end": "2008-07-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-04",
+          "end": "2008-08-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-06",
+          "end": "2008-08-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-11",
+          "end": "2008-09-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-15",
+          "end": "2008-09-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-12",
+          "end": "2008-12-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-17",
+          "end": "2008-12-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-23",
+          "end": "2008-12-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-30",
+          "end": "2008-12-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-01-22",
+          "end": "2009-01-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-03",
+          "end": "2009-02-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-10",
+          "end": "2009-02-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-13",
+          "end": "2009-02-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-18",
+          "end": "2009-02-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-24",
+          "end": "2009-03-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-26",
+          "end": "2009-03-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-30",
+          "end": "2009-03-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-04-01",
+          "end": "2009-04-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-10-30",
+          "end": "2009-10-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-03",
+          "end": "2009-11-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-05",
+          "end": "2009-11-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-26",
+          "end": "2010-01-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-28",
+          "end": "2010-01-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-08",
+          "end": "2010-02-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-11",
+          "end": "2010-02-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-04-29",
+          "end": "2010-04-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-10",
+          "end": "2010-05-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-12",
+          "end": "2010-05-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-18",
+          "end": "2010-05-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-27",
+          "end": "2010-05-27",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-01",
+          "end": "2010-06-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-04",
+          "end": "2010-06-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-08",
+          "end": "2010-06-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-11",
+          "end": "2010-06-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-11-30",
+          "end": "2010-11-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-17",
+          "end": "2011-03-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-23",
+          "end": "2011-03-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-06-20",
+          "end": "2011-06-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-07-29",
+          "end": "2011-07-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-02",
+          "end": "2011-09-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-07",
+          "end": "2011-09-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-16",
+          "end": "2011-09-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-23",
+          "end": "2011-09-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-07",
+          "end": "2011-10-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-21",
+          "end": "2011-10-21",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-25",
+          "end": "2011-10-25",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-03",
+          "end": "2011-11-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-11",
+          "end": "2011-11-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-01-02",
+          "end": "2013-01-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-02-27",
+          "end": "2013-02-27",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-17",
+          "end": "2013-04-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-22",
+          "end": "2013-04-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-06-24",
+          "end": "2013-06-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-09",
+          "end": "2013-10-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-14",
+          "end": "2013-10-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-17",
+          "end": "2013-10-17",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-28",
+          "end": "2014-01-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-30",
+          "end": "2014-01-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-03",
+          "end": "2014-02-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-10",
+          "end": "2014-02-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-04-15",
+          "end": "2014-04-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-04",
+          "end": "2014-08-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-06",
+          "end": "2014-08-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-13",
+          "end": "2014-10-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-22",
+          "end": "2014-10-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-16",
+          "end": "2014-12-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-18",
+          "end": "2014-12-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-16",
+          "end": "2015-01-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-21",
+          "end": "2015-01-21",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-01",
+          "end": "2015-07-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-10",
+          "end": "2015-07-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-14",
+          "end": "2015-07-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-08-24",
+          "end": "2015-08-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-04",
+          "end": "2015-09-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-16",
+          "end": "2015-09-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-28",
+          "end": "2015-09-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-30",
+          "end": "2015-09-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-10-02",
+          "end": "2015-10-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-12-15",
+          "end": "2015-12-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-11",
+          "end": "2016-01-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-13",
+          "end": "2016-01-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-15",
+          "end": "2016-01-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-21",
+          "end": "2016-01-21",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-10",
+          "end": "2016-02-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-16",
+          "end": "2016-02-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-24",
+          "end": "2016-06-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-28",
+          "end": "2016-06-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-30",
+          "end": "2016-06-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-04",
+          "end": "2016-11-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-11",
+          "end": "2016-11-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2017-04-18",
+          "end": "2017-04-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-06",
+          "end": "2018-02-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-16",
+          "end": "2018-02-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-23",
+          "end": "2018-02-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-05",
+          "end": "2018-03-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-26",
+          "end": "2018-03-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-06",
+          "end": "2018-04-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-10",
+          "end": "2018-04-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-13",
+          "end": "2018-04-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-12",
+          "end": "2018-10-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-18",
+          "end": "2018-10-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-22",
+          "end": "2018-10-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-24",
+          "end": "2018-10-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-05",
+          "end": "2018-11-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-08",
+          "end": "2018-11-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-14",
+          "end": "2018-11-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-16",
+          "end": "2018-11-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-23",
+          "end": "2018-11-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-10",
+          "end": "2018-12-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-14",
+          "end": "2018-12-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-19",
+          "end": "2018-12-19",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-08",
+          "end": "2019-01-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-24",
+          "end": "2019-01-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-09",
+          "end": "2019-05-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-14",
+          "end": "2019-05-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-16",
+          "end": "2019-05-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-06-05",
+          "end": "2019-06-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-07",
+          "end": "2019-08-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-09",
+          "end": "2019-08-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-14",
+          "end": "2019-08-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-16",
+          "end": "2019-08-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-20",
+          "end": "2019-08-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-01-29",
+          "end": "2020-01-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-04",
+          "end": "2020-02-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-26",
+          "end": "2020-02-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-04-28",
+          "end": "2020-04-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-06-15",
+          "end": "2020-06-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-10-28",
+          "end": "2020-10-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-11-06",
+          "end": "2020-11-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-01-29",
+          "end": "2021-01-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-12-03",
+          "end": "2021-12-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-01-28",
+          "end": "2022-01-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-02-25",
+          "end": "2022-02-25",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-01",
+          "end": "2022-03-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-04",
+          "end": "2022-03-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-09",
+          "end": "2022-03-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-11",
+          "end": "2022-03-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-04-28",
+          "end": "2022-04-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-05-03",
+          "end": "2022-05-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-28",
+          "end": "2022-09-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-04",
+          "end": "2022-10-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-13",
+          "end": "2022-10-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-18",
+          "end": "2022-10-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-06",
+          "end": "2024-08-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-12",
+          "end": "2024-08-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-10-09",
+          "end": "2024-10-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-04",
+          "end": "2024-11-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-06",
+          "end": "2024-11-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-08",
+          "end": "2024-11-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-12-20",
+          "end": "2024-12-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-05",
+          "end": "2025-03-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-18",
+          "end": "2025-03-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-02",
+          "end": "2025-04-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-04",
+          "end": "2025-04-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-29",
+          "end": "2025-04-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-10-20",
+          "end": "2025-10-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-20",
+          "end": "2025-11-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-24",
+          "end": "2025-11-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-05",
+          "end": "2026-03-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-10",
+          "end": "2026-03-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-12",
+          "end": "2026-03-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-16",
+          "end": "2026-03-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-25",
+          "end": "2026-03-25",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-27",
+          "end": "2026-03-27",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-02",
+          "end": "2026-04-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-09",
+          "end": "2026-04-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        }
+      ],
+      "longest_absent_target_opportunities": 1
+    },
+    {
+      "id": "panic_premium:slip0.05",
+      "states_checked": 4656,
+      "fills_checked": 260,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "defensive_cash:slip0.05",
+      "states_checked": 4656,
+      "fills_checked": 261,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "reverse_rotation:slip0.05",
+      "states_checked": 4656,
+      "fills_checked": 369,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [
+        {
+          "start": "2008-01-08",
+          "end": "2008-01-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-10",
+          "end": "2008-01-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-01-18",
+          "end": "2008-01-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-05",
+          "end": "2008-02-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-15",
+          "end": "2008-02-15",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-20",
+          "end": "2008-02-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-22",
+          "end": "2008-02-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-02-26",
+          "end": "2008-02-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-04",
+          "end": "2008-03-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-06",
+          "end": "2008-03-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-10",
+          "end": "2008-03-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-14",
+          "end": "2008-03-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-20",
+          "end": "2008-03-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-03-26",
+          "end": "2008-03-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-02",
+          "end": "2008-07-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-07",
+          "end": "2008-07-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-23",
+          "end": "2008-07-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-07-30",
+          "end": "2008-07-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-04",
+          "end": "2008-08-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-08-06",
+          "end": "2008-08-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-11",
+          "end": "2008-09-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-09-15",
+          "end": "2008-09-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-12",
+          "end": "2008-12-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-17",
+          "end": "2008-12-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-23",
+          "end": "2008-12-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2008-12-30",
+          "end": "2008-12-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-01-22",
+          "end": "2009-01-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-03",
+          "end": "2009-02-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-10",
+          "end": "2009-02-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-13",
+          "end": "2009-02-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-02-18",
+          "end": "2009-02-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-24",
+          "end": "2009-03-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-26",
+          "end": "2009-03-26",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-03-30",
+          "end": "2009-03-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-04-01",
+          "end": "2009-04-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-10-30",
+          "end": "2009-10-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-03",
+          "end": "2009-11-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2009-11-05",
+          "end": "2009-11-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-26",
+          "end": "2010-01-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-01-28",
+          "end": "2010-01-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-08",
+          "end": "2010-02-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-02-11",
+          "end": "2010-02-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-04-29",
+          "end": "2010-04-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-10",
+          "end": "2010-05-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-12",
+          "end": "2010-05-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-18",
+          "end": "2010-05-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-05-27",
+          "end": "2010-05-27",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-01",
+          "end": "2010-06-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-04",
+          "end": "2010-06-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-08",
+          "end": "2010-06-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-06-11",
+          "end": "2010-06-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2010-11-30",
+          "end": "2010-11-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-17",
+          "end": "2011-03-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-03-23",
+          "end": "2011-03-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-06-20",
+          "end": "2011-06-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-07-29",
+          "end": "2011-07-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-02",
+          "end": "2011-09-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-07",
+          "end": "2011-09-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-16",
+          "end": "2011-09-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-09-23",
+          "end": "2011-09-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-07",
+          "end": "2011-10-07",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-21",
+          "end": "2011-10-21",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-10-25",
+          "end": "2011-10-25",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-03",
+          "end": "2011-11-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2011-11-11",
+          "end": "2011-11-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-01-02",
+          "end": "2013-01-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-02-27",
+          "end": "2013-02-27",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-17",
+          "end": "2013-04-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-04-22",
+          "end": "2013-04-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-06-24",
+          "end": "2013-06-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-09",
+          "end": "2013-10-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-14",
+          "end": "2013-10-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2013-10-17",
+          "end": "2013-10-17",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-28",
+          "end": "2014-01-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-01-30",
+          "end": "2014-01-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-03",
+          "end": "2014-02-03",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-02-10",
+          "end": "2014-02-10",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-04-15",
+          "end": "2014-04-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-04",
+          "end": "2014-08-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-08-06",
+          "end": "2014-08-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-13",
+          "end": "2014-10-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-10-22",
+          "end": "2014-10-22",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-16",
+          "end": "2014-12-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2014-12-18",
+          "end": "2014-12-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-16",
+          "end": "2015-01-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-01-21",
+          "end": "2015-01-21",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-01",
+          "end": "2015-07-01",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-10",
+          "end": "2015-07-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-07-14",
+          "end": "2015-07-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-08-24",
+          "end": "2015-08-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-04",
+          "end": "2015-09-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-16",
+          "end": "2015-09-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-28",
+          "end": "2015-09-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-09-30",
+          "end": "2015-09-30",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-10-02",
+          "end": "2015-10-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2015-12-15",
+          "end": "2015-12-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-11",
+          "end": "2016-01-11",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-13",
+          "end": "2016-01-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-15",
+          "end": "2016-01-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-01-21",
+          "end": "2016-01-21",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-10",
+          "end": "2016-02-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-02-16",
+          "end": "2016-02-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-24",
+          "end": "2016-06-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-28",
+          "end": "2016-06-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-06-30",
+          "end": "2016-06-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-04",
+          "end": "2016-11-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2016-11-11",
+          "end": "2016-11-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2017-04-18",
+          "end": "2017-04-18",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-06",
+          "end": "2018-02-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-16",
+          "end": "2018-02-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-02-23",
+          "end": "2018-02-23",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-05",
+          "end": "2018-03-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-03-26",
+          "end": "2018-03-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-06",
+          "end": "2018-04-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-10",
+          "end": "2018-04-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-04-13",
+          "end": "2018-04-13",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-12",
+          "end": "2018-10-12",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-18",
+          "end": "2018-10-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-22",
+          "end": "2018-10-22",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-10-24",
+          "end": "2018-10-24",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-05",
+          "end": "2018-11-05",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-08",
+          "end": "2018-11-08",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-14",
+          "end": "2018-11-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-16",
+          "end": "2018-11-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-11-23",
+          "end": "2018-11-23",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-10",
+          "end": "2018-12-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-14",
+          "end": "2018-12-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2018-12-19",
+          "end": "2018-12-19",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-08",
+          "end": "2019-01-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-01-24",
+          "end": "2019-01-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-09",
+          "end": "2019-05-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-14",
+          "end": "2019-05-14",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-05-16",
+          "end": "2019-05-16",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-06-05",
+          "end": "2019-06-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-07",
+          "end": "2019-08-07",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-09",
+          "end": "2019-08-09",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-14",
+          "end": "2019-08-14",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-16",
+          "end": "2019-08-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2019-08-20",
+          "end": "2019-08-20",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-01-29",
+          "end": "2020-01-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-04",
+          "end": "2020-02-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-02-26",
+          "end": "2020-02-26",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-04-28",
+          "end": "2020-04-28",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-06-15",
+          "end": "2020-06-15",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-10-28",
+          "end": "2020-10-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2020-11-06",
+          "end": "2020-11-06",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-01-29",
+          "end": "2021-01-29",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2021-12-03",
+          "end": "2021-12-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-01-28",
+          "end": "2022-01-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-02-25",
+          "end": "2022-02-25",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-01",
+          "end": "2022-03-01",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-04",
+          "end": "2022-03-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-09",
+          "end": "2022-03-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-03-11",
+          "end": "2022-03-11",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-04-28",
+          "end": "2022-04-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-05-03",
+          "end": "2022-05-03",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-28",
+          "end": "2022-09-28",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-09-30",
+          "end": "2022-09-30",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-04",
+          "end": "2022-10-04",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-13",
+          "end": "2022-10-13",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2022-10-18",
+          "end": "2022-10-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-06",
+          "end": "2024-08-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-08-12",
+          "end": "2024-08-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-10-09",
+          "end": "2024-10-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-04",
+          "end": "2024-11-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-06",
+          "end": "2024-11-06",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-11-08",
+          "end": "2024-11-08",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2024-12-20",
+          "end": "2024-12-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-05",
+          "end": "2025-03-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-03-18",
+          "end": "2025-03-18",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-02",
+          "end": "2025-04-02",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-04",
+          "end": "2025-04-04",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-04-29",
+          "end": "2025-04-29",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-10-20",
+          "end": "2025-10-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-20",
+          "end": "2025-11-20",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2025-11-24",
+          "end": "2025-11-24",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-05",
+          "end": "2026-03-05",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-10",
+          "end": "2026-03-10",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-12",
+          "end": "2026-03-12",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-16",
+          "end": "2026-03-16",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-25",
+          "end": "2026-03-25",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-03-27",
+          "end": "2026-03-27",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-02",
+          "end": "2026-04-02",
+          "symbols": [
+            "gold_cny"
+          ],
+          "opportunities": 1
+        },
+        {
+          "start": "2026-04-09",
+          "end": "2026-04-09",
+          "symbols": [
+            "nasdaq"
+          ],
+          "opportunities": 1
+        }
+      ],
+      "longest_absent_target_opportunities": 1
+    },
+    {
+      "id": "nasdaq:slip0.05",
+      "states_checked": 4656,
+      "fills_checked": 1,
+      "metric_groups": 6,
+      "accepted_target_mismatches": 0,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    },
+    {
+      "id": "product:slip0.05",
+      "states_checked": 4656,
+      "fills_checked": 58,
+      "metric_groups": 6,
+      "accepted_target_mismatches": null,
+      "missing_holdings_episodes": [],
+      "longest_absent_target_opportunities": 0
+    }
+  ],
+  "formal_validation": false,
+  "complete_original_product_frontier_certified": false,
+  "result_sha256": "c6b3eef365fb466300b33fa3cc5a4c19b4482bb6ac60be57dbe8683e99e04940",
+  "extended_buy_delay_review_required": false
+}

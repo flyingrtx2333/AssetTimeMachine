@@ -1,0 +1,24 @@
+{
+  "bars": 6935,
+  "dates": [
+    "1999-03-10",
+    "2026-10-02"
+  ],
+  "fx_policy": "Append inverse FRED DEXCHUS only before original App FX first date; preserve every original later quote. Strict-prior session-calendar quote within 14 days for both open execution and close marks.",
+  "fx_prefix_rows": 222,
+  "fx_source_sha256": "b3503feb44df2269dd41b2863f9a37186b010457442c8894ebb10c2d68d5f116",
+  "limitations": [
+    "Reconstructed share denomination, not independently certified historical quote vintage.",
+    "FRED current revised FX, not original publication-vintage FX.",
+    "Price-only funded replay omits dividends and taxation."
+  ],
+  "original_fx_first": "2000-01-13",
+  "original_history_sha256": "7b41a7802c79cb3c5088055ad766973d5be85ae09e34a17582cc7064866ef846",
+  "performance_viewed": false,
+  "prefixed_history_sha256": "b534943524dc1b5dded1081a3f2fd14f64a4de4d4c8992a5029e2a1c5863afa9",
+  "prepared_at": "2026-10-08T08:53:04.710539+00:00",
+  "price_input_sha256": "08e16097e5835d3ccc34659cdc90d824768db050013e2591f0ca9d25cb3ccff1",
+  "price_policy": "Undo future split factors from Yahoo quote OHLC. Simulator changes held units on effective split date. Signals use only cumulative splits effective as of signal date. No adjusted-close input or dividends.",
+  "source_sha256": "b7883374c67fb3dc543211b11f3aa22683171abde6ed6292c0fda1608a60288e",
+  "split_primary_support": "https://www.govinfo.gov/content/pkg/FR-2002-01-10/pdf/02-635.pdf"
+}

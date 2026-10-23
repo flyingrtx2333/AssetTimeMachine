@@ -1,0 +1,5 @@
+Building for production...
+[2 / 4] AssetTimeMachineBacktestCore
+[3 / 5] AssetTimeMachineBacktestCore
+[5 / 5] AssetTimeMachineBacktestCore
+[9 / 11] AssetTimeMachineResearchSupport

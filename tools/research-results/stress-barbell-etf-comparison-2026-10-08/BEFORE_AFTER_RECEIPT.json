@@ -1,0 +1,24 @@
+{
+  "started_at": "2026-10-08T11:00:05.703881+00:00",
+  "old_commit": "ec1ebf08e5bc3733c16715b74b980a53b42076b3",
+  "old_helper_sha256": "ac27c3d1931ded6d9ee29ff8b461ba9bcbcb18cf2b9e83a755c96e9ab72232af",
+  "new_helper_sha256": "aca4a966b80cec645941869e4a150aafd425f894e94e2a684623f64481b3218c",
+  "commands": [
+    {
+      "name": "BEFORE_GOLDEN_BUILD",
+      "command": [
+        "rtk",
+        "proxy",
+        "swift",
+        "build",
+        "-c",
+        "release",
+        "--product",
+        "AssetTimeMachineMetricDump"
+      ],
+      "exit_code": 1
+    }
+  ],
+  "source_restored": true,
+  "completed_at": "2026-10-08T11:00:37.830079+00:00"
+}

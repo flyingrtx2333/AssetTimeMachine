@@ -1,0 +1,7 @@
+{
+  "comparison_nativeFull_field": "Source-complete metrics: original19 matched5595dates, QUAL native3086dates, stress native4678dates. This field name is inherited; do not call all19 native inception full histories.",
+  "true_native_19_reports": "ORIGINAL_NATIVE_ACCOUNT_REPORTS.json",
+  "original_native_accounts_preserved_in_previous_study": true,
+  "source_history_or_return_changed": false,
+  "comparison_rerun": false
+}

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "rtk",
+    "proxy",
+    "swift",
+    "test",
+    "-c",
+    "release",
+    "--filter",
+    "QQQReversalScreenTests|CashDistributionTests"
+  ],
+  "completed_at": "2026-10-08T09:00:07.204571+00:00",
+  "exit_code": 0
+}

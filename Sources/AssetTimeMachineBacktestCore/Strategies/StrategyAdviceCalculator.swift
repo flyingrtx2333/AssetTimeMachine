@@ -170,6 +170,8 @@ nonisolated public enum StrategyAdviceCalculator {
         nfciAsOf: BacktestNFCIAsOfData? = nil,
         strategyRun: AdvancedRotationStrategyRun? = nil
     ) -> StrategyRebalanceAdvice? {
+        if mode == .ke25 { return KE25LiveStrategy.advice(assetInputs: assetInputs) }
+        if mode == .kvo { return KE25LiveStrategy.advice(assetInputs: assetInputs, useKVO: true) }
         guard let config = RotationParameters.advancedRotationConfig(for: mode) else {
             return traceBackedRebalanceAdvice(
                 assetInputs: assetInputs,

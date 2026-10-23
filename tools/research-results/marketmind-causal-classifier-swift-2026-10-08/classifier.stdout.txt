@@ -1,0 +1,1 @@
+PASS fixed252 causal classifier: 8882 states, 11 reference cases, 5 rejections; zero accounts

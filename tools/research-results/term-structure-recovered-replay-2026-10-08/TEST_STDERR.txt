@@ -1,0 +1,25 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 1958]
+[Planning deferred tasks]
+[Starting]
+[1 / 164] SystemPackage
+[13 / 192]
+[15 / 79] Crypto
+[19 / 75] AssetTimeMachineBacktestCore
+[25 / 67] AssetTimeMachineResearchSupport
+[29 / 71] AssetTimeMachineResearchSupport
+[46 / 71] IntradayDownsideBreadthFreeze-product
+[52 / 77] RSRangeBreadthFormal-product
+[62 / 85] RSRangeBreadthFreeze-product
+[70 / 85] AssetTimeMachineMetricDump-product
+[76 / 96] AssetTimeMachineBacktestCoreTests-product
+[80 / 99] IntradayDownsideBreadthFormal-product
+[89 / 102] AssetTimeMachineResearch-product
+[92 / 101] AssetTimeMachineBacktestCoreTests-product
+[96 / 102] AssetTimeMachineResearch-product
+[96 / 102] AssetTimeMachineBacktestCoreTests-product
+[98 / 102] AssetTimeMachineBacktestCoreTests-product
+[102 / 102] AssetTimeMachineResearch-product
+[109 / 109] RSRangeBreadthFormal-product
+Build complete! (7.79秒)

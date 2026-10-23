@@ -1,0 +1,19 @@
+{
+  "started_at": "2026-10-08T12:35:16.141629+00:00",
+  "finished_at": "2026-10-08T12:35:19.870560+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "/Users/xiangjunsheng/AssetTimeMachine/.build/release/AssetTimeMachineResearch",
+    "saved-catalogue-common-compare",
+    "--accounts",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/catalogue-common-saved-nav-2026-10-08/accounts.json",
+    "--output",
+    "/Users/xiangjunsheng/FlyingrtxFast/research/asset-time-machine/workspace/studies/catalogue-common-saved-nav-2026-10-08/comparison",
+    "--source-commit",
+    "894b6fc7913fd66e539abed2b4aad04aa39e39ea"
+  ],
+  "return_code": 0,
+  "funded_runs": 0,
+  "saved_comparison_attempts": 1
+}

@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-10-21T02:00:00Z",
+  "appID": "6764277773",
+  "buildID": "aecc6d81-038f-4298-9b60-87acc0107e5f",
+  "version": "1.14",
+  "build": "206",
+  "processingState": "VALID",
+  "uploadedDate": "2026-10-20T18:59:04-07:00",
+  "internalBuildState": "IN_BETA_TESTING",
+  "externalBuildState": "READY_FOR_BETA_SUBMISSION",
+  "autoNotifyEnabled": true,
+  "rawStatusPath": "/Users/xiangjunsheng/.codex/worktrees/atm-testflight-206/AssetTimeMachine/build/TestFlight-1.14-206/asc-rest-status.json",
+  "rawStatusSHA256": "e82151036a768e03c3a63f13ca111e9a070de58c0b405acd05256f47e80ce1cc"
+}

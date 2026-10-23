@@ -82,7 +82,8 @@ let package = Package(
         .testTarget(
             name: "AssetTimeMachineBacktestCoreTests",
             dependencies: ["AssetTimeMachineBacktestCore", "AssetTimeMachineResearchSupport"],
-            path: "Server/Tests/CoreTests"
+            path: "Server/Tests/CoreTests",
+            resources: [.copy("Fixtures/KVO")]
         )
     ],
     swiftLanguageModes: [.v5]

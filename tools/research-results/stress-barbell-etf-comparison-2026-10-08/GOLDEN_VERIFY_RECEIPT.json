@@ -1,0 +1,13 @@
+{
+  "started_at": "2026-10-08T10:58:44.792131+00:00",
+  "command": [
+    "rtk",
+    "proxy",
+    "env",
+    "ATM_HISTORY_FIXTURE=tools/fixtures/backtest-history/public_history.json",
+    ".build/release/AssetTimeMachineMetricDump",
+    "--verify-app-baseline"
+  ],
+  "completed_at": "2026-10-08T10:59:20.762030+00:00",
+  "exit_code": 1
+}

@@ -1,0 +1,8 @@
+{
+  "status": "EXACT_NUMERICAL_EVENTS_KERNEL_AFTER_REMOVING_UNUSED_DIAGNOSTIC_JSON_ENCODING",
+  "researchHelperSHA256": "f292e7d2b07c9a18663fc048404f9ce98d73a87ab391eae3d98869869c5f1d8a",
+  "portSourceSHA256": "0b8d2133b825288f1672f6b6879b2994b6cea60cff7f19938c2d842900d146bb",
+  "eventsKernelSHA256": "34435b23a1b5a880ebe3115034e26ec95d4987315484e16bfc9030ef128233fd",
+  "numericExpressionsChanged": false,
+  "researchDiskWitnessAndTargetTemplateIOInApp": false
+}
