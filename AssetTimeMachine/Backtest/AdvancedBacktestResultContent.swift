@@ -60,6 +60,7 @@ struct AdvancedBacktestResultPage: View {
     @State private var showsCashYieldSheet = false
     @State private var showsRiskSignalSheet = false
     @State private var showsSharePoster = false
+    @State private var selectedChartDate: Date? = nil
 
     var body: some View {
         ZStack {
@@ -79,7 +80,8 @@ struct AdvancedBacktestResultPage: View {
                         showsRebalanceAdvice: presentation.showsRebalanceAdvice,
                         showsSupplementalRows: true,
                         onShowCashYield: { showsCashYieldSheet = true },
-                        onShowRiskSignal: { showsRiskSignalSheet = true }
+                        onShowRiskSignal: { showsRiskSignalSheet = true },
+                        selectedChartDateBinding: $selectedChartDate
                     )
 
                     if let record = presentation.record {
@@ -89,6 +91,14 @@ struct AdvancedBacktestResultPage: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
                 .padding(.bottom, TabScrollLayout.sheetBottomPadding)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if selectedChartDate != nil {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        selectedChartDate = nil
+                    }
+                }
             }
         }
         .sheet(isPresented: $showsCashYieldSheet) {
@@ -199,6 +209,7 @@ struct AdvancedBacktestResultContent: View {
     var showsSupplementalRows: Bool = true
     var onShowCashYield: (() -> Void)? = nil
     var onShowRiskSignal: (() -> Void)? = nil
+    var selectedChartDateBinding: Binding<Date?>? = nil
 
     @State private var showsAllRecentTrades = false
     @State private var showsRebalanceAmounts = false
@@ -211,6 +222,14 @@ struct AdvancedBacktestResultContent: View {
         VStack(alignment: .leading, spacing: 18) {
             resultSection
             tradeSection
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let binding = selectedChartDateBinding, binding.wrappedValue != nil {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    binding.wrappedValue = nil
+                }
+            }
         }
     }
 
@@ -227,7 +246,8 @@ struct AdvancedBacktestResultContent: View {
                         comparisonSeries: comparisonSeries,
                         exposurePoints: report.exposurePoints,
                         assetExposureSeries: report.assetExposureSeries,
-                        averageExposureRatio: report.averageExposureRatio
+                        averageExposureRatio: report.averageExposureRatio,
+                        selectedDateBinding: selectedChartDateBinding
                     )
                 } else {
                     BacktestValueChartSection(

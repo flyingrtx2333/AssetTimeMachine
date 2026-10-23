@@ -199,7 +199,7 @@ enum BacktestDefaults {
 
 enum StrategyRebalanceDefaults {
     static let defaultTemplateID = "core-gold-satellite-equity-curve-state-gate-momentum"
-    static let recommendedTemplateID = "gold-nasdaq-dual-trend-barbell"
+    static let recommendedTemplateID = "recent-volatility-managed-idle-cash"
 
     static var eligibleTemplates: [AdvancedBacktestStrategyTemplate] {
         AdvancedBacktestStrategyTemplate.productCatalog
@@ -229,7 +229,7 @@ enum StrategyRebalanceDefaults {
     }
 
     static func pickerTitle(for template: AdvancedBacktestStrategyTemplate) -> String {
-        guard BacktestProductStrategyCatalog.isCuratedTemplateID(template.id) else {
+        guard BacktestProductStrategyCatalog.isAdviceEligibleTemplateID(template.id) else {
             return template.title
         }
         var badges = [AppLocalization.string("精选")]

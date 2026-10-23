@@ -183,7 +183,7 @@ struct TodayPositionAdviceCard: View {
                         .lineLimit(2)
 
                     if let selectedTemplate,
-                       BacktestProductStrategyCatalog.isCuratedTemplateID(selectedTemplate.id) {
+                       BacktestProductStrategyCatalog.isAdviceEligibleTemplateID(selectedTemplate.id) {
                         CuratedStrategyBadge(compact: true)
                     }
 

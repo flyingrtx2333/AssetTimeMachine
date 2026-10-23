@@ -551,6 +551,7 @@ private struct BacktestDateEndpointButton: View {
 
 struct AdvancedStrategyLibrarySheet: View {
     private enum LibraryGroup: String, CaseIterable, Identifiable {
+        case all
         case selected
         case basic
 
@@ -558,6 +559,7 @@ struct AdvancedStrategyLibrarySheet: View {
 
         var title: String {
             switch self {
+            case .all: return AppLocalization.string("全部")
             case .selected: return AppLocalization.string("精选")
             case .basic: return AppLocalization.string("基础")
             }
@@ -565,6 +567,7 @@ struct AdvancedStrategyLibrarySheet: View {
 
         var icon: String {
             switch self {
+            case .all: return "square.grid.2x2"
             case .selected: return "sparkles"
             case .basic: return "function"
             }
@@ -572,8 +575,36 @@ struct AdvancedStrategyLibrarySheet: View {
 
         var accent: Color {
             switch self {
+            case .all: return AssetTheme.gold
             case .selected: return AssetTheme.gold
             case .basic: return AssetTheme.accentBlue
+            }
+        }
+    }
+
+    private enum StrategySortOption: String, CaseIterable, Identifiable {
+        case defaultOrder
+        case sharpeDescending
+        case returnDescending
+        case drawdownAscending
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .defaultOrder: return AppLocalization.string("默认推荐")
+            case .sharpeDescending: return AppLocalization.string("夏普最高")
+            case .returnDescending: return AppLocalization.string("年化最高")
+            case .drawdownAscending: return AppLocalization.string("低回撤优先")
+            }
+        }
+
+        var icon: String {
+            switch self {
+            case .defaultOrder: return "arrow.up.arrow.down"
+            case .sharpeDescending: return "chart.bar.xaxis"
+            case .returnDescending: return "percent"
+            case .drawdownAscending: return "shield.checkered"
             }
         }
     }
@@ -658,6 +689,7 @@ struct AdvancedStrategyLibrarySheet: View {
     let onSelect: (AdvancedBacktestStrategyTemplate) -> Void
     @State private var searchText = ""
     @State private var selectedGroup: LibraryGroup
+    @State private var selectedSort: StrategySortOption = .defaultOrder
     @State private var validationSelection: ValidationSheetSelection?
 
     init(
@@ -682,7 +714,7 @@ struct AdvancedStrategyLibrarySheet: View {
     private var matchingTemplates: [AdvancedBacktestStrategyTemplate] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return templates.filter { template in
-            let matchesGroup = group(for: template) == selectedGroup
+            let matchesGroup = selectedGroup == .all || group(for: template) == selectedGroup
             guard matchesGroup else { return false }
             guard !query.isEmpty else { return true }
             return template.title.localizedCaseInsensitiveContains(query)
@@ -693,16 +725,89 @@ struct AdvancedStrategyLibrarySheet: View {
         }
     }
 
+    private var sortedMatchingTemplates: [AdvancedBacktestStrategyTemplate] {
+        let list = matchingTemplates
+        switch selectedSort {
+        case .defaultOrder:
+            return list
+        case .sharpeDescending:
+            return list.sorted {
+                if $0.sharpeRatio != $1.sharpeRatio {
+                    return $0.sharpeRatio > $1.sharpeRatio
+                }
+                return $0.annualizedReturn > $1.annualizedReturn
+            }
+        case .returnDescending:
+            return list.sorted {
+                if $0.annualizedReturn != $1.annualizedReturn {
+                    return $0.annualizedReturn > $1.annualizedReturn
+                }
+                return $0.sharpeRatio > $1.sharpeRatio
+            }
+        case .drawdownAscending:
+            return list.sorted {
+                if $0.maxDrawdown != $1.maxDrawdown {
+                    return $0.maxDrawdown < $1.maxDrawdown
+                }
+                return $0.sharpeRatio > $1.sharpeRatio
+            }
+        }
+    }
+
     private var availableGroups: [LibraryGroup] {
         LibraryGroup.allCases.filter { group in
-            templates.contains { template in
-                self.group(for: template) == group
+            switch group {
+            case .all:
+                return true
+            case .selected, .basic:
+                return templates.contains { template in
+                    self.group(for: template) == group
+                }
             }
         }
     }
 
     private var visibleSections: [StrategySection] {
+        if selectedSort != .defaultOrder {
+            return [
+                StrategySection(
+                    id: "sorted-\(selectedSort.id)",
+                    title: selectedSort.title,
+                    icon: selectedSort.icon,
+                    accent: AssetTheme.gold,
+                    templates: sortedMatchingTemplates
+                )
+            ]
+        }
+
         switch selectedGroup {
+        case .all:
+            var sections: [StrategySection] = []
+            let selectedTemplates = matchingTemplates.filter { group(for: $0) == .selected }
+            if !selectedTemplates.isEmpty {
+                sections.append(
+                    StrategySection(
+                        id: "all-selected",
+                        title: AppLocalization.string("精选策略"),
+                        icon: "sparkles",
+                        accent: AssetTheme.gold,
+                        templates: selectedTemplates
+                    )
+                )
+            }
+            let basicTemplates = matchingTemplates.filter { group(for: $0) == .basic }
+            if !basicTemplates.isEmpty {
+                sections.append(
+                    StrategySection(
+                        id: "all-basic",
+                        title: AppLocalization.string("基础基准"),
+                        icon: "function",
+                        accent: AssetTheme.accentBlue,
+                        templates: basicTemplates
+                    )
+                )
+            }
+            return sections
         case .selected:
             return StrategyTier.allCases.compactMap { tier in
                 let sectionTemplates = matchingTemplates.filter {
@@ -797,34 +902,72 @@ struct AdvancedStrategyLibrarySheet: View {
     }
 
     private var strategySearchArea: some View {
-        HStack(spacing: 9) {
-            Image(systemName: "magnifyingglass")
-                .font(AppTypography.metaStrong)
-                .foregroundStyle(AssetTheme.textSecondary)
-            TextField(AppLocalization.string("搜索策略、机制或资产"), text: $searchText)
-                .font(AppTypography.meta)
-                .foregroundStyle(AssetTheme.textPrimary)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
-                .submitLabel(.search)
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(AppTypography.metaStrong)
-                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
+        HStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(AppTypography.metaStrong)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                TextField(AppLocalization.string("搜索策略、机制或资产"), text: $searchText)
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.textPrimary)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .submitLabel(.search)
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(AppTypography.metaStrong)
+                            .foregroundStyle(AssetTheme.textSecondary.opacity(0.76))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
+            )
+
+            Menu {
+                ForEach(StrategySortOption.allCases) { option in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            selectedSort = option
+                        }
+                    } label: {
+                        HStack {
+                            Text(option.title)
+                            if selectedSort == option {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: selectedSort == .defaultOrder ? "arrow.up.arrow.down" : selectedSort.icon)
+                        .font(.caption.weight(.bold))
+                    Text(selectedSort.title)
+                        .font(AppTypography.captionStrong)
+                        .lineLimit(1)
+                }
+                .foregroundStyle(selectedSort == .defaultOrder ? AssetTheme.textSecondary : AssetTheme.gold)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 10)
+                .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(
+                            selectedSort == .defaultOrder ? AssetTheme.border.opacity(0.55) : AssetTheme.gold.opacity(0.4),
+                            lineWidth: 1
+                        )
+                )
             }
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 11)
-        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.55), lineWidth: 1)
-        )
     }
 
     private var strategyGroupPicker: some View {
@@ -833,6 +976,16 @@ struct AdvancedStrategyLibrarySheet: View {
                 ForEach(availableGroups) { group in
                     let isSelected = selectedGroup == group
                     let accent = group.accent
+                    let count: Int = {
+                        switch group {
+                        case .all:
+                            return templates.count
+                        case .selected:
+                            return templates.filter { self.group(for: $0) == .selected }.count
+                        case .basic:
+                            return templates.filter { self.group(for: $0) == .basic }.count
+                        }
+                    }()
                     Button {
                         withAnimation(.easeInOut(duration: 0.18)) {
                             selectedGroup = group
@@ -843,7 +996,7 @@ struct AdvancedStrategyLibrarySheet: View {
                                 .font(.caption2.weight(.bold))
                             Text(group.title)
                                 .font(AppTypography.captionStrong)
-                            Text(String(templates.filter { self.group(for: $0) == group }.count))
+                            Text(String(count))
                                 .font(.caption2.weight(.bold))
                                 .foregroundStyle(isSelected ? Color.black.opacity(0.64) : AssetTheme.textSecondary)
                         }
@@ -1093,6 +1246,7 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var isExperimentalStrategy: Bool {
         BacktestProductStrategyCatalog.isExperimentalTemplateID(template.id)
+            && !BacktestProductStrategyCatalog.isFeaturedRecentTemplateID(template.id)
     }
 
     var body: some View {
@@ -1105,7 +1259,7 @@ struct AdvancedStrategyTemplateRow: View {
                         .frame(width: 36, height: 36)
                         .background(strategyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
 
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .leading, spacing: 5) {
                         Text(template.title)
                             .font(isFeatured ? .headline.weight(.bold) : AppTypography.rowTitle)
                             .foregroundStyle(AssetTheme.textPrimary)
@@ -1127,6 +1281,8 @@ struct AdvancedStrategyTemplateRow: View {
                                 }
                             }
                         }
+
+                        strategyMetricsView
                     }
 
                     Spacer(minLength: 6)
@@ -1178,6 +1334,46 @@ struct AdvancedStrategyTemplateRow: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 4)
             .background(accent.opacity(0.11), in: Capsule())
+    }
+
+    private var strategyMetricsView: some View {
+        guard template.annualizedReturn != 0 || template.maxDrawdown != 0 || template.sharpeRatio != 0 else {
+            return AnyView(EmptyView())
+        }
+        return AnyView(
+            HStack(spacing: 6) {
+                metricPill(
+                    label: AppLocalization.string("年化"),
+                    value: (template.annualizedReturn > 0 ? "+" : "") + template.annualizedReturn.backtestPercentString(maxFractionDigits: 1),
+                    color: template.annualizedReturn >= 0 ? AssetTheme.positive : AssetTheme.accentRed
+                )
+                metricPill(
+                    label: AppLocalization.string("夏普"),
+                    value: String(format: "%.2f", template.sharpeRatio),
+                    color: template.sharpeRatio >= 1.0 ? AssetTheme.gold : (template.sharpeRatio >= 0 ? AssetTheme.textPrimary : AssetTheme.accentRed)
+                )
+                metricPill(
+                    label: AppLocalization.string("回撤"),
+                    value: template.maxDrawdown.backtestPercentString(maxFractionDigits: 1),
+                    color: template.maxDrawdown <= 0.15 ? AssetTheme.positive : (template.maxDrawdown <= 0.30 ? AssetTheme.accentOrange : AssetTheme.accentRed)
+                )
+            }
+            .padding(.top, 2)
+        )
+    }
+
+    private func metricPill(label: String, value: String, color: Color) -> some View {
+        HStack(spacing: 3) {
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(AssetTheme.textSecondary)
+            Text(value)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
     }
 }
 

@@ -519,10 +519,6 @@ struct InteractiveBacktestChart: View, Equatable {
     }
 
     private func initializePersistentSelectionIfNeeded() {
-        guard keepsSelectionAfterInteraction,
-              activeSelectedDate == nil,
-              let latestDate = interactionPoints.last?.date else { return }
-        updateSelection(latestDate)
     }
 
     private func publishVisibleDateDomain() {
@@ -604,21 +600,25 @@ struct InteractiveBacktestChart: View, Equatable {
 
     @ChartContentBuilder
     private func selectionMarks() -> some ChartContent {
-        if let selectedPoint {
+        if activeSelectedDate != nil, let selectedPoint {
             PointMark(
                 x: .value(AppLocalization.string("日期"), selectedPoint.date),
                 y: .value(AppLocalization.string("组合净值"), selectedPoint.portfolioValue)
             )
             .foregroundStyle(interactionColor)
             .symbolSize(44)
-        }
 
-        if activeSelectedDate != nil, let selectedPoint {
             RuleMark(x: .value(AppLocalization.string("选中日期"), selectedPoint.date))
                 .foregroundStyle(AssetTheme.gold.opacity(0.72))
                 .lineStyle(StrokeStyle(lineWidth: 1))
                 .annotation(position: .overlay, alignment: selectedPopoverAlignment, spacing: 7) {
                     selectedValuePopover
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                updateSelection(nil)
+                            }
+                        }
                 }
         }
     }
@@ -666,7 +666,6 @@ struct InteractiveBacktestChart: View, Equatable {
                 .stroke(AssetTheme.border.opacity(0.9), lineWidth: 0.8)
         )
         .shadow(color: Color.black.opacity(0.24), radius: 12, y: 5)
-        .allowsHitTesting(false)
     }
 
     @ViewBuilder
@@ -919,6 +918,14 @@ struct InteractiveBacktestChart: View, Equatable {
                             updateSelection(nil)
                         }
                     }
+                    .simultaneousGesture(
+                        TapGesture()
+                            .onEnded {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    updateSelection(nil)
+                                }
+                            }
+                    )
 
                     if let selectedPoint {
                         BacktestChartGuideReporter(
@@ -934,7 +941,6 @@ struct InteractiveBacktestChart: View, Equatable {
         .simultaneousGesture(viewportMagnifyGesture)
         .onChange(of: points.count) { _, _ in
             clampViewport()
-            initializePersistentSelectionIfNeeded()
             publishVisibleDateDomain()
         }
         .onChange(of: visibleSeriesIDs) { _, _ in
@@ -951,7 +957,6 @@ struct InteractiveBacktestChart: View, Equatable {
             publishVisibleDateDomain()
         }
         .onAppear {
-            initializePersistentSelectionIfNeeded()
             publishVisibleDateDomain()
         }
     }
@@ -1412,11 +1417,16 @@ struct AdvancedBacktestCombinedChartSection: View {
     let exposurePoints: [BacktestExposurePoint]
     let assetExposureSeries: [BacktestAssetExposureSeries]
     let averageExposureRatio: Double
+    var selectedDateBinding: Binding<Date?>? = nil
 
     @State private var hiddenLegendItemIDs: Set<String> = []
     @State private var visibleDateDomain: ClosedRange<Date>?
     @State private var showsLegend = false
-    @State private var selectedDate: Date?
+    @State private var localSelectedDate: Date?
+
+    private var activeSelectedDateBinding: Binding<Date?> {
+        selectedDateBinding ?? $localSelectedDate
+    }
 
     private var chartPoints: [BacktestSeriesPoint] {
         BacktestChartData.sampledPoints(from: points)
@@ -1526,7 +1536,7 @@ struct AdvancedBacktestCombinedChartSection: View {
     }
 
     private var selectedAmountItems: [BacktestChartSelectionItem] {
-        guard let selectedDate,
+        guard let selectedDate = activeSelectedDateBinding.wrappedValue,
               let portfolioPoint = nearestChartPoint(points, to: selectedDate, date: \.date) else {
             return []
         }
@@ -1627,8 +1637,8 @@ struct AdvancedBacktestCombinedChartSection: View {
                     onVisibleDateDomainChange: { domain in
                         visibleDateDomain = domain
                     },
-                    selectionDate: selectedDate,
-                    onSelectionChange: { selectedDate = $0 },
+                    selectionDate: activeSelectedDateBinding.wrappedValue,
+                    onSelectionChange: { activeSelectedDateBinding.wrappedValue = $0 },
                     selectionItems: selectedAmountItems,
                     showsDateRuler: true,
                     showsXAxis: false,
@@ -1641,7 +1651,7 @@ struct AdvancedBacktestCombinedChartSection: View {
                     dateDomain: visibleDateDomain,
                     visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
                     assetColors: assetColors,
-                    selectedDate: $selectedDate
+                    selectedDate: activeSelectedDateBinding
                 )
             }
 
@@ -1675,6 +1685,14 @@ struct AdvancedBacktestCombinedChartSection: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if activeSelectedDateBinding.wrappedValue != nil {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    activeSelectedDateBinding.wrappedValue = nil
+                }
+            }
+        }
         .onChange(of: legendItems.map(\.id)) { _, itemIDs in
             hiddenLegendItemIDs.formIntersection(itemIDs)
         }
@@ -1685,7 +1703,7 @@ struct AdvancedBacktestCombinedChartSection: View {
                 let testDate = points[points.count / 2].date
                 Task { @MainActor in
                     await Task.yield()
-                    selectedDate = testDate
+                    activeSelectedDateBinding.wrappedValue = testDate
                 }
             }
         }
@@ -1940,6 +1958,14 @@ struct BacktestExposureChartSection: View {
                 ) { date in
                     selectedDate = date
                 }
+                .simultaneousGesture(
+                    TapGesture()
+                        .onEnded {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedDate = nil
+                            }
+                        }
+                )
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))

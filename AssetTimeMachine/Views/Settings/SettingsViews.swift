@@ -885,7 +885,7 @@ private struct SettingsStrategySummaryRow: View {
                         .lineLimit(2)
 
                     if let template,
-                       BacktestProductStrategyCatalog.isCuratedTemplateID(template.id) {
+                       BacktestProductStrategyCatalog.isAdviceEligibleTemplateID(template.id) {
                         CuratedStrategyBadge(compact: true)
                     }
                 }

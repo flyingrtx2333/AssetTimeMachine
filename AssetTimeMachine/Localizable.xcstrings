@@ -33410,6 +33410,282 @@
           }
         }
       }
+    },
+    "精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Curated strategy: on Low-Noise Enhanced, apply pair mean reversion to strict T−1 252-day log-ratio Z-scores for ONEQ/SPY and 510300/510210. When either pair exceeds ±1, shift 25% of that pair’s weight toward the relatively cheaper leg; historical annualized return ~17.9%, Sharpe ~1.81, max drawdown ~8.3%, reviewed daily."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精選策略：在低噪增強持倉上，以嚴格 T−1 的 ONEQ/SPY 和 510300/510210 各252日對數比率 Z 分數做配對均值回歸；超過 ±1 時在對應配對內轉移總權重的25%，維持配對總倉不變；歷史年化收益約17.9%，夏普約1.81，最大回撤約8.3%，每日覆核。"
+          }
+        }
+      }
+    },
+    "精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Curated strategy (Recommended): on Low-Noise Enhanced, use strict T−1 realized volatility over 63 sessions to deploy idle cash toward a 10% target volatility without leverage or de-risking base holdings; historical annualized return ~19.7%, Sharpe ~1.76, max drawdown ~11.0%, reviewed daily."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精選策略（推薦）：在低噪增強持倉上，以嚴格 T−1 的63個交易日組合波動估計為依據，只把閒置現金部署到10%目標波動，不降低原風險倉，不加槓桿；歷史年化收益約19.7%，夏普約1.76，最大回撤約11.0%，每日覆核。"
+          }
+        }
+      }
+    },
+    "低回撤优先": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lowest Drawdown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低回撤优先"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "低回撤優先"
+          }
+        }
+      }
+    },
+    "回撤": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drawdown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回撤"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回撤"
+          }
+        }
+      }
+    },
+    "基础基准": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic Benchmarks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基础基准"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基礎基準"
+          }
+        }
+      }
+    },
+    "夏普最高": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest Sharpe"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夏普最高"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夏普最高"
+          }
+        }
+      }
+    },
+    "年化": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CAGR"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年化"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年化"
+          }
+        }
+      }
+    },
+    "年化最高": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest Return"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年化最高"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "年化最高"
+          }
+        }
+      }
+    },
+    "探索策略": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exploratory Strategy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "探索策略"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "探索策略"
+          }
+        }
+      }
+    },
+    "跨市场配对回归": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cross-Market Pair Reversion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跨市场配对回归"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跨市場配對均值回歸"
+          }
+        }
+      }
+    },
+    "闲置现金控波部署": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idle-Cash Volatility Management"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "闲置现金控波部署"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閒置現金控波部署"
+          }
+        }
+      }
+    },
+    "黄金权益相对回归": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gold-Equity Relative Reversion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄金权益相对回归"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黃金權益相對均值回歸"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
