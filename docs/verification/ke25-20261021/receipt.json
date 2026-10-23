@@ -1,0 +1,94 @@
+{
+  "status": "KE25_LIVE_RULES_BACKTEST_AND_DAILY_ADVICE_INTEGRATION_VERIFIED",
+  "completedAt": "2026-10-21T00:30:49.316918+00:00",
+  "branch": "codex/add-ke25-strategy-20261021",
+  "canonicalAppHEADUnchanged": "aae8bfcc8425456bd3b0ae8fb29b10fb0e4e0d16",
+  "fullDesiredTargetKeyAndDoubleBitsParity": 5735,
+  "fullDailyStateSHAParity": "303dc6fa36cf3cd42e8c77c5d82f167080b2ddff796426338eda70acd2267e20",
+  "historicalAppRF0Sharpe": 1.2604899693983074,
+  "physicalPriceFinancialPrefixCuts": [
+    313,
+    744,
+    2500
+  ],
+  "registeredAppFactoryFullStateParity": true,
+  "dailyAdviceUsesLatestDesiredNotPendingAccepted": true,
+  "currentRealDataAdviceCivilDate": "2026-10-19",
+  "currentAPIReceipt": {
+    "fetchedAt": "2026-10-21T00:19:14.115456+00:00",
+    "sha256": "16f088eb334602ffe3f127f07d8c2b365529e11d401fbd3dc952fb58eab1ce8f",
+    "series": {
+      "gold_cny": {
+        "lastDate": "2026-10-20",
+        "rows": 6470
+      },
+      "nasdaq_composite": {
+        "lastDate": "2026-10-19",
+        "rows": 6741
+      },
+      "sp500": {
+        "lastDate": "2026-10-19",
+        "rows": 6752
+      },
+      "dow_jones": {
+        "lastDate": "2026-10-19",
+        "rows": 6742
+      },
+      "hang_seng": {
+        "lastDate": "2026-10-20",
+        "rows": 6604
+      },
+      "nikkei225": {
+        "lastDate": "2026-10-13",
+        "rows": 6563
+      },
+      "oil_wti_cny": {
+        "lastDate": "2026-10-20",
+        "rows": 6900
+      },
+      "csi300": {
+        "lastDate": "2026-10-20",
+        "rows": 6012
+      },
+      "shanghai_composite": {
+        "lastDate": "2026-10-20",
+        "rows": 6491
+      },
+      "shenzhen_component": {
+        "lastDate": "2026-10-20",
+        "rows": 6491
+      },
+      "chinext": {
+        "lastDate": "2026-10-20",
+        "rows": 3977
+      },
+      "usd_per_cny": {
+        "lastDate": "2026-10-20",
+        "rows": 6851
+      }
+    }
+  },
+  "fourSignalModulesLiteralOriginalSHA256": {
+    "RangeConflictSignal.swift": "df05526e54b922550c6f96a0d5d27523ad7a0381c501152b15ac2e83256a48e0",
+    "ImpulseTargetSignal.swift": "dc41c02923917d26a6e411a23b8442ffcee09d31271b20719232c01ad0a092c6",
+    "IslandGapSignal.swift": "649b82899240cc3e0519ece2b210cea1cf3ec5e0ae695d3b7acad2fe10052f13",
+    "BreakoutSARExitSignal.swift": "28e49b4ce0dc6a10e28f076146b0b01f5d048820d60408fc85d302819225d977"
+  },
+  "sourceFiles": {
+    "Sources/AssetTimeMachineBacktestCore/Strategies/KE25Signals/BreakoutSARExitSignal.swift": "28e49b4ce0dc6a10e28f076146b0b01f5d048820d60408fc85d302819225d977",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/KE25Signals/ImpulseTargetSignal.swift": "dc41c02923917d26a6e411a23b8442ffcee09d31271b20719232c01ad0a092c6",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/KE25Signals/IslandGapSignal.swift": "649b82899240cc3e0519ece2b210cea1cf3ec5e0ae695d3b7acad2fe10052f13",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/KE25Signals/KE25ParentPolicy.swift": "9d147195ec5f4b7a6ef2f041d0904e5d4aeac807515b3ec898230979f84d6602",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/KE25Signals/RangeConflictSignal.swift": "df05526e54b922550c6f96a0d5d27523ad7a0381c501152b15ac2e83256a48e0",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/KE25LiveStrategy.swift": "688ad54aeda9381f80cef837be1a792a6787f467188c4828bf58842083abf556"
+  },
+  "iphoneSimulatorReleaseCompilation": "PASS_UNSIGNED",
+  "macCatalystReleaseCompilation": "PASS_UNSIGNED",
+  "localizationAudit": "PASS",
+  "deviceUIVerified": false,
+  "testFlightUploaded": false,
+  "forwardPerformanceCertified": false,
+  "mainResearchRecordsModified": false,
+  "correctedVerificationHarnessIssue": "Original fixture dictionary needed the same nasdaq_composite to nasdaq alias as App/CLI; real API route reverified separately without economic rule changes",
+  "nativeGoldenAndPrefixLogContainsInitialHarnessFailure": true
+}

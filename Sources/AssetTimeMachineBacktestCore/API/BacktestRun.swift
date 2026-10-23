@@ -210,6 +210,8 @@ public enum StrategyRegistry {
         return (catalog + internalModes).map { template in
         let version: String
         switch template.id {
+        case "ke25": version = "ke25-forward-v1-2026-10-21"
+        case "kvo": version = "kvo-forward-v1-2026-10-22"
         case "nfci-dual-core-v1": version = "dualcore-v1-2026-08-14"
         case "nfci-dual-core-v11": version = "dualcore-v11-2026-08-15"
         default: version = legacyRulesVersion

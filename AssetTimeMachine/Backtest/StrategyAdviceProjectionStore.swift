@@ -66,7 +66,7 @@ final class StrategyAdviceProjectionStore: ObservableObject {
 
         let assetOptions = StrategyRebalanceDefaults.assetOptions(for: template)
         let historySymbols = StrategyRebalanceDefaults.historySymbols(for: assetOptions)
-        if template.mode.requiresNFCIAsOf,
+        if !AppPreviewSession.isActive, template.mode.requiresNFCIAsOf,
            force || !marketStore.hasFreshNFCIAsOf() {
             updateProgress(
                 fraction: 0.14,
@@ -86,7 +86,9 @@ final class StrategyAdviceProjectionStore: ObservableObject {
                 template.title
             )
         )
-        _ = await marketStore.refreshHistory(for: historySymbols, force: force)
+        if !AppPreviewSession.isActive {
+            _ = await marketStore.refreshHistory(for: historySymbols, force: force)
+        }
         guard !Task.isCancelled, calculationGeneration == generation else { return }
 
         if isMissingRequiredHistory(for: assetOptions, marketStore: marketStore) {

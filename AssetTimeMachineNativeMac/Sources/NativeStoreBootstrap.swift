@@ -43,6 +43,37 @@ final class NativeStoreBootstrap {
         ])
         do {
             let arguments = ProcessInfo.processInfo.arguments
+            if AppPreviewSession.isActive && arguments.contains("-macWorkspaceInMemory") {
+                let opened = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+                let context = ModelContext(opened)
+                let groups = [AssetCategory(name: "金融资产", group: .financial), AssetCategory(name: "实物资产", group: .physical), AssetCategory(name: "负债", group: .liability)]
+                groups.forEach(context.insert)
+                let names = ["银行存款", "指数基金", "现金", "黄金", "其他", "车辆", "信用贷款"]
+                let symbols = ["building.columns", "chart.line.uptrend.xyaxis", "banknote", "square.stack", "square.grid.2x2", "car", "creditcard"]
+                let amounts = [35000.0, 25000, 20000, 15000, 5000, 20000, 20000]
+                let items = names.enumerated().map { index, name in
+                    let item = AssetItem(name: name, valuationMethod: index == 1 ? .quantityAndUnitPrice : .directAmount,
+                        sortOrder: index, category: groups[index < 5 ? 0 : (index == 5 ? 1 : 2)])
+                    item.iconName = symbols[index]; context.insert(item); return item
+                }
+                let first = Calendar.current.date(from: DateComponents(year: 2026, month: 8, day: 31))!
+                for day in 0..<30 {
+                    let snapshot = AssetSnapshot(date: Calendar.current.date(byAdding: .day, value: day, to: first)!)
+                    context.insert(snapshot)
+                    let scale = day == 29 ? 1 : (90000 + Double(day) * 29000 / 28) / 120000
+                    for index in items.indices {
+                        let amount = amounts[index] * (index == 6 ? 1 : scale)
+                        let entry = AssetEntry(amount: index == 1 ? nil : amount,
+                            quantity: index == 1 ? 100 * scale : nil, unitPrice: index == 1 ? 250 : nil,
+                            snapshot: snapshot, item: items[index])
+                        context.insert(entry)
+                    }
+                }
+                try context.save()
+                container = opened; sourceURL = nil; baselineSnapshotCount = 30
+                isMissingStore = false; isNewStore = false; error = nil
+                return
+            }
             let testURL: URL? = {
                 guard let index = arguments.firstIndex(of: "-macPerfStorePath"), arguments.indices.contains(index + 1) else { return nil }
                 return URL(fileURLWithPath: arguments[index + 1])

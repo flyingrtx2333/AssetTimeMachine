@@ -1,6 +1,6 @@
 import Combine
 import Foundation
-#if !os(macOS) || targetEnvironment(macCatalyst)
+#if canImport(AssetTimeMachineBacktestCore)
 import AssetTimeMachineBacktestCore
 #endif
 import SwiftUI
@@ -88,7 +88,7 @@ enum AppLocalization {
         currentLanguage.locale
     }
 
-#if !os(macOS) || targetEnvironment(macCatalyst)
+#if canImport(AssetTimeMachineBacktestCore)
     static func backtestTextContext() -> BacktestText.Context {
         let language = currentLanguage
         let translations = Dictionary(uniqueKeysWithValues: BacktestPresentation.localizationKeys.map {

@@ -1,6 +1,72 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "KE25": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25"
+          }
+        }
+      }
+    },
+    "五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unlevered five-asset strategy combining 75% defensive targets with 25% breakout holdings. Components keep independent signal state and recalculate daily from completed observations; remaining capital stays in cash. Your fees and slippage apply. The live extension awaits forward validation; past performance does not predict future returns."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五资产无杠杆策略：按75%防守组合与25%突破持仓合成目标仓位，保留各部分的独立信号状态；每日使用上一已完成观察期重新计算，其余资金留现金。手续费与滑点采用你的设置。实时延伸尚待前瞻验证，历史表现不代表未来收益。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "五資產無槓桿策略：按75%防守組合與25%突破持倉合成目標倉位，保留各部分的獨立訊號狀態；每日使用上一已完成觀察期重新計算，其餘資金留現金。手續費與滑點採用你的設定。實時延伸尚待前瞻驗證，歷史表現不代表未來收益。"
+          }
+        }
+      }
+    },
+    "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25: 75% defensive targets and 25% breakout holdings, recalculated from the previous completed observation. Exposure is capped at 100%; remaining capital stays in cash."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25：使用上一已完成观察期计算75%防守组合与25%突破持仓，总仓位不超过100%，其余留现金。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KE25：使用上一已完成觀察期計算75%防守組合與25%突破持倉，總倉位不超過100%，其餘留現金。"
+          }
+        }
+      }
+    },
     "": {},
     " · %d日动量 %@": {
       "extractionState": "manual",
@@ -31930,48 +31996,48 @@
         }
       }
     },
-    "精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。": {
+    "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；每日复核。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Curated strategy: on Low-Noise Enhanced, apply pair mean reversion to strict T−1 252-day log-ratio Z-scores for ONEQ/SPY and 510300/510210. When either pair exceeds ±1, shift 25% of that pair’s weight toward the relatively cheaper leg; historical annualized return ~17.9%, Sharpe ~1.81, max drawdown ~8.3%, reviewed daily."
+            "value": "Recent-window exploratory strategy (not formally validated; not recommended): starting from Low-Noise Enhanced, apply mean reversion to strict T−1 252-day log-ratio Z-scores for ONEQ/SPY and 510300/510210. When either pair exceeds ±1, shift 25% of that pair’s total weight toward the relatively cheaper leg, keeping pair exposure unchanged; review daily."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。"
+            "value": "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；每日复核。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "精選策略：在低噪增強持倉上，以嚴格 T−1 的 ONEQ/SPY 和 510300/510210 各252日對數比率 Z 分數做配對均值回歸；超過 ±1 時在對應配對內轉移總權重的25%，維持配對總倉不變；歷史年化收益約17.9%，夏普約1.81，最大回撤約8.3%，每日覆核。"
+            "value": "近期窗口探索策略（未通過正式驗證、非推薦）：在低噪增強上，以嚴格 T−1 的 ONEQ/SPY 和 510300/510210 各252日對數比率 Z 分數做均值回歸；超過 ±1 時在對應配對內轉移總權重的25%，維持配對總倉不變；每日覆核。"
           }
         }
       }
     },
-    "精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。": {
+    "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Curated strategy (Recommended): on Low-Noise Enhanced, use strict T−1 realized volatility over 63 sessions to deploy idle cash toward a 10% target volatility without leverage or de-risking base holdings; historical annualized return ~19.7%, Sharpe ~1.76, max drawdown ~11.0%, reviewed daily."
+            "value": "Recent-window exploratory strategy (not formally validated; not recommended): on the Low-Noise Enhanced portfolio, use strict T−1 realized volatility over the latest 63 sessions to deploy idle cash toward a 10% volatility target. Do not reduce existing risk holdings or use leverage; review daily. Fees and slippage follow the configured settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。"
+            "value": "近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "精選策略（推薦）：在低噪增強持倉上，以嚴格 T−1 的63個交易日組合波動估計為依據，只把閒置現金部署到10%目標波動，不降低原風險倉，不加槓桿；歷史年化收益約19.7%，夏普約1.76，最大回撤約11.0%，每日覆核。"
+            "value": "近期窗口探索策略（未通過正式驗證、非推薦）：在低噪增強的產品化持倉上，以嚴格 T−1 的63個交易日組合波動估計為依據，只把閒置現金部署到10%目標波動，不降低原風險倉，不加槓桿；每日覆核，手續費和滑點採用你的設定。"
           }
         }
       }
@@ -32957,6 +33023,52 @@
         }
       }
     },
+    "本机记录尚未关联当前账户，已暂停同步。请确认账户后合并。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sync paused: local records are not linked to this account. Confirm the account to merge."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本机记录尚未关联当前账户，已暂停同步。请确认账户后合并。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本機記錄尚未關聯目前帳戶，已暫停同步。請確認帳戶後合併。"
+          }
+        }
+      }
+    },
+    "确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Do these local records belong to this account? A backup is saved before merging. Conflicts pause sync without overwriting either copy."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認本機記錄屬於目前帳戶？合併前會保留備份；衝突時暫停，不覆蓋兩端記錄。"
+          }
+        }
+      }
+    },
     "本机记录尚未确认账户归属，已暂停上传。请先核对并恢复当前账户的云端数据，或导出本机记录。": {
       "extractionState": "manual",
       "localizations": {
@@ -33233,6 +33345,118 @@
         }
       }
     },
+    "KVO量价组合": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO Price–Volume Portfolio"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO量价组合"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO量價組合"
+          }
+        }
+      }
+    },
+    "黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A gold, Nasdaq Composite, S&P 500, CSI 300 and Shanghai Composite portfolio. Combines a 75% defensive sleeve with 25% breakout positions; KVO 34/55 with a 13-session signal confirms China-equity entries. Defaults to 0.025% per fill, zero slippage and no leverage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "黃金、納指、標普500、滬深300與上證綜指的量價組合。以75%防守組合搭配25%突破持倉，KVO34/55與13日訊號線確認A股入場；預設每筆手續費0.025%、零滑點，不使用槓桿。"
+          }
+        }
+      }
+    },
+    "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO combines a 75% defensive sleeve with 25% price–volume-confirmed breakouts using the latest completed observation; gross exposure is capped at 100%."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO：以75%防守组合搭配25%量价确认突破，使用上一已完成观察期数据，总仓位不超过100%。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "KVO：以75%防守組合搭配25%量價確認突破，使用上一已完成觀察期資料，總倉位不超過100%。"
+          }
+        }
+      }
+    },
+    "精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Curated strategy: on Low-Noise Enhanced, apply pair mean reversion to strict T−1 252-day log-ratio Z-scores for ONEQ/SPY and 510300/510210. When either pair exceeds ±1, shift 25% of that pair’s weight toward the relatively cheaper leg; historical annualized return ~17.9%, Sharpe ~1.81, max drawdown ~8.3%, reviewed daily."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精選策略：在低噪增強持倉上，以嚴格 T−1 的 ONEQ/SPY 和 510300/510210 各252日對數比率 Z 分數做配對均值回歸；超過 ±1 時在對應配對內轉移總權重的25%，維持配對總倉不變；歷史年化收益約17.9%，夏普約1.81，最大回撤約8.3%，每日覆核。"
+          }
+        }
+      }
+    },
+    "精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Curated strategy (Recommended): on Low-Noise Enhanced, use strict T−1 realized volatility over 63 sessions to deploy idle cash toward a 10% target volatility without leverage or de-risking base holdings; historical annualized return ~19.7%, Sharpe ~1.76, max drawdown ~11.0%, reviewed daily."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "精選策略（推薦）：在低噪增強持倉上，以嚴格 T−1 的63個交易日組合波動估計為依據，只把閒置現金部署到10%目標波動，不降低原風險倉，不加槓桿；歷史年化收益約19.7%，夏普約1.76，最大回撤約11.0%，每日覆核。"
+          }
+        }
+      }
+    },
     "低回撤优先": {
       "extractionState": "manual",
       "localizations": {
@@ -33459,6 +33683,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "黃金權益相對均值回歸"
+          }
+        }
+      }
+    },
+    "导出本机记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Local Records"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出本机记录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出本機記錄"
+          }
+        }
+      }
+    },
+    "请先完成当前编辑": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先完成当前编辑"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先完成目前編輯"
+          }
+        }
+      }
+    },
+    "未找到匹配的历史版本，无法自动合并。请导出本机记录以核对差异。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching historical version was found. Export local records to review the differences before merging."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到匹配的历史版本，无法自动合并。请导出本机记录以核对差异。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到相符的歷史版本，無法自動合併。請匯出本機記錄以核對差異。"
           }
         }
       }

@@ -1,0 +1,12 @@
+Touch /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-ios.qfI0Vc/Build/Products/Release-iphonesimulator/AssetTimeMachine.app (in target 'AssetTimeMachine' from project 'AssetTimeMachine')
+    cd /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine
+    /usr/bin/touch -c /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-ios.qfI0Vc/Build/Products/Release-iphonesimulator/AssetTimeMachine.app
+
+PruneExplicitPrecompiledModules /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-ios.qfI0Vc/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-ios.qfI0Vc/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/xiangjunsheng/.codex/worktrees/atm-ke25/AssetTimeMachine/build/.validation-ios.qfI0Vc/SDKExplicitPrecompiledModules
+
+** BUILD SUCCEEDED **
+

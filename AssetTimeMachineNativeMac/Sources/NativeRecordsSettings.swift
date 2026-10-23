@@ -13,13 +13,15 @@ final class NativeRecordEditor: ObservableObject {
         let group: AssetGroup
         let icon: String?
         let method: ValuationMethod
+        let autoPriceSymbol: String?
         let amount: Double?
         let quantity: Double?
         let price: Double?
         let note: String
         let entryUpdatedAt: Date?
         var total: Double { amount ?? ((quantity ?? 0) * (price ?? 0)) }
-        var isEmpty: Bool { amount == nil && quantity == nil && price == nil }
+        var isEmpty: Bool { amount == nil && quantity == nil && (autoPriceSymbol != nil || price == nil) }
+        var isZeroBalance: Bool { !isEmpty && total == 0 && (method == .directAmount ? amount == 0 : quantity == 0) }
         var draft: Draft {
             Draft(amount: amount.map { $0.formatted(.number.locale(Locale(identifier: "en_US")).precision(.fractionLength(2))) } ?? "",
                   quantity: quantity.map { String($0) } ?? "",
@@ -79,7 +81,7 @@ final class NativeRecordEditor: ObservableObject {
                 let entry = entries[item.id]
                 return Row(id: item.id, name: item.name, category: item.category?.name ?? "资产",
                            group: item.category?.group ?? .financial, icon: item.iconName,
-                           method: item.valuationMethod, amount: entry?.amount,
+                           method: item.valuationMethod, autoPriceSymbol: item.autoPricedMarketSymbol, amount: entry?.amount,
                            quantity: entry?.quantity, price: entry?.unitPrice, note: entry?.note ?? "",
                            entryUpdatedAt: entry?.updatedAt)
             }
@@ -88,7 +90,10 @@ final class NativeRecordEditor: ObservableObject {
         } catch { self.error = error.localizedDescription }
     }
 
-    func update(_ row: Row, draft: Draft) {
+    func update(_ row: Row, draft proposed: Draft) {
+        var draft = proposed
+        // Market-derived prices belong to the dated snapshot, never to a manual draft.
+        if row.autoPriceSymbol != nil { draft.price = row.draft.price }
         if draftToken == nil {
             guard let token = ModelContextMutationBarrier.shared.beginEditorDraft() else {
                 error = "数据正在更新，请稍后编辑"
@@ -129,8 +134,14 @@ final class NativeRecordEditor: ObservableObject {
                 let draft = drafts[row.id]!
                 if row.method == .quantityAndUnitPrice {
                     let quantity = try number(draft.quantity, name: row.name + " 数量")
-                    let price = try number(draft.price, name: row.name + " 单价")
-                    guard (quantity == nil) == (price == nil) else { throw failure("\(row.name)：请同时填写数量和单价") }
+                    let price = row.autoPriceSymbol == nil
+                        ? try number(draft.price, name: row.name + " 单价") : row.price
+                    if row.autoPriceSymbol != nil && quantity != nil && price == nil {
+                        throw failure("\(row.name)：这天缺少行情价格")
+                    }
+                    if row.autoPriceSymbol == nil, (quantity == nil) != (price == nil) {
+                        throw failure("\(row.name)：请同时填写数量和单价")
+                    }
                     if let quantity, let price, !(quantity * price).isFinite { throw failure("\(row.name)：金额超出有效范围") }
                     changes.append((row, nil, quantity, price))
                 } else {
@@ -149,7 +160,8 @@ final class NativeRecordEditor: ObservableObject {
                 }
                 let current = snapshot.entries.first(where: { $0.item?.id == row.id })
                 guard current?.updatedAt == row.entryUpdatedAt,
-                      item.valuationMethod == row.method else {
+                      item.valuationMethod == row.method,
+                      item.autoPricedMarketSymbol == row.autoPriceSymbol else {
                     throw failure("\(row.name)：记录已在其他位置更新，请放弃草稿后重新载入")
                 }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount,
@@ -174,7 +186,6 @@ struct NativeRecordsView: View {
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     @ObservedObject var editor: NativeRecordEditor
     @State private var addingGroup: AssetGroup?
-    @State private var expandedGroups: Set<AssetGroup> = []
     @State private var deleteRecord = false
     @State private var deletingItem: NativeRecordEditor.Row?
     @State private var confirmsDiscard = false
@@ -185,53 +196,68 @@ struct NativeRecordsView: View {
     }
     private var selectedIndex: Int? { history.summaries.firstIndex { $0.id == editor.snapshotID } }
 
+    @State private var collapsedGroups: Set<AssetGroup> = []
+    @State private var showsUnfilled = false
+    @State private var expandedZeroGroups: Set<AssetGroup> = []
+    @State private var pendingSnapshotID: UUID?
+    @Environment(\.accessibilityReduceMotion) private var reducedMotion
+    private var reduced: Bool { reducedMotion || NativeHomeStyle.previewReduced }
+    private var unfilled: [NativeRecordEditor.Row] { editor.rows.filter(\.isEmpty) }
+    private var disclosureTransition: AnyTransition {
+        reduced ? .opacity : .offset(y: -6).combined(with: .opacity)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                NativePageHeader(title: "记录", subtitle: nil)
-                Button("添加资产", systemImage: "plus") { addingGroup = .financial }
-                    .disabled(editor.isDirty)
-                Button("记录今日资产", systemImage: "calendar.badge.plus", action: recordToday)
-                    .disabled(editor.isDirty)
-                    .buttonStyle(.borderedProminent).tint(AssetTheme.gold)
-            }
-            HStack(spacing: 10) {
-                Button { moveDate(-1) } label: { Image(systemName: "chevron.left") }
-                    .disabled(editor.isDirty || (selectedIndex ?? 0) == 0)
-                Text(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录")
-                    .font(.system(size: 12, weight: .semibold))
-                Button { moveDate(1) } label: { Image(systemName: "chevron.right") }
-                    .disabled(editor.isDirty || (selectedIndex ?? 0) >= history.summaries.count - 1)
-                Spacer()
-                Text("净资产").foregroundStyle(.secondary)
-                Text(money(total(.financial) + total(.physical) - total(.liability))).fontWeight(.semibold).monospacedDigit()
-                Menu {
-                    Button("删除这天的记录", role: .destructive) { deleteRecord = true }
-                        .disabled(editor.isDirty || editor.snapshotID == nil)
-                } label: { Image(systemName: "ellipsis") }
-                .menuStyle(.borderlessButton).frame(width: 20)
-            }
-            .font(.system(size: 11))
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            HStack(spacing: NativeStyle.Space.lg) {
+                metric("净资产", value: total(.financial) + total(.physical) - total(.liability))
+                Rectangle().fill(NativeHomeStyle.line).frame(width: 0.5, height: 18)
+                metric("总资产", value: total(.financial) + total(.physical))
+                Rectangle().fill(NativeHomeStyle.line).frame(width: 0.5, height: 18)
+                metric("负债", value: total(.liability))
+                Spacer(minLength: 0)
+            }.padding(.top, NativeStyle.Space.sm).padding(.bottom, NativeStyle.Space.sm)
             if editor.snapshotID != nil {
-                GeometryReader { geometry in
-                    ScrollView {
-                        HStack(alignment: .top, spacing: 12) {
-                            groupPanel(.financial, minimumHeight: geometry.size.height - 2)
-                                .frame(width: (geometry.size.width - 12) * 0.57)
-                            VStack(spacing: 12) {
-                                groupPanel(.physical, minimumHeight: (geometry.size.height - 14) / 2)
-                                groupPanel(.liability, minimumHeight: (geometry.size.height - 14) / 2)
-                            }.frame(maxWidth: .infinity)
-                        }.padding(.bottom, 2)
-                    }
-                }
+                columnHeadings
+                ScrollView {
+                    VStack(spacing: 0) {
+                        groupPanel(.financial)
+                        groupPanel(.physical).padding(.top, 10)
+                        groupPanel(.liability).padding(.top, 10)
+                        if !unfilled.isEmpty {
+                            Button {
+                                withAnimation(NativeStyle.Motion.records(reduced)) { showsUnfilled.toggle() }
+                            } label: {
+                                HStack(spacing: 14) {
+                                    Image(systemName: "chevron.right").rotationEffect(.degrees(showsUnfilled ? 90 : 0))
+                                    Text("未填写 (\(unfilled.count))")
+                                    Spacer()
+                                }.padding(.horizontal, NativeStyle.Space.sm).frame(height: 36)
+                            }.foregroundStyle(NativeHomeStyle.secondary)
+                            if showsUnfilled {
+                                VStack(spacing: 0) { ForEach(unfilled) { accountRow($0) } }
+                                    .transition(disclosureTransition)
+                            }
+                        }
+                    }.padding(.bottom, NativeStyle.Space.md)
+                }.scrollIndicators(.hidden)
             } else {
-                ContentUnavailableView("暂无记录", systemImage: "calendar", description: Text("点击“记录今日资产”开始。"))
+                ContentUnavailableView("暂无记录", systemImage: "calendar")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             footer
         }
-        .padding(22)
+        .font(NativeStyle.FontRole.body)
+        .frame(maxWidth: NativeStyle.Layout.ledgerMaxWidth, alignment: .leading)
+        .padding(.horizontal, NativeStyle.Layout.pageInset).padding(.top, NativeStyle.Layout.pageInset).padding(.bottom, NativeStyle.Space.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(NativeOutsideClickDismissal())
+        .buttonStyle(NativeRecordsButtonStyle())
+        .modifier(NativeWorkspaceSurface())
+        .animation(NativeStyle.Motion.records(reduced), value: editor.isDirty)
+        .animation(NativeStyle.Motion.records(reduced), value: editor.error)
+        .animation(NativeStyle.Motion.records(reduced), value: editor.savedAt)
         .task {
             if !editor.isDirty { editor.load(id: editor.snapshotID ?? history.summaries.last?.id, container: context.container) }
         }
@@ -244,10 +270,15 @@ struct NativeRecordsView: View {
         }
         .confirmationDialog("放弃未保存的修改？", isPresented: $confirmsDiscard) {
             Button("放弃修改", role: .destructive) {
-                editor.discard()
-                editor.load(id: editor.snapshotID, container: context.container)
+                let destination = pendingSnapshotID ?? editor.snapshotID
+                pendingSnapshotID = nil
+                withAnimation(NativeStyle.Motion.records(reduced)) {
+                    editor.discard()
+                    editor.load(id: destination, container: context.container)
+                }
             }
         }
+        .onChange(of: confirmsDiscard) { _, presented in if !presented { pendingSnapshotID = nil } }
         .confirmationDialog("删除这天的资产记录？", isPresented: $deleteRecord) {
             Button("删除记录", role: .destructive) { removeRecord() }
         } message: { Text("此操作会参与云端同步。") }
@@ -258,53 +289,98 @@ struct NativeRecordsView: View {
         } message: { Text("删除后会参与云端同步。") }
     }
 
-    private func groupPanel(_ group: AssetGroup, minimumHeight: CGFloat = 0) -> some View {
-        let rows = editor.rows.filter { $0.group == group }
-        // Keep a row in place while typing; regroup only after a successful save.
-        let filled = rows.filter { !$0.isEmpty }
-        let empty = rows.filter { $0.isEmpty }
-        return NativeCard {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 9) {
-                    Image(systemName: groupSymbol(group))
-                        .font(.system(size: 18)).foregroundStyle(AssetTheme.gold)
-                        .frame(width: 32, height: 32).background(NativePalette.softGold, in: RoundedRectangle(cornerRadius: 8))
-                    Text(group.displayName).font(.system(size: 14, weight: .semibold))
-                    Spacer(minLength: 2)
-                    Text(money(total(group))).font(.system(size: 13, weight: .semibold)).monospacedDigit()
-                }.padding(.bottom, 16)
-                Divider()
-                ForEach(filled) { row in accountRow(row); Divider() }
-                if filled.isEmpty && !expandedGroups.contains(group) {
-                    Text("暂无已填写项目").font(.system(size: 11)).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 18)
-                }
-                if expandedGroups.contains(group) {
-                    ForEach(empty) { row in accountRow(row); Divider() }
-                }
-                Spacer(minLength: 0)
-                HStack {
-                    Button { addingGroup = group } label: { Label("添加", systemImage: "plus") }
-                        .disabled(editor.isDirty)
-                    Spacer(minLength: 2)
-                    if !empty.isEmpty {
+    private var header: some View {
+        HStack(spacing: 14) {
+            Text("记录").font(NativeStyle.FontRole.pageTitle)
+            HStack(spacing: 10) {
+                Button { moveDate(-1) } label: { Image(systemName: "chevron.left").frame(width: 18, height: 24) }
+                    .accessibilityLabel("上一条记录").disabled((selectedIndex ?? 0) == 0)
+                Text(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录")
+                    .monospacedDigit().lineLimit(1).frame(minWidth: 116)
+                    .contentTransition(.opacity)
+                Button { moveDate(1) } label: { Image(systemName: "chevron.right").frame(width: 18, height: 24) }
+                    .accessibilityLabel("下一条记录").disabled((selectedIndex ?? 0) >= history.summaries.count - 1)
+            }.padding(.horizontal, NativeStyle.Space.xxs)
+                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(NativeHomeStyle.line, lineWidth: 0.7))
+            Menu {
+                Button("删除这天的记录", role: .destructive) { deleteRecord = true }
+                    .disabled(editor.isDirty || editor.snapshotID == nil)
+            } label: { Image(systemName: "ellipsis").frame(width: 24, height: 28) }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel("记录操作")
+            Spacer(minLength: 6)
+            Button("添加资产") { addingGroup = .financial }
+                .padding(.horizontal, NativeStyle.Space.lg).frame(height: 30)
+                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(NativeHomeStyle.line, lineWidth: 0.7))
+                .disabled(editor.isDirty)
+            Button("记录今日资产", action: recordToday).modifier(NativeRecordsPrimary()).disabled(editor.isDirty)
+        }.frame(height: NativeStyle.Control.fieldHeight)
+    }
+    private func metric(_ title: String, value: Double) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: NativeStyle.Space.sm) {
+            Text(title).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
+            Text(money(value)).font(NativeStyle.FontRole.subheadingStrong).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.75)
+                .contentTransition(reduced ? .opacity : .numericText())
+        }.fixedSize(horizontal: true, vertical: false)
+            .animation(NativeStyle.Motion.records(reduced), value: value)
+    }
+    private var columnHeadings: some View {
+        HStack(spacing: NativeStyle.Space.sm) {
+            Text("资产").frame(maxWidth: .infinity, alignment: .leading)
+            Text("数量").frame(width: NativeStyle.Layout.quantityWidth, alignment: .trailing)
+            Text("单价 (¥)").frame(width: NativeStyle.Layout.unitPriceWidth, alignment: .trailing)
+            Text("金额 (¥)").frame(width: NativeStyle.Layout.amountWidth, alignment: .trailing)
+            Color.clear.frame(width: 22)
+        }.font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
+            .padding(.horizontal, NativeStyle.Space.sm).frame(height: 26)
+    }
+    @ViewBuilder private func groupPanel(_ group: AssetGroup) -> some View {
+        let filled = editor.rows.filter { $0.group == group && !$0.isEmpty }
+        let balances = filled.filter { !$0.isZeroBalance }
+        let zeroBalances = filled.filter(\.isZeroBalance)
+        if !filled.isEmpty {
+            VStack(spacing: 0) {
+                Button {
+                    withAnimation(NativeStyle.Motion.records(reduced)) {
+                        if !collapsedGroups.insert(group).inserted { collapsedGroups.remove(group) }
+                    }
+                } label: {
+                    HStack(spacing: NativeStyle.Space.sm) {
+                        Text(group.displayName).fontWeight(.medium)
+                        Text("(\(filled.count))").foregroundStyle(NativeHomeStyle.secondary)
+                        Spacer()
+                        Text(total(group).formatted(.number.precision(.fractionLength(2)))).monospacedDigit()
+                            .contentTransition(reduced ? .opacity : .numericText())
+                        Image(systemName: "chevron.down").rotationEffect(.degrees(collapsedGroups.contains(group) ? -90 : 0))
+                            .foregroundStyle(NativeHomeStyle.secondary).frame(width: 22)
+                    }.padding(.horizontal, NativeStyle.Space.sm).frame(height: NativeStyle.Layout.ledgerGroupHeight)
+                        .background(NativeHomeStyle.text.opacity(0.025))
+                }.accessibilityLabel(group.displayName + (collapsedGroups.contains(group) ? "，展开" : "，收起"))
+                if !collapsedGroups.contains(group) {
+                    VStack(spacing: 0) { ForEach(balances) { accountRow($0) } }
+                        .transition(disclosureTransition)
+                    if !zeroBalances.isEmpty {
                         Button {
-                            if !expandedGroups.insert(group).inserted { expandedGroups.remove(group) }
-                        } label: {
-                            HStack(spacing: 3) {
-                                Text("未填写 (\(empty.count))")
-                                Image(systemName: expandedGroups.contains(group) ? "chevron.up" : "chevron.down")
+                            withAnimation(NativeStyle.Motion.records(reduced)) {
+                                if !expandedZeroGroups.insert(group).inserted { expandedZeroGroups.remove(group) }
                             }
+                        } label: {
+                            HStack(spacing: NativeStyle.Space.xs) {
+                                Image(systemName: "chevron.right")
+                                    .rotationEffect(.degrees(expandedZeroGroups.contains(group) ? 90 : 0))
+                                Text("零余额 (\(zeroBalances.count))")
+                                Spacer()
+                            }.font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
+                                .padding(.horizontal, NativeStyle.Space.sm).frame(height: NativeStyle.Layout.ledgerRowHeight)
+                        }.accessibilityLabel(group.displayName + "，零余额" + (expandedZeroGroups.contains(group) ? "，收起" : "，展开"))
+                        if expandedZeroGroups.contains(group) {
+                            VStack(spacing: 0) { ForEach(zeroBalances) { accountRow($0) } }
+                                .transition(disclosureTransition)
                         }
                     }
                 }
-                .font(.system(size: 10)).buttonStyle(.plain).foregroundStyle(.secondary)
-                .padding(.top, 12)
-            }.frame(minHeight: max(0, minimumHeight - 28), alignment: .top)
+            }.animation(NativeStyle.Motion.records(reduced), value: total(group))
         }
-    }
-    private func groupSymbol(_ group: AssetGroup) -> String {
-        switch group { case .financial: "banknote"; case .physical: "house"; case .liability: "creditcard" }
     }
     private func accountRow(_ row: NativeRecordEditor.Row) -> some View {
         NativeLedgerRow(row: row, draft: Binding(
@@ -314,33 +390,50 @@ struct NativeRecordsView: View {
         delete: { deletingItem = row })
     }
     private var footer: some View {
-        NativeCard {
+        VStack(spacing: NativeStyle.Space.md) {
+            Rectangle().fill(NativeHomeStyle.line).frame(height: 0.5)
             HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    if let error = editor.error {
-                        Text(error).foregroundStyle(AssetTheme.negative)
-                    } else if editor.isDirty {
-                        Text("修改 \(editor.drafts.count) 项 · 尚未保存").foregroundStyle(AssetTheme.gold)
-                    } else {
-                        Label(editor.savedAt == nil ? "已载入本机记录" : "已保存至本机", systemImage: "checkmark.circle")
-                            .foregroundStyle(.secondary)
-                    }
-                    if editor.isDirty { Text("切换页面会保留草稿").font(.system(size: 9)).foregroundStyle(.secondary) }
-                }.font(.system(size: 11))
+                Group {
+                    if let error = editor.error { Text(error).foregroundStyle(AssetTheme.negative) }
+                    else if editor.isDirty { Text("修改 \(editor.drafts.count) 项").foregroundStyle(NativeHomeStyle.secondary) }
+                    else { Text(savedStatus).foregroundStyle(NativeHomeStyle.secondary).help(cloud.errorMessage ?? cloud.indicatorLabel) }
+                }.font(NativeStyle.FontRole.caption).transition(.opacity)
                 Spacer(minLength: 4)
-                if editor.isDirty { Button("放弃修改") { confirmsDiscard = true }.controlSize(.small) }
-                Button("保存更改") {
-                    if editor.save(container: context.container) { refresh() }
+                if editor.isDirty {
+                    Button("放弃修改") { pendingSnapshotID = nil; confirmsDiscard = true }
+                        .padding(.horizontal, NativeStyle.Space.md).transition(.opacity)
                 }
-                .keyboardShortcut("s", modifiers: .command)
-                .buttonStyle(.borderedProminent).tint(AssetTheme.gold)
-                .disabled(!editor.isDirty)
-            }
+                Button("保存更改") {
+                    withAnimation(NativeStyle.Motion.records(reduced)) {
+                        NSApp.keyWindow?.makeFirstResponder(nil)
+                        if editor.save(container: context.container) { refresh() }
+                    }
+                }.keyboardShortcut("s", modifiers: .command).modifier(NativeRecordsPrimary()).disabled(!editor.isDirty)
+            }.frame(minHeight: 34)
         }
     }
+
+    private var savedStatus: String {
+        guard let savedAt = editor.savedAt else { return "已载入本机记录" }
+        if cloud.isSessionPending { return "已存本机 · 正在连接云端" }
+        guard cloud.currentUser != nil, cloud.hasToken else { return "已存本机 · 未登录" }
+        if cloud.requiresLocalOwnershipConfirmation { return "已存本机 · 待确认同步" }
+        if cloud.errorMessage?.isEmpty == false { return "已存本机 · 同步失败" }
+        if cloud.isWorking { return "已存本机 · 正在同步" }
+        if cloud.indicatorState == .checking { return "已存本机 · 等待同步" }
+        if let syncedAt = cloud.lastSyncAt, syncedAt >= savedAt { return "已同步云端" }
+        return "已存本机 · 等待同步"
+    }
+
     private func moveDate(_ offset: Int) {
         guard let index = selectedIndex, history.summaries.indices.contains(index + offset) else { return }
-        editor.load(id: history.summaries[index + offset].id, container: context.container)
+        let destination = history.summaries[index + offset].id
+        if editor.isDirty { pendingSnapshotID = destination; confirmsDiscard = true }
+        else {
+            withAnimation(NativeStyle.Motion.records(reduced)) {
+                editor.load(id: destination, container: context.container)
+            }
+        }
     }
     private func refresh() {
         editor.load(id: editor.snapshotID ?? history.summaries.last?.id, container: context.container)
@@ -403,67 +496,79 @@ struct NativeRecordsView: View {
 }
 
 private struct NativeLedgerRow: View {
+    @Environment(\.accessibilityReduceMotion) private var systemReduced
+    @FocusState private var focused: String?
+    @State private var hovered = false
     let row: NativeRecordEditor.Row
     @Binding var draft: NativeRecordEditor.Draft
     let dirty: Bool
     let canDelete: Bool
     let delete: () -> Void
+    private var reduced: Bool { systemReduced || NativeHomeStyle.previewReduced }
+    private var active: Bool { hovered || focused != nil }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                icon.frame(width: 25, height: 25)
-                Text(row.name).font(.system(size: 12, weight: .medium)).lineLimit(1).help(row.name)
-                if dirty { Circle().fill(AssetTheme.gold).frame(width: 4, height: 4) }
-                Spacer(minLength: 4)
-                if row.method == .directAmount {
-                    field("金额", text: $draft.amount).frame(width: 105)
+        HStack(spacing: NativeStyle.Space.sm) {
+            HStack(spacing: 5) {
+                Text(row.name).lineLimit(1).help(row.name)
+                if dirty { Circle().fill(NativeHomeStyle.accent).frame(width: 3, height: 3) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            if row.method == .directAmount {
+                Color.clear.frame(width: NativeStyle.Layout.quantityWidth)
+                Color.clear.frame(width: NativeStyle.Layout.unitPriceWidth)
+                field("金额", text: $draft.amount, width: NativeStyle.Layout.amountWidth)
+            } else {
+                field("数量", text: $draft.quantity, width: NativeStyle.Layout.quantityWidth)
+                if row.autoPriceSymbol != nil {
+                    Text(row.price.map { $0.formatted(.number.precision(.fractionLength(2...6))) } ?? "—")
+                        .monospacedDigit().frame(width: NativeStyle.Layout.unitPriceWidth, alignment: .trailing)
+                        .foregroundStyle(NativeHomeStyle.secondary)
+                        .accessibilityLabel(row.name + " 行情单价，只读")
+                        .accessibilityValue(row.price.map { String($0) } ?? "—")
+                        .help("当日行情价格")
                 } else {
-                    Text(amountPreview).font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
+                    field("单价", text: $draft.price, width: NativeStyle.Layout.unitPriceWidth)
                 }
-                Menu { Button("删除资产项目", role: .destructive, action: delete).disabled(!canDelete) }
-                    label: { Image(systemName: "ellipsis").font(.system(size: 12)) }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 16)
+                Text(amountPreview).monospacedDigit().frame(width: NativeStyle.Layout.amountWidth, alignment: .trailing)
+                    .contentTransition(reduced ? .opacity : .numericText())
+                    .animation(NativeStyle.Motion.records(reduced), value: amountPreview)
             }
-            if row.method == .quantityAndUnitPrice {
-                HStack(spacing: 5) {
-                    Text("数量").foregroundStyle(.secondary)
-                    field("数量", text: $draft.quantity)
-                    Text("×").foregroundStyle(.secondary)
-                    field("单价", text: $draft.price)
-                }.font(.system(size: 10)).padding(.leading, 33)
-            }
-        }.padding(.vertical, 13)
+            Menu { Button("删除资产项目", role: .destructive, action: delete).disabled(!canDelete) }
+                label: { Image(systemName: "ellipsis").foregroundStyle(NativeHomeStyle.secondary).opacity(active ? 1 : 0.3).frame(width: 22, height: 26) }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .accessibilityLabel(row.name + "操作")
+        }.font(NativeStyle.FontRole.body).padding(.horizontal, NativeStyle.Space.sm).frame(height: NativeStyle.Layout.ledgerRowHeight)
+            .background(NativeHomeStyle.accent.opacity(active ? 0.075 : 0))
+            .overlay(alignment: .bottom) { Rectangle().fill(NativeHomeStyle.line.opacity(active ? 0.8 : 0.18)).frame(height: 0.5) }
+            .onHover { hovered = $0 }
+            .animation(NativeStyle.Motion.records(reduced), value: active)
     }
     private var amountPreview: String {
         let q = Double(draft.quantity.replacingOccurrences(of: ",", with: ""))
         let p = Double(draft.price.replacingOccurrences(of: ",", with: ""))
         guard let q, let p, (q * p).isFinite else { return "—" }
-        return (q * p).formatted(.currency(code: "CNY").precision(.fractionLength(2)))
+        return (q * p).formatted(.number.precision(.fractionLength(2)))
     }
-    private func field(_ name: String, text: Binding<String>) -> some View {
-        HStack(spacing: 3) {
-            if name == "金额" { Text("¥").foregroundStyle(.secondary) }
-            TextField(name, text: text)
-                .textFieldStyle(.plain).multilineTextAlignment(.trailing)
-                .accessibilityLabel("\(row.name) \(name)")
-        }
-            .font(.system(size: 12)).monospacedDigit()
-            .padding(.horizontal, 7).frame(height: 28)
-            .background(NativePalette.canvas, in: RoundedRectangle(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(dirty ? AssetTheme.gold.opacity(0.7) : NativePalette.line))
+    private func field(_ name: String, text: Binding<String>, width: CGFloat) -> some View {
+        let display = Binding<String>(get: {
+            let raw = text.wrappedValue
+            guard focused != name, !raw.isEmpty,
+                  let value = Double(raw.replacingOccurrences(of: ",", with: "")), value.isFinite else { return raw }
+            return value.formatted(.number.locale(Locale(identifier: "en_US")).precision(.fractionLength(name == "数量" ? 0...6 : 2...6)))
+        }, set: { text.wrappedValue = $0 })
+        return TextField("—", text: display)
+            .textFieldStyle(.plain).multilineTextAlignment(.trailing)
+            .accessibilityLabel("\(row.name) \(name)")
+            .focused($focused, equals: name)
+            .font(NativeStyle.FontRole.body).monospacedDigit()
+            .foregroundStyle(name == "金额" || focused == name ? NativeHomeStyle.text : NativeHomeStyle.secondary)
+            .padding(.horizontal, 7).frame(width: width, height: NativeStyle.Layout.ledgerFieldHeight)
+            .background(NativeHomeStyle.text.opacity(active ? 0.025 : 0), in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
+            .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).strokeBorder(
+                focused == name ? NativeHomeStyle.accent.opacity(0.85) : NativeHomeStyle.line.opacity(active ? 1 : 0), lineWidth: 0.8))
+            .animation(NativeStyle.Motion.records(reduced), value: focused)
     }
-    @ViewBuilder private var icon: some View {
-        if let key = row.icon, key.hasPrefix("icon_"), let image = NSImage(named: key) {
-            Image(nsImage: image).resizable().scaledToFit().clipShape(RoundedRectangle(cornerRadius: 6))
-        } else {
-            let fallback = row.group == .physical ? "house.fill" : (row.group == .liability ? "creditcard.fill" : "banknote.fill")
-            let symbol = row.icon.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) == nil ? nil : $0 } ?? fallback
-            Image(systemName: symbol).font(.system(size: 15)).foregroundStyle(AssetTheme.gold)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(NativePalette.softGold, in: RoundedRectangle(cornerRadius: 6))
-        }
-    }
+
 }
 
 private struct NativeAddItemSheet: View {
@@ -478,6 +583,8 @@ private struct NativeAddItemSheet: View {
     @State private var valuationMethod: ValuationMethod = .directAmount
     @State private var marketSymbol = ""
     @State private var error: String?
+    @Environment(\.accessibilityReduceMotion) private var reducedMotion
+    @FocusState private var nameFocused: Bool
 
     init(categories: [AssetCategory], initialGroup: AssetGroup = .financial, onSaved: @escaping () -> Void) {
         self.categories = categories
@@ -487,8 +594,8 @@ private struct NativeAddItemSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("添加资产").font(.system(size: 18, weight: .semibold))
-            TextField("资产名称", text: $name)
+            Text("添加资产").font(NativeStyle.FontRole.dialogTitle)
+            TextField("资产名称", text: $name).focused($nameFocused)
             Picker("类型", selection: $selectedGroup) {
                 ForEach(AssetGroup.allCases) { group in Text(group.displayName).tag(group) }
             }
@@ -505,7 +612,7 @@ private struct NativeAddItemSheet: View {
                 }
             }
             if selectedCategoryID == nil { TextField("新分类名称", text: $newCategory) }
-            if let error { Text(error).foregroundStyle(.red).font(.caption) }
+            if let error { Text(error).foregroundStyle(AssetTheme.negative).font(NativeStyle.FontRole.caption) }
             HStack {
                 Spacer()
                 Button("取消") { dismiss() }
@@ -513,7 +620,12 @@ private struct NativeAddItemSheet: View {
             }
         }
         .padding(22)
-        .frame(width: 390)
+        .frame(width: 390).modifier(NativeWorkspaceSurface())
+        .onAppear { nameFocused = true }
+        .onExitCommand { dismiss() }
+        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: valuationMethod)
+        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedCategoryID)
+        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: error)
     }
     private func save() {
         guard let token = ModelContextMutationBarrier.shared.beginEditorDraft() else {
@@ -559,11 +671,11 @@ struct NativeSettingsView: View {
                 NativePageHeader(title: "设置", subtitle: "账户、同步与本机数据")
                 NativeCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("云同步").font(.system(size: 14, weight: .semibold))
+                        Text("云同步").font(NativeStyle.FontRole.sectionStrong)
                         Text(cloud.currentUser?.displayName ?? "未登录 · 可继续本机使用")
-                            .font(.system(size: 12)).foregroundStyle(.secondary)
-                        if let status = cloud.statusMessage { Text(status).font(.caption).foregroundStyle(AssetTheme.positive) }
-                        if let error = cloud.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
+                            .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
+                        if let status = cloud.statusMessage { Text(status).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive) }
+                        if let error = cloud.errorMessage { Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative) }
                         HStack {
                             if cloud.currentUser == nil { Button("登录", action: { showsLogin = true }) }
                             else {
@@ -579,27 +691,32 @@ struct NativeSettingsView: View {
                 }
                 NativeCard {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("本机数据").font(.system(size: 14, weight: .semibold))
+                        Text("本机数据").font(NativeStyle.FontRole.sectionStrong)
                         Text("\(history.summaries.count) 条历史记录")
-                            .font(.system(size: 12)).foregroundStyle(.secondary)
+                            .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
                         HStack {
                             Button("导出 JSON", action: exportJSON)
                             Button("导入 JSON", action: importJSON)
                         }
-                        if let message { Text(message).font(.caption).foregroundStyle(AssetTheme.positive) }
-                        if let error { Text(error).font(.caption).foregroundStyle(.red) }
+                        if let message { Text(message).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive) }
+                        if let error { Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative) }
                     }
                 }
-            }.padding(24)
+            }.padding(NativeStyle.Space.section)
+        }
+        .task {
+            if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") {
+                showsLogin = true
+            }
         }
         .sheet(isPresented: $showsLogin) {
-            NativeAccountChoice(cloud: cloud) { showsLogin = false }
+            NativeAccountChoice(cloud: cloud, allowsOffline: false) { showsLogin = false }
                 .environment(\.modelContext, context)
         }
         .alert("确认关联到当前账户？", isPresented: $showOwnershipConfirmation) {
             Button("取消", role: .cancel) {}
             Button("确认并同步") { Task { await cloud.authorizeLocalDataForCurrentAccount(from: context) } }
-        } message: { Text("本机记录将上传到当前账户的云端备份。请确认这是你的账户。") }
+        } message: { Text("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。") }
         .confirmationDialog("从云端恢复最新备份？", isPresented: $showRestoreConfirmation) {
             Button("恢复备份") {
                 Task {
@@ -645,18 +762,47 @@ struct NativeSettingsView: View {
 }
 
 struct NativeAccountChoice: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @ObservedObject var cloud: AssetTimeMachineCloudStore
+    var allowsOffline = true
     let done: () -> Void
     @State private var username = ""
     @State private var password = ""
     @State private var isShowingPassword = false
+    @FocusState private var focusedField: Field?
+    private enum Field: Hashable { case username, password }
+    private var canLogin: Bool { !username.isEmpty && !password.isEmpty && !cloud.isWorking }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            Text("资产时光机").font(.system(size: 20, weight: .semibold))
-            Text("登录以同步手机数据，或先在本机使用。")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            Image("brand_logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: NativeStyle.Radius.panel))
+                .accessibilityHidden(true)
+                .frame(maxWidth: .infinity)
+                .overlay(alignment: .topTrailing) {
+                    Button(action: done) {
+                        Image(systemName: "xmark")
+                            .font(NativeStyle.FontRole.captionStrong)
+                            .foregroundStyle(NativeHomeStyle.secondary)
+                            .frame(width: 28, height: 28)
+                            .background(NativeHomeStyle.text.opacity(0.045), in: Circle())
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(NativeHomeButtonStyle())
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel("关闭")
+                }
+            Text("登录资产时光机")
+                .font(NativeStyle.FontRole.pageTitle)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, NativeStyle.Space.xl)
+                .padding(.bottom, 30)
+
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
@@ -665,33 +811,96 @@ struct NativeAccountChoice: View {
                     if cloud.currentUser != nil { done() }
                 }
             }
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 36)
-            DisclosureGroup("使用已有账户登录", isExpanded: $isShowingPassword) {
-                VStack(spacing: 9) {
-                    TextField("账户", text: $username)
-                    SecureField("密码", text: $password)
-                    Button("登录") {
-                        Task {
-                            await cloud.login(username: username, password: password)
-                            if cloud.currentUser != nil {
-                                cloud.scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0)
-                                done()
-                            }
-                        }
-                    }
-                    .disabled(username.isEmpty || password.isEmpty || cloud.isWorking)
-                }.padding(.top, 6)
+            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+            .frame(height: 42)
+            .clipShape(RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
+            .disabled(cloud.isWorking || AppPreviewSession.isActive)
+
+            Button {
+                withAnimation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced)) {
+                    isShowingPassword.toggle()
+                }
+                focusedField = isShowingPassword ? .username : nil
+            } label: {
+                HStack {
+                    Text("账号登录").font(NativeStyle.FontRole.action)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(NativeStyle.FontRole.microStrong)
+                        .rotationEffect(.degrees(isShowingPassword ? 90 : 0))
+                }
+                .foregroundStyle(NativeHomeStyle.secondary)
+                .frame(height: 44)
+                .contentShape(Rectangle())
             }
-            if let error = cloud.errorMessage { Text(error).font(.caption).foregroundStyle(.red) }
-            HStack {
-                Spacer()
-                Button("不登录，先在本机使用", action: done)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+            .buttonStyle(NativeHomeButtonStyle())
+            .accessibilityValue(isShowingPassword ? "已展开" : "已收起")
+            .padding(.top, NativeStyle.Space.sm)
+
+            if isShowingPassword {
+                VStack(spacing: 10) {
+                    TextField("账号", text: $username)
+                        .focused($focusedField, equals: .username)
+                        .onSubmit { focusedField = .password }
+                        .modifier(AccountFieldStyle(isFocused: focusedField == .username))
+                    SecureField("密码", text: $password)
+                        .focused($focusedField, equals: .password)
+                        .onSubmit { if canLogin { login() } }
+                        .modifier(AccountFieldStyle(isFocused: focusedField == .password))
+                    Button(action: login) {
+                        HStack(spacing: NativeStyle.Space.sm) {
+                            if cloud.isWorking { ProgressView().controlSize(.small) }
+                            Text("登录")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .font(NativeStyle.FontRole.action)
+                        .foregroundStyle(NativePalette.onAccent)
+                        .background(NativeHomeStyle.accent, in: RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
+                    }
+                    .buttonStyle(NativeHomeButtonStyle())
+                    .disabled(!canLogin || AppPreviewSession.isActive)
+                    .padding(.top, NativeStyle.Space.xxs)
+                }
+                .padding(.bottom, 14)
+                .transition(.opacity.combined(with: .offset(y: reducedMotion ? 0 : -6)))
+            }
+            if let error = cloud.errorMessage {
+                Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 14)
+            }
+            if allowsOffline {
+                Rectangle().fill(NativeHomeStyle.line).frame(height: 1)
+                    .padding(.top, NativeStyle.Space.sm)
+                Button("先在本机使用", action: done)
+                    .font(NativeStyle.FontRole.caption)
+                    .foregroundStyle(NativeHomeStyle.secondary)
+                    .buttonStyle(NativeHomeButtonStyle())
+                    .padding(.top, NativeStyle.Space.xl)
             }
         }
-        .padding(22)
-        .frame(width: 380)
+        .padding(NativeStyle.Space.page)
+        .frame(width: 368)
+        .foregroundStyle(NativeHomeStyle.text)
+        .background(NativeHomeStyle.ink)
+        .tint(NativeHomeStyle.accent)
+        .task {
+            if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginExpanded") {
+                isShowingPassword = true
+            }
+        }
+    }
+
+    private func login() {
+        guard canLogin else { return }
+        Task {
+            await cloud.login(username: username, password: password)
+            if cloud.currentUser != nil {
+                cloud.scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0)
+                done()
+            }
+        }
     }
 }

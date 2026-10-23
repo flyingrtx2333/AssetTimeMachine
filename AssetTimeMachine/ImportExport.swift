@@ -1116,9 +1116,10 @@ nonisolated enum SyncMergeService {
             for deletion in deleting.deletionRecords {
                 switch SyncDeletedEntityKind(rawValue: deletion.entityKind) {
                 case .category:
-                    if let prior = baseline.categories.first(where: { $0.id == deletion.entityID }),
-                       let value = other.categories.first(where: { $0.id == deletion.entityID }),
-                       !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                    if let value = other.categories.first(where: { $0.id == deletion.entityID }) {
+                        guard let prior = baseline.categories.first(where: { $0.id == deletion.entityID }),
+                              sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
+                    }
                     for item in other.items where item.categoryID == deletion.entityID {
                         guard let prior = priorItems[item.id], sameSemanticContent(prior, item) else { throw Conflict.divergentEdits }
                         for entry in other.snapshots.flatMap(\.entries) where entry.itemID == item.id {
@@ -1126,17 +1127,20 @@ nonisolated enum SyncMergeService {
                         }
                     }
                 case .item:
-                    if let value = other.items.first(where: { $0.id == deletion.entityID }),
-                       let prior = priorItems[value.id], !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                    if let value = other.items.first(where: { $0.id == deletion.entityID }) {
+                        guard let prior = priorItems[value.id], sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
+                    }
                     for entry in other.snapshots.flatMap(\.entries) where entry.itemID == deletion.entityID {
                         guard let prior = priorEntries[entry.id], sameSemanticContent(prior, entry) else { throw Conflict.divergentEdits }
                     }
                 case .snapshot:
-                    if let value = other.snapshots.first(where: { $0.id == deletion.entityID }),
-                       let prior = bases[value.id], !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                    if let value = other.snapshots.first(where: { $0.id == deletion.entityID }) {
+                        guard let prior = bases[value.id], sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
+                    }
                 case .entry:
-                    if let value = other.snapshots.flatMap(\.entries).first(where: { $0.id == deletion.entityID }),
-                       let prior = priorEntries[value.id], !sameSemanticContent(prior, value) { throw Conflict.divergentEdits }
+                    if let value = other.snapshots.flatMap(\.entries).first(where: { $0.id == deletion.entityID }) {
+                        guard let prior = priorEntries[value.id], sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
+                    }
                 case nil: break
                 }
             }

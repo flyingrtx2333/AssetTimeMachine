@@ -3,7 +3,7 @@ import AssetTimeMachineBacktestCore
 
 @MainActor
 enum BacktestRecordCodec {
-    static func recordSignature(
+    nonisolated static func recordSignature(
         kindRawValue: String,
         subtitle: String,
         configSummary: String,
@@ -17,55 +17,55 @@ enum BacktestRecordCodec {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.recordSignature(kindRawValue: kindRawValue, subtitle: subtitle, configSummary: configSummary, startDate: startDate, endDate: endDate, totalReturn: totalReturn, maxDrawdown: maxDrawdown, finalValue: finalValue, tradeCount: tradeCount)
     }
 
-    static func pointsData(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> Data {
+    nonisolated static func pointsData(from points: [BacktestSeriesPoint], maxCount: Int = 240) -> Data {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.pointsData(from: points, maxCount: maxCount)
     }
 
-    static func pointPayloads(
+    nonisolated static func pointPayloads(
         from points: [BacktestSeriesPoint],
         maxCount: Int = 240
     ) -> [BacktestRecordPointPayload] {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.pointPayloads(from: points, maxCount: maxCount)
     }
 
-    static func configData(from payload: BacktestRecordConfigPayload) -> Data {
+    nonisolated static func configData(from payload: BacktestRecordConfigPayload) -> Data {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.configData(from: payload)
     }
 
-    static func cashYieldSummaryPayload(from summary: CashYieldSummary, maxRatePointCount: Int = 60) -> BacktestRecordCashYieldSummaryPayload {
+    nonisolated static func cashYieldSummaryPayload(from summary: CashYieldSummary, maxRatePointCount: Int = 60) -> BacktestRecordCashYieldSummaryPayload {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.cashYieldSummaryPayload(from: summary, maxRatePointCount: maxRatePointCount)
     }
 
-    static func riskSignalSummaryPayload(from summary: MarketRiskSignalSummary, maxSignalPointCount: Int = 120) -> BacktestRecordRiskSignalSummaryPayload {
+    nonisolated static func riskSignalSummaryPayload(from summary: MarketRiskSignalSummary, maxSignalPointCount: Int = 120) -> BacktestRecordRiskSignalSummaryPayload {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.riskSignalSummaryPayload(from: summary, maxSignalPointCount: maxSignalPointCount)
     }
 
-    static func advancedTradePayloads(from trades: [AdvancedBacktestTrade]) -> [BacktestRecordAdvancedTradePayload] {
+    nonisolated static func advancedTradePayloads(from trades: [AdvancedBacktestTrade]) -> [BacktestRecordAdvancedTradePayload] {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.advancedTradePayloads(from: trades)
     }
 
-    static func advancedBenchmarkSeriesPayloads(
+    nonisolated static func advancedBenchmarkSeriesPayloads(
         from series: [AdvancedBacktestBenchmarkSeries],
         maxPointCount: Int = 240
     ) -> [BacktestRecordAdvancedBenchmarkSeriesPayload] {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.advancedBenchmarkSeriesPayloads(from: series, maxPointCount: maxPointCount)
     }
 
-    static func exposurePointPayloads(
+    nonisolated static func exposurePointPayloads(
         from points: [BacktestExposurePoint],
         maxCount: Int = 360
     ) -> [BacktestRecordExposurePointPayload] {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.exposurePointPayloads(from: points, maxCount: maxCount)
     }
 
-    static func assetExposureSeriesPayloads(
+    nonisolated static func assetExposureSeriesPayloads(
         from series: [BacktestAssetExposureSeries],
         maxPointCount: Int = BacktestExposureSampling.assetSeriesMaxCount
     ) -> [BacktestRecordAssetExposureSeriesPayload] {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.assetExposureSeriesPayloads(from: series, maxPointCount: maxPointCount)
     }
 
-    static func advancedAssetChartPayloads(from assetReports: [AdvancedBacktestAssetReport], maxPricePointCount: Int = 240) -> [BacktestRecordAdvancedAssetChartPayload] {
+    nonisolated static func advancedAssetChartPayloads(from assetReports: [AdvancedBacktestAssetReport], maxPricePointCount: Int = 240) -> [BacktestRecordAdvancedAssetChartPayload] {
         return AssetTimeMachineBacktestCore.BacktestRecordCodec.advancedAssetChartPayloads(from: assetReports, maxPricePointCount: maxPricePointCount)
     }
 

@@ -1,7 +1,9 @@
 import AssetTimeMachineBacktestCore
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 extension MarketAssetDescriptor {
     nonisolated init(series: PublicHistorySeries) {
@@ -99,6 +101,7 @@ enum MarketAssetLogoRegistry {
     }
 }
 
+#if canImport(UIKit)
 struct MarketAssetLogoView: View {
     let symbol: String
     let sectionID: String
@@ -366,6 +369,8 @@ struct MarketAssetLogoView: View {
     ]
 }
 
+#endif
+
 extension MarketAssetDescriptor {
     nonisolated static let recordETFPrefix = "record_etf:"
     nonisolated static let recordASharePrefix = "record_a_share:"
@@ -629,6 +634,7 @@ enum MarketAssetCatalog {
     }
 }
 
+#if canImport(UIKit)
 struct MarketAssetCategoryStrip: View {
     let assets: [MarketAssetDescriptor]
     @Binding var selectedSectionID: String
@@ -945,3 +951,5 @@ struct MarketAssetCatalogSelector: View {
         }
     }
 }
+
+#endif

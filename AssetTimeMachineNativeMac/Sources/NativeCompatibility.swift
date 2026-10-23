@@ -2,63 +2,70 @@ import AppKit
 import Foundation
 import SwiftUI
 
-enum NativePalette {
-    private static func adaptive(light: NSColor, dark: NSColor) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
-        })
-    }
-
-    static let canvas = adaptive(
-        light: NSColor(calibratedRed: 0.992, green: 0.984, blue: 0.969, alpha: 1),
-        dark: NSColor(calibratedRed: 0.064, green: 0.071, blue: 0.083, alpha: 1)
-    )
-    static let sidebar = adaptive(
-        light: NSColor(calibratedRed: 0.959, green: 0.946, blue: 0.922, alpha: 1),
-        dark: NSColor(calibratedRed: 0.083, green: 0.092, blue: 0.107, alpha: 1)
-    )
-    static let surface = adaptive(
-        light: NSColor(calibratedRed: 0.999, green: 0.995, blue: 0.985, alpha: 1),
-        dark: NSColor(calibratedRed: 0.087, green: 0.098, blue: 0.116, alpha: 1)
-    )
-    static let line = adaptive(
-        light: NSColor(calibratedRed: 0.884, green: 0.864, blue: 0.827, alpha: 1),
-        dark: NSColor(calibratedRed: 0.164, green: 0.179, blue: 0.202, alpha: 1)
-    )
-    static let softGold = adaptive(
-        light: NSColor(calibratedRed: 0.944, green: 0.907, blue: 0.832, alpha: 1),
-        dark: NSColor(calibratedRed: 0.204, green: 0.174, blue: 0.138, alpha: 1)
-    )
+enum MacMemoryRelief {
+    static func scheduleAfterHeavyOperation() {}
 }
 
-enum AssetTheme {
-    static let gold = Color(red: 0.75, green: 0.58, blue: 0.36)
-    static let positive = Color(red: 0.33, green: 0.68, blue: 0.47)
-    static let negative = Color(red: 0.81, green: 0.35, blue: 0.35)
+// Presentation adapters for shared backtest models; native charts live in NativeQuantView.
+enum BacktestChartValueStyle: Equatable {
+    case multiple
+    case currency(code: String)
 }
 
-enum RemoteMarketClient {
-    static let baseURL = URL(string: "https://api.flyingrtx.com")!
+struct BacktestChartComparisonSeries: Identifiable {
+    let id: String
+    let title: String
+    let points: [BacktestSeriesPoint]
+    let color: Color
 }
 
-nonisolated enum BacktestAssetSymbol {
-    static func normalized(_ symbol: String) -> String {
-        switch symbol.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "gold": return "gold_cny"
-        case "nasdaq_composite", "nasdaq": return "nasdaq"
-        case "hang_seng", "hsi": return "hsi"
-        case "nikkei225", "nikkei": return "nikkei"
-        case "oil_wti", "oil_wti_cny", "wti": return "oil_wti_cny"
-        case "dow_jones", "dowjones": return "dowjones"
-        case "cn_10y", "china_10y", "china_10y_yield", "cgb_10y", "cn_10y_yield": return "cn_10y_yield"
-        case "us10y", "us_10y", "treasury_10y", "us_treasury_10y", "us_10y_yield": return "us_10y_yield"
-        case "us2y", "us_2y", "us_2y_yield": return "us_2y_yield"
-        case "us3m", "us_3m", "us_3m_yield": return "us_3m_yield"
-        case let value: return value
+enum AdvancedBacktestPresentation {
+    nonisolated static func comparisonSeries(from report: AdvancedBacktestReport) -> [BacktestChartComparisonSeries] {
+        report.benchmarkSeries.enumerated().compactMap { index, series in
+            guard let first = series.points.first?.portfolioValue, first > 0,
+                  let start = report.points.first?.portfolioValue else { return nil }
+            return BacktestChartComparisonSeries(id: series.id, title: series.title,
+                points: series.points.map { .init(date: $0.date, portfolioValue: $0.portfolioValue / first * start, sequence: $0.id) },
+                color: [AssetTheme.accentBlue, AssetTheme.gold, AssetTheme.positive][index % 3])
         }
     }
 }
 
-enum MacMemoryRelief {
-    static func scheduleAfterHeavyOperation() {}
+enum AppTypography {
+    static let meta = Font.system(size: 11)
+    static let chartAxisStrip = Font.system(size: 11).monospacedDigit()
+}
+
+/// End native text editing on outside clicks without consuming buttons or other text fields.
+struct NativeOutsideClickDismissal: NSViewRepresentable {
+    func makeNSView(context: Context) -> DismissalView { DismissalView() }
+    func updateNSView(_ nsView: DismissalView, context: Context) {}
+    static func dismantleNSView(_ nsView: DismissalView, coordinator: ()) { nsView.stopMonitoring() }
+
+    final class DismissalView: NSView {
+        private var monitor: Any?
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            stopMonitoring()
+            guard window != nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+                guard let window = self?.window, event.window === window,
+                      let editor = window.firstResponder as? NSTextView, editor.isFieldEditor,
+                      let content = window.contentView else { return event }
+                var hit = content.hitTest(content.convert(event.locationInWindow, from: nil))
+                while let view = hit {
+                    if let field = view as? NSTextField, field.isEditable { return event }
+                    if let text = view as? NSTextView, text.isEditable { return event }
+                    hit = view.superview
+                }
+                window.makeFirstResponder(nil)
+                return event
+            }
+        }
+        func stopMonitoring() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
+    }
 }
