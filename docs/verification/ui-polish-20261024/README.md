@@ -27,3 +27,10 @@ Scope: refine the existing black/gold and light/gold interface, without changing
 - Unoptimized Debug exposed an existing stack overflow in `advancedRotationConfig(for:)` during strategy-registry initialization: approximately 482 KiB stack frame on a 544 KiB cooperative thread. Optimized build renders Quant successfully; no strategy refactor is included here.
 - A first advice calculation can be invalidated when market inputs change; the existing store then returns without a result, and its automatic retry requires an earlier result. The UI now shows the no-result state with the existing refresh control. Recalculation scheduling is unchanged.
 - Screenshots verify layout. They do not establish complete VoiceOver traversal, keyboard interaction, press animation quality or live account behavior.
+
+## Release integration
+
+- Merged the latest committed macmini branch through `ffada8e`, including the chart changes shipped in build 214. Fixed the selection overlay so clearing selection dismisses the value popover while the date navigator retains its last-date fallback.
+- Imported the completed deterministic V4 calculation fix and its verification helper from macmini. All five files match the existing successful run's SHA256 bindings; see `integrated-calculation-fix.json`. This release therefore includes calculation stability changes as well as interface refinements.
+- Existing evidence covers the pair strategy and matched parent, including full and physically truncated inputs. It does not certify every strategy, out-of-sample performance or point-in-time data quality. The research checkout is not modified by this release process.
+- Target TestFlight version: `1.14 (215)`. Publication status is recorded separately in the release receipt after Apple processing completes.
