@@ -95,10 +95,10 @@ public enum ResearchRunEvidence {
             options: [.sortedKeys, .withoutEscapingSlashes])
         let mode = try StrategyRegistry.definition(reference: result.provenance.strategy).template.mode
         let hasDecisionShadow = [.riskContributionCashConfidenceLowNoise,
-            .riskContributionCashConfidenceRouter, .nfciDualCoreV1,
+            .riskContributionCashConfidenceRouter, .recentPairSpreadZ252Shift25, .nfciDualCoreV1,
             .nfciDualCoreSimplifiedV11, .nfciDualCoreSimplifiedV11QualRole].contains(mode)
         let knownFrozenTargetReplay = [.recentVolatilityManagedIdleCash,
-            .recentPairSpreadZ252Shift25, .recentGoldEquityRelativeZ252Shift25].contains(mode)
+            .recentGoldEquityRelativeZ252Shift25].contains(mode)
         let internalCosts: Any = hasDecisionShadow
             ? ["fee_percent": CashConfidenceFrozenParameters.frozenV1.frozenDecisionFeeRatePercent,
                "slippage_percent": CashConfidenceFrozenParameters.frozenV1.frozenDecisionSlippageRatePercent]

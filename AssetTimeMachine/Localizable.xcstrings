@@ -1,6 +1,28 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。" : {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配對回歸：在低噪增強持倉上，按上一交易日已知的252日對數價比，分別比較納指與標普、滬深300與上證綜指。偏離超過一個標準差時，在對應組內轉移25%的組合倉位，最多轉出該資產已有倉位；組總倉保持不變。僅使用原五項資產，剩餘現金按人民幣活期計息，不融資、不做空。歷史表現以目前回測結果為準。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pair reversion: on the Low Noise allocation, compare Nasdaq with the S&P 500 and CSI 300 with Shanghai using the previous session’s 252-session log price ratios. Beyond one standard deviation, transfer 25% of the pair’s combined weight, capped at the donor’s existing weight. Preserve each pair’s total allocation. Use only the original five assets and CNY demand-deposit cash, without borrowing or shorting. Historical performance is based on the current backtest."
+          }
+        }
+      }
+    },
     "KE25": {
       "localizations": {
         "en": {

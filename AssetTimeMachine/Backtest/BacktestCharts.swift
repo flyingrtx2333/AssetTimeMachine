@@ -3,6 +3,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import Combine
 
 enum BacktestChartValueStyle: Equatable {
     case multiple
@@ -180,6 +181,40 @@ enum BacktestChartPalette {
     static var strategyAreaBottom: Color { strategyLine.opacity(0.025) }
 }
 
+@MainActor
+final class BacktestChartSelectionCoordinator: ObservableObject {
+    @Published var selectedDate: Date? = nil
+
+    init(initialDate: Date? = nil) {
+        self.selectedDate = initialDate
+    }
+}
+
+private func seriesIdentityMatches(
+    _ lhs: [BacktestSeriesPoint],
+    _ rhs: [BacktestSeriesPoint]
+) -> Bool {
+    guard lhs.count == rhs.count else { return false }
+    for (lhsPoint, rhsPoint) in zip(lhs, rhs) {
+        guard lhsPoint.date == rhsPoint.date,
+              lhsPoint.portfolioValue == rhsPoint.portfolioValue else { return false }
+    }
+    return true
+}
+
+private func comparisonIdentityMatches(
+    _ lhs: [BacktestChartComparisonSeries],
+    _ rhs: [BacktestChartComparisonSeries]
+) -> Bool {
+    guard lhs.count == rhs.count else { return false }
+    for (lhsSeries, rhsSeries) in zip(lhs, rhs) {
+        guard lhsSeries.id == rhsSeries.id,
+              lhsSeries.title == rhsSeries.title,
+              seriesIdentityMatches(lhsSeries.points, rhsSeries.points) else { return false }
+    }
+    return true
+}
+
 struct InteractiveBacktestChart: View, Equatable {
     let points: [BacktestSeriesPoint]
     var comparisonPoints: [BacktestSeriesPoint] = []
@@ -190,10 +225,13 @@ struct InteractiveBacktestChart: View, Equatable {
     var selectionDate: Date? = nil
     var onSelectionChange: ((Date?) -> Void)? = nil
     var selectionItems: [BacktestChartSelectionItem] = []
+    var selectionItemsProvider: ((Date) -> [BacktestChartSelectionItem])? = nil
     var showsDateRuler = false
     var showsXAxis = true
     var keepsSelectionAfterInteraction = false
-    @State private var localSelectedDate: Date?
+    var selectionCoordinator: BacktestChartSelectionCoordinator? = nil
+
+    @StateObject private var internalCoordinator = BacktestChartSelectionCoordinator()
     @State private var viewportStartRatio: Double = 0
     @State private var visibleSpanRatio: Double = 1
     @State private var chartGuideBounds: BacktestChartPlotBounds?
@@ -213,29 +251,8 @@ struct InteractiveBacktestChart: View, Equatable {
             && comparisonIdentityMatches(lhs.comparisonSeries, rhs.comparisonSeries)
     }
 
-    private static func seriesIdentityMatches(
-        _ lhs: [BacktestSeriesPoint],
-        _ rhs: [BacktestSeriesPoint]
-    ) -> Bool {
-        guard lhs.count == rhs.count else { return false }
-        for (lhsPoint, rhsPoint) in zip(lhs, rhs) {
-            guard lhsPoint.date == rhsPoint.date,
-                  lhsPoint.portfolioValue == rhsPoint.portfolioValue else { return false }
-        }
-        return true
-    }
-
-    private static func comparisonIdentityMatches(
-        _ lhs: [BacktestChartComparisonSeries],
-        _ rhs: [BacktestChartComparisonSeries]
-    ) -> Bool {
-        guard lhs.count == rhs.count else { return false }
-        for (lhsSeries, rhsSeries) in zip(lhs, rhs) {
-            guard lhsSeries.id == rhsSeries.id,
-                  lhsSeries.title == rhsSeries.title,
-                  seriesIdentityMatches(lhsSeries.points, rhsSeries.points) else { return false }
-        }
-        return true
+    private var activeCoordinator: BacktestChartSelectionCoordinator {
+        selectionCoordinator ?? internalCoordinator
     }
 
     private let minVisibleSpanRatio = 0.12
@@ -280,51 +297,6 @@ struct InteractiveBacktestChart: View, Equatable {
         guard let interactionSeriesID else { return BacktestChartPalette.strategyLine }
         if interactionSeriesID == BacktestChartSeriesKey.strategy { return BacktestChartPalette.strategyLine }
         return resolvedComparisonSeries.first(where: { $0.id == interactionSeriesID })?.color ?? BacktestChartPalette.benchmarkLine
-    }
-
-    private var activeSelectedDate: Date? {
-        onSelectionChange == nil ? localSelectedDate : selectionDate
-    }
-
-    private var activeSelectionBinding: Binding<Date?> {
-        Binding(
-            get: { activeSelectedDate },
-            set: { updateSelection($0) }
-        )
-    }
-
-    private var selectedPoint: BacktestSeriesPoint? {
-        let activePoints = interactionPoints
-        guard let selectedDate = activeSelectedDate else { return activePoints.last }
-        return Self.nearestPoint(to: selectedDate, in: activePoints)
-    }
-
-    private var selectedPopoverAlignment: Alignment {
-        guard let selectedPoint else { return .topLeading }
-        let midpoint = chartDateDomain.lowerBound.addingTimeInterval(
-            chartDateDomain.upperBound.timeIntervalSince(chartDateDomain.lowerBound) / 2
-        )
-        return selectedPoint.date >= midpoint ? .topTrailing : .topLeading
-    }
-
-    private var resolvedSelectionItems: [BacktestChartSelectionItem] {
-        if !selectionItems.isEmpty { return selectionItems }
-        guard let selectedPoint else { return [] }
-        let title: String
-        if interactionSeriesID == BacktestChartSeriesKey.strategy {
-            title = BacktestChartSeriesTitle.strategy
-        } else {
-            title = resolvedComparisonSeries.first(where: { $0.id == interactionSeriesID })?.title
-                ?? AppLocalization.string("资产")
-        }
-        return [
-            BacktestChartSelectionItem(
-                id: interactionSeriesID ?? BacktestChartSeriesKey.strategy,
-                title: title,
-                value: valueStyle.label(for: selectedPoint.portfolioValue),
-                color: interactionColor
-            )
-        ]
     }
 
     private var fullDateDomain: ClosedRange<Date>? {
@@ -438,7 +410,7 @@ struct InteractiveBacktestChart: View, Equatable {
     }
 
     private func clampSelectionToVisibleDomain() {
-        guard let selectedDate = activeSelectedDate,
+        guard let selectedDate = activeCoordinator.selectedDate,
               let domain = visibleDateDomain,
               selectedDate < domain.lowerBound || selectedDate > domain.upperBound else {
             return
@@ -506,14 +478,8 @@ struct InteractiveBacktestChart: View, Equatable {
     }
 
     private func updateSelection(_ date: Date?) {
-        if let onSelectionChange {
-            onSelectionChange(date)
-        } else {
-            localSelectedDate = date
-        }
-    }
-
-    private func initializePersistentSelectionIfNeeded() {
+        activeCoordinator.selectedDate = date
+        onSelectionChange?(date)
     }
 
     private func publishVisibleDateDomain() {
@@ -529,7 +495,7 @@ struct InteractiveBacktestChart: View, Equatable {
         [BacktestChartPalette.strategyLine] + resolvedComparisonSeries.map(\.color)
     }
 
-    private static func nearestPoint(to date: Date, in points: [BacktestSeriesPoint]) -> BacktestSeriesPoint? {
+    static func nearestPoint(to date: Date, in points: [BacktestSeriesPoint]) -> BacktestSeriesPoint? {
         guard !points.isEmpty else { return nil }
         guard points.count > 1 else { return points[0] }
 
@@ -548,185 +514,6 @@ struct InteractiveBacktestChart: View, Equatable {
         let nextPoint = points[lowerBound]
         let previousPoint = points[lowerBound - 1]
         return abs(previousPoint.date.timeIntervalSince(date)) <= abs(nextPoint.date.timeIntervalSince(date)) ? previousPoint : nextPoint
-    }
-
-    @ChartContentBuilder
-    private func strategyMarks(domain: ClosedRange<Double>, strategySeries: String) -> some ChartContent {
-        if effectiveVisibleSeriesIDs.contains(BacktestChartSeriesKey.strategy) {
-            ForEach(points) { point in
-                AreaMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    yStart: .value(AppLocalization.string("组合净值下沿"), domain.lowerBound),
-                    yEnd: .value(AppLocalization.string("组合净值"), point.portfolioValue)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [BacktestChartPalette.strategyAreaTop, BacktestChartPalette.strategyAreaBottom],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-
-                LineMark(
-                    x: .value(AppLocalization.string("日期"), point.date),
-                    y: .value(AppLocalization.string("组合净值"), point.portfolioValue)
-                )
-                .foregroundStyle(by: .value(AppLocalization.string("系列"), strategySeries))
-                .lineStyle(StrokeStyle(lineWidth: 2.9, lineCap: .round, lineJoin: .round))
-            }
-        }
-    }
-
-    @ChartContentBuilder
-    private func comparisonMarks(seriesList: [BacktestChartComparisonSeries], visibleSeriesIDs: Set<String>) -> some ChartContent {
-        ForEach(seriesList) { series in
-            if visibleSeriesIDs.contains(series.id) {
-                ForEach(series.points) { point in
-                    LineMark(
-                        x: .value(AppLocalization.string("日期"), point.date),
-                        y: .value(series.title, point.portfolioValue)
-                    )
-                    .foregroundStyle(by: .value(AppLocalization.string("系列"), series.title))
-                    .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round, dash: [8, 5]))
-                }
-            }
-        }
-    }
-
-    private var selectedValuePopover: some View {
-        let itemCount = resolvedSelectionItems.count
-        let itemSpacing: CGFloat = itemCount > 8 ? 4.5 : 6.5
-        let vPadding: CGFloat = itemCount > 8 ? 8 : 10
-
-        return VStack(alignment: .leading, spacing: itemSpacing) {
-            Text(selectedPoint?.date.chartAxisDateString ?? "--")
-                .font(.system(size: 11, weight: .semibold, design: .default))
-                .monospacedDigit()
-                .foregroundStyle(AssetTheme.textSecondary)
-
-            Rectangle()
-                .fill(AssetTheme.border.opacity(0.46))
-                .frame(height: 1)
-
-            ForEach(resolvedSelectionItems) { item in
-                HStack(spacing: 7) {
-                    Circle()
-                        .fill(item.color)
-                        .frame(width: 6, height: 6)
-
-                    Text(item.title)
-                        .font(.system(size: 10.5, weight: .medium, design: .default))
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
-
-                    Spacer(minLength: 5)
-
-                    Text(item.value)
-                        .font(.system(size: 10.5, weight: .semibold, design: .default))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-            }
-        }
-        .padding(.horizontal, 11)
-        .padding(.vertical, vPadding)
-        .frame(width: AppLocalization.currentLanguage == .english ? 216 : 194)
-        .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(AssetTheme.border.opacity(0.85), lineWidth: 0.8)
-        )
-        .shadow(color: Color.black.opacity(0.22), radius: 8, y: 4)
-    }
-
-    @ViewBuilder
-    private var dateNavigator: some View {
-        if showsDateRuler, let selectedPoint {
-            VStack(spacing: 5) {
-                HStack(spacing: 8) {
-                    dateRowViewportButton(
-                        systemImage: "chevron.left",
-                        accessibilityLabel: AppLocalization.string("图表左移"),
-                        isEnabled: canPanLeft
-                    ) {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            panViewport(by: -0.38)
-                        }
-                    }
-
-                    Spacer(minLength: 6)
-
-                    HStack(spacing: 6) {
-                        Text(selectedPoint.date.longDateString)
-                            .font(.system(size: 15, weight: .semibold, design: .default))
-                            .monospacedDigit()
-                            .foregroundStyle(AssetTheme.gold)
-
-                        if hasAdjustedViewport {
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.18)) {
-                                    resetViewport()
-                                }
-                            } label: {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(AssetTheme.textSecondary)
-                                    .frame(width: 22, height: 22)
-                                    .background(AssetTheme.overlaySoft.opacity(0.72), in: Circle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(AppLocalization.string("重置图表视图"))
-                        }
-                    }
-
-                    Spacer(minLength: 6)
-
-                    dateRowViewportButton(
-                        systemImage: "chevron.right",
-                        accessibilityLabel: AppLocalization.string("图表右移"),
-                        isEnabled: canPanRight
-                    ) {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            panViewport(by: 0.38)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity)
-
-                Image(systemName: "triangle.fill")
-                    .font(.system(size: 8, weight: .bold))
-                    .rotationEffect(.degrees(180))
-                    .foregroundStyle(AssetTheme.gold)
-
-                BacktestDateRuler(
-                    points: interactionPoints,
-                    dateDomain: chartDateDomain,
-                    guideBounds: chartGuideBounds,
-                    selectedDate: activeSelectionBinding
-                )
-            }
-        }
-    }
-
-    private func dateRowViewportButton(
-        systemImage: String,
-        accessibilityLabel: String,
-        isEnabled: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(isEnabled ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.30))
-                .frame(width: 30, height: 28)
-                .background(AssetTheme.overlaySoft.opacity(isEnabled ? 0.72 : 0.34), in: Capsule())
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .accessibilityLabel(accessibilityLabel)
     }
 
     @ViewBuilder
@@ -823,126 +610,68 @@ struct InteractiveBacktestChart: View, Equatable {
         let visibleSeriesIDs = effectiveVisibleSeriesIDs
         let comparisonSeries = resolvedComparisonSeries
         let strategySeries = BacktestChartSeriesTitle.strategy
+        let coordinator = activeCoordinator
 
         VStack(alignment: .trailing, spacing: 8) {
             if !showsDateRuler {
                 viewportControls
             }
 
-            dateNavigator
-
-            Chart {
-                strategyMarks(domain: domain, strategySeries: strategySeries)
-                comparisonMarks(seriesList: comparisonSeries, visibleSeriesIDs: visibleSeriesIDs)
-            }
-            .frame(height: 220)
-            .chartXScale(domain: xDomain)
-            .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
-            .chartXAxis(showsXAxis ? .visible : .hidden)
-            .chartYScale(domain: domain)
-            .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
-            .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
-            .animation(pinchStartSpanRatio == nil ? .easeInOut(duration: 0.18) : nil, value: viewportStartRatio)
-            .animation(pinchStartSpanRatio == nil ? .easeInOut(duration: 0.18) : nil, value: visibleSpanRatio)
-            .chartPlotStyle { plotArea in
-                plotArea
-            }
-            .chartXAxis {
-                AxisMarks(values: BacktestChartData.dateAxisValues(in: xDomain)) { value in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                        .foregroundStyle(AssetTheme.border.opacity(0.35))
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            Text(date, format: .dateTime.year())
-                                .foregroundStyle(AssetTheme.textSecondary)
+            if showsDateRuler {
+                InteractiveBacktestDateNavigator(
+                    coordinator: coordinator,
+                    points: interactionPoints,
+                    dateDomain: xDomain,
+                    guideBounds: chartGuideBounds,
+                    canPanLeft: canPanLeft,
+                    canPanRight: canPanRight,
+                    hasAdjustedViewport: hasAdjustedViewport,
+                    onPanLeft: {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            panViewport(by: -0.38)
                         }
-                    }
-                }
-            }
-            .chartYAxis {
-                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                        .foregroundStyle(AssetTheme.border.opacity(0.35))
-                    AxisValueLabel {
-                        if let doubleValue = value.as(Double.self) {
-                            Text(valueStyle.axisLabel(for: doubleValue))
-                                .font(AppTypography.chartAxisCompact)
-                                .monospacedDigit()
-                                .foregroundStyle(AssetTheme.textSecondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-                                .frame(width: 42, alignment: .trailing)
+                    },
+                    onPanRight: {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            panViewport(by: 0.38)
                         }
-                    }
-                }
-            }
-            .chartLegend(.hidden)
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    ZStack(alignment: .topLeading) {
-                        TimeMachineDragOverlay(
-                            proxy: proxy,
-                            selectableValues: interactionPoints,
-                            selectionDate: \.date
-                        ) { date in
-                            updateSelection(date)
-                        } onEnded: {
-                            if !keepsSelectionAfterInteraction {
-                                updateSelection(nil)
-                            }
+                    },
+                    onReset: {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            resetViewport()
                         }
-                        .simultaneousGesture(
-                            TapGesture()
-                                .onEnded {
-                                    updateSelection(nil)
-                                }
-                        )
-
-                        if let selectedPoint,
-                           let plotFrame = proxy.plotFrame,
-                           let plotX = proxy.position(forX: selectedPoint.date) {
-                            let frame = geometry[plotFrame]
-                            let xPos = frame.minX + plotX
-
-                            Rectangle()
-                                .fill(AssetTheme.gold.opacity(0.72))
-                                .frame(width: 1, height: frame.height)
-                                .offset(x: xPos, y: frame.minY)
-                                .allowsHitTesting(false)
-
-                            if let plotY = proxy.position(forY: selectedPoint.portfolioValue) {
-                                Circle()
-                                    .fill(interactionColor)
-                                    .frame(width: 7, height: 7)
-                                    .offset(x: xPos - 3.5, y: frame.minY + plotY - 3.5)
-                                    .allowsHitTesting(false)
-                            }
-
-                            let popoverWidth: CGFloat = AppLocalization.currentLanguage == .english ? 216 : 194
-                            let isRightHalf = selectedPoint.date >= chartDateDomain.lowerBound.addingTimeInterval(
-                                chartDateDomain.upperBound.timeIntervalSince(chartDateDomain.lowerBound) / 2
-                            )
-                            let targetLeftX = isRightHalf
-                                ? xPos - popoverWidth - 8
-                                : xPos + 8
-                            let safeLeftX = min(max(targetLeftX, 6), geometry.size.width - popoverWidth - 6)
-
-                            selectedValuePopover
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    updateSelection(nil)
-                                }
-                                .offset(x: safeLeftX, y: frame.minY + 4)
-                        }
-
-                        BacktestChartGuideReporter(
-                            proxy: proxy,
-                            dateDomain: xDomain,
-                            guideBounds: $chartGuideBounds
-                        )
-                    }
-                }
+                    },
+                    onSelectionChange: onSelectionChange
+                )
             }
+
+            InteractiveBacktestChartCurves(
+                points: points,
+                comparisonSeries: comparisonSeries,
+                visibleSeriesIDs: visibleSeriesIDs,
+                domain: domain,
+                strategySeries: strategySeries,
+                xDomain: xDomain,
+                showsXAxis: showsXAxis,
+                valueStyle: valueStyle,
+                foregroundStyleDomain: foregroundStyleDomain,
+                foregroundStyleRange: foregroundStyleRange,
+                viewportStartRatio: viewportStartRatio,
+                visibleSpanRatio: visibleSpanRatio,
+                pinchStartSpanRatio: pinchStartSpanRatio,
+                coordinator: coordinator,
+                interactionPoints: interactionPoints,
+                interactionColor: interactionColor,
+                valueStyleForSelection: valueStyle,
+                interactionSeriesID: interactionSeriesID,
+                resolvedComparisonSeries: comparisonSeries,
+                selectionItems: selectionItems,
+                selectionItemsProvider: selectionItemsProvider,
+                keepsSelectionAfterInteraction: keepsSelectionAfterInteraction,
+                chartGuideBounds: $chartGuideBounds,
+                onSelectionChange: onSelectionChange
+            )
+            .equatable()
         }
         .simultaneousGesture(viewportMagnifyGesture)
         .onChange(of: points.count) { _, _ in
@@ -962,11 +691,438 @@ struct InteractiveBacktestChart: View, Equatable {
             clampSelectionToVisibleDomain()
             publishVisibleDateDomain()
         }
+        .onChange(of: selectionDate) { _, newDate in
+            if coordinator.selectedDate != newDate {
+                coordinator.selectedDate = newDate
+            }
+        }
         .onAppear {
+            if let selectionDate, coordinator.selectedDate == nil {
+                coordinator.selectedDate = selectionDate
+            }
             publishVisibleDateDomain()
         }
     }
+}
 
+private struct InteractiveBacktestDateNavigator: View {
+    @ObservedObject var coordinator: BacktestChartSelectionCoordinator
+    let points: [BacktestSeriesPoint]
+    let dateDomain: ClosedRange<Date>
+    let guideBounds: BacktestChartPlotBounds?
+    let canPanLeft: Bool
+    let canPanRight: Bool
+    let hasAdjustedViewport: Bool
+    let onPanLeft: () -> Void
+    let onPanRight: () -> Void
+    let onReset: () -> Void
+    var onSelectionChange: ((Date?) -> Void)? = nil
+
+    private var selectedPoint: BacktestSeriesPoint? {
+        guard let selectedDate = coordinator.selectedDate else { return points.last }
+        return InteractiveBacktestChart.nearestPoint(to: selectedDate, in: points)
+    }
+
+    var body: some View {
+        if let selectedPoint {
+            VStack(spacing: 5) {
+                HStack(spacing: 8) {
+                    dateRowViewportButton(
+                        systemImage: "chevron.left",
+                        accessibilityLabel: AppLocalization.string("图表左移"),
+                        isEnabled: canPanLeft,
+                        action: onPanLeft
+                    )
+
+                    Spacer(minLength: 6)
+
+                    HStack(spacing: 6) {
+                        Text(selectedPoint.date.longDateString)
+                            .font(.system(size: 15, weight: .semibold, design: .default))
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.gold)
+
+                        if hasAdjustedViewport {
+                            Button(action: onReset) {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(AssetTheme.textSecondary)
+                                    .frame(width: 22, height: 22)
+                                    .background(AssetTheme.overlaySoft.opacity(0.72), in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(AppLocalization.string("重置图表视图"))
+                        }
+                    }
+
+                    Spacer(minLength: 6)
+
+                    dateRowViewportButton(
+                        systemImage: "chevron.right",
+                        accessibilityLabel: AppLocalization.string("图表右移"),
+                        isEnabled: canPanRight,
+                        action: onPanRight
+                    )
+                }
+                .frame(maxWidth: .infinity)
+
+                Image(systemName: "triangle.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .rotationEffect(.degrees(180))
+                    .foregroundStyle(AssetTheme.gold)
+
+                BacktestDateRuler(
+                    points: points,
+                    dateDomain: dateDomain,
+                    guideBounds: guideBounds,
+                    selectedDate: Binding(
+                        get: { coordinator.selectedDate },
+                        set: {
+                            coordinator.selectedDate = $0
+                            onSelectionChange?($0)
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+    private func dateRowViewportButton(
+        systemImage: String,
+        accessibilityLabel: String,
+        isEnabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(isEnabled ? AssetTheme.textPrimary : AssetTheme.textSecondary.opacity(0.30))
+                .frame(width: 30, height: 28)
+                .background(AssetTheme.overlaySoft.opacity(isEnabled ? 0.72 : 0.34), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+private struct InteractiveBacktestChartCurves: View, Equatable {
+    let points: [BacktestSeriesPoint]
+    let comparisonSeries: [BacktestChartComparisonSeries]
+    let visibleSeriesIDs: Set<String>
+    let domain: ClosedRange<Double>
+    let strategySeries: String
+    let xDomain: ClosedRange<Date>
+    let showsXAxis: Bool
+    let valueStyle: BacktestChartValueStyle
+    let foregroundStyleDomain: [String]
+    let foregroundStyleRange: [Color]
+    let viewportStartRatio: Double
+    let visibleSpanRatio: Double
+    let pinchStartSpanRatio: Double?
+
+    let coordinator: BacktestChartSelectionCoordinator
+    let interactionPoints: [BacktestSeriesPoint]
+    let interactionColor: Color
+    let valueStyleForSelection: BacktestChartValueStyle
+    let interactionSeriesID: String?
+    let resolvedComparisonSeries: [BacktestChartComparisonSeries]
+    let selectionItems: [BacktestChartSelectionItem]
+    let selectionItemsProvider: ((Date) -> [BacktestChartSelectionItem])?
+    let keepsSelectionAfterInteraction: Bool
+    @Binding var chartGuideBounds: BacktestChartPlotBounds?
+    var onSelectionChange: ((Date?) -> Void)? = nil
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.visibleSeriesIDs == rhs.visibleSeriesIDs
+            && lhs.xDomain == rhs.xDomain
+            && lhs.domain == rhs.domain
+            && lhs.showsXAxis == rhs.showsXAxis
+            && lhs.valueStyle == rhs.valueStyle
+            && lhs.viewportStartRatio == rhs.viewportStartRatio
+            && lhs.visibleSpanRatio == rhs.visibleSpanRatio
+            && lhs.pinchStartSpanRatio == rhs.pinchStartSpanRatio
+            && lhs.foregroundStyleDomain == rhs.foregroundStyleDomain
+            && lhs.foregroundStyleRange == rhs.foregroundStyleRange
+            && seriesIdentityMatches(lhs.points, rhs.points)
+            && comparisonIdentityMatches(lhs.comparisonSeries, rhs.comparisonSeries)
+    }
+
+    @ChartContentBuilder
+    private func strategyMarks(domain: ClosedRange<Double>, strategySeries: String) -> some ChartContent {
+        if visibleSeriesIDs.contains(BacktestChartSeriesKey.strategy) {
+            ForEach(points) { point in
+                AreaMark(
+                    x: .value(AppLocalization.string("日期"), point.date),
+                    yStart: .value(AppLocalization.string("组合净值下沿"), domain.lowerBound),
+                    yEnd: .value(AppLocalization.string("组合净值"), point.portfolioValue)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [BacktestChartPalette.strategyAreaTop, BacktestChartPalette.strategyAreaBottom],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+                LineMark(
+                    x: .value(AppLocalization.string("日期"), point.date),
+                    y: .value(AppLocalization.string("组合净值"), point.portfolioValue)
+                )
+                .foregroundStyle(by: .value(AppLocalization.string("系列"), strategySeries))
+                .lineStyle(StrokeStyle(lineWidth: 2.9, lineCap: .round, lineJoin: .round))
+            }
+        }
+    }
+
+    @ChartContentBuilder
+    private func comparisonMarks(seriesList: [BacktestChartComparisonSeries], visibleSeriesIDs: Set<String>) -> some ChartContent {
+        ForEach(seriesList) { series in
+            if visibleSeriesIDs.contains(series.id) {
+                ForEach(series.points) { point in
+                    LineMark(
+                        x: .value(AppLocalization.string("日期"), point.date),
+                        y: .value(series.title, point.portfolioValue)
+                    )
+                    .foregroundStyle(by: .value(AppLocalization.string("系列"), series.title))
+                    .lineStyle(StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round, dash: [8, 5]))
+                }
+            }
+        }
+    }
+
+    var body: some View {
+        Chart {
+            strategyMarks(domain: domain, strategySeries: strategySeries)
+            comparisonMarks(seriesList: comparisonSeries, visibleSeriesIDs: visibleSeriesIDs)
+        }
+        .frame(height: 220)
+        .chartXScale(domain: xDomain)
+        .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
+        .chartXAxis(showsXAxis ? .visible : .hidden)
+        .chartYScale(domain: domain)
+        .chartForegroundStyleScale(domain: foregroundStyleDomain, range: foregroundStyleRange)
+        .animation(.easeInOut(duration: 0.2), value: visibleSeriesIDs)
+        .animation(pinchStartSpanRatio == nil ? .easeInOut(duration: 0.18) : nil, value: viewportStartRatio)
+        .animation(pinchStartSpanRatio == nil ? .easeInOut(duration: 0.18) : nil, value: visibleSpanRatio)
+        .chartPlotStyle { plotArea in
+            plotArea
+        }
+        .chartXAxis {
+            AxisMarks(values: BacktestChartData.dateAxisValues(in: xDomain)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                    .foregroundStyle(AssetTheme.border.opacity(0.35))
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(date, format: .dateTime.year())
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                    .foregroundStyle(AssetTheme.border.opacity(0.35))
+                AxisValueLabel {
+                    if let doubleValue = value.as(Double.self) {
+                        Text(valueStyle.axisLabel(for: doubleValue))
+                            .font(AppTypography.chartAxisCompact)
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .frame(width: 42, alignment: .trailing)
+                    }
+                }
+            }
+        }
+        .chartLegend(.hidden)
+        .chartOverlay { proxy in
+            BacktestChartSelectionOverlay(
+                proxy: proxy,
+                coordinator: coordinator,
+                points: interactionPoints,
+                interactionColor: interactionColor,
+                valueStyle: valueStyleForSelection,
+                interactionSeriesID: interactionSeriesID,
+                resolvedComparisonSeries: resolvedComparisonSeries,
+                selectionItems: selectionItems,
+                selectionItemsProvider: selectionItemsProvider,
+                xDomain: xDomain,
+                keepsSelectionAfterInteraction: keepsSelectionAfterInteraction,
+                chartGuideBounds: $chartGuideBounds,
+                onSelectionChange: onSelectionChange
+            )
+        }
+    }
+}
+
+private struct BacktestChartSelectionOverlay: View {
+    let proxy: ChartProxy
+    @ObservedObject var coordinator: BacktestChartSelectionCoordinator
+    let points: [BacktestSeriesPoint]
+    let interactionColor: Color
+    let valueStyle: BacktestChartValueStyle
+    let interactionSeriesID: String?
+    let resolvedComparisonSeries: [BacktestChartComparisonSeries]
+    let selectionItems: [BacktestChartSelectionItem]
+    let selectionItemsProvider: ((Date) -> [BacktestChartSelectionItem])?
+    let xDomain: ClosedRange<Date>
+    let keepsSelectionAfterInteraction: Bool
+    @Binding var chartGuideBounds: BacktestChartPlotBounds?
+    var onSelectionChange: ((Date?) -> Void)? = nil
+
+    private var selectedPoint: BacktestSeriesPoint? {
+        guard let selectedDate = coordinator.selectedDate else { return points.last }
+        return InteractiveBacktestChart.nearestPoint(to: selectedDate, in: points)
+    }
+
+    private var resolvedSelectionItems: [BacktestChartSelectionItem] {
+        if let selectedDate = coordinator.selectedDate,
+           let provider = selectionItemsProvider {
+            let items = provider(selectedDate)
+            if !items.isEmpty { return items }
+        }
+        if !selectionItems.isEmpty { return selectionItems }
+        guard let selectedPoint else { return [] }
+        let title: String
+        if interactionSeriesID == BacktestChartSeriesKey.strategy {
+            title = BacktestChartSeriesTitle.strategy
+        } else {
+            title = resolvedComparisonSeries.first(where: { $0.id == interactionSeriesID })?.title
+                ?? AppLocalization.string("资产")
+        }
+        return [
+            BacktestChartSelectionItem(
+                id: interactionSeriesID ?? BacktestChartSeriesKey.strategy,
+                title: title,
+                value: valueStyle.label(for: selectedPoint.portfolioValue),
+                color: interactionColor
+            )
+        ]
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                TimeMachineDragOverlay(
+                    proxy: proxy,
+                    selectableValues: points,
+                    selectionDate: \.date
+                ) { date in
+                    coordinator.selectedDate = date
+                    onSelectionChange?(date)
+                } onEnded: {
+                    if !keepsSelectionAfterInteraction {
+                        coordinator.selectedDate = nil
+                        onSelectionChange?(nil)
+                    }
+                }
+                .simultaneousGesture(
+                    TapGesture()
+                        .onEnded {
+                            coordinator.selectedDate = nil
+                            onSelectionChange?(nil)
+                        }
+                )
+
+                if let selectedPoint,
+                   let plotFrame = proxy.plotFrame,
+                   let plotX = proxy.position(forX: selectedPoint.date) {
+                    let frame = geometry[plotFrame]
+                    let xPos = frame.minX + plotX
+
+                    Rectangle()
+                        .fill(AssetTheme.gold.opacity(0.72))
+                        .frame(width: 1, height: frame.height)
+                        .offset(x: xPos, y: frame.minY)
+                        .allowsHitTesting(false)
+
+                    if let plotY = proxy.position(forY: selectedPoint.portfolioValue) {
+                        Circle()
+                            .fill(interactionColor)
+                            .frame(width: 7, height: 7)
+                            .offset(x: xPos - 3.5, y: frame.minY + plotY - 3.5)
+                            .allowsHitTesting(false)
+                    }
+
+                    let popoverWidth: CGFloat = AppLocalization.currentLanguage == .english ? 216 : 194
+                    let isRightHalf = selectedPoint.date >= xDomain.lowerBound.addingTimeInterval(
+                        xDomain.upperBound.timeIntervalSince(xDomain.lowerBound) / 2
+                    )
+                    let targetLeftX = isRightHalf
+                        ? xPos - popoverWidth - 8
+                        : xPos + 8
+                    let safeLeftX = min(max(targetLeftX, 6), geometry.size.width - popoverWidth - 6)
+
+                    selectedValuePopover(for: selectedPoint)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            coordinator.selectedDate = nil
+                            onSelectionChange?(nil)
+                        }
+                        .offset(x: safeLeftX, y: frame.minY + 4)
+                }
+
+                BacktestChartGuideReporter(
+                    proxy: proxy,
+                    dateDomain: xDomain,
+                    guideBounds: $chartGuideBounds
+                )
+            }
+        }
+    }
+
+    private func selectedValuePopover(for point: BacktestSeriesPoint) -> some View {
+        let items = resolvedSelectionItems
+        let itemCount = items.count
+        let itemSpacing: CGFloat = itemCount > 8 ? 4.5 : 6.5
+        let vPadding: CGFloat = itemCount > 8 ? 8 : 10
+
+        return VStack(alignment: .leading, spacing: itemSpacing) {
+            Text(point.date.chartAxisDateString)
+                .font(.system(size: 11, weight: .semibold, design: .default))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            Rectangle()
+                .fill(AssetTheme.border.opacity(0.46))
+                .frame(height: 1)
+
+            ForEach(items) { item in
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(item.color)
+                        .frame(width: 6, height: 6)
+
+                    Text(item.title)
+                        .font(.system(size: 10.5, weight: .medium, design: .default))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 5)
+
+                    Text(item.value)
+                        .font(.system(size: 10.5, weight: .semibold, design: .default))
+                        .monospacedDigit()
+                        .foregroundStyle(AssetTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+            }
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, vPadding)
+        .frame(width: AppLocalization.currentLanguage == .english ? 216 : 194)
+        .background(AssetTheme.surface.opacity(0.92), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(AssetTheme.border.opacity(0.85), lineWidth: 0.8)
+        )
+        .shadow(color: Color.black.opacity(0.22), radius: 8, y: 4)
+    }
 }
 
 private enum BacktestDateRulerLayout {
@@ -1038,7 +1194,7 @@ private struct BacktestDateRuler: View {
     let guideBounds: BacktestChartPlotBounds?
     @Binding var selectedDate: Date?
 
-    private let availablePoints: [BacktestSeriesPoint]
+    private let points: [BacktestSeriesPoint]
     private let labelDates: [Date]
 
     init(
@@ -1050,25 +1206,24 @@ private struct BacktestDateRuler: View {
         self.dateDomain = dateDomain
         self.guideBounds = guideBounds
         self._selectedDate = selectedDate
+        self.points = points
+        self.labelDates = Self.computeLabelDates(in: dateDomain, points: points)
+    }
 
-        let filtered = points.filter { $0.date >= dateDomain.lowerBound && $0.date <= dateDomain.upperBound }
-        self.availablePoints = filtered
-
-        if filtered.count > 1 {
-            let preferredCount = AppLocalization.currentLanguage == .english ? 5 : 6
-            let desiredCount = min(preferredCount, max(2, filtered.count))
-            let lastIndex = filtered.count - 1
-            self.labelDates = (0..<desiredCount).map { offset in
-                let ratio = Double(offset) / Double(desiredCount - 1)
-                return filtered[Int((Double(lastIndex) * ratio).rounded())].date
-            }
-        } else {
-            self.labelDates = filtered.map(\.date)
+    private static func computeLabelDates(in dateDomain: ClosedRange<Date>, points: [BacktestSeriesPoint]) -> [Date] {
+        guard !points.isEmpty else { return [] }
+        let preferredCount = AppLocalization.currentLanguage == .english ? 5 : 6
+        let totalDuration = dateDomain.upperBound.timeIntervalSince(dateDomain.lowerBound)
+        guard totalDuration > 0 else { return [points[0].date] }
+        let step = totalDuration / Double(preferredCount - 1)
+        return (0..<preferredCount).map { index in
+            let targetDate = dateDomain.lowerBound.addingTimeInterval(step * Double(index))
+            return nearestDate(to: targetDate, in: points)
         }
     }
 
     private var resolvedSelectedDate: Date {
-        selectedDate.flatMap(nearestDate(to:)) ?? availablePoints.last?.date ?? dateDomain.upperBound
+        selectedDate.map { Self.nearestDate(to: $0, in: points) } ?? points.last?.date ?? dateDomain.upperBound
     }
 
     var body: some View {
@@ -1180,7 +1335,7 @@ private struct BacktestDateRuler: View {
     }
 
     private func updateSelection(at x: CGFloat, width: CGFloat) {
-        guard !availablePoints.isEmpty else { return }
+        guard !points.isEmpty else { return }
         let plotRange = resolvedPlotRange(width: width)
         let availableWidth = max(plotRange.upperBound - plotRange.lowerBound, 1)
         let progress = min(
@@ -1190,27 +1345,28 @@ private struct BacktestDateRuler: View {
         let targetDate = dateDomain.lowerBound.addingTimeInterval(
             dateDomain.upperBound.timeIntervalSince(dateDomain.lowerBound) * Double(progress)
         )
-        if let nearest = nearestDate(to: targetDate), nearest != selectedDate {
+        let nearest = Self.nearestDate(to: targetDate, in: points)
+        if nearest != selectedDate {
             selectedDate = nearest
         }
     }
 
-    private func nearestDate(to targetDate: Date) -> Date? {
-        guard !availablePoints.isEmpty else { return nil }
+    private static func nearestDate(to targetDate: Date, in points: [BacktestSeriesPoint]) -> Date {
+        guard !points.isEmpty else { return targetDate }
         var lowerBound = 0
-        var upperBound = availablePoints.count
+        var upperBound = points.count
         while lowerBound < upperBound {
             let middle = lowerBound + (upperBound - lowerBound) / 2
-            if availablePoints[middle].date < targetDate {
+            if points[middle].date < targetDate {
                 lowerBound = middle + 1
             } else {
                 upperBound = middle
             }
         }
-        guard lowerBound > 0 else { return availablePoints[0].date }
-        guard lowerBound < availablePoints.count else { return availablePoints[availablePoints.count - 1].date }
-        let previous = availablePoints[lowerBound - 1].date
-        let next = availablePoints[lowerBound].date
+        guard lowerBound > 0 else { return points[0].date }
+        guard lowerBound < points.count else { return points[points.count - 1].date }
+        let previous = points[lowerBound - 1].date
+        let next = points[lowerBound].date
         return abs(previous.timeIntervalSince(targetDate)) <= abs(next.timeIntervalSince(targetDate))
             ? previous
             : next
@@ -1468,13 +1624,15 @@ struct AdvancedBacktestCombinedChartSection: View {
     private let chartPoints: [BacktestSeriesPoint]
     private let chartComparisonSeries: [BacktestChartComparisonSeries]
     private let chartAssetExposureSeries: [BacktestAssetExposureSeries]
+    private let chartExposurePoints: [BacktestExposurePoint]
+    private let chartSampledAssetSeries: [BacktestAssetExposureSeries]
     private let assetSymbols: [String]
     private let assetColors: [String: Color]
 
+    @StateObject private var selectionCoordinator = BacktestChartSelectionCoordinator()
     @State private var hiddenLegendItemIDs: Set<String> = []
     @State private var visibleDateDomain: ClosedRange<Date>?
     @State private var showsLegend = false
-    @State private var selectedDate: Date? = nil
 
     init(
         points: [BacktestSeriesPoint],
@@ -1494,6 +1652,15 @@ struct AdvancedBacktestCombinedChartSection: View {
         var seenSymbols: Set<String> = []
         let uniqueExposure = assetExposureSeries.filter { seenSymbols.insert($0.symbol).inserted }
         self.chartAssetExposureSeries = uniqueExposure
+
+        self.chartExposurePoints = BacktestExposureSampling.sampled(exposurePoints)
+        self.chartSampledAssetSeries = uniqueExposure.map { series in
+            BacktestAssetExposureSeries(
+                symbol: series.symbol,
+                title: series.title,
+                points: BacktestExposureSampling.sampled(series.points)
+            )
+        }
 
         var symbols: [String] = []
         for series in uniqueExposure where !symbols.contains(series.symbol) {
@@ -1589,9 +1756,8 @@ struct AdvancedBacktestCombinedChartSection: View {
         })
     }
 
-    private var selectedAmountItems: [BacktestChartSelectionItem] {
-        guard let selectedDate,
-              let portfolioPoint = nearestChartPoint(points, to: selectedDate, date: \.date) else {
+    private func makeSelectedAmountItems(for selectedDate: Date) -> [BacktestChartSelectionItem] {
+        guard let portfolioPoint = nearestChartPoint(points, to: selectedDate, date: \.date) else {
             return []
         }
 
@@ -1691,21 +1857,22 @@ struct AdvancedBacktestCombinedChartSection: View {
                     onVisibleDateDomainChange: { domain in
                         visibleDateDomain = domain
                     },
-                    selectionDate: selectedDate,
-                    onSelectionChange: { selectedDate = $0 },
-                    selectionItems: selectedAmountItems,
+                    selectionItemsProvider: { targetDate in
+                        makeSelectedAmountItems(for: targetDate)
+                    },
                     showsDateRuler: true,
                     showsXAxis: false,
-                    keepsSelectionAfterInteraction: true
+                    keepsSelectionAfterInteraction: true,
+                    selectionCoordinator: selectionCoordinator
                 )
 
                 BacktestExposureChartSection(
-                    points: exposurePoints,
-                    assetSeries: chartAssetExposureSeries,
+                    chartPoints: chartExposurePoints,
+                    sampledAssetSeries: chartSampledAssetSeries,
                     dateDomain: visibleDateDomain,
                     visibleSeriesIDs: effectiveVisibleExposureSeriesIDs,
                     assetColors: assetColors,
-                    selectedDate: $selectedDate
+                    selectionCoordinator: selectionCoordinator
                 )
             }
 
@@ -1749,7 +1916,7 @@ struct AdvancedBacktestCombinedChartSection: View {
                 let testDate = points[points.count / 2].date
                 Task { @MainActor in
                     await Task.yield()
-                    selectedDate = testDate
+                    selectionCoordinator.selectedDate = testDate
                 }
             }
         }
@@ -1814,45 +1981,41 @@ struct AdvancedBacktestCombinedChartSection: View {
 }
 
 struct BacktestExposureChartSection: View {
-    let points: [BacktestExposurePoint]
-    let assetSeries: [BacktestAssetExposureSeries]
+    let chartPoints: [BacktestExposurePoint]
+    let sampledAssetSeries: [BacktestAssetExposureSeries]
     var dateDomain: ClosedRange<Date>? = nil
     var visibleSeriesIDs: Set<String> = []
     var assetColors: [String: Color] = [:]
-    @Binding var selectedDate: Date?
+    var selectionCoordinator: BacktestChartSelectionCoordinator? = nil
+    var onSelectionChange: ((Date?) -> Void)? = nil
 
-    private let chartPoints: [BacktestExposurePoint]
-    private let sampledAssetSeries: [BacktestAssetExposureSeries]
+    @StateObject private var internalCoordinator = BacktestChartSelectionCoordinator()
+
     private let yMaximum: Double
     private let yAxisValues: [Double]
 
+    private var activeCoordinator: BacktestChartSelectionCoordinator {
+        selectionCoordinator ?? internalCoordinator
+    }
+
     init(
-        points: [BacktestExposurePoint],
-        assetSeries: [BacktestAssetExposureSeries],
+        chartPoints: [BacktestExposurePoint],
+        sampledAssetSeries: [BacktestAssetExposureSeries],
         dateDomain: ClosedRange<Date>? = nil,
         visibleSeriesIDs: Set<String> = [],
         assetColors: [String: Color] = [:],
-        selectedDate: Binding<Date?>
+        selectionCoordinator: BacktestChartSelectionCoordinator? = nil,
+        onSelectionChange: ((Date?) -> Void)? = nil
     ) {
-        self.points = points
-        self.assetSeries = assetSeries
+        self.chartPoints = chartPoints
+        self.sampledAssetSeries = sampledAssetSeries
         self.dateDomain = dateDomain
         self.visibleSeriesIDs = visibleSeriesIDs
         self.assetColors = assetColors
-        self._selectedDate = selectedDate
+        self.selectionCoordinator = selectionCoordinator
+        self.onSelectionChange = onSelectionChange
 
-        let sampled = BacktestExposureSampling.sampled(points)
-        self.chartPoints = sampled
-
-        self.sampledAssetSeries = assetSeries.map { series in
-            BacktestAssetExposureSeries(
-                symbol: series.symbol,
-                title: series.title,
-                points: BacktestExposureSampling.sampled(series.points)
-            )
-        }
-
-        let peak = points.map(\.ratio).max() ?? 0
+        let peak = chartPoints.map(\.ratio).max() ?? 0
         let maxRatio: Double
         if peak > 1 {
             maxRatio = max(ceil(peak * 4) / 4, 1.25)
@@ -1865,8 +2028,35 @@ struct BacktestExposureChartSection: View {
         self.yAxisValues = (0...4).map { Double($0) * step }
     }
 
+    init(
+        points: [BacktestExposurePoint],
+        assetSeries: [BacktestAssetExposureSeries],
+        dateDomain: ClosedRange<Date>? = nil,
+        visibleSeriesIDs: Set<String> = [],
+        assetColors: [String: Color] = [:],
+        selectedDate: Binding<Date?>
+    ) {
+        let sampled = BacktestExposureSampling.sampled(points)
+        let sampledSeries = assetSeries.map { series in
+            BacktestAssetExposureSeries(
+                symbol: series.symbol,
+                title: series.title,
+                points: BacktestExposureSampling.sampled(series.points)
+            )
+        }
+        self.init(
+            chartPoints: sampled,
+            sampledAssetSeries: sampledSeries,
+            dateDomain: dateDomain,
+            visibleSeriesIDs: visibleSeriesIDs,
+            assetColors: assetColors,
+            selectionCoordinator: nil,
+            onSelectionChange: { selectedDate.wrappedValue = $0 }
+        )
+    }
+
     private var availableSeriesIDs: Set<String> {
-        Set(assetSeries.map { BacktestExposureSeriesKey.asset($0.symbol) } + [BacktestExposureSeriesKey.total])
+        Set(sampledAssetSeries.map { BacktestExposureSeriesKey.asset($0.symbol) } + [BacktestExposureSeriesKey.total])
     }
 
     private var effectiveVisibleSeriesIDs: Set<String> {
@@ -1884,9 +2074,49 @@ struct BacktestExposureChartSection: View {
         return first == last ? first...first.addingTimeInterval(24 * 60 * 60) : first...last
     }
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            BacktestStaticExposureChart(
+                chartPoints: chartPoints,
+                sampledAssetSeries: sampledAssetSeries,
+                resolvedDateDomain: resolvedDateDomain,
+                effectiveVisibleSeriesIDs: effectiveVisibleSeriesIDs,
+                assetColors: assetColors,
+                yMaximum: yMaximum,
+                yAxisValues: yAxisValues,
+                coordinator: activeCoordinator,
+                onSelectionChange: onSelectionChange
+            )
+            .equatable()
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(AppLocalization.string(sampledAssetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
+        }
+    }
+}
+
+private struct BacktestStaticExposureChart: View, Equatable {
+    let chartPoints: [BacktestExposurePoint]
+    let sampledAssetSeries: [BacktestAssetExposureSeries]
+    let resolvedDateDomain: ClosedRange<Date>
+    let effectiveVisibleSeriesIDs: Set<String>
+    let assetColors: [String: Color]
+    let yMaximum: Double
+    let yAxisValues: [Double]
+    let coordinator: BacktestChartSelectionCoordinator
+    var onSelectionChange: ((Date?) -> Void)? = nil
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.resolvedDateDomain == rhs.resolvedDateDomain
+            && lhs.effectiveVisibleSeriesIDs == rhs.effectiveVisibleSeriesIDs
+            && lhs.yMaximum == rhs.yMaximum
+            && lhs.yAxisValues == rhs.yAxisValues
+            && lhs.chartPoints.count == rhs.chartPoints.count
+            && lhs.sampledAssetSeries.count == rhs.sampledAssetSeries.count
+    }
+
     @ChartContentBuilder
     private var exposureMarks: some ChartContent {
-        if assetSeries.isEmpty, effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.total) {
+        if sampledAssetSeries.isEmpty, effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.total) {
             ForEach(chartPoints) { point in
                 AreaMark(
                     x: .value(AppLocalization.string("日期"), point.date),
@@ -1938,104 +2168,127 @@ struct BacktestExposureChartSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Chart {
-                exposureMarks
-            }
-            .frame(height: 160)
-            .chartXScale(domain: resolvedDateDomain)
-            .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
-            .chartXAxis(.hidden)
-            .chartYScale(domain: 0...yMaximum)
-            .chartXAxis {
-                AxisMarks(values: BacktestChartData.dateAxisValues(in: resolvedDateDomain)) { value in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                        .foregroundStyle(AssetTheme.border.opacity(0.35))
-                    AxisValueLabel {
-                        if let date = value.as(Date.self) {
-                            Text(date, format: .dateTime.year())
-                                .font(AppTypography.chartAxisCompact)
-                                .foregroundStyle(AssetTheme.textSecondary)
-                        }
+        Chart {
+            exposureMarks
+        }
+        .frame(height: 160)
+        .chartXScale(domain: resolvedDateDomain)
+        .chartXScale(range: .plotDimension(startPadding: 4, endPadding: 46))
+        .chartXAxis(.hidden)
+        .chartYScale(domain: 0...yMaximum)
+        .chartXAxis {
+            AxisMarks(values: BacktestChartData.dateAxisValues(in: resolvedDateDomain)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                    .foregroundStyle(AssetTheme.border.opacity(0.35))
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(date, format: .dateTime.year())
+                            .font(AppTypography.chartAxisCompact)
+                            .foregroundStyle(AssetTheme.textSecondary)
                     }
                 }
             }
-            .chartYAxis {
-                AxisMarks(position: .leading, values: yAxisValues) { value in
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
-                        .foregroundStyle(AssetTheme.border.opacity(0.35))
-                    AxisValueLabel {
-                        if let ratio = value.as(Double.self) {
-                            Text(ratio.percentString(maxFractionDigits: 0))
-                                .font(AppTypography.chartAxisCompact)
-                                .monospacedDigit()
-                                .foregroundStyle(AssetTheme.textSecondary)
-                                .frame(width: 42, alignment: .trailing)
-                        }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: yAxisValues) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.7, dash: [2, 4]))
+                    .foregroundStyle(AssetTheme.border.opacity(0.35))
+                AxisValueLabel {
+                    if let ratio = value.as(Double.self) {
+                        Text(ratio.percentString(maxFractionDigits: 0))
+                            .font(AppTypography.chartAxisCompact)
+                            .monospacedDigit()
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .frame(width: 42, alignment: .trailing)
                     }
                 }
             }
-            .chartPlotStyle { plotArea in
-                plotArea.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-            .chartOverlay { proxy in
-                GeometryReader { geometry in
-                    ZStack(alignment: .topLeading) {
-                        TimeMachineDragOverlay(
-                            proxy: proxy,
-                            selectableValues: chartPoints,
-                            selectionDate: \.date
-                        ) { date in
-                            selectedDate = date
+        }
+        .chartPlotStyle { plotArea in
+            plotArea.clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .chartOverlay { proxy in
+            BacktestExposureSelectionOverlay(
+                proxy: proxy,
+                coordinator: coordinator,
+                chartPoints: chartPoints,
+                sampledAssetSeries: sampledAssetSeries,
+                effectiveVisibleSeriesIDs: effectiveVisibleSeriesIDs,
+                assetColors: assetColors,
+                onSelectionChange: onSelectionChange
+            )
+        }
+    }
+}
+
+private struct BacktestExposureSelectionOverlay: View {
+    let proxy: ChartProxy
+    @ObservedObject var coordinator: BacktestChartSelectionCoordinator
+    let chartPoints: [BacktestExposurePoint]
+    let sampledAssetSeries: [BacktestAssetExposureSeries]
+    let effectiveVisibleSeriesIDs: Set<String>
+    let assetColors: [String: Color]
+    var onSelectionChange: ((Date?) -> Void)? = nil
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                TimeMachineDragOverlay(
+                    proxy: proxy,
+                    selectableValues: chartPoints,
+                    selectionDate: \.date
+                ) { date in
+                    coordinator.selectedDate = date
+                    onSelectionChange?(date)
+                } onEnded: {
+                    coordinator.selectedDate = nil
+                    onSelectionChange?(nil)
+                }
+                .simultaneousGesture(
+                    TapGesture()
+                        .onEnded {
+                            coordinator.selectedDate = nil
+                            onSelectionChange?(nil)
                         }
-                        .simultaneousGesture(
-                            TapGesture()
-                                .onEnded {
-                                    selectedDate = nil
-                                }
-                        )
+                )
 
-                        if let selectedDate,
-                           let plotFrame = proxy.plotFrame,
-                           let plotX = proxy.position(forX: selectedDate) {
-                            let frame = geometry[plotFrame]
-                            let xPos = frame.minX + plotX
+                if let selectedDate = coordinator.selectedDate,
+                   let plotFrame = proxy.plotFrame,
+                   let plotX = proxy.position(forX: selectedDate) {
+                    let frame = geometry[plotFrame]
+                    let xPos = frame.minX + plotX
 
-                            Rectangle()
-                                .fill(AssetTheme.gold.opacity(0.72))
-                                .frame(width: 1, height: frame.height)
-                                .offset(x: xPos, y: frame.minY)
+                    Rectangle()
+                        .fill(AssetTheme.gold.opacity(0.72))
+                        .frame(width: 1, height: frame.height)
+                        .offset(x: xPos, y: frame.minY)
+                        .allowsHitTesting(false)
+
+                    if sampledAssetSeries.isEmpty {
+                        if effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.total),
+                           let selectedPoint = nearestChartPoint(chartPoints, to: selectedDate, date: \.date),
+                           let plotY = proxy.position(forY: selectedPoint.ratio) {
+                            Circle()
+                                .fill(BacktestChartPalette.strategyLine)
+                                .frame(width: 6, height: 6)
+                                .offset(x: xPos - 3, y: frame.minY + plotY - 3)
                                 .allowsHitTesting(false)
-
-                            if assetSeries.isEmpty {
-                                if effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.total),
-                                   let selectedPoint = nearestChartPoint(chartPoints, to: selectedDate, date: \.date),
-                                   let plotY = proxy.position(forY: selectedPoint.ratio) {
-                                    Circle()
-                                        .fill(BacktestChartPalette.strategyLine)
-                                        .frame(width: 6, height: 6)
-                                        .offset(x: xPos - 3, y: frame.minY + plotY - 3)
-                                        .allowsHitTesting(false)
-                                }
-                            } else {
-                                ForEach(Array(sampledAssetSeries.enumerated()), id: \.element.id) { index, series in
-                                    if effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.asset(series.symbol)),
-                                       let selectedPoint = nearestChartPoint(series.points, to: selectedDate, date: \.date),
-                                       let plotY = proxy.position(forY: selectedPoint.ratio) {
-                                        Circle()
-                                            .fill(assetColors[series.symbol] ?? BacktestChartPalette.exposureLine(at: index))
-                                            .frame(width: 6, height: 6)
-                                            .offset(x: xPos - 3, y: frame.minY + plotY - 3)
-                                            .allowsHitTesting(false)
-                                    }
-                                }
+                        }
+                    } else {
+                        ForEach(Array(sampledAssetSeries.enumerated()), id: \.element.id) { index, series in
+                            if effectiveVisibleSeriesIDs.contains(BacktestExposureSeriesKey.asset(series.symbol)),
+                               let selectedPoint = nearestChartPoint(series.points, to: selectedDate, date: \.date),
+                               let plotY = proxy.position(forY: selectedPoint.ratio) {
+                                Circle()
+                                    .fill(assetColors[series.symbol] ?? BacktestChartPalette.exposureLine(at: index))
+                                    .frame(width: 6, height: 6)
+                                    .offset(x: xPos - 3, y: frame.minY + plotY - 3)
+                                    .allowsHitTesting(false)
                             }
                         }
                     }
                 }
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(AppLocalization.string(assetSeries.isEmpty ? "持仓比例走势" : "资产持仓走势"))
         }
     }
 }

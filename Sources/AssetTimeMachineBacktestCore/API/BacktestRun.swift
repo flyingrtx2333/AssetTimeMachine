@@ -50,7 +50,7 @@ public struct StrategyDefinition: Sendable {
                                    "recoveryStable": .recoveryStable, "recoveryGrowth": .recoveryGrowth],
                     recoveryQuality: .cashConfidenceAdaptive,
                     cashConfidence: [.riskContributionCashConfidenceLowNoise,
-                                     .riskContributionCashConfidenceRouter, .nfciDualCoreV1,
+                                     .riskContributionCashConfidenceRouter, .recentPairSpreadZ252Shift25, .nfciDualCoreV1,
                                      .nfciDualCoreSimplifiedV11, .nfciDualCoreSimplifiedV11QualRole]
                         .contains(template.mode) ? .frozenV1 : nil)
                 // Sets encode in arbitrary order. Canonicalize only their named fields;
@@ -212,6 +212,7 @@ public enum StrategyRegistry {
         switch template.id {
         case "ke25": version = "ke25-forward-v1-2026-10-21"
         case "kvo": version = "kvo-forward-v1-2026-10-22"
+        case "recent-pair-spread-z252-shift25": version = "pair-index-bounded-correction-v2-2026-10-23"
         case "nfci-dual-core-v1": version = "dualcore-v1-2026-08-14"
         case "nfci-dual-core-v11": version = "dualcore-v11-2026-08-15"
         default: version = legacyRulesVersion
