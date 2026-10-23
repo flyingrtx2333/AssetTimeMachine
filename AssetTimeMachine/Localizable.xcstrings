@@ -33686,6 +33686,75 @@
           }
         }
       }
+    },
+    "导出本机记录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Local Records"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出本机记录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出本機記錄"
+          }
+        }
+      }
+    },
+    "请先完成当前编辑": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先完成当前编辑"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "請先完成目前編輯"
+          }
+        }
+      }
+    },
+    "未找到匹配的历史版本，无法自动合并。请导出本机记录以核对差异。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching historical version was found. Export local records to review the differences before merging."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到匹配的历史版本，无法自动合并。请导出本机记录以核对差异。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到相符的歷史版本，無法自動合併。請匯出本機記錄以核對差異。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

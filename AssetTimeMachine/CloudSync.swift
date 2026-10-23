@@ -4,6 +4,7 @@ import CryptoKit
 import Foundation
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 #if canImport(UIKit)
 import UIKit
@@ -36,6 +37,7 @@ nonisolated struct AssetTimeMachineCloudBackup: Codable, Identifiable, Sendable 
     let id: Int
     let fileName: String?
     let fileSize: Int?
+    let storageURL: URL?
     let uploadedAt: Date
     let lastDownloadedAt: Date?
     let isLatest: Int
@@ -45,6 +47,7 @@ nonisolated struct AssetTimeMachineCloudBackup: Codable, Identifiable, Sendable 
         case id
         case fileName = "file_name"
         case fileSize = "file_size"
+        case storageURL = "storage_url"
         case uploadedAt = "uploaded_at"
         case lastDownloadedAt = "last_downloaded_at"
         case isLatest = "is_latest"
@@ -185,6 +188,12 @@ enum AssetTimeMachineCloudAPI {
 
     static func fetchHistory(token: String, limit: Int = 10) async throws -> [AssetTimeMachineCloudBackup] {
         try await request(path: "/api/v1/asset-time-machine/cloud/history?limit=\(limit)", token: token)
+    }
+
+    static func downloadBackupPayload(at url: URL) async throws -> ExportPayload {
+        guard url.scheme == "https", url.user == nil, url.password == nil else { throw URLError(.badURL) }
+        // URLs come from this account's authenticated history. Never forward its token to storage.
+        return try await request(url: url)
     }
 
     static func upload(token: String, payload: ExportPayload, note: String?, baseBackupID: Int? = nil) async throws -> AssetTimeMachineCloudBackup {
@@ -1120,7 +1129,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     /// Explicit association also repairs legacy installs without an owner or merge baseline.
-    /// An empty baseline permits additions and identical records, never divergent edits.
+    /// Recover only an exact fingerprint match from this account's history; otherwise
+    /// an empty baseline permits additions and identical records, never divergent edits.
     func authorizeLocalDataForCurrentAccount(from context: ModelContext) async {
         guard !AppPreviewSession.isActive || isolatedTest,
               requiresLocalOwnershipConfirmation, defaults.object(forKey: localOwnerKey) == nil,
@@ -1128,22 +1138,66 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         let result = await perform { [self] in
             let latest = try await self.fetchLatestBackupIfAvailable()
             let payload = try await ImportExportService.exportPayloadCooperatively(from: context)
-            let emptyBase = ExportPayload(exportedAt: .now, categories: [], items: [], snapshots: [], deletions: [])
+            let recovered = try await self.recoverLegacySyncBaseline(latest: latest)
+            let base = recovered ?? ExportPayload(exportedAt: .now, categories: [], items: [], snapshots: [], deletions: [])
             // Check before binding the account or changing either copy. The normal sync
             // fetches the head again and retains its revision checks and upload CAS.
             if let latest {
-                _ = try await SyncPayloadWork.detached {
-                    try SyncMergeService.reconciledPayload(local: payload.payload, remote: latest.payload, baseline: emptyBase)
+                do {
+                    _ = try await SyncPayloadWork.detached {
+                        try SyncMergeService.reconciledPayload(local: payload.payload, remote: latest.payload, baseline: base)
+                    }
+                } catch SyncMergeService.Conflict.divergentEdits {
+                    if case .none = recovered {
+                        throw NSError(domain: "CloudSyncBaseline", code: 409,
+                            userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("未找到匹配的历史版本，无法自动合并。请导出本机记录以核对差异。")])
+                    }
+                    throw SyncMergeService.Conflict.divergentEdits
                 }
             }
             guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
                   !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
                   ModelStoreRevisionClock.shared.currentRevision() == payload.storeRevision else { throw CancellationError() }
             try await self.saveLocalSafetyBackup(payload.payload)
-            try await self.persistSyncBaseline(emptyBase)
+            try await self.persistSyncBaseline(base)
             self.requiresLocalOwnershipConfirmation = false
         }
         if result == .completed { scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0) }
+    }
+
+    private func recoverLegacySyncBaseline(latest: AssetTimeMachineCloudLatestBackup?) async throws -> ExportPayload? {
+        if let existing = try await loadSyncBaseline() { return existing }
+        guard let signature = defaults.string(forKey: lastUploadedSignatureKey), signature.count == 64,
+              signature.allSatisfy({ $0.isHexDigit }) else { return nil }
+        if let latest, try await Self.payloadFingerprint(for: latest.payload).signature == signature { return latest.payload }
+        let history = try await withTokenRefresh { token in
+            try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 20)
+        }
+        for backup in history where backup.id != latest?.id {
+            guard let url = backup.storageURL else { continue }
+            do {
+                let payload = try await AssetTimeMachineCloudAPI.downloadBackupPayload(at: url)
+                if try await Self.payloadFingerprint(for: payload).signature == signature { return payload }
+            } catch {
+                // Missing historical objects do not justify guessing a merge base.
+                guard (error as NSError).code == 404 || (error as NSError).code == 403 else { throw error }
+            }
+        }
+        return nil
+    }
+
+    func exportLocalRecords(from context: ModelContext) async throws -> Data {
+        guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else {
+            throw NSError(domain: "CloudExport", code: 409,
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请先完成当前编辑")])
+        }
+        let payload = try await ImportExportService.exportPayloadCooperatively(from: context).payload
+        return try await SyncPayloadWork.detached {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            return try encoder.encode(payload)
+        }
     }
 
     private func saveLocalSafetyBackup(_ payload: ExportPayload) async throws {
@@ -1425,11 +1479,25 @@ struct AssetTimeMachineCloudEntryButton: View {
     }
 }
 
+private struct CloudRecordsDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    var data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else { throw CocoaError(.fileReadCorruptFile) }
+        self.data = data
+    }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
+}
+
 struct AssetTimeMachineCloudPage: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: AssetTimeMachineCloudStore
+    @State private var exportDocument: CloudRecordsDocument?
+    @State private var showsExport = false
+    @State private var isExporting = false
     @State private var showRestoreConfirm = false
     @State private var showOwnershipConfirm = false
     #if targetEnvironment(macCatalyst)
@@ -1482,6 +1550,12 @@ struct AssetTimeMachineCloudPage: View {
             .presentationSizing(.fitted)
         }
         #endif
+        .fileExporter(isPresented: $showsExport, document: exportDocument, contentType: .json,
+                      defaultFilename: "AssetTimeMachine-Local") { result in
+            if case let .failure(error) = result, (error as NSError).code != NSUserCancelledError {
+                store.errorMessage = error.localizedDescription
+            }
+        }
         .alert(AppLocalization.string("确认关联到当前账户？"), isPresented: $showOwnershipConfirm) {
             Button(AppLocalization.string("取消"), role: .cancel) {}
             Button(AppLocalization.string("确认并同步")) { Task { await store.authorizeLocalDataForCurrentAccount(from: modelContext) } }
@@ -1686,6 +1760,17 @@ struct AssetTimeMachineCloudPage: View {
                 Button(AppLocalization.string("关联并同步本机记录")) { showOwnershipConfirm = true }
                     .disabled(store.isWorking)
             }
+            Button(AppLocalization.string("导出本机记录")) {
+                isExporting = true
+                Task {
+                    defer { isExporting = false }
+                    do {
+                        exportDocument = CloudRecordsDocument(data: try await store.exportLocalRecords(from: modelContext))
+                        showsExport = true
+                    } catch { store.errorMessage = error.localizedDescription }
+                }
+            }
+            .disabled(store.isWorking || isExporting)
             if store.backups.isEmpty {
                 Text(AppLocalization.string("暂无云端备份，正在准备首次同步"))
                     .font(AppTypography.meta)

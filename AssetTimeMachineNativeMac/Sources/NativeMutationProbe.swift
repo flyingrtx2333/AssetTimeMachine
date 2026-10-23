@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import SwiftData
 
 /// Runs only with an explicit isolated fixture store; never touches the signed account.
@@ -198,6 +199,9 @@ private final class NativeCloudMockServer: @unchecked Sendable {
     let lock = NSLock()
     var payload: ExportPayload
     var head = 100
+    var historicalPayload: ExportPayload?
+    var historicalDownloads = 0
+    var storageReceivedToken = false
     var latestReads = 0; var uploads = 0; var acceptedUploads = 0; var refreshes = 0
     var offline = false; var rejectRefresh = false; var alwaysConflict = false; var noHead = false
     var beforeNextUpload: (() -> Void)?
@@ -240,6 +244,11 @@ private final class NativeCloudMockServer: @unchecked Sendable {
                 : ["access_token": "synthetic-access", "refresh_token": "synthetic-refresh", "token_type": "bearer"]
         } else if request.value(forHTTPHeaderField: "Authorization")?.contains("synthetic-expired") == true {
             status = 401; object = ["detail": "synthetic expired access"]
+        } else if path.hasSuffix("/legacy.json"), let historicalPayload {
+            historicalDownloads += 1
+            storageReceivedToken = storageReceivedToken || request.value(forHTTPHeaderField: "Authorization") != nil
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+            object = try JSONSerialization.jsonObject(with: encoder.encode(historicalPayload))
         } else if path.hasSuffix("/cloud/latest") {
             latestReads += 1
             let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
@@ -248,7 +257,12 @@ private final class NativeCloudMockServer: @unchecked Sendable {
             if noHead { status = 404; object = ["detail": "no backup"] }
             else { object = value }
         } else if path.hasSuffix("/cloud/history") {
-            if noHead { object = [[String: Any]]() } else { object = [metadata()] }
+            if noHead { object = [[String: Any]]() }
+            else if historicalPayload != nil {
+                var old = metadata(); old["id"] = head - 1
+                old["storage_url"] = "https://storage.invalid/legacy.json"
+                object = [metadata(), old]
+            } else { object = [metadata()] }
         }
         else if path.hasSuffix("/cloud/upload") {
             uploads += 1
@@ -499,6 +513,49 @@ enum NativeCloudSyncProbe {
                 catch SyncMergeService.Conflict.divergentEdits { deletionConflicts += 1 }
             }
             checks["unbasedDeletionsCannotEraseOtherCopy"] = deletionConflicts == targets.count
+            // Exact legacy fingerprint recovers the real common ancestor, so independent
+            // edits to existing entries no longer become false conflicts against an empty base.
+            let historical = try await local()
+            let signature = SHA256.hash(data: try SyncMergeService.canonicalData(for: historical)).map { String(format: "%02x", $0) }.joined()
+            let recoverySuite = "CloudSyncHistory-" + UUID().uuidString
+            let recoveryDefaults = UserDefaults(suiteName: recoverySuite)!
+            defer { recoveryDefaults.removePersistentDomain(forName: recoverySuite) }
+            recoveryDefaults.set(signature, forKey: "assettimemachine.cloud.lastUploadedSignature")
+            let recovery = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: recoveryDefaults, isolatedTest: true)
+            recovery.currentUser = cloud.currentUser
+            server.historicalPayload = historical
+            try edit(aID, 16); server.change(bID, to: 66)
+            let pendingLocal = try await local(), recoveryUploads = server.uploads
+            let exported = try await recovery.exportLocalRecords(from: context)
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            checks["localExportPreservesDataWithoutUploading"] = SyncMergeService.isSameContent(try decoder.decode(ExportPayload.self, from: exported), pendingLocal) && server.uploads == recoveryUploads
+            _ = await recovery.runIsolatedSync(from: context)
+            await recovery.authorizeLocalDataForCurrentAccount(from: context)
+            for _ in 0..<100 {
+                if server.uploads > recoveryUploads && !recovery.isWorking { break }
+                try await Task.sleep(nanoseconds: 50_000_000)
+            }
+            let recovered = try await local()
+            func rootAmount(_ payload: ExportPayload, _ id: UUID) -> Double? {
+                payload.snapshots.first { $0.id == snapshotID }?.entries.first { $0.itemID == id }?.amount
+            }
+            checks["historicalFingerprintRecoversIndependentEdits"] = recovery.errorMessage == nil && rootAmount(recovered, aID) == 16 && rootAmount(recovered, bID) == 66 && SyncMergeService.isSameContent(recovered, server.payload) && server.historicalDownloads == 1
+            checks["historicalStorageNeverReceivesAccountToken"] = !server.storageReceivedToken
+            let conflictSuite = "CloudSyncHistoryConflict-" + UUID().uuidString
+            let conflictDefaults = UserDefaults(suiteName: conflictSuite)!
+            defer { conflictDefaults.removePersistentDomain(forName: conflictSuite) }
+            conflictDefaults.set(signature, forKey: "assettimemachine.cloud.lastUploadedSignature")
+            let conflict = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: conflictDefaults, isolatedTest: true)
+            conflict.currentUser = cloud.currentUser
+            try edit(aID, 17); server.change(aID, to: 18)
+            _ = await conflict.runIsolatedSync(from: context)
+            let conflictUploads = server.uploads, conflictLocal = try await local(), conflictRemote = server.payload
+            await conflict.authorizeLocalDataForCurrentAccount(from: context)
+            let keptLocal = try await local()
+            checks["recoveredBaselineStillBlocksTrueConflict"] = conflict.errorMessage != nil && server.uploads == conflictUploads && SyncMergeService.isSameContent(keptLocal, conflictLocal) && SyncMergeService.isSameContent(server.payload, conflictRemote) && conflictDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
+            conflictDefaults.set(String(repeating: "0", count: 64), forKey: "assettimemachine.cloud.lastUploadedSignature")
+            await conflict.authorizeLocalDataForCurrentAccount(from: context)
+            checks["unmatchedHistoricalFingerprintCannotBindOrUpload"] = conflict.errorMessage != nil && server.uploads == conflictUploads && conflictDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
             return ["checks": checks, "allPassed": checks.values.allSatisfy { $0 }, "count": checks.count,
                     "latestReads": server.latestReads, "uploads": server.uploads, "acceptedUploads": server.acceptedUploads]
         } catch { return ["checks": checks, "allPassed": false, "error": error.localizedDescription] }
