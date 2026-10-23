@@ -3,18 +3,51 @@ import CryptoKit
 import CoreFoundation
 import AssetTimeMachineBacktestCore
 
+
+// Encode/decode financial Double values directly. Foundation JSONSerialization can nudge their bits.
+private enum ExactJSON: Codable {
+    case object([String:ExactJSON]), array([ExactJSON]), string(String), number(Double), integer(Int64), bool(Bool), null
+    init(any:Any) {
+        if let x=any as? [String:Any] {self = .object(x.mapValues{ExactJSON(any:$0)})}
+        else if let x=any as? [Any] {self = .array(x.map{ExactJSON(any:$0)})}
+        else if let x=any as? String {self = .string(x)}
+        else if let x=any as? NSNumber {
+            if CFGetTypeID(x)==CFBooleanGetTypeID(){self = .bool(x.boolValue)}
+            else if ["d","f"].contains(String(cString:x.objCType)){self = .number(x.doubleValue)}
+            else {self = .integer(x.int64Value)}
+        } else if any is NSNull {self = .null}
+        else {preconditionFailure("Unsupported JSON value")}
+    }
+    init(from decoder:Decoder)throws {
+        let c=try decoder.singleValueContainer()
+        if c.decodeNil(){self = .null}
+        else if let x=try? c.decode([String:ExactJSON].self){self = .object(x)}
+        else if let x=try? c.decode([ExactJSON].self){self = .array(x)}
+        else if let x=try? c.decode(String.self){self = .string(x)}
+        else if let x=try? c.decode(Bool.self){self = .bool(x)}
+        else {self = .number(try c.decode(Double.self))}
+    }
+    func encode(to encoder:Encoder)throws {
+        var c=encoder.singleValueContainer()
+        switch self {case .object(let x):try c.encode(x);case .array(let x):try c.encode(x);case .string(let x):try c.encode(x);case .number(let x):try c.encode(x);case .integer(let x):try c.encode(x);case .bool(let x):try c.encode(x);case .null:try c.encodeNil()}
+    }
+    var any:Any {
+        switch self {case .object(let x):return x.mapValues{$0.any};case .array(let x):return x.map{$0.any};case .string(let x):return x;case .number(let x):return x;case .integer(let x):return x;case .bool(let x):return x;case .null:return NSNull()}
+    }
+}
+
 @main struct PairCorrectionReplay {
     static let symbols = ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
     static let encoder: JSONEncoder = { let e=JSONEncoder();e.dateEncodingStrategy = .iso8601;e.outputFormatting=[.sortedKeys,.withoutEscapingSlashes];return e }()
     static func sha(_ d:Data)->String { SHA256.hash(data:d).map{String(format:"%02x",$0)}.joined() }
     static func read(_ u:URL)throws->Data {try Data(contentsOf:u)}
     static func obj(_ u:URL)throws->[String:Any] {try JSONSerialization.jsonObject(with:read(u)) as! [String:Any]}
-    static func write(_ x:Any,_ u:URL)throws { guard !FileManager.default.fileExists(atPath:u.path) else {throw error("existing "+u.path)};try JSONSerialization.data(withJSONObject:x,options:[.sortedKeys,.prettyPrinted,.withoutEscapingSlashes]).write(to:u,options:.atomic) }
+    static func write(_ x:Any,_ u:URL)throws { guard !FileManager.default.fileExists(atPath:u.path) else {throw error("existing "+u.path)};try encoder.encode(ExactJSON(any:x)).write(to:u,options:.atomic) }
     static func error(_ text:String)->NSError {NSError(domain:"PairCorrection",code:1,userInfo:[NSLocalizedDescriptionKey:text])}
     static func require(_ ok:Bool,_ text:String)throws {if !ok {throw error(text)}}
     static func iso(_ d:Date)->String {ISO8601DateFormatter().string(from:d)}
     static func civil(_ d:Date)->String {BacktestSeriesAlignment.historicalSeriesDateString(from:d)}
-    static func json<T:Encodable>(_ x:T)throws->Any {try JSONSerialization.jsonObject(with:encoder.encode(x))}
+    static func json<T:Encodable>(_ x:T)throws->Any {try JSONDecoder().decode(ExactJSON.self,from:encoder.encode(x)).any}
     static func same(_ a:Any,_ b:Any,excluding:Set<String>=[])->Bool {
         if let x=a as? [String:Any],let y=b as? [String:Any] {let keys=Set(x.keys).subtracting(excluding);return keys==Set(y.keys).subtracting(excluding) && keys.allSatisfy{same(x[$0]!,y[$0]!,excluding:excluding)}}
         if let x=a as? [Any],let y=b as? [Any] {return x.count==y.count && zip(x,y).allSatisfy{same($0,$1,excluding:excluding)}}
@@ -79,11 +112,14 @@ import AssetTimeMachineBacktestCore
             if number==0 {data=raw} else {
                 let cutoff=cutDates[number-1];var envelope=try JSONSerialization.jsonObject(with:raw) as! [String:Any]
                 let series=fullDataset.seriesBySymbol.values.sorted{$0.symbol<$1.symbol}.compactMap {BacktestSeriesAlignment.filteredHistorySeries($0,within:Date.distantPast...cutoff)}
-                envelope["series"]=try json(series);let generated=try JSONSerialization.data(withJSONObject:envelope,options:[.sortedKeys]);let physical=folder.appendingPathComponent("physical-history.json");try generated.write(to:physical);data=try read(physical);try require(data==generated,"physical consumed input bytes")
+                envelope["series"]=try json(series);let generated=try encoder.encode(ExactJSON(any:envelope));let physical=folder.appendingPathComponent("physical-history.json");try generated.write(to:physical);data=try read(physical);try require(data==generated,"physical consumed input bytes")
             }
             let dataset=try PublicBacktestCore.loadDataset(from:data,datasetHash:sha(data),dataStale:false)
             let originalInputs:[Input]=options.map{MarketInputPreparation.advancedAssetInput(for:$0){dataset.seriesBySymbol[$0]}}
-            let eligibleInputs:[Input]=originalInputs.map {i in i.assetOption.symbol=="csi300" ? (BacktestSeriesAlignment.filteredHistorySeries(i.assetSeries,within:publicDate...Date.distantFuture),i.assetOption,i.fxSeries):i}
+            // Match the App wrapper's required signal-symbol order before generating its parent.
+            let canonicalInputs:[Input]=symbols.compactMap { symbol in originalInputs.first { $0.assetOption.symbol == symbol } }
+            try require(canonicalInputs.count == symbols.count, "canonical App source inputs")
+            let eligibleInputs:[Input]=canonicalInputs.map {i in i.assetOption.symbol=="csi300" ? (BacktestSeriesAlignment.filteredHistorySeries(i.assetSeries,within:publicDate...Date.distantFuture),i.assetOption,i.fxSeries):i}
             guard let frame=TargetProviderBacktest.researchMarketDataFrame(assetInputs:eligibleInputs,config:cfg) else {throw error("frame")}
             if number==0 {fullFrame=frame;cutDates=[1500,3500,5500].map{frame.dates[$0]}}
             else {
@@ -106,7 +142,7 @@ import AssetTimeMachineBacktestCore
                 let uz=z(frame,"nasdaq","sp500",j);let cz=j>=251 && frame.dates[j-251]>=publicDate ? z(frame,"csi300","shanghai_composite",j):nil
                 guard let target=RecentWindowOverlayStrategy.indexPairTarget(base:base,usZ:uz,chinaZ:cz),let neutral=RecentWindowOverlayStrategy.indexPairTarget(base:base,usZ:nil,chinaZ:nil) else{throw error("raw target")}
                 rows.append(["signalIndex":j,"signalDate":iso(frame.dates[j]),"executionDate":iso(frame.dates[i]),"usZ":uz as Any? ?? NSNull(),"chinaZ":cz as Any? ?? NSNull(),"baseWeights":neutral,"targetWeights":target])
-                let different=previous.map {old in Set(old.keys).union(neutral.keys).reduce(0.0){$0+abs((old[$1] ?? 0)-(neutral[$1] ?? 0))}>1e-10} ?? true
+                let different=previous.map {old in Set(old.keys).union(neutral.keys).sorted().reduce(0.0){$0+abs((old[$1] ?? 0)-(neutral[$1] ?? 0))}>1e-10} ?? true
                 if different {baseEvents.append(.init(signalIndex:j,signalDate:frame.dates[j],targetWeights:neutral,reason:"Matched original LowNoise target"));previous=neutral}
             }
             let events=schedule.events.map(event),neutralEvents=baseEvents.map(event)

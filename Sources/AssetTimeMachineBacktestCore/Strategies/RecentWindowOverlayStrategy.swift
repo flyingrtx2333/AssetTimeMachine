@@ -84,10 +84,39 @@ nonisolated public enum RecentWindowOverlayStrategy {
               base.values.allSatisfy({ $0.isFinite && $0 >= 0 }) else { return nil }
         let original = Dictionary(uniqueKeysWithValues: symbols.map { ($0, base[$0] ?? 0) })
         let baseGross = symbols.reduce(0.0) { $0 + original[$1]! }
-        guard baseGross.isFinite, baseGross <= 1 else { return nil }
+        guard baseGross.isFinite, baseGross <= 1 + 1e-12 else { return nil }
         var target = original
         shiftPair(&target, numerator: "nasdaq", denominator: "sp500", zScore: usZ)
         shiftPair(&target, numerator: "csi300", denominator: "shanghai_composite", zScore: chinaZ)
+        // Leave eight machine ulps of cash near full investment so downstream summation
+        // order cannot trigger a global normalization. This changes one equity leg only.
+        let rawGross = symbols.reduce(0.0) { $0 + target[$1]! }
+        let headroom = 8 * Double.ulpOfOne
+        guard rawGross.isFinite else { return nil }
+        if rawGross >= 1 - headroom {
+            let positiveEquities = legacyRiskSymbols.sorted().filter { target[$0]! > 0 }
+            let recipients = positiveEquities.filter { target[$0]! > original[$0]! }.sorted { lhs, rhs in
+                let left = target[lhs]! - original[lhs]!, right = target[rhs]! - original[rhs]!
+                return left == right ? lhs < rhs : left > right
+            }
+            let balancingSymbol = recipients.first ?? positiveEquities.sorted { lhs, rhs in
+                target[lhs]! == target[rhs]! ? lhs < rhs : target[lhs]! > target[rhs]!
+            }.first
+            if let balancingSymbol {
+                let correction = max(rawGross - 1, 0) + headroom
+                guard correction.isFinite, correction <= 1e-12,
+                      target[balancingSymbol]! >= correction else { return nil }
+                let before = target
+                target[balancingSymbol] = before[balancingSymbol]! - correction
+                guard target[balancingSymbol]!.isFinite, target[balancingSymbol]! >= 0,
+                      abs(target[balancingSymbol]! - before[balancingSymbol]!) <= 1e-12,
+                      symbols.filter({ $0 != balancingSymbol }).allSatisfy({
+                          target[$0]!.bitPattern == before[$0]!.bitPattern
+                      }) else { return nil }
+            } else if rawGross > 1 {
+                return nil // A gold-only source cannot be repaired by changing gold.
+            }
+        }
         guard Set(target.keys) == requiredSymbols,
               target.values.allSatisfy({ $0.isFinite && $0 >= 0 }),
               symbols.reduce(0.0, { $0 + target[$1]! }) <= 1,
@@ -342,7 +371,7 @@ nonisolated public enum RecentWindowOverlayStrategy {
     }
 
     private static func distance(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
-        Set(lhs.keys).union(rhs.keys).reduce(0) { $0 + abs((lhs[$1] ?? 0) - (rhs[$1] ?? 0)) }
+        Set(lhs.keys).union(rhs.keys).sorted().reduce(0) { $0 + abs((lhs[$1] ?? 0) - (rhs[$1] ?? 0)) }
     }
 
     private static func valid(_ target: [String: Double]) -> Bool {

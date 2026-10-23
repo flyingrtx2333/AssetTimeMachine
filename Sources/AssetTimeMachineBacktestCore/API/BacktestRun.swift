@@ -212,7 +212,7 @@ public enum StrategyRegistry {
         switch template.id {
         case "ke25": version = "ke25-forward-v1-2026-10-21"
         case "kvo": version = "kvo-forward-v1-2026-10-22"
-        case "recent-pair-spread-z252-shift25": version = "pair-index-bounded-correction-v2-2026-10-23"
+        case "recent-pair-spread-z252-shift25": version = "pair-index-bounded-correction-v4-2026-10-24"
         case "nfci-dual-core-v1": version = "dualcore-v1-2026-08-14"
         case "nfci-dual-core-v11": version = "dualcore-v11-2026-08-15"
         default: version = legacyRulesVersion

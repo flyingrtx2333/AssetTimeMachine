@@ -1,6 +1,7 @@
 import Foundation
 
 nonisolated enum RiskContributionStrategy {
+    // Stable symbol order keeps shadow target arithmetic independent of Dictionary/Set hashing.
     struct RiskContributionReallocationParameters: Codable, Sendable {
         let sharpeShare: Double
         let riskShare: Double
@@ -151,7 +152,7 @@ nonisolated enum RiskContributionStrategy {
                 for mode in modes {
                     if let weights = targetMaps[mode]?[executionKey] {
                         let oldWeights = latestTargets[mode] ?? [:]
-                        let symbols = Set(oldWeights.keys).union(weights.keys)
+                        let symbols = Set(oldWeights.keys).union(weights.keys).sorted()
                         let difference = symbols.reduce(0.0) {
                             $0 + abs((oldWeights[$1] ?? 0) - (weights[$1] ?? 0))
                         }
@@ -170,14 +171,14 @@ nonisolated enum RiskContributionStrategy {
                 var modeGrosses: [Double] = []
                 for mode in modes {
                     let weights = latestTargets[mode] ?? [:]
-                    modeGrosses.append(weights.values.reduce(0, +))
+                    modeGrosses.append(weights.keys.sorted().reduce(0.0) { $0 + weights[$1]! })
                     let share = shares[mode] ?? 0
                     for (symbol, weight) in weights {
                         baseTarget[symbol, default: 0] += share * weight
                     }
                 }
 
-                let baseGross = baseTarget.values.reduce(0, +)
+                let baseGross = baseTarget.keys.sorted().reduce(0.0) { $0 + baseTarget[$1]! }
                 let minimumModeGross = modeGrosses.min() ?? 0
                 let scale: Double
                 if baseGross >= 0.75, minimumModeGross >= 0.20 {
@@ -189,7 +190,7 @@ nonisolated enum RiskContributionStrategy {
                 }
                 var target = baseTarget.mapValues { $0 * scale }
 
-                let activeSymbols = target.keys.filter {
+                let activeSymbols = target.keys.sorted().filter {
                     (target[$0] ?? 0) > 0.000001 && data.pricesBySymbol[$0] != nil
                 }
                 let effectiveLookback = min(lookback, signalIndex)
@@ -300,8 +301,8 @@ nonisolated enum RiskContributionStrategy {
                             adjustedRaw[symbol] = (target[symbol] ?? 0) / max(adjustment, 0.0001)
                         }
 
-                        let targetGross = target.values.reduce(0, +)
-                        let adjustedGross = adjustedRaw.values.reduce(0, +)
+                        let targetGross = target.keys.sorted().reduce(0.0) { $0 + target[$1]! }
+                        let adjustedGross = adjustedRaw.keys.sorted().reduce(0.0) { $0 + adjustedRaw[$1]! }
                         if adjustedGross > 0 {
                             for symbol in activeSymbols {
                                 let riskBalancedWeight = (adjustedRaw[symbol] ?? 0)
@@ -313,7 +314,7 @@ nonisolated enum RiskContributionStrategy {
                     }
                 }
 
-                let gross = target.values.reduce(0, +)
+                let gross = target.keys.sorted().reduce(0.0) { $0 + target[$1]! }
                 if gross > parameters.grossCap, gross > 0 {
                     target = target.mapValues { $0 * parameters.grossCap / gross }
                 }
@@ -322,11 +323,11 @@ nonisolated enum RiskContributionStrategy {
                 // both major indices have already turned down over the last week.
                 // Normal increases, large regime resets, and all reductions remain untouched.
                 let usSymbols: Set<String> = ["nasdaq", "sp500"]
-                let previousUSWeight = previousWeights.reduce(0.0) {
-                    $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                let previousUSWeight = previousWeights.keys.sorted().reduce(0.0) {
+                    $0 + (usSymbols.contains($1) ? previousWeights[$1]! : 0)
                 }
-                let proposedUSWeight = target.reduce(0.0) {
-                    $0 + (usSymbols.contains($1.key) ? $1.value : 0)
+                let proposedUSWeight = target.keys.sorted().reduce(0.0) {
+                    $0 + (usSymbols.contains($1) ? target[$1]! : 0)
                 }
                 let proposedUSIncrease = proposedUSWeight - previousUSWeight
                 if previousUSWeight >= usJumpBrakeMinimumPreviousWeight,
@@ -360,11 +361,11 @@ nonisolated enum RiskContributionStrategy {
                 // is immediately redirected into a moderate US-equity increase, require
                 // short-term confirmation before executing the new US exposure in full.
                 let chinaSymbols: Set<String> = ["csi300", "shanghai_composite"]
-                let previousChinaWeight = previousWeights.reduce(0.0) {
-                    $0 + (chinaSymbols.contains($1.key) ? $1.value : 0)
+                let previousChinaWeight = previousWeights.keys.sorted().reduce(0.0) {
+                    $0 + (chinaSymbols.contains($1) ? previousWeights[$1]! : 0)
                 }
-                let proposedChinaWeight = target.reduce(0.0) {
-                    $0 + (chinaSymbols.contains($1.key) ? $1.value : 0)
+                let proposedChinaWeight = target.keys.sorted().reduce(0.0) {
+                    $0 + (chinaSymbols.contains($1) ? target[$1]! : 0)
                 }
                 let chinaReduction = previousChinaWeight - proposedChinaWeight
                 let handoffUSIncrease = proposedUSWeight - previousUSWeight
@@ -394,7 +395,7 @@ nonisolated enum RiskContributionStrategy {
                     }
                 }
 
-                let symbols = Set(previousWeights.keys).union(target.keys)
+                let symbols = Set(previousWeights.keys).union(target.keys).sorted()
                 let difference = symbols.reduce(0.0) {
                     $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
                 }
@@ -666,7 +667,7 @@ nonisolated enum RiskContributionStrategy {
                 }
 
                 if fastBridgeActive, !growthActive {
-                    let symbols = Set(latestStableTarget.keys).union(latestGrowthTarget.keys)
+                    let symbols = Set(latestStableTarget.keys).union(latestGrowthTarget.keys).sorted()
                     target = Dictionary(uniqueKeysWithValues: symbols.map { symbol in
                         let stableWeight = latestStableTarget[symbol] ?? 0
                         let growthWeight = latestGrowthTarget[symbol] ?? 0
@@ -677,11 +678,11 @@ nonisolated enum RiskContributionStrategy {
                     })
                 }
 
-                let gross = target.values.reduce(0, +)
+                let gross = target.keys.sorted().reduce(0.0) { $0 + target[$1]! }
                 if gross > grossCap, gross > 0 {
                     target = target.mapValues { $0 * grossCap / gross }
                 }
-                let symbols = Set(previousWeights.keys).union(target.keys)
+                let symbols = Set(previousWeights.keys).union(target.keys).sorted()
                 let difference = symbols.reduce(0.0) {
                     $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
                 }
@@ -758,8 +759,10 @@ nonisolated enum RiskContributionStrategy {
             let ratio = state.portfolioValue > 0 ? max(state.cash / state.portfolioValue, 0) : 0
             return (state.date.backtestDateString, ratio)
         })
-        let baseGrosses = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map {
-            ($0.date.backtestDateString, $0.targetWeights.values.reduce(0, +))
+        let baseGrosses = Dictionary(uniqueKeysWithValues: baseRun.dailyStates.map { state in
+            (state.date.backtestDateString, state.targetWeights.keys.sorted().reduce(0.0) { total, symbol in
+                total + state.targetWeights[symbol]!
+            })
         })
 
         let minimumWaterDuration = 60
@@ -1101,11 +1104,11 @@ nonisolated enum RiskContributionStrategy {
                 for (symbol, weight) in recoveryWeights {
                     target[symbol, default: 0] += weight
                 }
-                let gross = target.values.reduce(0, +)
+                let gross = target.keys.sorted().reduce(0.0) { $0 + target[$1]! }
                 if gross > grossCap, gross > 0 {
                     target = target.mapValues { $0 * grossCap / gross }
                 }
-                let symbols = Set(previousWeights.keys).union(target.keys)
+                let symbols = Set(previousWeights.keys).union(target.keys).sorted()
                 let difference = symbols.reduce(0.0) {
                     $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
                 }

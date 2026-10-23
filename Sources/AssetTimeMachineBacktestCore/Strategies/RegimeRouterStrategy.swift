@@ -134,11 +134,11 @@ nonisolated enum RegimeRouterStrategy {
                 }
 
                 var target = growthActive ? latestGrowthTarget : latestStableTarget
-                let gross = target.values.reduce(0, +)
+                let gross = target.keys.sorted().reduce(0.0) { $0 + target[$1]! }
                 if gross > grossCap, gross > 0 {
                     target = target.mapValues { $0 * grossCap / gross }
                 }
-                let symbols = Set(previousWeights.keys).union(target.keys)
+                let symbols = Set(previousWeights.keys).union(target.keys).sorted()
                 let difference = symbols.reduce(0.0) {
                     $0 + abs((previousWeights[$1] ?? 0) - (target[$1] ?? 0))
                 }
