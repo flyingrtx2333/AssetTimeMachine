@@ -50,8 +50,9 @@ import AssetTimeMachineBacktestCore
         for t in run.report.trades {
             try require(symbols.contains(t.assetSymbol) && t.units>=0 && t.price>0,"invalid trade")
             if t.assetSymbol=="csi300" {try require(civil(t.date)>="2005-04-08","prepublic CSI trade")}
-            let gross=t.units*t.price;let expected=t.action == .buy ? gross*1.00025:gross*0.99975
-            maxFeeError=max(maxFeeError,abs(t.cashAmount-expected));totalFees+=gross*0.00025
+            let gross=t.units*t.price
+            let mismatch=t.action == .buy ? abs(gross-t.cashAmount*0.99975):abs(t.cashAmount-gross*0.99975)
+            maxFeeError=max(maxFeeError,mismatch);totalFees+=(t.action == .buy ? t.cashAmount:gross)*0.00025
         }
         try require(maxFeeError<1e-6,"actual fee/slippage formula")
         return ["status":"PASS_PUBLISHED_STATE_CASH_GROSS_ASSET_FEE_AND_DUST_BOUNDS","stateCount":run.dailyStates.count,"fills":run.report.trades.count,"firstRiskDate":firstRisk as Any? ?? NSNull(),"preCSIPublicAllCashStates":earlyCash,"maxPublishedLedgerResidual":maxResidual,"publishedDustLimitPerAsset":0.0001,"fullUnitsLedgerCertified":false,"maxActualGross":maxGross,"maxFeeCashFormulaError":maxFeeError,"sumFillFeesCNY":totalFees]
@@ -78,7 +79,7 @@ import AssetTimeMachineBacktestCore
             if number==0 {data=raw} else {
                 let cutoff=cutDates[number-1];var envelope=try JSONSerialization.jsonObject(with:raw) as! [String:Any]
                 let series=fullDataset.seriesBySymbol.values.sorted{$0.symbol<$1.symbol}.compactMap {BacktestSeriesAlignment.filteredHistorySeries($0,within:Date.distantPast...cutoff)}
-                envelope["series"]=try json(series);data=try JSONSerialization.data(withJSONObject:envelope,options:[.sortedKeys]);try data.write(to:folder.appendingPathComponent("physical-history.json"))
+                envelope["series"]=try json(series);let generated=try JSONSerialization.data(withJSONObject:envelope,options:[.sortedKeys]);let physical=folder.appendingPathComponent("physical-history.json");try generated.write(to:physical);data=try read(physical);try require(data==generated,"physical consumed input bytes")
             }
             let dataset=try PublicBacktestCore.loadDataset(from:data,datasetHash:sha(data),dataStale:false)
             let originalInputs:[Input]=options.map{MarketInputPreparation.advancedAssetInput(for:$0){dataset.seriesBySymbol[$0]}}
@@ -96,8 +97,8 @@ import AssetTimeMachineBacktestCore
             var baseByIndex:[Int:[String:Double]]=[:]
             for i in 1..<frame.dates.count {if let x=byDate[civil(frame.dates[i])] {baseByIndex[i]=x}}
             guard let schedule=RecentWindowOverlayStrategy.indexPairSchedule(frame:frame,baseByExecutionIndex:baseByIndex) else {
-                let bad=baseByIndex.sorted{$0.key<$1.key}.first{RecentWindowOverlayStrategy.indexPairTarget(base:$0.value,usZ:nil,chinaZ:nil)==nil}
-                try write(["status":"SOURCE_RAW_GUARD_STOP","index":bad?.key as Any? ?? NSNull(),"base":bad?.value as Any? ?? NSNull(),"gross":bad.map{gross($0.value)} as Any? ?? NSNull()],folder.appendingPathComponent("SOURCE_FAILURE.json"));throw error("source raw target guard")
+                let bad=baseByIndex.sorted{$0.key<$1.key}.first { i,w in let j=i-1;let uz=z(frame,"nasdaq","sp500",j);let cz=j>=251 && frame.dates[j-251]>=publicDate ? z(frame,"csi300","shanghai_composite",j):nil;return RecentWindowOverlayStrategy.indexPairTarget(base:w,usZ:uz,chinaZ:cz)==nil }
+                try write(["status":"SOURCE_RAW_GUARD_STOP","index":bad?.key as Any? ?? NSNull(),"base":bad?.value as Any? ?? NSNull(),"gross":bad.map{gross($0.value)} as Any? ?? NSNull(),"executionDate":bad.map{iso(frame.dates[$0.key])} as Any? ?? NSNull(),"usZ":bad.flatMap{z(frame,"nasdaq","sp500",$0.key-1)} as Any? ?? NSNull(),"chinaZ":bad.flatMap { v -> Double? in let j=v.key-1;return j>=251 && frame.dates[j-251]>=publicDate ? z(frame,"csi300","shanghai_composite",j):nil } as Any? ?? NSNull()],folder.appendingPathComponent("SOURCE_FAILURE.json"));throw error("source raw target guard")
             }
             var rows:[[String:Any]]=[],baseEvents:[FrozenTargetEvent]=[];var current:[String:Double]?;var previous:[String:Double]?
             for i in 1..<frame.dates.count {
@@ -122,13 +123,13 @@ import AssetTimeMachineBacktestCore
                     guard let x=TargetProviderBacktest.runResearchTargetProviderStrategyWithTrace(assetInputs:eligibleInputs,initialCash:100000,settings:settings,config:cfg,frozenSchedule:{_ in FrozenTargetSchedule(events:baseEvents)},targetWeights:{_,_ in [:]}) else{throw error("matched parent control")}
                     run=AdvancedRotationStrategyRun(report:x.report,dailyStates:x.dailyStates)
                 }
-                let account=try payload(run),audit=try ledger(run);let name=role==0 ? "corrected-pair":"matched-parent-control"
-                try write(account,folder.appendingPathComponent(name+".json"));try write(audit,folder.appendingPathComponent(name+"-ledger.json"))
+                let account=try payload(run);let name=role==0 ? "corrected-pair":"matched-parent-control"
+                try write(account,folder.appendingPathComponent(name+".json"));let audit=try ledger(run);try write(audit,folder.appendingPathComponent(name+"-ledger.json"))
                 let wanted=role==0 ? schedule.events:baseEvents;var k=0;var latest:[String:Double]=[:]
                 for state in run.dailyStates {
                     let j=frame.dates.firstIndex(of:state.date)!-1
                     while k<wanted.count && wanted[k].signalIndex<=j {latest=wanted[k].targetWeights;k+=1}
-                    try require(same(state.targetWeights,latest),"latest desired accepted weights mismatch "+name+" "+civil(state.date))
+                    try require(same(state.targetWeights,latest.filter{$0.value>0}),"latest desired accepted weights mismatch "+name+" "+civil(state.date))
                 }
                 try write(["status":"PASS_LATEST_KNOWN_DESIRED_EQUALS_STATE_TARGET_ALL_DAYS","pendingUpdatesUseCurrentCoreV4":true,"instantActualHoldingsClaim":false],folder.appendingPathComponent(name+"-delivery.json"))
                 if number==0 {fullAccounts.append(account)} else {
