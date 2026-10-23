@@ -19,7 +19,7 @@ extension Double {
         return formatter.string(from: NSNumber(value: self)) ?? String(format: "%.0f", self)
     }
 
-    func backtestPercentString(maxFractionDigits: Int = 2) -> String {
+    public func backtestPercentString(maxFractionDigits: Int = 2) -> String {
         String(format: "%.\(maxFractionDigits)f%%", self * 100)
     }
 
