@@ -99,6 +99,8 @@ struct TodayPositionAdviceCard: View {
                 statusState(statusMessage)
             } else if let advice = adviceStore.advice {
                 adviceContent(advice)
+            } else if !adviceStore.isRefreshing {
+                statusState(AppLocalization.string("暂无持仓建议"))
             }
         }
         .padding(.horizontal, 2)
@@ -159,7 +161,8 @@ struct TodayPositionAdviceCard: View {
                     Image(systemName: "arrow.clockwise")
                         .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(adviceStore.isRefreshing || !isActive)
@@ -180,7 +183,7 @@ struct TodayPositionAdviceCard: View {
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .multilineTextAlignment(.trailing)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if let selectedTemplate,
                        BacktestProductStrategyCatalog.isAdviceEligibleTemplateID(selectedTemplate.id) {
@@ -192,6 +195,7 @@ struct TodayPositionAdviceCard: View {
                         .foregroundStyle(AssetTheme.textSecondary)
                 }
                 .padding(.vertical, 8)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
                 .overlay(alignment: .bottom) {
                     Divider().overlay(AssetTheme.border.opacity(0.5))
@@ -262,7 +266,8 @@ struct TodayPositionAdviceCard: View {
                         Image(systemName: showsOperationAmounts ? "eye" : "eye.slash")
                             .font(AppTypography.captionStrong)
                             .foregroundStyle(AssetTheme.textSecondary)
-                            .frame(width: 30, height: 30)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
@@ -355,8 +360,7 @@ struct TodayPositionAdviceCard: View {
                 Text(action.title)
                     .font(AppTypography.captionStrong)
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 

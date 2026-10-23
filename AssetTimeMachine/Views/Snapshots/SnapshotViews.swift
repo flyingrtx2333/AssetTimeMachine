@@ -970,7 +970,7 @@ struct RecordPageHero: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 14) {
                 Text(AppLocalization.string("记录"))
-                    .font(.system(size: 22, weight: .semibold, design: .default))
+                    .font(AppTypography.sheetTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
 
                 Spacer(minLength: 12)
@@ -981,7 +981,7 @@ struct RecordPageHero: View {
                             Image(systemName: showsZeroBalanceAssets ? "eye" : "eye.slash")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(showsZeroBalanceAssets ? AssetTheme.goldSoft : AssetTheme.textSecondary)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 44, height: 44)
                                 .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -995,7 +995,7 @@ struct RecordPageHero: View {
                             Image(systemName: "clock.arrow.circlepath")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(AssetTheme.goldSoft)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 44, height: 44)
                                 .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -1005,7 +1005,7 @@ struct RecordPageHero: View {
                             Image(systemName: "plus")
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundStyle(AssetTheme.goldSoft)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 44, height: 44)
                                 .contentShape(Circle())
                         }
                         .buttonStyle(.plain)
@@ -1304,7 +1304,7 @@ struct RecordLedgerRow: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -1312,7 +1312,7 @@ struct RecordLedgerRow: View {
 
             valueControl
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, 4)
         .padding(.horizontal, isHighlighted ? 10 : 0)
         .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
         .background(
@@ -1345,7 +1345,7 @@ struct RecordLedgerRow: View {
                         .lineLimit(1)
                 }
             }
-            .frame(minWidth: 112, alignment: .trailing)
+            .frame(minWidth: 112, minHeight: 44, alignment: .trailing)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2334,6 +2334,8 @@ struct AssetItemEditorSheet: View {
                 }
                 .font(AppTypography.captionStrong)
                 .foregroundStyle(AssetTheme.goldSoft)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
@@ -3085,11 +3087,14 @@ struct RecordValueEditorSheet: View {
 
             Spacer(minLength: 4)
 
-            Button(AppLocalization.string("完成"), action: save)
-                .font(.system(size: quickHeaderTitleSize, weight: .medium))
-                .foregroundStyle(AssetTheme.goldSoft)
-                .frame(minWidth: quickHeaderButtonSize, minHeight: quickHeaderButtonSize, alignment: .trailing)
-                .buttonStyle(.plain)
+            Button(action: save) {
+                Text(AppLocalization.string("完成"))
+                    .font(.system(size: quickHeaderTitleSize, weight: .semibold))
+                    .foregroundStyle(AssetTheme.goldSoft)
+                    .frame(minWidth: quickHeaderButtonSize, minHeight: quickHeaderButtonSize, alignment: .trailing)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, quickEditorPadding)
         .padding(.top, quickHeaderTopPadding)
@@ -3323,7 +3328,7 @@ struct RecordValueEditorSheet: View {
                 }
             }
             .foregroundStyle(AssetTheme.textSecondary)
-            .frame(width: 28, height: 28)
+            .frame(width: quickHeaderButtonSize, height: quickHeaderButtonSize)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

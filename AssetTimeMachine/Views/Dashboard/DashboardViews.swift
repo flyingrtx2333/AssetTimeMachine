@@ -470,7 +470,7 @@ struct DashboardView: View {
     private var dashboardGreeting: some View {
         HStack(alignment: .center, spacing: 12) {
             Text(AppLocalization.string(greetingKey))
-                .font(.system(size: 28, weight: .bold, design: .default))
+                .font(AppTypography.pageHero)
                 .foregroundStyle(AssetTheme.textPrimary)
 
             Spacer(minLength: 12)
@@ -517,15 +517,28 @@ struct DashboardCloudStatusButton: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: store.indicatorState.cloudSymbolName)
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppTypography.metaStrong)
 
-            Text(store.indicatorLabel)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
+            Text(statusLabel)
+                .font(AppTypography.metaStrong)
         }
         .foregroundStyle(store.indicatorState.symbolColor)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
+        .padding(.horizontal, 12)
+        .frame(minHeight: 44)
+        .background(AssetTheme.surfaceRaised, in: Capsule())
+        .overlay(Capsule().stroke(AssetTheme.border, lineWidth: 1))
+        .contentShape(Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(AppLocalization.string("云同步"))
+        .accessibilityValue(store.indicatorLabel)
+    }
+
+    private var statusLabel: String {
+        switch store.indicatorState {
+        case .idle: AppLocalization.string("未开启")
+        case .checking: AppLocalization.string(store.isWorking ? "同步中" : "待同步")
+        case .healthy: AppLocalization.string("正常")
+        case .warning: AppLocalization.string("需处理")
+        }
     }
 }

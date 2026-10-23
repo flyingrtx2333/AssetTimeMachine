@@ -28,8 +28,8 @@ struct SettingsView: View {
     @State private var showsStrategyLibrary = false
     @State private var showsMonthlyExpenseEstimator = false
     @State private var pendingAppLanguage: AppLanguage?
-    #if DEBUG && targetEnvironment(macCatalyst)
-    @State private var didOpenPreviewCloud = false
+    #if DEBUG
+    @State private var didOpenPreviewSheet = false
     #endif
 
     init(
@@ -151,13 +151,8 @@ struct SettingsView: View {
                 guard isActive else { return }
                 normalizeStrategyNotificationTemplateIfNeeded()
                 await reloadNotificationStatus()
-                #if DEBUG && targetEnvironment(macCatalyst)
-                if AppPreviewSession.isActive,
-                   ProcessInfo.processInfo.arguments.contains("-macPreviewCloud"),
-                   !didOpenPreviewCloud {
-                    didOpenPreviewCloud = true
-                    showsCloudSyncModal = true
-                }
+                #if DEBUG
+                presentPreviewSheetIfRequested()
                 #endif
             }
             .onChange(of: notificationEnabled) { _, _ in
@@ -177,7 +172,7 @@ struct SettingsView: View {
                     pendingAppLanguage = language
                     showsLanguageSelection = false
                 }
-                .presentationDetents([.height(330)])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showsCloudSyncModal) {
@@ -216,6 +211,28 @@ struct SettingsView: View {
         }
     }
 
+    #if DEBUG
+    /// Navigation only, for isolated simulator captures; uses the real views and state.
+    private func presentPreviewSheetIfRequested() {
+        guard !didOpenPreviewSheet else { return }
+        let arguments = ProcessInfo.processInfo.arguments
+        var destination: String?
+        if let index = arguments.firstIndex(of: "-previewSettingsSheet"), arguments.indices.contains(index + 1) {
+            destination = arguments[index + 1]
+        } else if AppPreviewSession.isActive && arguments.contains("-macPreviewCloud") {
+            destination = "cloud"
+        }
+        guard let destination else { return }
+        didOpenPreviewSheet = true
+        switch destination {
+        case "cloud": showsCloudSyncModal = true
+        case "language": showsLanguageSelection = true
+        case "expenses": showsMonthlyExpenseEstimator = true
+        default: break
+        }
+    }
+    #endif
+
     private var settingsSectionSpacing: CGFloat {
         #if targetEnvironment(macCatalyst)
         8
@@ -242,15 +259,7 @@ struct SettingsView: View {
 
     private var pageOverviewSection: some View {
         Section {
-            SettingsPageHeader(
-                cloudState: cloudStore.indicatorState,
-                cloudAccessibilityLabel: AppLocalization.format(
-                    "%@ · %@",
-                    AppLocalization.string("云同步"),
-                    AppLocalization.string(cloudOverviewKey)
-                ),
-                onOpenCloud: { showsCloudSyncModal = true }
-            )
+            SettingsPageHeader()
             .settingsHeaderRow()
 
             SettingsOverviewRail(
@@ -258,10 +267,7 @@ struct SettingsView: View {
                 cloudColor: cloudOverviewColor,
                 notificationValue: AppLocalization.string(notificationOverviewKey),
                 notificationColor: notificationOverviewColor,
-                strategyValue: selectedStrategyTemplate?.title ?? AppLocalization.string("未选择"),
-                strategyAccessibilityValue: selectedStrategyTemplate.map(StrategyRebalanceDefaults.pickerTitle)
-                    ?? AppLocalization.string("未选择策略"),
-                onSelectStrategy: { showsStrategyLibrary = true }
+                onOpenCloud: { showsCloudSyncModal = true }
             )
             .settingsHeaderRow()
         }
@@ -361,7 +367,7 @@ struct SettingsView: View {
                         }
                     }
                 } label: {
-                    SettingsDisclosureIcon()
+                    SettingsDisclosureIcon(isInteractive: true)
                         .accessibilityLabel(AppLocalization.string("播报频率"))
                         .accessibilityValue(intervalLabel(notificationIntervalHours))
                 }
@@ -390,15 +396,24 @@ struct SettingsView: View {
                         }
                     }
                 } label: {
-                    SettingsDisclosureIcon()
+                    SettingsDisclosureIcon(isInteractive: true)
                         .accessibilityLabel(AppLocalization.string("提醒时间"))
                         .accessibilityValue(strategyHourLabel(strategyNotificationHour))
                 }
             }
             .settingsSurfaceRow()
 
-            SettingsStrategySummaryRow(template: selectedStrategyTemplate)
-                .settingsSurfaceRow()
+            Button {
+                showsStrategyLibrary = true
+            } label: {
+                SettingsStrategySummaryRow(template: selectedStrategyTemplate)
+            }
+            .buttonStyle(.plain)
+            .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
+            .accessibilityLabel(AppLocalization.string("调仓策略"))
+            .accessibilityValue(selectedStrategyTemplate.map(StrategyRebalanceDefaults.pickerTitle)
+                ?? AppLocalization.string("未选择策略"))
+            .settingsSurfaceRow()
 
             if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
                 Button {
@@ -574,66 +589,17 @@ struct SettingsView: View {
 }
 
 private struct SettingsPageHeader: View {
-    let cloudState: AssetTimeMachineCloudIndicatorState
-    let cloudAccessibilityLabel: String
-    let onOpenCloud: () -> Void
-
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            Text(AppLocalization.string("设置"))
-                #if targetEnvironment(macCatalyst)
-                .font(.system(size: 25, weight: .semibold))
-                #else
-                .font(.largeTitle.weight(.semibold))
-                #endif
-                .foregroundStyle(AssetTheme.textPrimary)
-
-            Spacer(minLength: 12)
-
-            Button(action: onOpenCloud) {
-                ZStack {
-                    Circle()
-                        .fill(AssetTheme.surfaceRaised.opacity(0.62))
-                        .overlay(
-                            Circle()
-                                .stroke(AssetTheme.gold.opacity(0.28), lineWidth: 1)
-                        )
-
-                    Image(systemName: cloudState.cloudSymbolName)
-                        .font(.system(size: cloudIconSize, weight: .semibold))
-                        .foregroundStyle(cloudState.symbolColor)
-                }
-                .overlay(alignment: .topTrailing) {
-                    Circle()
-                        .fill(cloudState.symbolColor)
-                        .frame(width: 8, height: 8)
-                        .overlay(Circle().stroke(AssetTheme.background, lineWidth: 1.5))
-                        .offset(x: -1, y: 1)
-                }
-                .frame(width: cloudButtonSize, height: cloudButtonSize)
-                .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(cloudAccessibilityLabel)
-        }
-        .padding(.top, headerTopPadding)
-        .padding(.bottom, headerBottomPadding)
-    }
-
-    private var cloudIconSize: CGFloat {
-        #if targetEnvironment(macCatalyst)
-        18
-        #else
-        20
-        #endif
-    }
-
-    private var cloudButtonSize: CGFloat {
-        #if targetEnvironment(macCatalyst)
-        38
-        #else
-        44
-        #endif
+        Text(AppLocalization.string("设置"))
+            #if targetEnvironment(macCatalyst)
+            .font(.system(size: 25, weight: .semibold))
+            #else
+            .font(.largeTitle.weight(.semibold))
+            #endif
+            .foregroundStyle(AssetTheme.textPrimary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, headerTopPadding)
+            .padding(.bottom, headerBottomPadding)
     }
 
     private var headerTopPadding: CGFloat {
@@ -659,9 +625,7 @@ private struct SettingsOverviewRail: View {
     let cloudColor: Color
     let notificationValue: String
     let notificationColor: Color
-    let strategyValue: String
-    let strategyAccessibilityValue: String
-    let onSelectStrategy: () -> Void
+    let onOpenCloud: () -> Void
 
     var body: some View {
         Group {
@@ -670,16 +634,12 @@ private struct SettingsOverviewRail: View {
                     cloudItem
                     SettingsOverviewHorizontalDivider()
                     notificationItem
-                    SettingsOverviewHorizontalDivider()
-                    strategyItem
                 }
             } else {
                 HStack(spacing: 0) {
                     cloudItem
                     SettingsOverviewDivider()
                     notificationItem
-                    SettingsOverviewDivider()
-                    strategyItem
                 }
             }
         }
@@ -701,12 +661,16 @@ private struct SettingsOverviewRail: View {
     }
 
     private var cloudItem: some View {
-        SettingsOverviewItem(
-            title: AppLocalization.string("云同步"),
-            value: cloudValue,
-            systemImage: "icloud",
-            tint: cloudColor
-        )
+        Button(action: onOpenCloud) {
+            SettingsOverviewItem(
+                title: AppLocalization.string("云同步"),
+                value: cloudValue,
+                systemImage: "icloud",
+                tint: cloudColor,
+                accessorySystemImage: "chevron.right"
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var notificationItem: some View {
@@ -716,22 +680,6 @@ private struct SettingsOverviewRail: View {
             systemImage: "bell",
             tint: notificationColor
         )
-    }
-
-    private var strategyItem: some View {
-        Button(action: onSelectStrategy) {
-            SettingsOverviewItem(
-                title: AppLocalization.string("策略"),
-                value: strategyValue,
-                systemImage: "waveform.path.ecg",
-                tint: AssetTheme.gold,
-                accessorySystemImage: "chevron.down"
-            )
-        }
-        .buttonStyle(.plain)
-        .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
-        .accessibilityLabel(AppLocalization.string("调仓策略"))
-        .accessibilityValue(strategyAccessibilityValue)
     }
 }
 
@@ -754,7 +702,7 @@ private struct SettingsOverviewItem: View {
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(AssetTheme.textPrimary)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.62)
+                    .minimumScaleFactor(0.9)
 
                 Text(value)
                     .font(.caption.weight(.semibold))
@@ -772,8 +720,9 @@ private struct SettingsOverviewItem: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .frame(minHeight: 36, alignment: .top)
-        .padding(.horizontal, 6)
+        .frame(minHeight: 44, alignment: .center)
+        .padding(.horizontal, 8)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 }
@@ -810,6 +759,7 @@ private struct SettingsSectionHeader: View {
 }
 
 private struct SettingsNavigationRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     let systemImage: String
     var subtitle: String? = nil
@@ -825,8 +775,10 @@ private struct SettingsNavigationRow: View {
                 title: title,
                 systemImage: systemImage,
                 tint: tint,
-                subtitle: subtitle
+                subtitle: subtitle,
+                detail: dynamicTypeSize.isAccessibilitySize ? value : nil
             )
+            .layoutPriority(1)
 
             Spacer(minLength: 10)
 
@@ -834,12 +786,12 @@ private struct SettingsNavigationRow: View {
                 ProgressView()
                     .controlSize(.small)
                     .tint(AssetTheme.gold)
-            } else if let value {
+            } else if let value, !dynamicTypeSize.isAccessibilitySize {
                 Text(value)
                     .font(.subheadline)
                     .foregroundStyle(AssetTheme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.trailing)
             }
 
             if let trailingSystemImage {
@@ -892,8 +844,10 @@ private struct SettingsStrategySummaryRow: View {
             }
 
             Spacer(minLength: 8)
+            SettingsDisclosureIcon()
         }
         .frame(minHeight: 68)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
     }
 }
@@ -903,6 +857,7 @@ struct SettingsRowLabel: View {
     let systemImage: String
     var tint: Color = AssetTheme.textPrimary
     var subtitle: String? = nil
+    var detail: String? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -921,19 +876,29 @@ struct SettingsRowLabel: View {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                }
+
+                if let detail {
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .padding(.vertical, 6)
         }
     }
 }
 
 private struct SettingsDisclosureIcon: View {
+    var isInteractive = false
+
     var body: some View {
         Image(systemName: "chevron.right")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(AssetTheme.textSecondary)
-            .frame(width: 44, height: 44)
+            .frame(width: isInteractive ? 44 : 12, height: 44)
             .contentShape(Rectangle())
     }
 }
@@ -971,6 +936,7 @@ private extension View {
 }
 
 private struct AppLanguageSelectionSheet: View {
+    @Environment(\.dismiss) private var dismiss
     let currentLanguage: AppLanguage
     let onSelect: (AppLanguage) -> Void
 
@@ -1001,6 +967,12 @@ private struct AppLanguageSelectionSheet: View {
             .background(AssetTheme.background)
             .navigationTitle(AppLocalization.string("语言"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(AppLocalization.string("完成")) { dismiss() }
+                        .tint(AssetTheme.gold)
+                }
+            }
         }
     }
 }

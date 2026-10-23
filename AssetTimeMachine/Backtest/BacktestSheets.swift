@@ -91,12 +91,13 @@ struct BacktestDCACard: View {
                     HStack(spacing: 8) {
                         Text(selectedDateRangeLabel)
                             .font(AppTypography.blockTitleBold)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.78)
+                            .fixedSize(horizontal: false, vertical: true)
                         Image(systemName: "chevron.down")
                             .font(AppTypography.captionStrong)
                     }
                     .foregroundStyle(AssetTheme.textPrimary)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
 
@@ -181,7 +182,7 @@ struct BacktestInfoRow: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Text(AppLocalization.string(title))
-                    .font(.subheadline.weight(.medium))
+                    .font(AppTypography.bodyStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
 
                 Spacer()
@@ -190,6 +191,7 @@ struct BacktestInfoRow: View {
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(valueColor)
                     .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if showsChevron {
                     Image(systemName: "chevron.right")
@@ -199,6 +201,8 @@ struct BacktestInfoRow: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
 
             if showsDivider {
                 Rectangle()
@@ -217,34 +221,10 @@ struct BacktestPrimaryActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
-
-                Image(systemName: systemImage)
-                    .font(AppTypography.metaStrong)
-
-                Text(AppLocalization.string(title))
-                    .font(AppTypography.rowTitle)
-
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(Color.black.opacity(0.88))
-            .padding(.vertical, 12)
-            .background(
-                LinearGradient(
-                    colors: [AssetTheme.gold.opacity(0.98), AssetTheme.goldSoft.opacity(0.88)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                ),
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-            )
-            .shadow(color: AssetTheme.gold.opacity(0.12), radius: 12, y: 6)
+            Label(AppLocalization.string(title), systemImage: systemImage)
+                .multilineTextAlignment(.center)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ATMActionButtonStyle())
     }
 }
 
@@ -260,12 +240,13 @@ struct BacktestActionChip: View {
                     .font(AppTypography.metaStrong)
                     .foregroundStyle(AssetTheme.textSecondary)
                 Text(AppLocalization.string(title))
-                    .font(.subheadline.weight(.medium))
-                    .lineLimit(1)
+                    .font(AppTypography.bodyStrong)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(AssetTheme.textPrimary)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
+            .frame(minHeight: 44)
             .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -434,29 +415,38 @@ struct BacktestDateRangeSheet: View {
     }
 
     private var sheetHeader: some View {
-        ZStack {
+        HStack(spacing: 12) {
+            Button {
+                dismiss()
+            } label: {
+                Text(AppLocalization.string("取消"))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .foregroundStyle(AssetTheme.textSecondary)
+            .buttonStyle(.plain)
+
             Text(AppLocalization.string("调整时间"))
                 .font(AppTypography.blockTitleBold)
                 .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
 
-            HStack {
-                Button(AppLocalization.string("取消")) {
-                    dismiss()
-                }
-                .foregroundStyle(AssetTheme.textSecondary)
-
-                Spacer()
-
-                Button(AppLocalization.string("完成")) {
-                    onApply(startDate, endDate)
-                    dismiss()
-                }
-                .fontWeight(.semibold)
-                .foregroundStyle(AssetTheme.gold)
+            Button {
+                onApply(startDate, endDate)
+                dismiss()
+            } label: {
+                Text(AppLocalization.string("完成"))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
+            .fontWeight(.semibold)
+            .foregroundStyle(AssetTheme.gold)
+            .buttonStyle(.plain)
         }
         .font(AppTypography.meta)
-        .frame(height: 48)
+        .frame(minHeight: 48)
         .padding(.horizontal, 18)
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -510,12 +500,14 @@ struct BacktestRangePresetButton: View {
                 .foregroundStyle(isSelected ? AssetTheme.goldSoft : AssetTheme.textPrimary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
+                .frame(minHeight: 44)
                 .background(
                     isSelected ? AssetTheme.gold.opacity(0.16) : AssetTheme.overlaySubtle,
                     in: Capsule()
                 )
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -536,13 +528,14 @@ private struct BacktestDateEndpointButton: View {
                     .font(AppTypography.rowTitle)
                     .monospacedDigit()
                     .foregroundStyle(isSelected ? AssetTheme.goldSoft : AssetTheme.textPrimary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Rectangle()
                     .fill(isSelected ? AssetTheme.gold : AssetTheme.border.opacity(0.46))
                     .frame(height: isSelected ? 2 : 1)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

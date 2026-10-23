@@ -1352,13 +1352,14 @@ struct AdvancedBacktestView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text(title)
-                        .font(.subheadline.weight(.medium))
+                        .font(AppTypography.bodyStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                     Spacer()
                     Text(value)
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(accent)
                         .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                     Image(systemName: "chevron.down")
                         .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
@@ -1371,6 +1372,8 @@ struct AdvancedBacktestView: View {
                         .padding(.top, 14)
                 }
             }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -1529,13 +1532,14 @@ struct AdvancedBacktestView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text(title)
-                        .font(.subheadline.weight(.medium))
+                        .font(AppTypography.bodyStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                     Spacer()
                     Text(value)
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                     Image(systemName: "chevron.right")
                         .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
@@ -1548,6 +1552,8 @@ struct AdvancedBacktestView: View {
                         .padding(.top, 14)
                 }
             }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

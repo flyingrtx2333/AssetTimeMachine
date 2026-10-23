@@ -730,7 +730,7 @@ struct TimeMachineView: View {
     }
 
     private var pageHeader: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 8) {
             Spacer(minLength: 0)
 
             Button {
@@ -739,8 +739,8 @@ struct TimeMachineView: View {
                 Image(systemName: amountsVisible ? "eye" : "eye.slash")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(width: 34, height: 34)
-                    .contentShape(Circle())
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(AppLocalization.string(amountsVisible ? "隐藏资产金额" : "显示资产金额"))
@@ -748,19 +748,10 @@ struct TimeMachineView: View {
             Button {
                 openTrendVideoPreview()
             } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "play.rectangle")
-                        .font(.system(size: 18, weight: .medium))
-                    Text(AppLocalization.string("生成走势视频"))
-                        .font(.system(size: 12.5, weight: .medium))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                }
-                .foregroundStyle(AssetTheme.textSecondary)
+                Label(AppLocalization.string("生成走势视频"), systemImage: "play.rectangle")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ATMActionButtonStyle(prominence: .secondary, expands: false))
             .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
-            .opacity(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2 ? 0.42 : 1)
             .accessibilityLabel(AppLocalization.string("生成走势视频"))
         }
     }

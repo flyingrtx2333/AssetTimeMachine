@@ -31427,7 +31427,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%d items"
+            "value": "Items: %d"
           }
         },
         "zh-Hans": {
@@ -33752,6 +33752,75 @@
           "stringUnit": {
             "state": "translated",
             "value": "未找到相符的歷史版本，無法自動合併。請匯出本機記錄以核對差異。"
+          }
+        }
+      }
+    },
+    "暂无云端备份": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No cloud backups"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无云端备份"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚無雲端備份"
+          }
+        }
+      }
+    },
+    "确认关联至 %@？": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link records to %@?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认关联至 %@？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認關聯至 %@？"
+          }
+        }
+      }
+    },
+    "暂无持仓建议": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No allocation advice available"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无持仓建议"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫無持倉建議"
           }
         }
       }

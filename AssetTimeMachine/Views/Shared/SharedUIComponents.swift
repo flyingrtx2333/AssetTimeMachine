@@ -3,6 +3,41 @@ import SwiftData
 import Charts
 import UIKit
 
+/// One treatment for in-page actions; toolbar and icon buttons keep native chrome.
+struct ATMActionButtonStyle: ButtonStyle {
+    enum Prominence { case primary, secondary }
+
+    var prominence: Prominence = .primary
+    var expands = true
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.body.weight(.medium))
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .foregroundStyle(prominence == .primary ? Color.black.opacity(0.88) : AssetTheme.textPrimary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: expands ? .infinity : nil, minHeight: 48)
+            .background(
+                prominence == .primary ? AssetTheme.gold : AssetTheme.surfaceRaised,
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
+            .overlay {
+                if prominence == .secondary {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(AssetTheme.border, lineWidth: 1)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.78 : 1) : 0.45)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: configuration.isPressed)
+    }
+}
+
 struct APIDocumentationView: View {
     @ObservedObject var marketStore: RemoteMarketStore
 
