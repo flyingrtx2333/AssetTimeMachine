@@ -1093,6 +1093,7 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var isExperimentalStrategy: Bool {
         BacktestProductStrategyCatalog.isExperimentalTemplateID(template.id)
+            && !BacktestProductStrategyCatalog.isFeaturedRecentTemplateID(template.id)
     }
 
     var body: some View {

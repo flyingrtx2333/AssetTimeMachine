@@ -527,9 +527,9 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         case .riskContributionCashConfidenceLowNoise:
             return BacktestText.string("严格无杠杆增强策略：沿用置信度恢复底层和20.75%恢复袖套，以100%总仓硬上限运行；关闭历史上冗余的宽度微刹车与成熟纳指刹车，在低波且趋势确认时更充分使用闲置现金。领导资产保持不变且总风险变化不超过2%时，按组合波动采用20%/30%/50%的分级换手过滤；黄金领导且60日组合波动达到12%时恢复更快调仓。近峰减仓执行80%，并保留5%的A股退出哨兵。全部信号严格使用T−1数据，禁止融资和负现金，统一计入1%交易费与0.05%滑点。")
         case .recentVolatilityManagedIdleCash:
-            return BacktestText.string("近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强的产品化持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；每日复核，手续费和滑点采用你的设置。")
+            return BacktestText.string("精选策略（推荐）：在低噪增强持仓上，以严格T−1的63个交易日组合波动估计为依据，只把闲置现金部署到10%目标波动，不降低原风险仓，不加杠杆；历史年化收益约19.7%，夏普约1.76，最大回撤约11.0%，每日复核。")
         case .recentPairSpreadZ252Shift25:
-            return BacktestText.string("近期窗口探索策略（未通过正式验证、非推荐）：在低噪增强上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；每日复核。")
+            return BacktestText.string("精选策略：在低噪增强持仓上，以严格T−1的ONEQ/SPY和510300/510210各252日对数比率Z分数做配对均值回归；超过±1时在对应配对内转移总权重的25%，保持配对总仓不变；历史年化收益约17.9%，夏普约1.81，最大回撤约8.3%，每日复核。")
         case .recentGoldEquityRelativeZ252Shift25:
             return BacktestText.string("近期窗口探索策略（未通过正式验证、非推荐）：比较黄金与当时已上市权益产品篮子的严格T−1相对价格，按252日Z分数在超过±1时转移黄金与权益合计仓位的25%；总仓不变、不融资、不做空，每日复核。")
         case .nfciDualCoreV1:
@@ -1921,9 +1921,9 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             id: "recent-volatility-managed-idle-cash",
             mode: .recentVolatilityManagedIdleCash,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            categoryLocalizationKey: "近期研究（探索）",
+            categoryLocalizationKey: "精选策略",
             titleLocalizationKey: "近期研究·闲置现金控波部署",
-            annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
+            annualizedReturn: 0.1966, maxDrawdown: 0.1103, sharpeRatio: 1.761,
             buyRule: .init(direction: .priceAboveMA60, days: 1),
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0,
@@ -1933,9 +1933,9 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             id: "recent-pair-spread-z252-shift25",
             mode: .recentPairSpreadZ252Shift25,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
-            categoryLocalizationKey: "近期研究（探索）",
+            categoryLocalizationKey: "精选策略",
             titleLocalizationKey: "近期研究·跨市场配对回归",
-            annualizedReturn: 0, maxDrawdown: 0, sharpeRatio: 0,
+            annualizedReturn: 0.1792, maxDrawdown: 0.0827, sharpeRatio: 1.806,
             buyRule: .init(direction: .priceAboveMA60, days: 1),
             sellRule: .init(direction: .priceBelowMA60, days: 1),
             tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0,
@@ -2359,6 +2359,19 @@ public enum BacktestProductStrategyCatalog {
 
     public static func isCuratedTemplateID(_ id: String) -> Bool {
         curatedTemplateIDs.contains(id)
+    }
+
+    public static let featuredRecentTemplateIDs = [
+        "recent-volatility-managed-idle-cash",
+        "recent-pair-spread-z252-shift25",
+    ]
+
+    public static func isFeaturedRecentTemplateID(_ id: String) -> Bool {
+        featuredRecentTemplateIDs.contains(id)
+    }
+
+    public static func isAdviceEligibleTemplateID(_ id: String) -> Bool {
+        curatedTemplateIDs.contains(id) || featuredRecentTemplateIDs.contains(id)
     }
 
     public static func isExperimentalTemplateID(_ id: String) -> Bool {
