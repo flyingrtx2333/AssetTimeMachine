@@ -14,6 +14,9 @@ nonisolated enum StrategyRuntimeRegistry {
         .kvo: { input in
             KE25LiveStrategy.run(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds, useKVO: true)
         },
+        .kvoSatelliteDualEngine: { input in
+            KVOGoldSatelliteDualEngineStrategy.run(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds)
+        },
         .riskContributionCashConfidenceLowNoise: { input in
             guard let run = CashConfidenceStrategy.runRiskContributionCashConfidenceRouterWithTrace(assetInputs: input.assetInputs, initialCash: input.initialCash, settings: input.settings, dateBounds: input.dateBounds, profile: .lowNoiseNoLeverage) else { return nil }
             return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates)

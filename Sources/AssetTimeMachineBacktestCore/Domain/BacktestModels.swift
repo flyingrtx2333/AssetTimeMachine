@@ -291,6 +291,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
     case recentPairSpreadZ252Shift25
     case recentGoldEquityRelativeZ252Shift25
     case kvo
+    case kvoSatelliteDualEngine
     case nfciDualCoreV1
     case nfciDualCoreSimplifiedV11
     case nfciDualCoreSimplifiedV11QualRole
@@ -301,6 +302,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         switch self {
         case .kvo:
             return BacktestText.string("KVO量价组合")
+        case .kvoSatelliteDualEngine:
+            return BacktestText.string("KVO黄金卫星双引擎")
         case .ruleBased:
             return BacktestText.string("自定义策略")
         case .ultraDefensiveRotation:
@@ -430,6 +433,8 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         switch self {
         case .kvo:
             return BacktestText.string("黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。")
+        case .kvoSatelliteDualEngine:
+            return BacktestText.string("由KVO量价防守底仓（68%）与核心黄金卫星动量（32%）组成的多引擎宏观协同策略，采用年度动态再平衡与前缀合规现金承接；默认每笔手续费0.025%、零滑点，不使用杠杆。")
         case .ruleBased:
             return BacktestText.string("按买入/卖出条件独立回测每个资产")
         case .ultraDefensiveRotation:
@@ -563,6 +568,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         switch self {
         case .kvo,
              .ke25,
+             .kvoSatelliteDualEngine,
              .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
              .recentGoldEquityRelativeZ252Shift25:
@@ -576,6 +582,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         switch self {
         case .kvo,
              .ke25,
+             .kvoSatelliteDualEngine,
              .recentVolatilityManagedIdleCash,
              .recentPairSpreadZ252Shift25,
              .recentGoldEquityRelativeZ252Shift25:
@@ -587,7 +594,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var requiredSignalAssetSymbols: [String] {
         switch self {
-        case .kvo:
+        case .kvo, .kvoSatelliteDualEngine:
             return ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"]
         case .recentLossVolatilityMetaMomentum,
              .coreGoldSatelliteConservativeMomentum,
@@ -653,7 +660,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
 
     nonisolated public var dateBoundaryAssetSymbols: Set<String>? {
         switch self {
-        case .ke25, .kvo:
+        case .ke25, .kvo, .kvoSatelliteDualEngine:
             return ["gold_cny", "nasdaq"]
         case .riskContributionReallocation,
              .riskContributionRegimeRouter,
@@ -1642,6 +1649,16 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0, stopLossRatio: 0, takeProfitRatio: 0
         ),
         .init(
+            id: "kvo-satellite-dual-engine", mode: .kvoSatelliteDualEngine,
+            selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
+            categoryLocalizationKey: "高级策略", titleLocalizationKey: "KVO黄金卫星双引擎",
+            annualizedReturn: 0.070104, maxDrawdown: 0.075124, sharpeRatio: 1.30528,
+            performancePeriod: "2002-02-05—2026-10-22",
+            buyRule: .init(direction: .alwaysBuy, days: 1),
+            sellRule: .init(direction: .neverSell, days: 1),
+            tradeAmountRatio: 1, maxPositionRatio: 100, cooldownDays: 0, stopLossRatio: 0, takeProfitRatio: 0
+        ),
+        .init(
             id: "core-gold-satellite-heat-capped-momentum",
             mode: .coreGoldSatelliteHeatCappedMomentum,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
@@ -2414,6 +2431,7 @@ public enum BacktestProductStrategyCatalog {
     public static let experimentalTemplateIDs: [String] = [
         "ke25",
         "kvo",
+        "kvo-satellite-dual-engine",
         "nfci-dual-core-v11-qual-role",
         "recent-volatility-managed-idle-cash",
         "recent-pair-spread-z252-shift25",
