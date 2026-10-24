@@ -34,7 +34,6 @@ struct TimeMachineView: View {
     @State private var lastLiveMarketVisualizationCacheToken: Int?
     @State private var pendingLiveMarketTrendRefreshTask: Task<Void, Never>?
     @State private var lastDetailTrendCardsCacheToken: Int?
-    @State private var deferredDetailCardsTask: Task<Void, Never>?
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
     @State private var isScrollInProgress = false
     @State private var modelSaveRevision = 0
@@ -318,7 +317,6 @@ struct TimeMachineView: View {
         cachedDetailTrendCards = []
         cachedMonthlySurplusPoints = []
         cachedAnnualSurplusPoints = []
-        deferredDetailCardsTask?.cancel()
         return
         #endif
 
@@ -326,7 +324,6 @@ struct TimeMachineView: View {
             cachedHistoryPointsBySymbol = [:]
             cachedDetailTrendCards = []
             lastDetailTrendCardsCacheToken = nil
-            deferredDetailCardsTask?.cancel()
             return
         }
 
@@ -355,7 +352,6 @@ struct TimeMachineView: View {
         } else {
             cachedDetailTrendCards = []
             lastDetailTrendCardsCacheToken = nil
-            deferredDetailCardsTask?.cancel()
         }
     }
 
@@ -419,18 +415,6 @@ struct TimeMachineView: View {
             fullHistoryPointsBySymbol: cachedFullHistoryPointsBySymbol
         )
         lastDetailTrendCardsCacheToken = token
-    }
-
-    @MainActor
-    private func scheduleDeferredDetailCardsRefresh(for token: Int) {
-        deferredDetailCardsTask?.cancel()
-        deferredDetailCardsTask = Task {
-            await Task.yield()
-            try? await Task.sleep(nanoseconds: 120_000_000)
-            guard await waitForScrollIdle() else { return }
-            guard isActive, token == snapshotVisualizationCacheToken else { return }
-            await refreshDetailTrendCardsIfNeeded()
-        }
     }
 
     @MainActor
@@ -877,7 +861,6 @@ struct TimeMachineView: View {
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 pendingLiveMarketTrendRefreshTask?.cancel()
-                deferredDetailCardsTask?.cancel()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
@@ -1015,7 +998,6 @@ struct TimeMachineView: View {
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 pendingLiveMarketTrendRefreshTask?.cancel()
-                deferredDetailCardsTask?.cancel()
             }
         }
         #if DEBUG

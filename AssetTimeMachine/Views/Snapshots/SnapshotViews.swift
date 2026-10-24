@@ -1488,27 +1488,6 @@ func autoAssetSymbolName(for kind: AutoPricedAssetKind) -> String {
     }
 }
 
-struct AssetIconView: View {
-    let iconKey: String
-    var fallbackSymbolName: String
-    var accent: Color = AssetTheme.goldSoft
-    var iconSize: CGFloat = 14
-    var frameSize: CGFloat? = nil
-
-    private var definition: AssetIconDefinition? {
-        AssetIconRegistry.definition(for: iconKey)
-    }
-
-    var body: some View {
-        Image(systemName: definition?.symbolName ?? fallbackSymbolName)
-            .font(.system(size: iconSize, weight: .medium))
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(accent)
-            .frame(width: iconSize, height: iconSize)
-            .frame(width: frameSize ?? iconSize, height: frameSize ?? iconSize)
-    }
-}
-
 private enum AddAssetItemStep: Int {
     case asset
     case details
@@ -3464,29 +3443,6 @@ private func validatedRecordValueNumber(from text: String, forcePositive: Bool =
         throw RecordValueValidationError(message: AppLocalization.format("%@请输入有效数字", fieldName))
     }
     return forcePositive ? abs(value) : value
-}
-
-struct SummaryColumnMetric: View {
-    let title: String
-    let value: String
-    let accent: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(AppLocalization.string(title))
-                .font(AppTypography.eyebrow)
-                .foregroundStyle(AssetTheme.textSecondary)
-            Text(value)
-                .font(AppTypography.metricValue)
-                .monospacedDigit()
-                .foregroundStyle(AssetTheme.textPrimary)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-            RoundedRectangle(cornerRadius: 999)
-                .fill(accent)
-                .frame(width: 24, height: 2)
-        }
-    }
 }
 
 struct SnapshotArchiveView: View {

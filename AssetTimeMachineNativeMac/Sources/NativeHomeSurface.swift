@@ -492,11 +492,6 @@ struct NativePanoramaTrend: View {
     }
 }
 
-// Shared C/M2 surfaces used only by the three selected native workspace pages.
-struct NativeWorkspaceSection<Content: View>: View {
-    @ViewBuilder var content: Content
-    var body: some View { content.frame(maxWidth: .infinity, alignment: .leading) }
-}
 struct NativeWorkspaceMetric: View {
     let title: String
     let value: Double

@@ -41,25 +41,6 @@ enum BacktestPage: String, CaseIterable, Identifiable {
 
 
 
-enum BacktestTopTab: String, CaseIterable, Identifiable {
-    case allocation
-    case dca
-    case advanced
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .allocation:
-            return AppLocalization.string("配置")
-        case .dca:
-            return AppLocalization.string("定投")
-        case .advanced:
-            return AppLocalization.string("高级")
-        }
-    }
-}
-
 
 
 struct AdvancedBacktestComputationResult: Sendable {

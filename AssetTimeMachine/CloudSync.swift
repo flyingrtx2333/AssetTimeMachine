@@ -1458,27 +1458,6 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
     }
 }
 
-struct AssetTimeMachineCloudEntryButton: View {
-    @ObservedObject var store: AssetTimeMachineCloudStore
-
-    var body: some View {
-        Circle()
-            .fill(AssetTheme.surfaceRaised.opacity(0.96))
-            .overlay(
-                Circle()
-                    .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
-            )
-            .overlay {
-                AssetTimeMachineCloudStatusSymbol(state: store.indicatorState, size: 18)
-                    .frame(width: 44, height: 44)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(store.indicatorLabel)
-    }
-}
-
 private struct CloudRecordsDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     var data: Data
