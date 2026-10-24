@@ -1,0 +1,68 @@
+{
+  "version": "1.14",
+  "build": "216",
+  "buildID": "c00fbd66-d0df-47aa-90b6-ef91516b2b2e",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "externalBuildState": "READY_FOR_BETA_SUBMISSION",
+  "notesLocales": [
+    "en-US",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "sourceCommit": "f521c61c232de0d388ca7ea29fc99f5583cf5089",
+  "externalBetaSubmitted": false,
+  "verifiedAt": "2026-10-24T11:07:02.762204+08:00",
+  "deliveryUUID": "c00fbd66-d0df-47aa-90b6-ef91516b2b2e",
+  "artifactDirectory": "/Volumes/江波龙/Allprojects/AssetTimeMachine/build/TestFlight-1.14-216",
+  "ipaSHA256": "3f392b5c3bde02bed4e5456d46206a188290021adc0495141d94fc862496c540",
+  "catalogRowsUpdated": 23,
+  "unqualifiedMacroHeadlineMetricsRemoved": true,
+  "legacyHighSharpeArchivePanelRemoved": true,
+  "simulatorVisualCheck": "PASS",
+  "coreTests": {
+    "executed": 41,
+    "failures": 0
+  },
+  "nativeMacBuild": "PASS",
+  "iOSSimulatorBuild": "PASS",
+  "localizationAudit": "PASS",
+  "strictArchiveSignatureVerification": "PASS",
+  "initialBackgroundSigningFailurePreserved": "build/testflight-216-attempt1/archive.log",
+  "releaseResume": "Desktop connector archive/export succeeded; disconnected tool transport. Existing exported IPA validated/uploaded once using direct release session.",
+  "changesFromAuditedCore": "Only catalog display metric literals and performance period; all other bound Swift calculation sources identical.",
+  "evidenceFiles": {
+    "build/TestFlight-1.14-216/archive.log": {
+      "sha256": "314d3da89524d79cde257a4784a25b134c95dfc13d54fb8fcb5395a67b4fa6d8",
+      "bytes": 396512
+    },
+    "build/TestFlight-1.14-216/export.log": {
+      "sha256": "e5e8c825df7f0549c5241e5780bc307bc6dde9e693b4c146b446ecf362cc91bc",
+      "bytes": 397
+    },
+    "build/TestFlight-1.14-216/validate-resume.log": {
+      "sha256": "589421b109b8b35188d6abf520f9489acc592594027e0ec2c22cf0883023a2dc",
+      "bytes": 446
+    },
+    "build/TestFlight-1.14-216/upload.log": {
+      "sha256": "816c80804829c09ef2640d0866c1fcdd543d97277f0eae943777cdc2a2406355",
+      "bytes": 563
+    },
+    "build/TestFlight-1.14-216/build-status.log": {
+      "sha256": "59a2d18d436d324108afa5259f9110dbb58d15f2099ddcc304143abba307b672",
+      "bytes": 1446
+    },
+    "build/current-metrics-core-tests-v2.log": {
+      "sha256": "9de5c7490cf22f8443098c0370465b15b512840f859ddc59194e1d23bbcf8c76",
+      "bytes": 22371
+    },
+    "build/current-metrics-simulator-v2.log": {
+      "sha256": "7a702a209104705952ebea4ef972f3f93088ba33493dcf1bc7403e1a2b2f11f0",
+      "bytes": 222131
+    },
+    "build/validation-native.log": {
+      "sha256": "80a08b7f3ef666ca22a8f5a4a5dfd4ea111d4cc40d8894ba5fd81ab06d0ed833",
+      "bytes": 340001
+    }
+  }
+}

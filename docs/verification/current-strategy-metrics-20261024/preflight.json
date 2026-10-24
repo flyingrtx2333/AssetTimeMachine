@@ -11,5 +11,6 @@
   "nativeMacBuild": "BUILD SUCCEEDED",
   "localizationAudit": "PASS",
   "sourceHistory": "backtest-result.json",
-  "noNewFinancialReplay": true
+  "noNewFinancialReplay": true,
+  "simulatorVisualCheck": "PASS actual strategy library shows updated metrics, natural history periods and fee caption; NFCI stale headline absent"
 }
