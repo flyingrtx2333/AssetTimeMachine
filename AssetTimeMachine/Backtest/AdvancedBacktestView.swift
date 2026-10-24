@@ -1345,36 +1345,6 @@ struct AdvancedBacktestView: View {
         )
     }
 
-    private func advancedMenuRow<Content: View>(title: String, value: String, accent: Color = AssetTheme.textPrimary, showsDivider: Bool, @ViewBuilder content: () -> Content) -> some View {
-        Menu {
-            content()
-        } label: {
-            VStack(spacing: 0) {
-                HStack(spacing: 12) {
-                    Text(title)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(AssetTheme.textSecondary)
-                    Spacer()
-                    Text(value)
-                        .font(AppTypography.rowTitle)
-                        .foregroundStyle(accent)
-                        .multilineTextAlignment(.trailing)
-                    Image(systemName: "chevron.down")
-                        .font(AppTypography.captionStrong)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                }
-                .padding(.vertical, 2)
-
-                if showsDivider {
-                    Divider()
-                        .overlay(AssetTheme.border.opacity(0.6))
-                        .padding(.top, 14)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
     private func advancedNumericInputRow(
         title: String,
         value: Binding<Double>,
@@ -1529,13 +1499,14 @@ struct AdvancedBacktestView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Text(title)
-                        .font(.subheadline.weight(.medium))
+                        .font(AppTypography.bodyStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
                     Spacer()
                     Text(value)
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
                     Image(systemName: "chevron.right")
                         .font(AppTypography.captionStrong)
                         .foregroundStyle(AssetTheme.textSecondary)
@@ -1548,6 +1519,8 @@ struct AdvancedBacktestView: View {
                         .padding(.top, 14)
                 }
             }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

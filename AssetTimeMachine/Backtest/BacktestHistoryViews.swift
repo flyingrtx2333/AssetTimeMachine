@@ -23,8 +23,7 @@ struct BacktestModeEntryPanel: View {
                             .font(AppTypography.captionStrong)
                             .foregroundStyle(AssetTheme.textPrimary)
                             .multilineTextAlignment(.center)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.76)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
@@ -66,6 +65,7 @@ struct BacktestReturnHeader: View {
                 .foregroundStyle(AssetTheme.gold)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 10)
+                .frame(minHeight: 44)
                 .background(AssetTheme.gold.opacity(0.1), in: Capsule())
             }
             .buttonStyle(.plain)
@@ -73,7 +73,7 @@ struct BacktestReturnHeader: View {
             Text(title)
                 .font(AppTypography.blockTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
-                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 0)
 
@@ -90,6 +90,7 @@ struct BacktestReturnHeader: View {
                     .foregroundStyle(AssetTheme.textPrimary)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 11)
+                    .frame(minHeight: 44)
                     .background(AssetTheme.overlaySubtle, in: Capsule())
                     .overlay(
                         Capsule()
@@ -193,6 +194,7 @@ struct BacktestHistorySectionHeader: View {
                     .foregroundStyle(AssetTheme.textPrimary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
+                    .frame(minHeight: 44)
                     .background(AssetTheme.overlaySoft, in: Capsule())
                     .overlay(
                         Capsule()
@@ -234,26 +236,32 @@ struct BacktestHomeView: View {
                     Text(AppLocalization.string("最近回测"))
                         .font(AppTypography.blockTitleBold)
                         .foregroundStyle(AssetTheme.textPrimary)
-                    Text(totalRecordCount > 0 ? AppLocalization.format("共%d条记录", totalRecordCount) : AppLocalization.string("保存后的回测会出现在这里"))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    if totalRecordCount > 0 {
+                        Text(AppLocalization.format("共%d条记录", totalRecordCount))
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                    }
                 }
 
                 Spacer(minLength: 12)
 
-                Button(action: onShowAllRecords) {
-                    HStack(spacing: 6) {
-                        Text(AppLocalization.string("全部回测记录"))
-                            .font(AppTypography.captionStrong)
-                        Image(systemName: "chevron.right")
-                            .font(AppTypography.chartAxisStrip)
+                if totalRecordCount > 0 {
+                    Button(action: onShowAllRecords) {
+                        HStack(spacing: 6) {
+                            Text(AppLocalization.string("全部"))
+                                .font(AppTypography.captionStrong)
+                            Image(systemName: "chevron.right")
+                                .font(AppTypography.chartAxisStrip)
+                        }
+                        .foregroundStyle(AssetTheme.gold)
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 44)
+                        .background(AssetTheme.gold.opacity(0.1), in: Capsule())
                     }
-                    .foregroundStyle(AssetTheme.gold)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 8)
-                    .background(AssetTheme.gold.opacity(0.1), in: Capsule())
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(AppLocalization.string("全部回测记录"))
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 2)
 
@@ -940,32 +948,35 @@ struct BacktestHistoryRow: View {
     var body: some View {
         Group {
             if isSelectionMode {
-                rowContent
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        onToggleSelection?()
-                    }
+                Button {
+                    onToggleSelection?()
+                } label: {
+                    rowContent.contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             } else {
-                rowContent
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: onSelect)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive, action: onDelete) {
-                            Label(AppLocalization.string("删除"), systemImage: "trash")
-                        }
+                Button(action: onSelect) {
+                    rowContent.contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive, action: onDelete) {
+                        Label(AppLocalization.string("删除"), systemImage: "trash")
                     }
-                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        Button(action: onRestore) {
-                            Label(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward")
-                        }
-                        .tint(AssetTheme.gold)
+                }
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    Button(action: onRestore) {
+                        Label(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward")
                     }
-                    .contextMenu {
-                        Button(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward", action: onRestore)
-                        Button(role: .destructive, action: onDelete) {
-                            Label(AppLocalization.string("删除记录"), systemImage: "trash")
-                        }
+                    .tint(AssetTheme.gold)
+                }
+                .contextMenu {
+                    Button(AppLocalization.string("恢复参数"), systemImage: "arrow.uturn.backward", action: onRestore)
+                    Button(role: .destructive, action: onDelete) {
+                        Label(AppLocalization.string("删除记录"), systemImage: "trash")
                     }
+                }
             }
         }
     }
@@ -990,7 +1001,6 @@ struct BacktestHistoryRow: View {
                     Text(displayTitle)
                         .font(AppTypography.rowTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
-                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Text(compactContextText)
@@ -1091,7 +1101,7 @@ struct BacktestRecordDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(displayTitle)
-                        .font(AppTypography.heroValue)
+                        .font(AppTypography.sheetTitle)
                         .foregroundStyle(AssetTheme.textPrimary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 

@@ -661,12 +661,6 @@ struct NativeTimeMachineView: View {
         if repeated { return day.formatted(.dateTime.month(.twoDigits).day(.twoDigits).hour().minute()) }
         return day.formatted(.dateTime.month(.twoDigits).day(.twoDigits))
     }
-    private func summaryMetric(_ title: String, _ value: Double) -> some View {
-        VStack(alignment: .trailing, spacing: NativeStyle.Space.xxs) {
-            Text(title).font(NativeStyle.FontRole.micro).foregroundStyle(NativePalette.secondary)
-            Text(money(value)).font(NativeStyle.FontRole.bodyStrong).monospacedDigit()
-        }.padding(.leading, 18)
-    }
     private func loadDetail(at index: Int?) {
         let started = DispatchTime.now().uptimeNanoseconds
         defer {
@@ -727,80 +721,6 @@ struct NativeTimeMachineView: View {
             isExportingVideo = false
             videoTask = nil
         }
-    }
-}
-
-private struct NativeTrendCanvas: View {
-    let summaries: [TimeMachineSnapshotProjection]
-    let selectedIndex: Int?
-    @Binding var hoveredIndex: Int?
-    var onSelect: ((Int) -> Void)? = nil
-    var allowsHover = false
-    private let leftInset: CGFloat = 48
-    private let rightInset: CGFloat = 8
-
-    var body: some View {
-        GeometryReader { geometry in
-            let drawing = NativeStaticTrendCanvas(
-                summaries: summaries,
-                revision: ModelStoreRevisionClock.shared.currentRevision()
-            )
-            .equatable()
-            if allowsHover || onSelect != nil {
-                drawing
-                    .overlay(alignment: .leading) {
-                        if let active = hoveredIndex ?? selectedIndex,
-                           summaries.indices.contains(active), summaries.count > 1 {
-                            let first = summaries[0].date.timeIntervalSinceReferenceDate
-                            let last = summaries[summaries.count - 1].date.timeIntervalSinceReferenceDate
-                            let target = summaries[active].date.timeIntervalSinceReferenceDate
-                            let x = leftInset + (target - first) / max(last - first, 1)
-                                * max(geometry.size.width - leftInset - rightInset, 1)
-                            Rectangle()
-                                .fill(AssetTheme.gold.opacity(0.75))
-                                .frame(width: 1)
-                                .padding(.vertical, 5)
-                                .offset(x: x)
-                                .allowsHitTesting(false)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onContinuousHover { phase in
-                        switch phase {
-                        case .active(let point):
-                            guard summaries.count > 1 else { return }
-                            let first = summaries[0].date.timeIntervalSinceReferenceDate
-                            let last = summaries[summaries.count - 1].date.timeIntervalSinceReferenceDate
-                            let ratio = min(max((point.x - leftInset)
-                                / max(geometry.size.width - leftInset - rightInset, 1), 0), 1)
-                            let target = first + ratio * (last - first)
-                            let index = nearestIndex(target)
-                            if hoveredIndex != index { hoveredIndex = index }
-                        case .ended: hoveredIndex = nil
-                        }
-                    }
-                    .onTapGesture {
-                        if let hoveredIndex { onSelect?(hoveredIndex) }
-                    }
-            } else {
-                drawing.allowsHitTesting(false)
-                }
-        }
-    }
-
-    private func nearestIndex(_ time: Double) -> Int {
-        var low = 0
-        var high = summaries.count
-        while low < high {
-            let middle = (low + high) / 2
-            if summaries[middle].date.timeIntervalSinceReferenceDate < time { low = middle + 1 }
-            else { high = middle }
-        }
-        if low == 0 { return 0 }
-        if low == summaries.count { return summaries.count - 1 }
-        let before = summaries[low - 1].date.timeIntervalSinceReferenceDate
-        let after = summaries[low].date.timeIntervalSinceReferenceDate
-        return abs(time - before) <= abs(after - time) ? low - 1 : low
     }
 }
 

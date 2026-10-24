@@ -267,56 +267,8 @@ nonisolated struct PublicForwardValidationResponse: Codable, Equatable, Sendable
     }
 }
 
-nonisolated struct MarketEndpointDoc: Identifiable, Sendable {
-    let title: String
-    let path: String
-    let description: String
-    let symbol: String?
-
-    var id: String { path }
-}
-
 enum RemoteMarketClient {
     static let baseURL = URL(string: "https://api.flyingrtx.com")!
-
-    static let endpointDocs: [MarketEndpointDoc] = [
-        .init(
-            title: "黄金价格",
-            path: "/api/v1/money/public/gold-price",
-            description: "返回人民币计价的黄金单价，单位为 gram。",
-            symbol: "gold"
-        ),
-        .init(
-            title: "纳指参考价格",
-            path: "/api/v1/money/public/nasdaq-price",
-            description: "返回统一口径的纳斯达克综合指数美元价格。",
-            symbol: "nasdaq"
-        ),
-        .init(
-            title: "行情概览",
-            path: "/api/v1/money/public/market-overview",
-            description: "返回 gold 与 nasdaq 锚点概览。",
-            symbol: nil
-        ),
-        .init(
-            title: "公共历史走势",
-            path: "/api/v1/money/public/history?symbols=nasdaq,sp500,hsi&period=1year",
-            description: "返回指数、黄金、原油与国债收益率基准信号等公共历史序列。",
-            symbol: nil
-        ),
-        .init(
-            title: "NFCI 实时点时序列",
-            path: "/api/v1/money/public/nfci-asof",
-            description: "返回 NFCI Credit / Leverage 首次可用值；历史值不可被后续修订覆盖。",
-            symbol: nil
-        ),
-        .init(
-            title: "策略前瞻验证进度",
-            path: "/api/v1/money/public/strategy-forward-validation",
-            description: "返回冻结策略的 append-only 前瞻账本进度，不包含用户资产数据。",
-            symbol: nil
-        ),
-    ]
 
     static func fetchOverview(forceRemote: Bool = false) async throws -> PublicMarketOverview {
         let url = url(for: "/api/v1/money/public/market-overview")

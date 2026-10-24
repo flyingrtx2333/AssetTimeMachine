@@ -66,12 +66,6 @@ struct MacTimeMachineContent: View {
     private var selectedSnapshotID: UUID? { snapshotID(for: selectedPoint) }
     private var previousSnapshotID: UUID? { snapshotID(for: previousPoint) }
 
-    private var chartDomain: ClosedRange<Date> {
-        let first = points.first?.date ?? .now
-        let last = points.last?.date ?? first
-        return first < last ? first...last : first.addingTimeInterval(-86_400)...last.addingTimeInterval(86_400)
-    }
-
     var body: some View {
         GeometryReader { geometry in
             VStack(alignment: .leading, spacing: 10) {

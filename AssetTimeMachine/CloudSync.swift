@@ -1458,27 +1458,6 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
     }
 }
 
-struct AssetTimeMachineCloudEntryButton: View {
-    @ObservedObject var store: AssetTimeMachineCloudStore
-
-    var body: some View {
-        Circle()
-            .fill(AssetTheme.surfaceRaised.opacity(0.96))
-            .overlay(
-                Circle()
-                    .stroke(AssetTheme.border.opacity(0.9), lineWidth: 1)
-            )
-            .overlay {
-                AssetTimeMachineCloudStatusSymbol(state: store.indicatorState, size: 18)
-                    .frame(width: 44, height: 44)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Circle())
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(store.indicatorLabel)
-    }
-}
-
 private struct CloudRecordsDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     var data: Data
@@ -1556,7 +1535,7 @@ struct AssetTimeMachineCloudPage: View {
                 store.errorMessage = error.localizedDescription
             }
         }
-        .alert(AppLocalization.string("确认关联到当前账户？"), isPresented: $showOwnershipConfirm) {
+        .alert(AppLocalization.format("确认关联至 %@？", store.currentUser?.displayName ?? "—"), isPresented: $showOwnershipConfirm) {
             Button(AppLocalization.string("取消"), role: .cancel) {}
             Button(AppLocalization.string("确认并同步")) { Task { await store.authorizeLocalDataForCurrentAccount(from: modelContext) } }
         } message: { Text(AppLocalization.string("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。")) }
@@ -1719,23 +1698,25 @@ struct AssetTimeMachineCloudPage: View {
     }
 
     private var sessionLoadingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                ProgressView()
-                    .tint(AssetTheme.gold)
-                Text(AppLocalization.string("正在恢复云同步状态…"))
-                    .font(AppTypography.blockTitle)
-                    .foregroundStyle(AssetTheme.textPrimary)
-            }
-
-            Text(AppLocalization.string("已检测到登录凭证，正在验证云端连接。"))
-                .font(AppTypography.meta)
+        HStack(spacing: 10) {
+            ProgressView()
+                .tint(AssetTheme.gold)
+            Text(AppLocalization.string("正在恢复云同步状态…"))
+                .font(AppTypography.body)
                 .foregroundStyle(AssetTheme.textSecondary)
         }
     }
 
     private var loggedInSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 16) {
+            if store.requiresLocalOwnershipConfirmation {
+                Button(AppLocalization.string("关联并同步本机记录")) {
+                    showOwnershipConfirm = true
+                }
+                .buttonStyle(ATMActionButtonStyle())
+                .disabled(store.isWorking || isExporting)
+            }
+
             HStack {
                 Text(AppLocalization.string("最近备份"))
                     .font(AppTypography.rowTitle)
@@ -1751,28 +1732,15 @@ struct AssetTimeMachineCloudPage: View {
                     Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
                         .font(AppTypography.meta)
                         .foregroundStyle(AssetTheme.textSecondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(store.isWorking)
+                .disabled(store.isWorking || isExporting)
             }
 
-            if store.requiresLocalOwnershipConfirmation {
-                Button(AppLocalization.string("关联并同步本机记录")) { showOwnershipConfirm = true }
-                    .disabled(store.isWorking)
-            }
-            Button(AppLocalization.string("导出本机记录")) {
-                isExporting = true
-                Task {
-                    defer { isExporting = false }
-                    do {
-                        exportDocument = CloudRecordsDocument(data: try await store.exportLocalRecords(from: modelContext))
-                        showsExport = true
-                    } catch { store.errorMessage = error.localizedDescription }
-                }
-            }
-            .disabled(store.isWorking || isExporting)
             if store.backups.isEmpty {
-                Text(AppLocalization.string("暂无云端备份，正在准备首次同步"))
+                Text(AppLocalization.string("暂无云端备份"))
                     .font(AppTypography.meta)
                     .foregroundStyle(AssetTheme.textSecondary)
             } else {
@@ -1789,15 +1757,34 @@ struct AssetTimeMachineCloudPage: View {
                     }
                 }
 
+            }
+
+            VStack(spacing: 10) {
                 Button {
-                    showRestoreConfirm = true
+                    isExporting = true
+                    Task {
+                        defer { isExporting = false }
+                        do {
+                            exportDocument = CloudRecordsDocument(data: try await store.exportLocalRecords(from: modelContext))
+                            showsExport = true
+                        } catch { store.errorMessage = error.localizedDescription }
+                    }
                 } label: {
-                    Label(AppLocalization.string("恢复最近一次备份"), systemImage: "arrow.clockwise.icloud")
-                        .font(AppTypography.metaStrong)
-                        .foregroundStyle(AssetTheme.textSecondary)
+                    HStack(spacing: 8) {
+                        if isExporting { ProgressView().tint(AssetTheme.textPrimary) }
+                        Label(AppLocalization.string("导出本机记录"), systemImage: "square.and.arrow.up")
+                    }
                 }
-                .buttonStyle(.plain)
-                .disabled(store.isWorking)
+                .buttonStyle(ATMActionButtonStyle(prominence: .secondary))
+                .disabled(store.isWorking || isExporting)
+
+                if !store.backups.isEmpty {
+                    Button { showRestoreConfirm = true } label: {
+                        Label(AppLocalization.string("恢复最近一次备份"), systemImage: "arrow.clockwise.icloud")
+                    }
+                    .buttonStyle(ATMActionButtonStyle(prominence: .secondary))
+                    .disabled(store.isWorking || isExporting)
+                }
             }
         }
     }
@@ -1836,6 +1823,7 @@ struct AssetTimeMachineCloudPage: View {
             }
         }
         .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
     }
 
     private func backupFileSizeLabel(for backup: AssetTimeMachineCloudBackup) -> String {
@@ -1869,12 +1857,7 @@ struct AssetTimeMachineCloudPage: View {
         case .idle:
             return nil
         case .checking:
-            if store.currentUser != nil && !store.hasCompletedInitialSync {
-                return store.isWorking
-                    ? AppLocalization.string("正在上传或恢复你的资产数据")
-                    : AppLocalization.string("账号已登录，稍后会自动完成首次同步")
-            }
-            return AppLocalization.string("正在验证登录态与最近备份状态")
+            return nil
         case .healthy:
             return store.lastSyncAt.map { AppLocalization.format("最近同步 %@", $0.formatted(date: .abbreviated, time: .shortened)) }
         case .warning:

@@ -7,23 +7,9 @@ struct AssetRecordingQuickStartView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: contentSpacing) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AppLocalization.string("先录入一项资产"))
-                    #if targetEnvironment(macCatalyst)
-                    .font(.system(size: 16, weight: .semibold))
-                    #else
-                    .font(.title2.weight(.semibold))
-                    #endif
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Text(AppLocalization.string("从常见类型中选择，快速开始"))
-                    #if targetEnvironment(macCatalyst)
-                    .font(.system(size: 12))
-                    #else
-                    .font(AppTypography.body)
-                    #endif
-                    .foregroundStyle(AssetTheme.textSecondary)
-            }
+            Text(AppLocalization.string("先录入一项资产"))
+                .font(AppTypography.sectionTitle)
+                .foregroundStyle(AssetTheme.textPrimary)
 
             VStack(spacing: 0) {
                 ForEach(AssetRecordingQuickChoice.allCases) { choice in
@@ -69,13 +55,8 @@ struct AssetRecordingQuickStartView: View {
 
             Button(action: onSearchOtherAssets) {
                 Label(AppLocalization.string("搜索其他资产"), systemImage: "magnifyingglass")
-                    .font(AppTypography.metaStrong)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: searchButtonHeight)
-                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: panelRadius, style: .continuous))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ATMActionButtonStyle(prominence: .secondary))
         }
     }
 
@@ -135,14 +116,6 @@ struct AssetRecordingQuickStartView: View {
         #endif
     }
 
-    private var searchButtonHeight: CGFloat {
-        #if targetEnvironment(macCatalyst)
-        32
-        #else
-        48
-        #endif
-    }
-
     private var panelRadius: CGFloat {
         #if targetEnvironment(macCatalyst)
         10
@@ -163,36 +136,22 @@ struct AssetRecordingOnboardingResumeBanner: View {
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(AssetTheme.gold)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(AppLocalization.string("完成第一笔录入"))
-                        .font(AppTypography.blockTitleBold)
-                        .foregroundStyle(AssetTheme.textPrimary)
-
-                    Text(AppLocalization.string("添加一项资产并记录当前金额，之后就能持续更新。"))
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AssetTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                Text(AppLocalization.string("完成第一笔录入"))
+                    .font(AppTypography.blockTitleBold)
+                    .foregroundStyle(AssetTheme.textPrimary)
             }
 
             HStack(spacing: 10) {
-                Button(AppLocalization.string("暂时跳过"), action: onSkip)
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
-                    .padding(.vertical, 2)
-                    .background(AssetTheme.overlaySoft, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Button(action: onSkip) {
+                    Text(AppLocalization.string("暂时跳过"))
+                }
+                .buttonStyle(ATMActionButtonStyle(prominence: .secondary))
 
-                Button(AppLocalization.string("继续录入"), action: onContinue)
-                    .font(AppTypography.captionStrong)
-                    .foregroundStyle(Color.black.opacity(0.82))
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 44)
-                    .padding(.vertical, 2)
-                    .background(AssetTheme.gold, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Button(action: onContinue) {
+                    Text(AppLocalization.string("继续录入"))
+                }
+                .buttonStyle(ATMActionButtonStyle())
             }
-            .buttonStyle(.plain)
         }
         .padding(16)
         .background(AssetTheme.surface.opacity(0.76), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -207,27 +166,26 @@ struct AssetRecordingOnboardingSuccessBanner: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(AssetTheme.positive)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(AppLocalization.string("第一项资产已录入"))
-                    .font(AppTypography.blockTitleBold)
-                    .foregroundStyle(AssetTheme.textPrimary)
-
-                Text(AppLocalization.string("以后点击金额或数量，就能更新今天的记录"))
-                    .font(AppTypography.caption)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(AppLocalization.string("第一项资产已录入"))
+                .font(AppTypography.blockTitleBold)
+                .foregroundStyle(AssetTheme.textPrimary)
 
             Spacer(minLength: 10)
 
-            Button(AppLocalization.string("知道了"), action: onDismiss)
-                .font(AppTypography.captionStrong)
-                .foregroundStyle(AssetTheme.goldSoft)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(AppTypography.metaStrong)
+                    .foregroundStyle(AssetTheme.textSecondary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(AppLocalization.string("关闭"))
         }
         .padding(16)
         .background(AssetTheme.surface.opacity(0.76), in: RoundedRectangle(cornerRadius: 18, style: .continuous))

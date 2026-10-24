@@ -331,49 +331,6 @@ struct BacktestView: View {
         }
     }
 
-    private var selectedTopTab: BacktestTopTab {
-        switch selectedPage {
-        case .advanced:
-            return .advanced
-        case .home, .standard:
-            switch backtestMode {
-            case .allocation:
-                return .allocation
-            case .dca:
-                return .dca
-            }
-        }
-    }
-
-    private var topTabBinding: Binding<BacktestTopTab> {
-        Binding(
-            get: { selectedTopTab },
-            set: { newValue in
-                switch newValue {
-                case .allocation:
-                    selectedPage = .standard
-                    backtestMode = .allocation
-                case .dca:
-                    selectedPage = .standard
-                    backtestMode = .dca
-                case .advanced:
-                    selectedPage = .advanced
-                }
-            }
-        )
-    }
-
-    private var activeBacktestPageTitle: String {
-        switch selectedPage {
-        case .home:
-            return BacktestPage.home.title
-        case .standard:
-            return backtestMode.title
-        case .advanced:
-            return BacktestRecordKind.advanced.title
-        }
-    }
-
     var body: some View {
         NavigationStack {
             ZStack {
@@ -1634,57 +1591,6 @@ struct BacktestAllocationRow: View {
                     .padding(.leading, 33)
             }
         }
-    }
-}
-
-struct BacktestTopTabPicker: View {
-    @Binding var selectedTab: BacktestTopTab
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(BacktestTopTab.allCases) { tab in
-                Button {
-                    selectedTab = tab
-                } label: {
-                    Text(tab.title)
-                        .font(selectedTab == tab ? .subheadline.weight(.semibold) : .subheadline.weight(.medium))
-                        .foregroundStyle(selectedTab == tab ? AssetTheme.textPrimary : AssetTheme.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(
-                            selectedTab == tab
-                                ? AnyShapeStyle(
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.1), AssetTheme.overlayMedium.opacity(0.96)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                : AnyShapeStyle(Color.clear),
-                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(selectedTab == tab ? Color.white.opacity(0.08) : Color.clear, lineWidth: 1)
-                        )
-                        .shadow(color: selectedTab == tab ? Color.black.opacity(0.16) : .clear, radius: 8, y: 4)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(4)
-        .background(
-            LinearGradient(
-                colors: [Color.white.opacity(0.025), AssetTheme.overlaySoft.opacity(0.52)],
-                startPoint: .top,
-                endPoint: .bottom
-            ),
-            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.05), lineWidth: 1)
-        )
     }
 }
 

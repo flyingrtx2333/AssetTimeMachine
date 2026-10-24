@@ -34,7 +34,6 @@ struct TimeMachineView: View {
     @State private var lastLiveMarketVisualizationCacheToken: Int?
     @State private var pendingLiveMarketTrendRefreshTask: Task<Void, Never>?
     @State private var lastDetailTrendCardsCacheToken: Int?
-    @State private var deferredDetailCardsTask: Task<Void, Never>?
     @State private var pendingVisualizationRefreshTask: Task<Void, Never>?
     @State private var isScrollInProgress = false
     @State private var modelSaveRevision = 0
@@ -318,7 +317,6 @@ struct TimeMachineView: View {
         cachedDetailTrendCards = []
         cachedMonthlySurplusPoints = []
         cachedAnnualSurplusPoints = []
-        deferredDetailCardsTask?.cancel()
         return
         #endif
 
@@ -326,7 +324,6 @@ struct TimeMachineView: View {
             cachedHistoryPointsBySymbol = [:]
             cachedDetailTrendCards = []
             lastDetailTrendCardsCacheToken = nil
-            deferredDetailCardsTask?.cancel()
             return
         }
 
@@ -355,7 +352,6 @@ struct TimeMachineView: View {
         } else {
             cachedDetailTrendCards = []
             lastDetailTrendCardsCacheToken = nil
-            deferredDetailCardsTask?.cancel()
         }
     }
 
@@ -419,18 +415,6 @@ struct TimeMachineView: View {
             fullHistoryPointsBySymbol: cachedFullHistoryPointsBySymbol
         )
         lastDetailTrendCardsCacheToken = token
-    }
-
-    @MainActor
-    private func scheduleDeferredDetailCardsRefresh(for token: Int) {
-        deferredDetailCardsTask?.cancel()
-        deferredDetailCardsTask = Task {
-            await Task.yield()
-            try? await Task.sleep(nanoseconds: 120_000_000)
-            guard await waitForScrollIdle() else { return }
-            guard isActive, token == snapshotVisualizationCacheToken else { return }
-            await refreshDetailTrendCardsIfNeeded()
-        }
     }
 
     @MainActor
@@ -730,7 +714,7 @@ struct TimeMachineView: View {
     }
 
     private var pageHeader: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 8) {
             Spacer(minLength: 0)
 
             Button {
@@ -739,8 +723,8 @@ struct TimeMachineView: View {
                 Image(systemName: amountsVisible ? "eye" : "eye.slash")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(width: 34, height: 34)
-                    .contentShape(Circle())
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(AppLocalization.string(amountsVisible ? "隐藏资产金额" : "显示资产金额"))
@@ -748,19 +732,10 @@ struct TimeMachineView: View {
             Button {
                 openTrendVideoPreview()
             } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "play.rectangle")
-                        .font(.system(size: 18, weight: .medium))
-                    Text(AppLocalization.string("生成走势视频"))
-                        .font(.system(size: 12.5, weight: .medium))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                }
-                .foregroundStyle(AssetTheme.textSecondary)
+                Label(AppLocalization.string("生成走势视频"), systemImage: "play.rectangle")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ATMActionButtonStyle(prominence: .secondary, expands: false))
             .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
-            .opacity(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2 ? 0.42 : 1)
             .accessibilityLabel(AppLocalization.string("生成走势视频"))
         }
     }
@@ -886,7 +861,6 @@ struct TimeMachineView: View {
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 pendingLiveMarketTrendRefreshTask?.cancel()
-                deferredDetailCardsTask?.cancel()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { notification in
@@ -1024,7 +998,6 @@ struct TimeMachineView: View {
             } else {
                 pendingVisualizationRefreshTask?.cancel()
                 pendingLiveMarketTrendRefreshTask?.cancel()
-                deferredDetailCardsTask?.cancel()
             }
         }
         #if DEBUG

@@ -131,7 +131,7 @@ struct AdvancedBacktestResultPage: View {
                 Image(systemName: "chevron.left")
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.gold)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(AssetTheme.gold.opacity(0.1), in: Circle())
             }
             .buttonStyle(.plain)
@@ -140,8 +140,7 @@ struct AdvancedBacktestResultPage: View {
             Text(presentation.title)
                 .font(AppTypography.blockTitle)
                 .foregroundStyle(AssetTheme.textPrimary)
-                .lineLimit(2)
-                .minimumScaleFactor(0.82)
+                .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 0)
 
@@ -151,7 +150,7 @@ struct AdvancedBacktestResultPage: View {
                 Image(systemName: "square.and.arrow.up")
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.gold)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
                     .background(AssetTheme.gold.opacity(0.1), in: Circle())
             }
             .buttonStyle(.plain)

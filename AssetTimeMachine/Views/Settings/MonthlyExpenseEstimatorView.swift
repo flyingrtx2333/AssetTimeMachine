@@ -275,14 +275,11 @@ struct MonthlyExpenseEstimatorView: View {
                     .expenseLedgerRow()
                 }
 
-                Color.clear
-                    .frame(height: 72)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
             }
             .listStyle(.plain)
             .listSectionSpacing(.custom(8))
             .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, 28, for: .scrollContent)
             .scrollDismissesKeyboard(.interactively)
             .environment(\.defaultMinListRowHeight, 58)
         }
@@ -387,24 +384,22 @@ private struct ExpenseLedgerHeader: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(AppLocalization.string("月均开销"))
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(AppLocalization.string("月均开销"))
+                        .font(.subheadline.weight(.medium))
+                    Spacer(minLength: 10)
+                    Text(AppLocalization.format("共 %d 项", itemCount))
+                        .font(.subheadline)
+                }
+                .foregroundStyle(AssetTheme.textSecondary)
 
                 Text(monthlyAverage.currencyString())
-                    .font(.system(size: 31, weight: .semibold, design: .rounded))
+                    .font(AppTypography.panelHero)
                     .monospacedDigit()
                     .foregroundStyle(AssetTheme.goldSoft)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
-
-                Spacer(minLength: 10)
-
-                Text(AppLocalization.format("共 %d 项", itemCount))
-                    .font(.subheadline)
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .lineLimit(1)
             }
 
             Picker(AppLocalization.string("开支频率"), selection: $filter) {
@@ -420,37 +415,36 @@ private struct ExpenseLedgerHeader: View {
 }
 
 private struct FixedExpenseLedgerRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var amountWidth: CGFloat = 100
     @Binding var item: FixedExpenseLine
     @FocusState.Binding var focusedField: ExpenseEstimatorField?
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 3) {
-            HStack(spacing: 14) {
-                TextField(AppLocalization.string("项目名称"), text: $item.name)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(AssetTheme.textPrimary)
-                    .focused($focusedField, equals: .name(item.id))
-                    .submitLabel(.next)
-                    .onSubmit {
-                        focusedField = .amount(item.id)
+        VStack(alignment: .leading, spacing: 4) {
+            ViewThatFits(in: .horizontal) {
+                if !dynamicTypeSize.isAccessibilitySize {
+                    HStack(spacing: 14) {
+                        nameField.frame(minWidth: 120)
+                        amountField.fixedSize(horizontal: true, vertical: false)
+                        frequencyMenu
                     }
-
-                HStack(spacing: 3) {
-                    Text("¥")
-                        .font(.subheadline)
-                        .foregroundStyle(AssetTheme.textSecondary)
-
-                    TextField("0", text: $item.amountText)
-                        .font(.body.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.textPrimary)
-                        .multilineTextAlignment(.trailing)
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .amount(item.id))
-                        .frame(width: 92)
                 }
 
-                ExpenseFrequencyMenu(frequency: $item.frequency)
+                VStack(alignment: .leading, spacing: 4) {
+                    nameField
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) {
+                            amountField
+                            Spacer(minLength: 0)
+                            frequencyMenu
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            amountField
+                            frequencyMenu
+                        }
+                    }
+                }
             }
 
             if item.frequency == .annual, item.amount > 0 {
@@ -461,12 +455,47 @@ private struct FixedExpenseLedgerRow: View {
                 .font(AppTypography.caption)
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textSecondary)
-                .lineLimit(1)
-                .padding(.trailing, 72)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 66)
+        .padding(.vertical, 6)
+    }
+
+    private var nameField: some View {
+        TextField(AppLocalization.string("项目名称"), text: $item.name)
+            .font(.body.weight(.medium))
+            .foregroundStyle(AssetTheme.textPrimary)
+            .focused($focusedField, equals: .name(item.id))
+            .submitLabel(.next)
+            .onSubmit {
+                focusedField = .amount(item.id)
+            }
+            .frame(minHeight: 36)
+    }
+
+    private var amountField: some View {
+        HStack(spacing: 6) {
+            Text("¥")
+                .font(.subheadline)
+                .foregroundStyle(AssetTheme.textSecondary)
+
+            TextField("0", text: $item.amountText)
+                .font(.body.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(AssetTheme.textPrimary)
+                .multilineTextAlignment(.trailing)
+                .keyboardType(.decimalPad)
+                .focused($focusedField, equals: .amount(item.id))
+                .frame(minWidth: 100, idealWidth: max(100, amountWidth), maxWidth: max(100, amountWidth))
+        }
+        .frame(minHeight: 44)
+    }
+
+    private var frequencyMenu: some View {
+        ExpenseFrequencyMenu(frequency: $item.frequency)
+            .fixedSize(horizontal: true, vertical: false)
     }
 }
 
@@ -479,7 +508,7 @@ private struct ExpenseDraftRow: View {
     let onAdd: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             TextField(AppLocalization.string("项目名称"), text: $name)
                 .font(.body.weight(.medium))
                 .foregroundStyle(AssetTheme.textPrimary)
@@ -488,31 +517,59 @@ private struct ExpenseDraftRow: View {
                 .onSubmit {
                     focusedField = .draftAmount
                 }
+                .frame(minHeight: 36)
 
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    amountField
+                    frequencyMenu
+                    addButton.fixedSize(horizontal: true, vertical: false)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 12) {
+                        amountField
+                        frequencyMenu
+                    }
+                    addButton.frame(maxWidth: .infinity, alignment: .trailing)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    amountField
+                    frequencyMenu
+                    addButton
+                }
+            }
+        }
+        .padding(.vertical, 10)
+    }
+
+    private var amountField: some View {
+        HStack(spacing: 6) {
+            Text("¥")
+                .foregroundStyle(AssetTheme.textSecondary)
             TextField(AppLocalization.string("金额"), text: $amountText)
                 .font(.body.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.textPrimary)
-                .multilineTextAlignment(.trailing)
                 .keyboardType(.decimalPad)
                 .focused($focusedField, equals: .draftAmount)
-                .frame(width: 78)
-
-            ExpenseFrequencyMenu(frequency: $frequency)
-
-            Button(action: onAdd) {
-                Image(systemName: "plus")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(canAdd ? Color.black.opacity(0.82) : AssetTheme.textSecondary)
-                    .frame(width: 36, height: 36)
-                    .background(canAdd ? AssetTheme.gold : AssetTheme.surfaceRaised, in: Circle())
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!canAdd)
-            .accessibilityLabel(AppLocalization.string("添加开支"))
+                .frame(minWidth: 100)
         }
-        .frame(minHeight: 62)
+        .frame(minHeight: 44)
+    }
+
+    private var frequencyMenu: some View {
+        ExpenseFrequencyMenu(frequency: $frequency)
+            .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var addButton: some View {
+        Button(action: onAdd) {
+            Text(AppLocalization.string("添加开支"))
+        }
+        .buttonStyle(ATMActionButtonStyle(expands: false))
+        .disabled(!canAdd)
     }
 }
 
@@ -537,10 +594,14 @@ private struct ExpenseFrequencyMenu: View {
             }
             .foregroundStyle(AssetTheme.gold)
             .padding(.horizontal, 10)
-            .frame(height: 34)
+            .frame(minHeight: 34)
             .background(AssetTheme.gold.opacity(0.09), in: Capsule())
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(AppLocalization.string("开支频率"))
+        .accessibilityValue(frequency.title)
     }
 }
 

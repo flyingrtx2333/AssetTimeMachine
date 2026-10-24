@@ -1,0 +1,15 @@
+{
+  "studyDirectory": "/Volumes/江波龙/Allprojects/FlyingrtxFast/research/asset-time-machine/workspace/studies/pair-z252-current-rule-deterministic-v4-2026-10-24",
+  "runStatus": "PASS_CURRENT_RULE_NATIVE_WRAPPER",
+  "reviewStatus": "PASS_INDEPENDENT_ACTUAL_RESULT_PREFIX_DELIVERY_LEDGER_AND_LITERAL_ARCHIVE_READBACK",
+  "files": {
+    "Sources/AssetTimeMachineBacktestCore/API/BacktestRun.swift": "e50335e59a9a3800f0db6095e1a9846e03e9f12cf957380424390e79ae7a394b",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/RecentWindowOverlayStrategy.swift": "12d2f3d7efffba92dd9b95a7ddf1c3b801bb0f4a896abb0345ab037e58c79de4",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/RegimeRouterStrategy.swift": "67ca462c5fa6732e485578cdc9277e34011ef175cae1d195de10d57db439650e",
+    "Sources/AssetTimeMachineBacktestCore/Strategies/RiskContributionStrategy.swift": "ad4d5360e2318224c5665291d11ba011819424f46d74ccf9f1f845c8b6ca9c2f",
+    "tools/pair_current_rule_correction.swift": "9b6f80a6ba827b62a255c9fafc35abcd4f9eae4d24abc05f4ff720303a73a75c"
+  },
+  "verificationScope": "Existing completed pair and matched-parent full/prefix evidence; no new research replay performed for this release.",
+  "OOSCertified": false,
+  "PITCertified": false
+}

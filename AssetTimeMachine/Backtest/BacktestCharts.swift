@@ -975,7 +975,7 @@ private struct BacktestChartSelectionOverlay: View {
     var onSelectionChange: ((Date?) -> Void)? = nil
 
     private var selectedPoint: BacktestSeriesPoint? {
-        guard let selectedDate = coordinator.selectedDate else { return points.last }
+        guard let selectedDate = coordinator.selectedDate else { return nil }
         return InteractiveBacktestChart.nearestPoint(to: selectedDate, in: points)
     }
 
