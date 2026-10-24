@@ -1,7 +1,7 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。" : {
+    "配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -33774,6 +33774,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "未找到相符的歷史版本，無法自動合併。請匯出本機記錄以核對差異。"
+          }
+        }
+      }
+    },
+    "在低噪增强持仓上，用上一交易日已知的63日组合波动，将闲置现金按10%目标波动部署到原五项资产；不降低原风险仓，总仓位不超过100%。数据不足时沿用当前底仓，其余现金按人民币活期计息。费用采用你的设置，历史表现以当前回测为准。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Using the Low Noise holdings and the prior session’s 63-session portfolio volatility, deploy idle cash toward a 10% volatility target across the original five assets. Existing risk holdings are retained and total exposure is capped at 100%. Keep the current parent allocation when data is insufficient. Remaining cash earns CNY demand interest. Your fee settings apply; use the current backtest for historical performance."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在低噪增强持仓上，用上一交易日已知的63日组合波动，将闲置现金按10%目标波动部署到原五项资产；不降低原风险仓，总仓位不超过100%。数据不足时沿用当前底仓，其余现金按人民币活期计息。费用采用你的设置，历史表现以当前回测为准。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在低噪增強持倉上，用上一交易日已知的63日組合波動，將閒置現金按10%目標波動部署到原五項資產；不降低原風險倉，總倉位不超過100%。資料不足時沿用目前底倉，其餘現金按人民幣活期計息。費用採用你的設定，歷史表現以目前回測為準。"
+          }
+        }
+      }
+    },
+    "在低噪增强持仓上，比较黄金与原四项权益指数等权几何价格篮子的上一交易日相对价格；252日Z分数超过±1时，在黄金和既有权益仓位间转移合计仓位的25%，最多转出已有仓位。其余现金按人民币活期计息，不融资、不做空，历史表现以当前回测为准。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compare gold with an equal-weight geometric price basket of the original four equity indices using the prior session’s data. When the 252-session Z-score exceeds ±1, transfer 25% of the combined gold and equity allocation, bounded by existing donor holdings. Remaining cash earns CNY demand interest. No borrowing or short selling; use the current backtest for historical performance."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在低噪增强持仓上，比较黄金与原四项权益指数等权几何价格篮子的上一交易日相对价格；252日Z分数超过±1时，在黄金和既有权益仓位间转移合计仓位的25%，最多转出已有仓位。其余现金按人民币活期计息，不融资、不做空，历史表现以当前回测为准。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在低噪增強持倉上，比較黃金與原四項權益指數等權幾何價格籃子的上一交易日相對價格；252日Z分數超過±1時，在黃金和既有權益倉位間轉移合計倉位的25%，最多轉出已有倉位。其餘現金按人民幣活期計息，不融資、不做空，歷史表現以目前回測為準。"
+          }
+        }
+      }
+    },
+    "全历史回测 · 每笔费用0.025% · 零滑点 · 夏普Rf=0": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全历史回测 · 每笔费用0.025% · 零滑点 · 夏普Rf=0"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全歷史回測 · 每筆費用0.025% · 零滑點 · 夏普Rf=0"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full-history backtest · 0.025% fee per fill · Zero slippage · Sharpe Rf=0"
           }
         }
       }

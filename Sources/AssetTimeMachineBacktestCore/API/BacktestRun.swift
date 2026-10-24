@@ -50,7 +50,8 @@ public struct StrategyDefinition: Sendable {
                                    "recoveryStable": .recoveryStable, "recoveryGrowth": .recoveryGrowth],
                     recoveryQuality: .cashConfidenceAdaptive,
                     cashConfidence: [.riskContributionCashConfidenceLowNoise,
-                                     .riskContributionCashConfidenceRouter, .recentPairSpreadZ252Shift25, .nfciDualCoreV1,
+                                     .riskContributionCashConfidenceRouter, .recentPairSpreadZ252Shift25,
+                                     .recentVolatilityManagedIdleCash, .recentGoldEquityRelativeZ252Shift25, .nfciDualCoreV1,
                                      .nfciDualCoreSimplifiedV11, .nfciDualCoreSimplifiedV11QualRole]
                         .contains(template.mode) ? .frozenV1 : nil)
                 // Sets encode in arbitrary order. Canonicalize only their named fields;
@@ -109,7 +110,8 @@ public struct StrategyDefinition: Sendable {
         return try BacktestRunScope.$parameters.withValue(parameters) {
             if Task.isCancelled { throw CancellationError() }
             let options = BacktestCoreStrategyDefaults.assetOptions(for: template)
-            let inputs = options.map { MarketInputPreparation.advancedAssetInput(for: $0) { observedSeries[$0] } }
+            let rawInputs = options.map { MarketInputPreparation.advancedAssetInput(for: $0) { observedSeries[$0] } }
+            let inputs = MarketInputPreparation.publicIndexHistoryInputs(rawInputs, preservingFrozenMacroInputs: template.mode.requiresNFCIAsOf)
             // Replay from the earliest available row. A range ending before the
             // first row is an input error, never a reversed ClosedRange trap.
             let simulationBounds: ClosedRange<Date>?
@@ -210,12 +212,14 @@ public enum StrategyRegistry {
         return (catalog + internalModes).map { template in
         let version: String
         switch template.id {
-        case "ke25": version = "ke25-forward-v1-2026-10-21"
-        case "kvo": version = "kvo-forward-v1-2026-10-22"
-        case "recent-pair-spread-z252-shift25": version = "pair-index-bounded-correction-v2-2026-10-23"
+        case "ke25": version = "ke25-public-index-correction-v2-2026-10-24"
+        case "kvo": version = "kvo-public-index-correction-v2-2026-10-24"
+        case "recent-pair-spread-z252-shift25": version = "pair-index-bounded-correction-v4-2026-10-24"
+        case "recent-volatility-managed-idle-cash": version = "vol-index-current-rule-correction-v1-2026-10-24"
+        case "recent-gold-equity-relative-z252-shift25": version = "gold-equity-index-current-rule-correction-v1-2026-10-24"
         case "nfci-dual-core-v1": version = "dualcore-v1-2026-08-14"
         case "nfci-dual-core-v11": version = "dualcore-v11-2026-08-15"
-        default: version = legacyRulesVersion
+        default: version = template.mode.requiresNFCIAsOf ? legacyRulesVersion : "price-public-index-correction-v1-2026-10-24"
         }
         let options = BacktestCoreStrategyDefaults.assetOptions(for: template)
         return .init(reference: .init(id: template.id, version: version), template: template,

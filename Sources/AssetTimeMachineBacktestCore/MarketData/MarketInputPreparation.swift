@@ -40,6 +40,19 @@ nonisolated public enum MarketInputPreparation {
         )
     }
 
+    /// Product price-policy eligibility. Frozen macro strategies retain their separately versioned input path.
+    public static func publicIndexHistoryInputs(
+        _ inputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)],
+        preservingFrozenMacroInputs: Bool = false
+    ) -> [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)] {
+        guard !preservingFrozenMacroInputs,
+              let firstPublicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08") else { return inputs }
+        return inputs.map { input in
+            guard input.assetOption.symbol == "csi300" else { return input }
+            return (filteredHistorySeries(input.assetSeries, within: firstPublicDate...Date.distantFuture), input.assetOption, input.fxSeries)
+        }
+    }
+
     static func usdCashHistorySeries(from fxSeries: PublicHistorySeries?, label: String) -> PublicHistorySeries? {
         BacktestFXConverter.usdCashHistorySeries(from: fxSeries, label: label)
     }

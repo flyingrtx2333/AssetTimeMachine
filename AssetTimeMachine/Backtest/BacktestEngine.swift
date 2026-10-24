@@ -106,7 +106,7 @@ nonisolated enum BacktestEngine {
         settings: AdvancedBacktestRiskSettings
     ) -> AdvancedBacktestReport? {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) {
-            return BacktestCoreEngine.runAdvancedStrategies(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, initialCash: initialCash, tradeAmount: tradeAmount, buyRule: buyRule, sellRule: sellRule, settings: settings)
+            return BacktestCoreEngine.runAdvancedStrategies(assetInputs: MarketInputPreparation.publicIndexHistoryInputs(assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }), initialCash: initialCash, tradeAmount: tradeAmount, buyRule: buyRule, sellRule: sellRule, settings: settings)
         }
     }
 
@@ -150,7 +150,7 @@ nonisolated enum BacktestEngine {
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedBacktestReport? {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) {
-            return BacktestCoreEngine.runAdvancedRotationStrategy(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, initialCash: initialCash, settings: settings, mode: mode, nfciAsOf: nfciAsOf, dateBounds: dateBounds)
+            return BacktestCoreEngine.runAdvancedRotationStrategy(assetInputs: MarketInputPreparation.publicIndexHistoryInputs(assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, preservingFrozenMacroInputs: mode.requiresNFCIAsOf), initialCash: initialCash, settings: settings, mode: mode, nfciAsOf: nfciAsOf, dateBounds: dateBounds)
         }
     }
 
@@ -163,7 +163,7 @@ nonisolated enum BacktestEngine {
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) {
-            return BacktestCoreEngine.runAdvancedRotationStrategyWithTrace(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, initialCash: initialCash, settings: settings, mode: mode, nfciAsOf: nfciAsOf, dateBounds: dateBounds)
+            return BacktestCoreEngine.runAdvancedRotationStrategyWithTrace(assetInputs: MarketInputPreparation.publicIndexHistoryInputs(assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, preservingFrozenMacroInputs: mode.requiresNFCIAsOf), initialCash: initialCash, settings: settings, mode: mode, nfciAsOf: nfciAsOf, dateBounds: dateBounds)
         }
     }
 
@@ -275,7 +275,7 @@ nonisolated enum BacktestEngine {
         initialCash: Double = 100_000
     ) -> StrategyRebalanceAdvice? {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) {
-            return BacktestCoreEngine.advancedRuleBasedRebalanceAdvice(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, template: template.core, initialCash: initialCash)
+            return BacktestCoreEngine.advancedRuleBasedRebalanceAdvice(assetInputs: MarketInputPreparation.publicIndexHistoryInputs(assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }), template: template.core, initialCash: initialCash)
         }
     }
 
@@ -288,7 +288,7 @@ nonisolated enum BacktestEngine {
         strategyRun: AdvancedRotationStrategyRun? = nil
     ) -> StrategyRebalanceAdvice? {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) {
-            return BacktestCoreEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, mode: mode, initialCash: initialCash, settings: settings, nfciAsOf: nfciAsOf, strategyRun: strategyRun)
+            return BacktestCoreEngine.advancedRotationRebalanceAdvice(assetInputs: MarketInputPreparation.publicIndexHistoryInputs(assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, preservingFrozenMacroInputs: mode.requiresNFCIAsOf), mode: mode, initialCash: initialCash, settings: settings, nfciAsOf: nfciAsOf, strategyRun: strategyRun)
         }
     }
 

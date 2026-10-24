@@ -432,6 +432,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     var annualizedReturn: Double { core.annualizedReturn }
     var maxDrawdown: Double { core.maxDrawdown }
     var sharpeRatio: Double { core.sharpeRatio }
+    var performancePeriod: String? { core.performancePeriod }
     var buyRule: AdvancedBacktestRule { core.buyRule }
     var sellRule: AdvancedBacktestRule { core.sellRule }
     var tradeAmountRatio: Double { core.tradeAmountRatio }

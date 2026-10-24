@@ -847,6 +847,10 @@ struct AdvancedStrategyLibrarySheet: View {
                 ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 14) {
                         strategyLibraryHeader
+                        Text(AppLocalization.string("全历史回测 · 每笔费用0.025% · 零滑点 · 夏普Rf=0"))
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AssetTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                         strategySearchArea
                         if availableGroups.count > 1 {
                             strategyGroupPicker
@@ -1273,6 +1277,11 @@ struct AdvancedStrategyTemplateRow: View {
                         }
 
                         strategyMetricsView
+                        if let period = template.performancePeriod {
+                            Text(period)
+                                .font(.system(size: 10))
+                                .foregroundStyle(AssetTheme.textSecondary)
+                        }
                     }
 
                     Spacer(minLength: 6)
@@ -1424,7 +1433,6 @@ struct ForwardStrategyValidationSheet: View {
                         validationHeader
                         evidenceBoundaryCard
                         prospectiveOOSCard
-                        retrospectiveRobustnessCard
                         factorExplanationCard
                         crossAssetCard
                     }
@@ -1570,37 +1578,6 @@ struct ForwardStrategyValidationSheet: View {
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-
-    private var retrospectiveRobustnessCard: some View {
-        validationCard(title: AppLocalization.string("旧引擎历史档案（非当前成绩）"), icon: "chart.xyaxis.line") {
-            VStack(alignment: .leading, spacing: 11) {
-                Text(AppLocalization.string("以下是原冻结试验的历史数值。旧成交引擎已发现结算缺陷，这些数值不能作为当前策略推荐或前瞻表现依据。"))
-                    .font(AppTypography.caption)
-                    .foregroundStyle(AssetTheme.accentOrange)
-                if isSimplifiedV11 {
-                    metricGrid([
-                        (AppLocalization.string("历史 CAGR"), "14.35%"),
-                        (AppLocalization.string("最大回撤"), "7.69%"),
-                        (AppLocalization.string("Sharpe"), "1.522"),
-                        (AppLocalization.string("交易数"), "451"),
-                    ])
-                    validationBullet(AppLocalization.string("5/7 时间折 Sharpe > 1；6/7 时间折最大回撤不高于前一简化版本。"))
-                    validationBullet(AppLocalization.string("Block63 Bootstrap：Sharpe P2.5 = 1.221，MDD P97.5 = 13.93%。"))
-                    validationBullet(AppLocalization.string("删除 1.24、1.30、A股 5% 哨兵与 24.4% 交易带，保留统一 1.22 与自然 25% 交易带。"))
-                } else {
-                    metricGrid([
-                        (AppLocalization.string("历史 CAGR"), "14.58%"),
-                        (AppLocalization.string("最大回撤"), "7.69%"),
-                        (AppLocalization.string("Sharpe"), "1.534"),
-                        (AppLocalization.string("交易数"), "460"),
-                    ])
-                    validationBullet(AppLocalization.string("5/7 时间折 Sharpe > 1；相对高收益核心，7/7 时间折最大回撤更低。"))
-                    validationBullet(AppLocalization.string("Block63 Bootstrap：Sharpe P2.5 = 1.231，MDD P97.5 = 14.09%。"))
-                    validationBullet(AppLocalization.string("50/50 双核心权重与 25% 最终交易带在验证前固定，不做事后权重搜索。"))
                 }
             }
         }

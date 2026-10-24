@@ -84,10 +84,39 @@ nonisolated public enum RecentWindowOverlayStrategy {
               base.values.allSatisfy({ $0.isFinite && $0 >= 0 }) else { return nil }
         let original = Dictionary(uniqueKeysWithValues: symbols.map { ($0, base[$0] ?? 0) })
         let baseGross = symbols.reduce(0.0) { $0 + original[$1]! }
-        guard baseGross.isFinite, baseGross <= 1 else { return nil }
+        guard baseGross.isFinite, baseGross <= 1 + 1e-12 else { return nil }
         var target = original
         shiftPair(&target, numerator: "nasdaq", denominator: "sp500", zScore: usZ)
         shiftPair(&target, numerator: "csi300", denominator: "shanghai_composite", zScore: chinaZ)
+        // Leave eight machine ulps of cash near full investment so downstream summation
+        // order cannot trigger a global normalization. This changes one equity leg only.
+        let rawGross = symbols.reduce(0.0) { $0 + target[$1]! }
+        let headroom = 8 * Double.ulpOfOne
+        guard rawGross.isFinite else { return nil }
+        if rawGross >= 1 - headroom {
+            let positiveEquities = legacyRiskSymbols.sorted().filter { target[$0]! > 0 }
+            let recipients = positiveEquities.filter { target[$0]! > original[$0]! }.sorted { lhs, rhs in
+                let left = target[lhs]! - original[lhs]!, right = target[rhs]! - original[rhs]!
+                return left == right ? lhs < rhs : left > right
+            }
+            let balancingSymbol = recipients.first ?? positiveEquities.sorted { lhs, rhs in
+                target[lhs]! == target[rhs]! ? lhs < rhs : target[lhs]! > target[rhs]!
+            }.first
+            if let balancingSymbol {
+                let correction = max(rawGross - 1, 0) + headroom
+                guard correction.isFinite, correction <= 1e-12,
+                      target[balancingSymbol]! >= correction else { return nil }
+                let before = target
+                target[balancingSymbol] = before[balancingSymbol]! - correction
+                guard target[balancingSymbol]!.isFinite, target[balancingSymbol]! >= 0,
+                      abs(target[balancingSymbol]! - before[balancingSymbol]!) <= 1e-12,
+                      symbols.filter({ $0 != balancingSymbol }).allSatisfy({
+                          target[$0]!.bitPattern == before[$0]!.bitPattern
+                      }) else { return nil }
+            } else if rawGross > 1 {
+                return nil // A gold-only source cannot be repaired by changing gold.
+            }
+        }
         guard Set(target.keys) == requiredSymbols,
               target.values.allSatisfy({ $0.isFinite && $0 >= 0 }),
               symbols.reduce(0.0, { $0 + target[$1]! }) <= 1,
@@ -133,6 +162,168 @@ nonisolated public enum RecentWindowOverlayStrategy {
             priorTarget = target
         }
         return FrozenTargetSchedule(events: events, reviewClockFingerprint: "native-index-pair-z252-bounded-shift25-correction-v1")
+    }
+
+    // The former ETF role order, expressed only with the authorized native indices.
+    public static let indexEquitySymbols = ["sp500", "nasdaq", "shanghai_composite", "csi300"]
+
+    private static func indexSourceBase(_ base: [String: Double]) -> [String: Double]? {
+        guard Set(base.keys).isSubset(of: requiredSymbols),
+              base.values.allSatisfy({ $0.isFinite && $0 >= 0 }) else { return nil }
+        let symbols = requiredSymbols.sorted()
+        let original = Dictionary(uniqueKeysWithValues: symbols.map { ($0, base[$0] ?? 0) })
+        let gross = symbols.reduce(0.0) { $0 + original[$1]! }
+        return gross.isFinite && gross <= 1 + 1e-12 ? original : nil
+    }
+
+    /// Fixed 63-session/10% deployment. UNKNOWN or an ineligible cash budget publishes the current parent.
+    public static func indexVolatilityTarget(
+        base: [String: Double], trailingBasketReturns: [Double]?
+    ) -> [String: Double]? {
+        guard let original = indexSourceBase(base) else { return nil }
+        let risk = [goldSymbol] + legacyRiskSymbols
+        let gross = risk.reduce(0.0) { $0 + original[$1]! }
+        var target = original
+        if gross > epsilon, gross < 1 - epsilon,
+           let returns = trailingBasketReturns, returns.count == volatilityLookback,
+           returns.allSatisfy(\.isFinite) {
+            let mean = returns.reduce(0, +) / Double(returns.count)
+            let squared = returns.reduce(0) { $0 + ($1 - mean) * ($1 - mean) }
+            let sigma = sqrt(max(squared / Double(returns.count - 1), 0) * 252)
+            if sigma.isFinite, sigma > epsilon {
+                let multiplier = max(1, min(1 / gross, volatilityTarget / sigma))
+                for symbol in risk { target[symbol] = original[symbol]! * multiplier }
+            }
+        }
+        // Reuse the reviewed one-equity numerical headroom guard, with no pair transfer.
+        return indexPairTarget(base: target, usZ: nil, chinaZ: nil)
+    }
+
+    /// Signal basket weights are equal; execution weights remain proportional to active parent equities.
+    public static func indexGoldEquityTarget(base: [String: Double], zScore: Double?) -> [String: Double]? {
+        guard let original = indexSourceBase(base) else { return nil }
+        var target = original
+        if let zScore, zScore.isFinite, abs(zScore) > zThreshold {
+            let active = indexEquitySymbols.filter { original[$0]! > epsilon }
+            let gold = original[goldSymbol]!, equity = active.reduce(0.0) { $0 + original[$1]! }
+            let combined = gold + equity
+            if combined > epsilon, equity > epsilon {
+                if zScore > zThreshold {
+                    let moved = min(shiftFraction * combined, gold)
+                    if moved > epsilon {
+                        target[goldSymbol] = gold - moved
+                        for symbol in active {
+                            let weight = original[symbol]!
+                            target[symbol] = weight + moved * weight / equity
+                        }
+                    }
+                } else {
+                    let moved = min(shiftFraction * combined, equity)
+                    if moved > epsilon {
+                        target[goldSymbol] = gold + moved
+                        for symbol in active {
+                            let weight = original[symbol]!
+                            target[symbol] = max(weight - moved * weight / equity, 0)
+                        }
+                    }
+                }
+            }
+        }
+        // Gold may change through this overlay; the neutral guard preserves that resulting gold bit.
+        return indexPairTarget(base: target, usZ: nil, chinaZ: nil)
+    }
+
+    private static func indexBasketReturns(
+        frame: MarketDataFrame, base: [String: Double], through signalIndex: Int
+    ) -> [Double]? {
+        guard signalIndex >= volatilityLookback,
+              let publicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08") else { return nil }
+        var output: [Double] = []
+        for index in (signalIndex - volatilityLookback + 1)...signalIndex {
+            var value = 0.0, used = 0.0
+            for symbol in [goldSymbol] + legacyRiskSymbols {
+                let weight = base[symbol] ?? 0
+                guard weight > epsilon else { continue }
+                guard symbol != "csi300" || frame.dates[index - 1] >= publicDate,
+                      let prices = frame.pricesBySymbol[symbol],
+                      prices[index].isFinite, prices[index - 1].isFinite,
+                      prices[index] > 0, prices[index - 1] > 0 else { return nil }
+                value += weight * (prices[index] / prices[index - 1] - 1)
+                used += weight
+            }
+            guard used > epsilon, value.isFinite else { return nil }
+            output.append(value)
+        }
+        return output
+    }
+
+    public static func indexGoldEquityRatioValues(frame: MarketDataFrame) -> [Double?]? {
+        guard let publicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08"),
+              let gold = frame.pricesBySymbol[goldSymbol], gold.count == frame.dates.count,
+              frame.observedBySymbol[goldSymbol]?.count == frame.dates.count,
+              let firstGold = firstUsableIndex(frame: frame, symbol: goldSymbol) else { return nil }
+        let firstByEquity = Dictionary(uniqueKeysWithValues: indexEquitySymbols.compactMap { symbol -> (String, Int)? in
+            guard let prices = frame.pricesBySymbol[symbol], let observed = frame.observedBySymbol[symbol],
+                  prices.count == frame.dates.count, observed.count == frame.dates.count,
+                  let first = frame.dates.indices.first(where: { index in
+                      observed[index] && prices[index].isFinite && prices[index] > 0
+                          && (symbol != "csi300" || frame.dates[index] >= publicDate)
+                  }) else { return nil }
+            return (symbol, first)
+        })
+        guard gold.count == frame.dates.count, firstByEquity["sp500"] != nil else { return nil }
+        return frame.dates.indices.map { index -> Double? in
+            guard index >= firstGold, gold[index].isFinite, gold[index] > 0, gold[firstGold] > 0 else { return nil }
+            let available = indexEquitySymbols.filter { (firstByEquity[$0] ?? Int.max) <= index }
+            guard !available.isEmpty else { return nil }
+            var logs: [Double] = []
+            for symbol in available {
+                guard let first = firstByEquity[symbol], let prices = frame.pricesBySymbol[symbol],
+                      prices[index].isFinite, prices[index] > 0, prices[first] > 0 else { return nil }
+                logs.append(log(prices[index] / prices[first]))
+            }
+            return log(gold[index] / gold[firstGold]) - logs.reduce(0, +) / Double(logs.count)
+        }
+    }
+
+    /// Fresh five-index source targets, including explicit zero keys and unchanged-parent fallback days.
+    public static func indexOverlaySchedule(
+        frame: MarketDataFrame, baseByExecutionIndex: [Int: [String: Double]], mode: Mode
+    ) -> FrozenTargetSchedule? {
+        if mode == .pairSpreadZ252Shift25 {
+            return indexPairSchedule(frame: frame, baseByExecutionIndex: baseByExecutionIndex)
+        }
+        guard frame.dates.count > 1, Set(frame.tradableSymbols) == requiredSymbols,
+              requiredSymbols.allSatisfy({ symbol in
+                  frame.pricesBySymbol[symbol]?.count == frame.dates.count
+                      && frame.observedBySymbol[symbol]?.count == frame.dates.count
+              }) else { return nil }
+        let ratios = mode == .goldEquityRelativeZ252Shift25 ? indexGoldEquityRatioValues(frame: frame) : nil
+        var events: [FrozenTargetEvent] = [], currentBase: [String: Double]?, priorTarget: [String: Double]?
+        for executionIndex in 1..<frame.dates.count {
+            if let refreshed = baseByExecutionIndex[executionIndex] { currentBase = refreshed }
+            guard let base = currentBase else { continue }
+            let signalIndex = executionIndex - 1
+            let target: [String: Double]?, reason: String
+            switch mode {
+            case .volatilityManagedIdleCash:
+                let returns = indexBasketReturns(frame: frame, base: base, through: signalIndex)
+                target = indexVolatilityTarget(base: base, trailingBasketReturns: returns)
+                reason = "T-1 native-index fixed-weight 63-session volatility; 10% deploy-only target, current-parent fallback"
+            case .goldEquityRelativeZ252Shift25:
+                let z = ratios.flatMap { zScore(values: $0, through: signalIndex, count: spreadLookback) }
+                target = indexGoldEquityTarget(base: base, zScore: z)
+                reason = "T-1 native-index gold/equal-geometric-equity z252; threshold ±1, bounded 25% proportional transfer"
+            case .pairSpreadZ252Shift25:
+                return nil // Delegated above; the reviewed pair implementation is unchanged.
+            }
+            guard let target else { return nil }
+            if let priorTarget, distance(target, priorTarget) <= epsilon { continue }
+            events.append(FrozenTargetEvent(signalIndex: signalIndex, signalDate: frame.dates[signalIndex],
+                targetWeights: target, reason: reason))
+            priorTarget = target
+        }
+        return FrozenTargetSchedule(events: events, reviewClockFingerprint: "native-index-vol-gold-current-rule-correction-v1")
     }
 
     public static func goldEquityOverlayTarget(base: [String: Double], zScore: Double?) -> [String: Double] {
@@ -342,7 +533,7 @@ nonisolated public enum RecentWindowOverlayStrategy {
     }
 
     private static func distance(_ lhs: [String: Double], _ rhs: [String: Double]) -> Double {
-        Set(lhs.keys).union(rhs.keys).reduce(0) { $0 + abs((lhs[$1] ?? 0) - (rhs[$1] ?? 0)) }
+        Set(lhs.keys).union(rhs.keys).sorted().reduce(0) { $0 + abs((lhs[$1] ?? 0) - (rhs[$1] ?? 0)) }
     }
 
     private static func valid(_ target: [String: Double]) -> Bool {
@@ -367,6 +558,15 @@ nonisolated public enum RecentWindowStrategies {
         var sourceInputs = sourceMode.requiredSignalAssetSymbols.compactMap { inputBySymbol[$0] }
         if mode == .pairSpreadZ252Shift25 {
             // CSI300's retrospectively backcalculated pre-launch prices are not available to the parent.
+            guard let publicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08"),
+                  let position = sourceInputs.firstIndex(where: { $0.assetOption.symbol == "csi300" }),
+                  let eligible = BacktestSeriesAlignment.filteredHistorySeries(
+                    sourceInputs[position].assetSeries, within: publicDate...Date.distantFuture),
+                  !eligible.dates.isEmpty else { return nil }
+            let original = sourceInputs[position]
+            sourceInputs[position] = (eligible, original.assetOption, original.fxSeries)
+        } else {
+            // The remaining corrected modes share the same public CSI parent input boundary.
             guard let publicDate = BacktestSeriesAlignment.historicalSeriesDate(from: "2005-04-08"),
                   let position = sourceInputs.firstIndex(where: { $0.assetOption.symbol == "csi300" }),
                   let eligible = BacktestSeriesAlignment.filteredHistorySeries(
@@ -409,6 +609,37 @@ nonisolated public enum RecentWindowStrategies {
                     }
                     let schedule = RecentWindowOverlayStrategy.indexPairSchedule(
                         frame: frame, baseByExecutionIndex: baseByExecutionIndex)
+                    resolvedSchedule = schedule
+                    return schedule
+                }, targetWeights: { _, _ in [:] }
+            ), let schedule = resolvedSchedule else { return nil }
+            return AdvancedRotationStrategyRun(report: run.report, dailyStates: run.dailyStates,
+                latestSignalReason: schedule.events.last?.reason)
+        }
+
+        if mode == .volatilityManagedIdleCash || mode == .goldEquityRelativeZ252Shift25 {
+            let config = ResearchTargetStrategyConfig(
+                symbol: appMode.rawValue, title: appMode.title,
+                warmupSessions: 21, rebalanceSessions: 1, rebalanceBand: 0.244,
+                tradeToBandBoundary: false, zeroFillBeforeFirstSymbols: ["csi300"], maxGrossExposure: 1,
+                allowsFinancedExposure: false, financingAnnualRate: 0, buyReason: appMode.title
+            )
+            let sourceByExecutionDate = Dictionary(uniqueKeysWithValues: source.dailyStates.map {
+                ($0.date.backtestDateString, $0.targetWeights)
+            })
+            var resolvedSchedule: FrozenTargetSchedule?
+            guard let run = TargetProviderBacktest.runResearchTargetProviderStrategyWithTrace(
+                assetInputs: sourceInputs, initialCash: initialCash, settings: settings,
+                config: config, dateBounds: dateBounds,
+                frozenSchedule: { frame in
+                    var baseByExecutionIndex: [Int: [String: Double]] = [:]
+                    for index in 1..<frame.dates.count {
+                        if let weights = sourceByExecutionDate[frame.dates[index].backtestDateString] {
+                            baseByExecutionIndex[index] = weights
+                        }
+                    }
+                    let schedule = RecentWindowOverlayStrategy.indexOverlaySchedule(
+                        frame: frame, baseByExecutionIndex: baseByExecutionIndex, mode: mode)
                     resolvedSchedule = schedule
                     return schedule
                 }, targetWeights: { _, _ in [:] }

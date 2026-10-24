@@ -1,0 +1,1153 @@
+{
+  "OOSCertified": false,
+  "PITCertified": false,
+  "catalogCount": 25,
+  "commonDatesAreSavedObservationsNotFullDailyRisk": true,
+  "commonDatesCount": 5008,
+  "commonDatesEnd": "2026-10-21T16:00:00Z",
+  "commonDatesStart": "2005-05-15T16:00:00Z",
+  "completedAtUTC": "2026-10-23T17:29:17Z",
+  "conditionalQuantitySupplementCount": 1,
+  "excludedMacroOrQUALCount": 2,
+  "financialPrefixChecks": [
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1311,
+      "strategyID": "gold-nasdaq-dual-trend-barbell",
+      "tradeCount": 19
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 638,
+      "strategyID": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "tradeCount": 31
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 638,
+      "strategyID": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "tradeCount": 28
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 638,
+      "strategyID": "core-gold-satellite-profit-lock-momentum",
+      "tradeCount": 40
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 617,
+      "strategyID": "risk-contribution-cash-confidence-low-noise",
+      "tradeCount": 56
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1361,
+      "strategyID": "ke25",
+      "tradeCount": 1257
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1361,
+      "strategyID": "kvo",
+      "tradeCount": 1258
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1480,
+      "strategyID": "recent-volatility-managed-idle-cash",
+      "tradeCount": 64
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1480,
+      "strategyID": "recent-pair-spread-z252-shift25",
+      "tradeCount": 119
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1480,
+      "strategyID": "recent-gold-equity-relative-z252-shift25",
+      "tradeCount": 94
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-buy-and-hold",
+      "tradeCount": 4
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2004,
+      "strategyID": "basic-gold-nasdaq-hold",
+      "tradeCount": 2
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1630,
+      "strategyID": "basic-gold-trend",
+      "tradeCount": 164
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2004,
+      "strategyID": "basic-us-trend",
+      "tradeCount": 222
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 1924,
+      "strategyID": "basic-china-trend",
+      "tradeCount": 83
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-ma60-trend",
+      "tradeCount": 365
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-ma20-trend",
+      "tradeCount": 708
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-ma20-hold",
+      "tradeCount": 715
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-ma-golden-cross",
+      "tradeCount": 115
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-boll-breakout",
+      "tradeCount": 237
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-three-day-trend",
+      "tradeCount": 399
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-boll-mean-reversion",
+      "tradeCount": 210
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 1,
+      "lastDate": "2007-12-26T16:00:00Z",
+      "stateCount": 2025,
+      "strategyID": "basic-three-day-reversal",
+      "tradeCount": 400
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3448,
+      "strategyID": "gold-nasdaq-dual-trend-barbell",
+      "tradeCount": 51
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 2638,
+      "strategyID": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "tradeCount": 118
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 2638,
+      "strategyID": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "tradeCount": 127
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 2638,
+      "strategyID": "core-gold-satellite-profit-lock-momentum",
+      "tradeCount": 136
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 2617,
+      "strategyID": "risk-contribution-cash-confidence-low-noise",
+      "tradeCount": 223
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3361,
+      "strategyID": "ke25",
+      "tradeCount": 6113
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3361,
+      "strategyID": "kvo",
+      "tradeCount": 6125
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3480,
+      "strategyID": "recent-volatility-managed-idle-cash",
+      "tradeCount": 254
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3480,
+      "strategyID": "recent-pair-spread-z252-shift25",
+      "tradeCount": 605
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3480,
+      "strategyID": "recent-gold-equity-relative-z252-shift25",
+      "tradeCount": 443
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-buy-and-hold",
+      "tradeCount": 4
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4191,
+      "strategyID": "basic-gold-nasdaq-hold",
+      "tradeCount": 2
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 3816,
+      "strategyID": "basic-gold-trend",
+      "tradeCount": 360
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4169,
+      "strategyID": "basic-us-trend",
+      "tradeCount": 506
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4005,
+      "strategyID": "basic-china-trend",
+      "tradeCount": 504
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-ma60-trend",
+      "tradeCount": 954
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-ma20-trend",
+      "tradeCount": 1698
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-ma20-hold",
+      "tradeCount": 1808
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-ma-golden-cross",
+      "tradeCount": 270
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-boll-breakout",
+      "tradeCount": 539
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-three-day-trend",
+      "tradeCount": 1003
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-boll-mean-reversion",
+      "tradeCount": 522
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 2,
+      "lastDate": "2016-07-19T16:00:00Z",
+      "stateCount": 4251,
+      "strategyID": "basic-three-day-reversal",
+      "tradeCount": 971
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 5588,
+      "strategyID": "gold-nasdaq-dual-trend-barbell",
+      "tradeCount": 74
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 4638,
+      "strategyID": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "tradeCount": 239
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 4638,
+      "strategyID": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "tradeCount": 252
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 4638,
+      "strategyID": "core-gold-satellite-profit-lock-momentum",
+      "tradeCount": 275
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 4617,
+      "strategyID": "risk-contribution-cash-confidence-low-noise",
+      "tradeCount": 417
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 5361,
+      "strategyID": "ke25",
+      "tradeCount": 10466
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 5361,
+      "strategyID": "kvo",
+      "tradeCount": 10481
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 5480,
+      "strategyID": "recent-volatility-managed-idle-cash",
+      "tradeCount": 466
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 5480,
+      "strategyID": "recent-pair-spread-z252-shift25",
+      "tradeCount": 1052
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 5480,
+      "strategyID": "recent-gold-equity-relative-z252-shift25",
+      "tradeCount": 1005
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-buy-and-hold",
+      "tradeCount": 4
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6416,
+      "strategyID": "basic-gold-nasdaq-hold",
+      "tradeCount": 2
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6041,
+      "strategyID": "basic-gold-trend",
+      "tradeCount": 628
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6329,
+      "strategyID": "basic-us-trend",
+      "tradeCount": 828
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6088,
+      "strategyID": "basic-china-trend",
+      "tradeCount": 1035
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-ma60-trend",
+      "tradeCount": 1644
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-ma20-trend",
+      "tradeCount": 2732
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-ma20-hold",
+      "tradeCount": 3007
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-ma-golden-cross",
+      "tradeCount": 427
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-boll-breakout",
+      "tradeCount": 896
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-three-day-trend",
+      "tradeCount": 1615
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-boll-mean-reversion",
+      "tradeCount": 814
+    },
+    {
+      "allFinancialBitsExact": true,
+      "context": 3,
+      "lastDate": "2025-02-19T16:00:00Z",
+      "stateCount": 6487,
+      "strategyID": "basic-three-day-reversal",
+      "tradeCount": 1554
+    }
+  ],
+  "formalValidation": false,
+  "internalOriginalParentAndShadowsRecomputed": true,
+  "internalSimulatorCallCount": null,
+  "nativeInputBindingsUnchanged": 228,
+  "priceComparisonCount": 22,
+  "recommended": false,
+  "rows": [
+    {
+      "common_observations": {
+        "annualized_return": 0.0690700197468288,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.0789265681523382,
+        "points": 5008,
+        "sharpe_rf0": 1.3194454879812818,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.060286493313783884,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 11252,
+        "max_drawdown": 0.07892656815233846,
+        "points": 5752,
+        "sharpe_rf0": 1.239790487912584,
+        "start": "2002-02-04T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "CONDITIONAL_QUANTITY_SUPPLEMENT",
+      "strategyID": "kvo",
+      "title": "KVO量价组合"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.0691116833236769,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.07892656815233877,
+        "points": 5008,
+        "sharpe_rf0": 1.3031806255834721,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.060322338561924926,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 11238,
+        "max_drawdown": 0.07892656815233992,
+        "points": 5752,
+        "sharpe_rf0": 1.224536775835074,
+        "start": "2002-02-04T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "ke25",
+      "title": "KE25"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.10215865560603965,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.11259079093481636,
+        "points": 5008,
+        "sharpe_rf0": 1.148664400057217,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.1016792447859518,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 265,
+        "max_drawdown": 0.1125907909348163,
+        "points": 5029,
+        "sharpe_rf0": 1.1462716629096223,
+        "start": "2005-04-07T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "core-gold-satellite-equity-curve-state-gate-momentum",
+      "title": "均衡配置"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.08520766508332556,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.10907065193846047,
+        "points": 5008,
+        "sharpe_rf0": 1.0985950139322522,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.08481684075439921,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 300,
+        "max_drawdown": 0.10907065193846009,
+        "points": 5029,
+        "sharpe_rf0": 1.096381088508055,
+        "start": "2005-04-07T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "core-gold-satellite-profit-lock-momentum",
+      "title": "防守配置"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.10890824995226778,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.16185906966426117,
+        "points": 5008,
+        "sharpe_rf0": 1.0835053317194305,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.10839321572109739,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 283,
+        "max_drawdown": 0.161859069664261,
+        "points": 5029,
+        "sharpe_rf0": 1.0812244919238423,
+        "start": "2005-04-07T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "core-gold-satellite-risk-budget-state-gate-momentum",
+      "title": "进取配置"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.11046066678770572,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.18316745610557328,
+        "points": 5008,
+        "sharpe_rf0": 1.0138832203343588,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.09430133483018155,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 508,
+        "max_drawdown": 0.18316745610557333,
+        "points": 5871,
+        "sharpe_rf0": 0.9454314286468092,
+        "start": "2001-07-24T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "recent-volatility-managed-idle-cash",
+      "title": "闲置现金控波部署"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.09275896378709092,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.17455184889616265,
+        "points": 5008,
+        "sharpe_rf0": 0.9685905730761203,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.09275896378709092,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 465,
+        "max_drawdown": 0.17455184889616265,
+        "points": 5008,
+        "sharpe_rf0": 0.9685905730761203,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "risk-contribution-cash-confidence-low-noise",
+      "title": "低噪增强"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.09196317910392326,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.1759797882336258,
+        "points": 5008,
+        "sharpe_rf0": 0.966508609192144,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.07880351002551289,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 1203,
+        "max_drawdown": 0.17597978823362606,
+        "points": 5871,
+        "sharpe_rf0": 0.9034199065608046,
+        "start": "2001-07-24T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "recent-pair-spread-z252-shift25",
+      "title": "跨市场配对回归"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.09923319985052892,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.175027155001144,
+        "points": 5008,
+        "sharpe_rf0": 0.8788191502444972,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.10137409405980957,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 81,
+        "max_drawdown": 0.17502715500114446,
+        "points": 6003,
+        "sharpe_rf0": 0.8943326295717907,
+        "start": "2002-09-17T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 337,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "gold-nasdaq-dual-trend-barbell",
+      "title": "金纳双趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.08192988619194774,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.16346226074322984,
+        "points": 5008,
+        "sharpe_rf0": 0.8784906069280386,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.0703807351183261,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 1098,
+        "max_drawdown": 0.1634622607432315,
+        "points": 5871,
+        "sharpe_rf0": 0.822510830849926,
+        "start": "2001-07-24T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 0,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "recent-gold-equity-relative-z252-shift25",
+      "title": "黄金权益相对回归"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.06383965288973714,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.2022819235882932,
+        "points": 5008,
+        "sharpe_rf0": 0.7824557747376542,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.0513401074936386,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 2946,
+        "max_drawdown": 0.20228192358829392,
+        "points": 6921,
+        "sharpe_rf0": 0.6681335244529129,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-ma20-trend",
+      "title": "20日趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.08468192300343191,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.2528485012258534,
+        "points": 5008,
+        "sharpe_rf0": 0.7735834566841566,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.06610637231203187,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 1780,
+        "max_drawdown": 0.25284850122585445,
+        "points": 6921,
+        "sharpe_rf0": 0.6720606311686863,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-ma60-trend",
+      "title": "60日趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.11099762752690379,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.3548014756496351,
+        "points": 5008,
+        "sharpe_rf0": 0.7490279712933796,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.08723492391837318,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 1155,
+        "max_drawdown": 0.35480147564963527,
+        "points": 6493,
+        "sharpe_rf0": 0.6667543320503259,
+        "start": "2000-01-03T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 203,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-china-trend",
+      "title": "A股趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.10462398309773313,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.3261550861888944,
+        "points": 5008,
+        "sharpe_rf0": 0.7254060681965586,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.08332513071810133,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 2,
+        "max_drawdown": 0.3714440102105606,
+        "points": 6847,
+        "sharpe_rf0": 0.5950628786730358,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 497,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-gold-nasdaq-hold",
+      "title": "金纳持有"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.09386112703108762,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.5337266728590102,
+        "points": 5008,
+        "sharpe_rf0": 0.7096207410866742,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.07150570062330308,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 4,
+        "max_drawdown": 0.5337266728590111,
+        "points": 6921,
+        "sharpe_rf0": 0.5849597902838813,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-buy-and-hold",
+      "title": "买入持有"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.06800810387785883,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.2810724697678912,
+        "points": 5008,
+        "sharpe_rf0": 0.6967917789708711,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.05504377744554634,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 454,
+        "max_drawdown": 0.281072469767892,
+        "points": 6921,
+        "sharpe_rf0": 0.6178270177942764,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-ma-golden-cross",
+      "title": "均线交叉"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.06441566629734496,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.24493265028650799,
+        "points": 5008,
+        "sharpe_rf0": 0.6268815375769963,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.05239975390999696,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 3258,
+        "max_drawdown": 0.24493265028650782,
+        "points": 6921,
+        "sharpe_rf0": 0.5541197451247143,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-ma20-hold",
+      "title": "MA20 趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.06159321091822467,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.34944729942034775,
+        "points": 5008,
+        "sharpe_rf0": 0.6071483712087661,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.04245053631328344,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 1726,
+        "max_drawdown": 0.3494472994203468,
+        "points": 6921,
+        "sharpe_rf0": 0.46661443526799073,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-three-day-trend",
+      "title": "三日趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.04318462220552344,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.16222047530465764,
+        "points": 5008,
+        "sharpe_rf0": 0.5851521280035914,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.030816766561308384,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 964,
+        "max_drawdown": 0.16222047530465886,
+        "points": 6921,
+        "sharpe_rf0": 0.4615802361952669,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-boll-breakout",
+      "title": "布林突破"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.06016926912352516,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.2541824635562281,
+        "points": 5008,
+        "sharpe_rf0": 0.5644980818641329,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.042914528552734366,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 918,
+        "max_drawdown": 0.29999987366418035,
+        "points": 6749,
+        "sharpe_rf0": 0.41399473411266957,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 399,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-us-trend",
+      "title": "美股趋势"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.035367217809381124,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.23986180241849345,
+        "points": 5008,
+        "sharpe_rf0": 0.5011835876509046,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.027216370139900414,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 875,
+        "max_drawdown": 0.23986180241849536,
+        "points": 6921,
+        "sharpe_rf0": 0.39126138674706956,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-boll-mean-reversion",
+      "title": "布林反转"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.03846910975710438,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.29245059039036375,
+        "points": 5008,
+        "sharpe_rf0": 0.452804758866658,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.03589201292508726,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 1662,
+        "max_drawdown": 0.2924505903903634,
+        "points": 6921,
+        "sharpe_rf0": 0.4232751683455742,
+        "start": "2000-01-12T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 569,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-three-day-reversal",
+      "title": "三日反转"
+    },
+    {
+      "common_observations": {
+        "annualized_return": 0.04646195835710576,
+        "end": "2026-10-21T16:00:00Z",
+        "max_drawdown": 0.4348858176446307,
+        "points": 5008,
+        "sharpe_rf0": 0.3972223503197415,
+        "start": "2005-05-15T16:00:00Z"
+      },
+      "full": {
+        "annualized_return": 0.04385539372577041,
+        "end": "2026-10-21T16:00:00Z",
+        "fills": 659,
+        "max_drawdown": 0.4367805150160775,
+        "points": 6472,
+        "sharpe_rf0": 0.38256476117450944,
+        "start": "2001-06-24T16:00:00Z"
+      },
+      "fullHistoryCAGR6Sharpe13Pass": false,
+      "interiorObservationDatesExcluded": 495,
+      "maxCommonGapCalendarDays": 12,
+      "scope": "PRICE_RANKING",
+      "strategyID": "basic-gold-trend",
+      "title": "黄金趋势"
+    }
+  ],
+  "status": "APP_CATALOG_CURRENT_RULE_FULL_AND_PREFIX_COMPLETE",
+  "topLevelFullAccounts": 23,
+  "topLevelPrefixAccounts": 69,
+  "topLevelReplays": 92
+}
