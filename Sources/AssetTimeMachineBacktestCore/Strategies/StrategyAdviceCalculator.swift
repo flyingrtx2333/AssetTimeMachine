@@ -168,10 +168,11 @@ nonisolated public enum StrategyAdviceCalculator {
         initialCash: Double = 100_000,
         settings: AdvancedBacktestRiskSettings? = nil,
         nfciAsOf: BacktestNFCIAsOfData? = nil,
-        strategyRun: AdvancedRotationStrategyRun? = nil
+        strategyRun: AdvancedRotationStrategyRun? = nil,
+        progress: (@Sendable (Int, Int, String) -> Void)? = nil
     ) -> StrategyRebalanceAdvice? {
-        if mode == .ke25 { return KE25LiveStrategy.advice(assetInputs: assetInputs) }
-        if mode == .kvo { return KE25LiveStrategy.advice(assetInputs: assetInputs, useKVO: true) }
+        if mode == .ke25 { return KE25LiveStrategy.advice(assetInputs: assetInputs, progress: progress) }
+        if mode == .kvo { return KE25LiveStrategy.advice(assetInputs: assetInputs, useKVO: true, progress: progress) }
         guard let config = RotationParameters.advancedRotationConfig(for: mode) else {
             return traceBackedRebalanceAdvice(
                 assetInputs: assetInputs,

@@ -285,10 +285,11 @@ nonisolated enum BacktestEngine {
         initialCash: Double = 100_000,
         settings: AdvancedBacktestRiskSettings? = nil,
         nfciAsOf: BacktestNFCIAsOfData? = nil,
-        strategyRun: AdvancedRotationStrategyRun? = nil
+        strategyRun: AdvancedRotationStrategyRun? = nil,
+        progress: (@Sendable (Int, Int, String) -> Void)? = nil
     ) -> StrategyRebalanceAdvice? {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) {
-            return BacktestCoreEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, mode: mode, initialCash: initialCash, settings: settings, nfciAsOf: nfciAsOf, strategyRun: strategyRun)
+            return BacktestCoreEngine.advancedRotationRebalanceAdvice(assetInputs: assetInputs.map { ($0.assetSeries, $0.assetOption.instrument, $0.fxSeries) }, mode: mode, initialCash: initialCash, settings: settings, nfciAsOf: nfciAsOf, strategyRun: strategyRun, progress: progress)
         }
     }
 

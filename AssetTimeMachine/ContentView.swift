@@ -64,20 +64,8 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if isApplyingCloudData {
-                ZStack {
-                    AssetTheme.pageGradient.ignoresSafeArea()
-
-                    ProgressView()
-                        .controlSize(.large)
-                        .tint(AssetTheme.gold)
-                        .padding(24)
-                        .background(AssetTheme.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
-            } else {
                 #if targetEnvironment(macCatalyst)
                 macWorkspace
-                    .id(cloudDataRevision)
                 #else
                 TabView(selection: tabSelection) {
             deferredTabContent(for: .dashboard) {
@@ -155,11 +143,12 @@ struct ContentView: View {
                 }
                 .tag(AppTab.settings)
                 }
-                .id(cloudDataRevision)
                 .animation(nil, value: selectedTab)
                 #endif
-            }
         }
+        // Sync reconciles matching models in place. Keep navigation, scroll and editor
+        // state mounted while the mutation barrier briefly prevents new edits.
+        .disabled(isApplyingCloudData)
         .tint(AssetTheme.gold)
         .task {
             let migratedStrategyID = StrategyRebalanceDefaults.migratedTemplateID(strategyNotificationTemplateID)

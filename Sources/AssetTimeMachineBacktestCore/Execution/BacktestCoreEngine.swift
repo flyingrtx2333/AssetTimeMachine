@@ -233,9 +233,10 @@ nonisolated public enum BacktestCoreEngine {
         initialCash: Double = 100_000,
         settings: AdvancedBacktestRiskSettings? = nil,
         nfciAsOf: BacktestNFCIAsOfData? = nil,
-        strategyRun: AdvancedRotationStrategyRun? = nil
+        strategyRun: AdvancedRotationStrategyRun? = nil,
+        progress: (@Sendable (Int, Int, String) -> Void)? = nil
     ) -> StrategyRebalanceAdvice? {
-        StrategyAdviceCalculator.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: mode, initialCash: initialCash, settings: settings, nfciAsOf: nfciAsOf, strategyRun: strategyRun)
+        StrategyAdviceCalculator.advancedRotationRebalanceAdvice(assetInputs: assetInputs, mode: mode, initialCash: initialCash, settings: settings, nfciAsOf: nfciAsOf, strategyRun: strategyRun, progress: progress)
     }
 
     public static func alignedRotationPriceSeries(

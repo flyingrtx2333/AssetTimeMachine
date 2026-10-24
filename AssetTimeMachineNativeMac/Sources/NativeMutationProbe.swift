@@ -352,11 +352,15 @@ enum NativeCloudSyncProbe {
             cloud.currentUser = AssetTimeMachineCloudUser(id: 11, userName: "Synthetic A", userEmail: nil)
             _ = await cloud.runIsolatedSync(from: context)
             checks["initialMatchBindsOwnerWithoutUpload"] = defaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && server.uploads == 0 && cloud.errorMessage == nil
+            let retainedEntry = snapshot.entries.first { $0.item?.id == bID }
             server.change(bID, to: 25)
             let reads = server.latestReads
             _ = await cloud.runIsolatedSync(from: context)
             let pulled = try await local()
             checks["unchangedLocalStillPullsRemote"] = server.latestReads > reads && amount(pulled, bID) == 25 && server.uploads == 0
+            checks["remoteUpdatePreservesRegisteredModels"] = try context.fetch(FetchDescriptor<AssetSnapshot>()).first { $0.id == snapshotID } === snapshot
+                && snapshot.entries.first { $0.item?.id == bID } === retainedEntry
+                && retainedEntry?.amount == 25
             try edit(aID, 11)
             server.beforeNextUpload = { server.change(bID, to: 30) }
             let before = server.uploads

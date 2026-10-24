@@ -452,6 +452,7 @@ private struct NativeQuantAllocationItem: Identifiable {
     let id: String
     let title: String
     let weight: Double
+    let amount: Double?
     let color: Color
 }
 
@@ -459,7 +460,12 @@ private struct NativeQuantAllocationMap: View {
     let items: [NativeQuantAllocationItem]
     let unknown: Bool
     let reduced: Bool
+    let showsAmounts: Bool
     @Binding var hovered: String?
+    @State private var pointer: CGPoint?
+    private func amountText(_ item: NativeQuantAllocationItem) -> String {
+        showsAmounts ? item.amount.map(NativeHomeStyle.amount) ?? "—" : "••••"
+    }
     var body: some View {
         GeometryReader { geometry in
             let frames = NativeQuantAllocationLayout.frames(weights: items.map(\.weight), size: geometry.size)
@@ -475,7 +481,7 @@ private struct NativeQuantAllocationMap: View {
                             if rect.width >= 70 && rect.height >= 46 {
                                 VStack(alignment: .leading, spacing: NativeStyle.Space.xxs) {
                                     Text(item.title).lineLimit(2)
-                                    Text(item.weight, format: .percent.precision(.fractionLength(0)))
+                                    Text(item.weight, format: .percent.precision(.fractionLength(2)))
                                         .monospacedDigit().contentTransition(.numericText())
                                 }.font(NativeStyle.FontRole.section).padding(.horizontal, 15)
                             }
@@ -484,20 +490,79 @@ private struct NativeQuantAllocationMap: View {
                         .padding(1).frame(width: max(0, rect.width), height: max(0, rect.height))
                         .position(x: rect.midX, y: rect.midY)
                         .opacity(item.weight > 0 ? 1 : 0)
-                        .onHover { over in
-                            withAnimation(NativeStyle.Motion.quant(reduced)) {
-                                if over { hovered = item.id } else if hovered == item.id { hovered = nil }
-                            }
-                        }
-                        .help("\(item.title) \(NativeQuantFormat.percent(item.weight))")
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel("\(item.title)，\(NativeQuantFormat.percent(item.weight))")
+                        .accessibilityValue(amountText(item))
                         .accessibilityHidden(item.weight <= 0)
                     }
                 }.animation(NativeStyle.Motion.quant(reduced), value: items.map(\.weight))
                     .animation(NativeStyle.Motion.quant(reduced), value: hovered)
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let point):
+                            pointer = point
+                            let next = items.indices.first { items[$0].weight > 0 && frames[$0].contains(point) }
+                                .map { items[$0].id }
+                            if hovered != next { hovered = next }
+                        case .ended:
+                            pointer = nil
+                            hovered = nil
+                        }
+                    }
+                    .overlay(alignment: .topLeading) {
+                        if let pointer, let item = items.first(where: { $0.id == hovered && $0.weight > 0 }) {
+                            let width = min(210.0, geometry.size.width - 16)
+                            VStack(alignment: .leading, spacing: NativeStyle.Space.xs) {
+                                Text(item.title).font(NativeStyle.FontRole.inputStrong).lineLimit(2)
+                                HStack {
+                                    Text("占比").foregroundStyle(NativePalette.secondary)
+                                    Spacer()
+                                    Text(item.weight, format: .percent.precision(.fractionLength(2)))
+                                }
+                                HStack {
+                                    Text("金额").foregroundStyle(NativePalette.secondary)
+                                    Spacer()
+                                    Text(item.amount.map(NativeHomeStyle.amount) ?? "—")
+                                }
+                            }.font(NativeStyle.FontRole.body).monospacedDigit()
+                                .padding(NativeStyle.Space.md).frame(width: width)
+                                .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
+                                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.field).stroke(NativePalette.line, lineWidth: 0.7))
+                                .offset(x: min(max(8, pointer.x + 12), max(8, geometry.size.width - width - 8)),
+                                        y: min(max(8, pointer.y + 16), max(8, geometry.size.height - 100)))
+                                .allowsHitTesting(false).accessibilityHidden(true)
+                                .transaction { $0.animation = nil }
+                        }
+                    }
+                    .onDisappear { pointer = nil; hovered = nil }
             }
         }
+    }
+}
+
+private struct NativeQuantAllocationLegend: View {
+    let items: [NativeQuantAllocationItem]
+    let showsAmounts: Bool
+    @Binding var hovered: String?
+    var body: some View {
+        VStack(spacing: NativeStyle.Space.xxs) {
+            ForEach(items.filter { $0.weight.isFinite && $0.weight > 0 }) { item in
+                HStack(spacing: NativeStyle.Space.sm) {
+                    RoundedRectangle(cornerRadius: 2).fill(item.color).frame(width: 8, height: 8)
+                    Text(item.title).lineLimit(2)
+                    Spacer(minLength: NativeStyle.Space.xs)
+                    Text(item.weight, format: .percent.precision(.fractionLength(2)))
+                        .monospacedDigit().foregroundStyle(NativePalette.secondary)
+                    if showsAmounts {
+                        Text(item.amount.map(NativeHomeStyle.amount) ?? "—").monospacedDigit()
+                    }
+                }.font(NativeStyle.FontRole.body).frame(minHeight: 24).contentShape(Rectangle())
+                    .onHover { over in
+                        if over { hovered = item.id } else if hovered == item.id { hovered = nil }
+                    }
+                    .help("\(item.title)  \(item.weight.formatted(.percent.precision(.fractionLength(2))))  \(item.amount.map(NativeHomeStyle.amount) ?? "—")")
+            }
+        }.onDisappear { hovered = nil }
     }
 }
 
@@ -535,10 +600,15 @@ private struct NativeQuantAdviceView: View {
         var result = projection.actions.enumerated().map { index, action in
             NativeQuantAllocationItem(id: action.symbol, title: action.title,
                 weight: max(0, target ? action.targetWeight : (action.currentWeight ?? 0)),
+                amount: target ? action.targetAmount : action.currentAmount,
                 color: color(action.symbol, index: index))
         }
         let used = result.reduce(0) { $0 + $1.weight }
-        result.append(.init(id: "native-residual-cash", title: "现金 / 其他", weight: max(0, 1 - used), color: color("cash", index: 0)))
+        let residualAmount = projection.actions.compactMap(\.investmentBase).first.map {
+            max(0, $0 - result.compactMap(\.amount).reduce(0, +))
+        }
+        result.append(.init(id: "native-residual-cash", title: "现金 / 其他", weight: max(0, 1 - used),
+            amount: residualAmount, color: color("cash", index: 0)))
         return result
     }
 
@@ -573,6 +643,10 @@ private struct NativeQuantAdviceView: View {
             if projection.isRefreshing {
                 HStack(spacing: NativeStyle.Space.md) {
                     ProgressView(value: projection.progressFraction).frame(width: 150)
+                        .accessibilityLabel("今日策略生成进度")
+                    Text(projection.progressFraction, format: .percent.precision(.fractionLength(0)))
+                        .font(NativeStyle.FontRole.captionStrong).monospacedDigit()
+                        .foregroundStyle(NativePalette.accent).frame(width: 34, alignment: .trailing)
                     Text(projection.progressMessage).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                 }.padding(.bottom, 14).transition(.opacity)
             }
@@ -647,10 +721,14 @@ private struct NativeQuantAdviceView: View {
         }
     }
     private func map(_ title: String, target: Bool) -> some View {
-        VStack(alignment: .leading, spacing: NativeStyle.Space.md) {
+        let allocations = items(target: target)
+        return VStack(alignment: .leading, spacing: NativeStyle.Space.md) {
             Text(title).font(NativeStyle.FontRole.iconStrong).frame(height: 18)
-            NativeQuantAllocationMap(items: items(target: target), unknown: !target && !currentKnown,
-                reduced: reducesMotion, hovered: $hovered).frame(height: mapHeight)
+            NativeQuantAllocationMap(items: allocations, unknown: !target && !currentKnown,
+                reduced: reducesMotion, showsAmounts: showsAmounts, hovered: $hovered).frame(height: mapHeight)
+            if target || currentKnown {
+                NativeQuantAllocationLegend(items: allocations, showsAmounts: showsAmounts, hovered: $hovered)
+            }
         }.frame(maxWidth: .infinity)
     }
     private var actions: some View {

@@ -126,9 +126,6 @@ struct NativeRootView: View {
             sidebar
             Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7)
             Group {
-                if cloud.isApplyingLocalData {
-                    ProgressView("正在更新本机记录")
-                } else {
                     switch page {
                     case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records }, openCloudSync: { showsCloudSync = true })
                     case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor)
@@ -136,9 +133,8 @@ struct NativeRootView: View {
                     case .quant: NativeQuantView(store: quant)
                     case .settings: NativeSettingsView(history: history, cloud: cloud, openCloudSync: { showsCloudSync = true })
                     }
-                }
             }
-            .id(cloud.localDataRevision)
+            .disabled(cloud.isApplyingLocalData)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(NativePalette.canvas)
             .transition(.opacity)

@@ -9,7 +9,9 @@ actor StrategyAdviceService {
     private var cachedAdviceByToken: [String: StrategyRebalanceAdvice] = [:]
     private var cacheOrder: [String] = []
     private var cacheGeneration = 0
-    private var inFlightTasks: [String: Task<StrategyRebalanceAdvice?, Never>] = [:]
+    private var inFlightTasks: [String: (id: UUID, task: Task<StrategyRebalanceAdvice?, Never>)] = [:]
+    private var progressObservers: [String: [UUID: @Sendable (Int, Int, String) -> Void]] = [:]
+    private var latestProgress: [String: (completed: Int, total: Int, message: String)] = [:]
 
     func advice(
         calculationToken: String,
@@ -17,7 +19,8 @@ actor StrategyAdviceService {
         assetOptions: [BacktestAssetOption],
         historyBySymbol: [String: PublicHistorySeries],
         nfciAsOf: BacktestNFCIAsOfData?,
-        force: Bool
+        force: Bool,
+        progress: (@Sendable (Int, Int, String) -> Void)? = nil
     ) async -> StrategyRebalanceAdvice? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
@@ -36,11 +39,21 @@ actor StrategyAdviceService {
             return cachedAdvice
         }
 
+        let observerID = UUID()
+        if let progress {
+            progressObservers[calculationToken, default: [:]][observerID] = progress
+            if let last = latestProgress[calculationToken] { progress(last.completed, last.total, last.message) }
+        }
+        defer {
+            progressObservers[calculationToken]?[observerID] = nil
+            if progressObservers[calculationToken]?.isEmpty == true { progressObservers[calculationToken] = nil }
+        }
         if let inFlightTask = inFlightTasks[calculationToken] {
-            return await inFlightTask.value
+            return await inFlightTask.task.value
         }
 
         let generation = cacheGeneration
+        let runID = UUID()
         let task = Task.detached(priority: .utility) {
             do {
                 return try await BackgroundTaskWork.runSynchronousOnLargeStack {
@@ -62,7 +75,11 @@ actor StrategyAdviceService {
                             assetInputs: assetInputs,
                             mode: template.mode,
                             settings: settings,
-                            nfciAsOf: nfciAsOf
+                            nfciAsOf: nfciAsOf,
+                            progress: { completed, total, message in
+                                Task { await self.reportProgress(calculationToken, runID: runID,
+                                    completed: completed, total: total, message: message) }
+                            }
                         )
                     }
                     return BacktestEngine.advancedRuleBasedRebalanceAdvice(
@@ -74,11 +91,12 @@ actor StrategyAdviceService {
                 return nil
             }
         }
-        inFlightTasks[calculationToken] = task
+        inFlightTasks[calculationToken] = (runID, task)
 
         let result = await task.value
         guard generation == cacheGeneration, !task.isCancelled else { return nil }
         inFlightTasks[calculationToken] = nil
+        latestProgress[calculationToken] = nil
         if let result {
             cachedAdviceByToken[calculationToken] = result
             noteCacheUse(calculationToken)
@@ -89,10 +107,19 @@ actor StrategyAdviceService {
 
     func clearCache() {
         cacheGeneration += 1
-        for task in inFlightTasks.values { task.cancel() }
+        for entry in inFlightTasks.values { entry.task.cancel() }
         inFlightTasks.removeAll()
+        progressObservers.removeAll()
+        latestProgress.removeAll()
         cachedAdviceByToken.removeAll(keepingCapacity: true)
         cacheOrder.removeAll(keepingCapacity: true)
+    }
+
+    private func reportProgress(_ token: String, runID: UUID, completed: Int, total: Int, message: String) {
+        guard inFlightTasks[token]?.id == runID,
+              total > 0, completed >= (latestProgress[token]?.completed ?? 0) else { return }
+        latestProgress[token] = (completed, total, message)
+        for observer in progressObservers[token]?.values ?? [:].values { observer(completed, total, message) }
     }
 
     private func noteCacheUse(_ token: String) {

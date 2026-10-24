@@ -152,7 +152,18 @@ final class StrategyAdviceProjectionStore: ObservableObject {
             assetOptions: assetOptions,
             historyBySymbol: historyBySymbol,
             nfciAsOf: nfciAsOf,
-            force: force
+            force: force,
+            progress: { [weak self] completed, total, message in
+                Task { @MainActor [weak self] in
+                    guard let self, self.isRefreshing,
+                          self.calculationGeneration == generation,
+                          self.activeCalculationToken == calculationToken, total > 0 else { return }
+                    let fraction = 0.66 + 0.24 * Double(completed) / Double(total)
+                    guard fraction >= self.progressFraction else { return }
+                    self.updateProgress(fraction: fraction,
+                        message: "\(AppLocalization.string(message))（\(completed)/\(total)）")
+                }
+            }
         )
 
         guard !Task.isCancelled,

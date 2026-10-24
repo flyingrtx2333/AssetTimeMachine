@@ -1273,10 +1273,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             isApplyingLocalData = false
         }
 
-        // Publish the loading barrier first so data-backed feature trees can unmount
-        // and register their final draft saves. The mutation begins only after every
-        // registered writer has completed; unlike a fixed delay, this stays correct
-        // even under a slow scheduler or unusually large record encoding.
+        // Publish the editing barrier without unmounting feature views. The mutation
+        // begins only after every registered writer has completed; active editor drafts
+        // already prevent beginExclusiveDrain from acquiring the store.
         await Task.yield()
         try await Task.sleep(for: .milliseconds(20))
         try await ModelContextMutationBarrier.shared.enterExclusive(exclusiveID)
@@ -1288,9 +1287,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             expectedStoreRevision: expectedStoreRevision
         )
 
-        // Force every feature subtree to release any object that the import deleted.
-        // Increment only after the single committed save; cancellation after this point
-        // must not report a committed import as failed.
+        // Refresh value caches after the committed save. The importer retains models
+        // with matching IDs; this revision must not become a root-view identity.
         localDataRevision &+= 1
         await Task.yield()
         return committedStoreRevision

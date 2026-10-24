@@ -8,7 +8,8 @@ nonisolated public enum KE25LiveStrategy {
 
     /// Returns source-indexed desired weights, retaining explicit zero keys and causal source clocks.
     public static func targets(frame: MarketDataFrame, nativeHistory: Data,
-                               quantityRawBySymbol: [String: Data]? = nil) throws -> [Int: [String: Double]] {
+                               quantityRawBySymbol: [String: Data]? = nil,
+                               progress: (@Sendable (Int, Int, String) -> Void)? = nil) throws -> [Int: [String: Double]] {
         guard frame.tradableSymbols == symbols, frame.dates.count > 21,
               frame.simulationRange.lowerBound >= 0, frame.simulationRange.upperBound < frame.dates.count,
               symbols.allSatisfy({ frame.pricesBySymbol[$0]?.count == frame.dates.count && frame.observedBySymbol[$0]?.count == frame.dates.count }),
@@ -26,16 +27,24 @@ nonisolated public enum KE25LiveStrategy {
         let f = KE25PolicyFrame(dates: civil, simulationRange: [21,last], tradableSymbols: symbols,
             pricesBySymbol: frame.pricesBySymbol.mapValues { Array($0.prefix(count)) },
             observedBySymbol: frame.observedBySymbol.mapValues { Array($0.prefix(count)) })
+        let steps = quantityRawBySymbol == nil ? 6 : 7
+        progress?(0, steps, "计算基础仓位")
         let parent = try KE25ParentPolicy.weights(f,dates)
+        progress?(1, steps, "计算区间信号")
         let range = try RangeConflictSignal.build(frameDates:civil,historyData:nativeHistory,pause:1,control:0)
+        progress?(2, steps, "计算动量信号")
         let impulse = try ImpulseTargetSignal.build(frameDates:civil,pricesBySymbol:f.pricesBySymbol,
             observedBySymbol:f.observedBySymbol,pause:0,control:0)
+        progress?(3, steps, "计算缺口信号")
         let gap = try IslandGapSignal.build(frameDates:civil,historyData:nativeHistory,pause:3,control:2)
+        progress?(4, steps, "计算突破信号")
         let breakout = try BreakoutSARExitSignal.build(frameDates:civil,historyData:nativeHistory,control:2)
+        progress?(5, steps, quantityRawBySymbol == nil ? "汇总目标仓位" : "计算量价信号")
         let kvo = try quantityRawBySymbol.map {
             try VendorKVOEpisodeRangeEntrySignal.permissions(frameDates: civil, historyData: nativeHistory,
                 baselineBySymbol: breakout, quantityRawBySymbol: $0)
         }
+        if quantityRawBySymbol != nil { progress?(6, steps, "汇总目标仓位") }
         var priorB=[String:Double](),out=[Int:[String:Double]]()
         for i in 21..<count {
             let p=parent[i-21]
@@ -62,6 +71,7 @@ nonisolated public enum KE25LiveStrategy {
             out[i]=mixed
             priorB=b // Independent impulse memory; never K, E, mix, or actual holdings.
         }
+        progress?(steps, steps, "目标仓位已计算")
         return out
     }
 
@@ -139,7 +149,8 @@ nonisolated public enum KE25LiveStrategy {
     /// Advice publishes the latest desired target, even when a simulated order is still pending.
     public static func advice(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)],
-        useKVO: Bool = false
+        useKVO: Bool = false,
+        progress: (@Sendable (Int, Int, String) -> Void)? = nil
     ) -> StrategyRebalanceAdvice? {
         guard let p=prepare(assetInputs:assetInputs,dateBounds:nil) else { return nil }
         let quantities: [String: Data]?
@@ -147,7 +158,7 @@ nonisolated public enum KE25LiveStrategy {
             guard let raw = quantityData(assetInputs, through: p.frame.dates[p.frame.simulationRange.upperBound].backtestDateString) else { return nil }
             quantities = raw
         } else { quantities = nil }
-        guard let source=try? targets(frame:p.frame,nativeHistory:p.history,quantityRawBySymbol:quantities),
+        guard let source=try? targets(frame:p.frame,nativeHistory:p.history,quantityRawBySymbol:quantities,progress:progress),
               let i=source.keys.max(),let weights=source[i] else{return nil}
         let allocations=symbols.compactMap{symbol -> StrategyRebalanceAllocation? in
             guard let w=weights[symbol],w>0.0001,let option=p.frame.optionBySymbol[symbol] else{return nil}

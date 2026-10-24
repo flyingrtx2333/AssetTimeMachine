@@ -28,7 +28,18 @@ final class KVOLiveStrategyTests: XCTestCase {
         let q = try Dictionary(uniqueKeysWithValues: ["csi300", "shanghai_composite"].map { ($0, try data("quantity-" + $0)) })
         let frame = saved.frame()
         let expected = try JSONDecoder().decode([SavedTarget].self, from: data("kvo-targets"))
-        let actual = try KE25LiveStrategy.targets(frame: frame, nativeHistory: native, quantityRawBySymbol: q)
+        let progress = Progress(totalUnitCount: 7)
+        let reports = Progress(totalUnitCount: 8)
+        let actual = try KE25LiveStrategy.targets(frame: frame, nativeHistory: native, quantityRawBySymbol: q,
+            progress: { completed, total, message in
+                XCTAssertEqual(total, 7)
+                XCTAssertEqual(Int64(completed), reports.completedUnitCount)
+                XCTAssertFalse(message.isEmpty)
+                progress.completedUnitCount = Int64(completed)
+                reports.completedUnitCount += 1
+            })
+        XCTAssertEqual(progress.completedUnitCount, 7)
+        XCTAssertEqual(reports.completedUnitCount, 8)
         XCTAssertEqual(actual.count, expected.count)
         for row in expected {
             let weights = try XCTUnwrap(actual[row.sourceFrameIndex])
