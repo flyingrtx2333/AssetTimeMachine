@@ -873,8 +873,7 @@ struct NativeCloudSyncView: View {
         .foregroundStyle(NativePalette.text)
         .background(NativePalette.canvas)
         .tint(NativePalette.accent)
-        .frame(width: 480)
-        .frame(minHeight: 310, maxHeight: 580)
+        .frame(width: 480, height: cloud.currentUser != nil || cloud.isSessionPending ? 560 : 310)
         .task { await refresh() }
         .sheet(isPresented: $showsLogin) {
             NativeAccountChoice(cloud: cloud, allowsOffline: false) { showsLogin = false }

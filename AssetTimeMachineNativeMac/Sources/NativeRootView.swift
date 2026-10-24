@@ -264,6 +264,10 @@ struct NativeRootView: View {
                       history.summaries.last?.date.ISO8601Format() ?? "none")
             }
         }
+        .onChange(of: cloud.lastSyncAt) { _, date in
+            guard let date else { return }
+            NSLog("[NativeMac] cloud backup applied uploaded=%@", date.ISO8601Format())
+        }
         .sheet(isPresented: $showsAccountChoice) {
             NativeAccountChoice(cloud: cloud) {
                 hasMadeAccountChoice = true
