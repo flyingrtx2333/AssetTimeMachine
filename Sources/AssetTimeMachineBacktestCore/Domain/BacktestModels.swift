@@ -2369,6 +2369,7 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
         annualizedReturn: Double,
         maxDrawdown: Double,
         sharpeRatio: Double,
+        performancePeriod: String? = nil,
         buyRule: AdvancedBacktestRule,
         sellRule: AdvancedBacktestRule,
         tradeAmountRatio: Double,
@@ -2385,6 +2386,7 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
         self.annualizedReturn = annualizedReturn
         self.maxDrawdown = maxDrawdown
         self.sharpeRatio = sharpeRatio
+        self.performancePeriod = performancePeriod
         self.buyRule = buyRule
         self.sellRule = sellRule
         self.tradeAmountRatio = tradeAmountRatio

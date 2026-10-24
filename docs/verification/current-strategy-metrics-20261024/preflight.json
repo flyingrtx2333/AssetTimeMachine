@@ -1,0 +1,15 @@
+{
+  "exactFullHistoryMetricRows": 23,
+  "coreDiffOnlyCatalogDisplayDataAndPeriod": true,
+  "unchangedOtherCoreSources": true,
+  "generatedResourceAccessorExcluded": true,
+  "relatedCoreTests": {
+    "executed": 41,
+    "failures": 0
+  },
+  "iOSSimulatorBuild": "BUILD SUCCEEDED",
+  "nativeMacBuild": "BUILD SUCCEEDED",
+  "localizationAudit": "PASS",
+  "sourceHistory": "backtest-result.json",
+  "noNewFinancialReplay": true
+}
