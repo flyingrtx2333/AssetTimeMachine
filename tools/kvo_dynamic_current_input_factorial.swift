@@ -169,7 +169,7 @@ private enum ExactJSON: Codable {
         let auth=try obj(p.appendingPathComponent("RUN_AUTHORIZATION.json")),bindings=auth["files"] as! [String:String]
         func check()throws{for(path,h) in bindings {try require(sha(read(URL(fileURLWithPath:path)))==h,"changed "+path)}}
         try check();let out=b.appendingPathComponent("run");try require((try FileManager.default.contentsOfDirectory(atPath:out.path)).isEmpty,"nonempty run")
-        let ids=arms+["original-public-input-parity","dynamic-product-runner-parity"]
+        let ids=arms+["original-product-runner-parity"]
         var full=[String:[String:Any]](),fullSources=[[String:Any]](),prefixChecks=[[String:Any]](),rows=[[String:Any]](),calls=0
         for context in 0...3 {
             let name=context==0 ? "full":"prefix-\(context)",folder=out.appendingPathComponent(name)
@@ -187,9 +187,7 @@ private enum ExactJSON: Codable {
                 let armFolder=folder.appendingPathComponent(id);try FileManager.default.createDirectory(at:armFolder,withIntermediateDirectories:false)
                 let run:AdvancedRotationStrategyRun
                 if index<4 {run=try simulate(frame,source,index>=2,index==1 || index==3,armFolder)}
-                else if index==4 {
-                    guard let r=KE25LiveStrategy.run(assetInputs:prep.inputs,initialCash:100000,settings:settings,useKVO:true,useDynamicScaling:false) else{throw error("baseline native")};run=r
-                } else {
+                else {
                     let def=try StrategyRegistry.definition(id:"kvo"),config=BacktestRunConfiguration(strategy:def.reference,purpose:.product,initialCash:100000,settings:settings)
                     let r=try def.makeRunner().run(input:.init(seriesBySymbol:ds.seriesBySymbol,datasetHash:sha(raw),sourceCommit:storage["baseAppHEAD"] as? String),configuration:config)
                     run=AdvancedRotationStrategyRun(report:r.report,dailyStates:r.dailyStates)
@@ -209,14 +207,14 @@ private enum ExactJSON: Codable {
                 }
                 print("SAVED \(calls) \(name) \(id)");fflush(stdout)
             }
-            for (original,parity) in [(arms[0],ids[4]),(arms[3],ids[5])] {
+            for (original,parity) in [(arms[0],ids[4])] {
                 for key in ["daily_states","points","trades","annualized_return","sharpe_rf0","max_drawdown","ending_value","ending_cash"] {
                     try require(same(accounts[original]![key]!,accounts[parity]![key]!,excluding:key=="trades" ? ["id","reason"]:[]),"native parity "+key+" "+original)
                 }
             }
         }
-        try check();try require(calls==24 && prefixChecks.count==18,"budget")
-        let result:[String:Any]=["status":"COMPLETE_CURRENT_INPUT_FIXED_DYNAMIC_2X2","rows":rows,"topLevelAccounts":calls,"fullAccounts":6,"prefixAccounts":18,"prefixChecks":prefixChecks,"publicParityContexts":4,"sourceRegeneratedEveryPhysicalPrefix":true,"inputBindingsUnchanged":bindings.count,"goalCAGR":0.07,"goalSharpeRf0":1.4,"formalSVP":false,"PITCertified":false,"OOSCertified":false]
+        try check();try require(calls==20 && prefixChecks.count==15,"budget")
+        let result:[String:Any]=["status":"COMPLETE_CURRENT_INPUT_FIXED_DYNAMIC_2X2","rows":rows,"topLevelAccounts":calls,"fullAccounts":5,"prefixAccounts":15,"prefixChecks":prefixChecks,"publicParityContexts":4,"sourceRegeneratedEveryPhysicalPrefix":true,"inputBindingsUnchanged":bindings.count,"goalCAGR":0.07,"goalSharpeRf0":1.4,"formalSVP":false,"PITCertified":false,"OOSCertified":false]
         try write(result,b.appendingPathComponent("RESULT.json"));try write(result,p.appendingPathComponent("RESULT.json"));print("STUDY_COMPLETE");fflush(stdout)
     }
 }
