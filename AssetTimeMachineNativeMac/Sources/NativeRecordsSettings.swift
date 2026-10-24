@@ -659,35 +659,32 @@ struct NativeSettingsView: View {
     @Environment(\.modelContext) private var context
     @ObservedObject var history: NativeHistoryModel
     @ObservedObject var cloud: AssetTimeMachineCloudStore
+    let openCloudSync: () -> Void
     @State private var showsLogin = false
     @State private var error: String?
     @State private var message: String?
-    @State private var showRestoreConfirmation = false
-    @State private var showOwnershipConfirmation = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 15) {
                 NativePageHeader(title: "设置", subtitle: "账户、同步与本机数据")
                 NativeCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("云同步").font(NativeStyle.FontRole.sectionStrong)
-                        Text(cloud.currentUser?.displayName ?? "未登录 · 可继续本机使用")
-                            .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
-                        if let status = cloud.statusMessage { Text(status).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive) }
-                        if let error = cloud.errorMessage { Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative) }
-                        HStack {
-                            if cloud.currentUser == nil { Button("登录", action: { showsLogin = true }) }
-                            else {
-                                if cloud.requiresLocalOwnershipConfirmation {
-                                    Button("关联并同步本机记录") { showOwnershipConfirmation = true }
-                                }
-                                Button("立即同步") { cloud.scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0) }
-                                Button("恢复最新备份") { showRestoreConfirmation = true }
-                                Button("退出登录") { cloud.logout() }
+                    Button(action: openCloudSync) {
+                        HStack(spacing: 12) {
+                            Image(systemName: cloud.indicatorState.cloudSymbolName)
+                                .foregroundStyle(cloud.indicatorState.symbolColor)
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("云同步").font(NativeStyle.FontRole.sectionStrong)
+                                Text(cloud.indicatorLabel).font(NativeStyle.FontRole.body)
+                                    .foregroundStyle(NativePalette.secondary)
                             }
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundStyle(NativePalette.secondary)
                         }
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(NativeHomeButtonStyle())
                 }
                 NativeCard {
                     VStack(alignment: .leading, spacing: 10) {
@@ -705,26 +702,12 @@ struct NativeSettingsView: View {
             }.padding(NativeStyle.Space.section)
         }
         .task {
-            if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") {
-                showsLogin = true
-            }
+            if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") { showsLogin = true }
         }
         .sheet(isPresented: $showsLogin) {
             NativeAccountChoice(cloud: cloud, allowsOffline: false) { showsLogin = false }
                 .environment(\.modelContext, context)
         }
-        .alert("确认关联到当前账户？", isPresented: $showOwnershipConfirmation) {
-            Button("取消", role: .cancel) {}
-            Button("确认并同步") { Task { await cloud.authorizeLocalDataForCurrentAccount(from: context) } }
-        } message: { Text("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。") }
-        .confirmationDialog("从云端恢复最新备份？", isPresented: $showRestoreConfirmation) {
-            Button("恢复备份") {
-                Task {
-                    await cloud.restoreLatestBackup(into: context)
-                    await history.load(from: context.container, force: true)
-                }
-            }
-        } message: { Text("会使用云端最新备份更新本机记录。") }
     }
     private func exportJSON() {
         error = nil
@@ -758,6 +741,193 @@ struct NativeSettingsView: View {
                 message = "已导入 \(url.lastPathComponent)"
             } catch { self.error = error.localizedDescription }
         }
+    }
+}
+
+struct NativeCloudSyncView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var cloud: AssetTimeMachineCloudStore
+    @State private var showsLogin = false
+    @State private var confirmsRestore = false
+    @State private var confirmsOwnership = false
+    @State private var isExporting = false
+    @State private var exportMessage: String?
+
+    private var busy: Bool { cloud.isWorking || isExporting }
+    private var title: String {
+        switch cloud.indicatorState {
+        case .healthy: AppLocalization.string("云同步已启用")
+        case .checking: cloud.indicatorLabel
+        case .warning: AppLocalization.string("同步状态需处理")
+        case .idle: AppLocalization.string("启用云同步")
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(AppLocalization.string("云同步")).font(NativeStyle.FontRole.dialogTitle)
+                Spacer()
+                Button(AppLocalization.string("完成")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                    .controlSize(.large)
+            }
+            .padding(NativeStyle.Space.section)
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: NativeStyle.Space.section) {
+                    HStack(spacing: 14) {
+                        Image(systemName: cloud.indicatorState.cloudSymbolName)
+                            .font(NativeStyle.FontRole.pageTitle)
+                            .foregroundStyle(cloud.indicatorState.symbolColor)
+                            .frame(width: 50, height: 50)
+                            .background(NativePalette.surface, in: Circle())
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(title).font(NativeStyle.FontRole.subheadingStrong)
+                            if let date = cloud.lastSyncAt {
+                                Text(AppLocalization.format("最近同步 %@", date.formatted(date: .abbreviated, time: .shortened)))
+                                    .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                        if cloud.isWorking { ProgressView().controlSize(.small) }
+                    }
+                    if let error = cloud.errorMessage, !error.isEmpty {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .font(NativeStyle.FontRole.body).foregroundStyle(AssetTheme.negative)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if cloud.currentUser == nil {
+                        if !cloud.isSessionPending {
+                            action("登录", symbol: "person.crop.circle", primary: true) { showsLogin = true }
+                                .disabled(busy)
+                        }
+                    } else {
+                        if cloud.requiresLocalOwnershipConfirmation {
+                            action("关联并同步本机记录", symbol: "link", primary: true) { confirmsOwnership = true }
+                                .disabled(busy)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(AppLocalization.string("最近备份")).font(NativeStyle.FontRole.sectionStrong)
+                                Spacer()
+                                Button { Task { await refresh() } } label: {
+                                    Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
+                                        .frame(minHeight: NativeStyle.Control.height)
+                                }
+                                .disabled(busy)
+                            }
+                            if cloud.backups.isEmpty {
+                                Text(AppLocalization.string("暂无云端备份"))
+                                    .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
+                            } else {
+                                ForEach(Array(cloud.backups.prefix(3))) { backup in
+                                    HStack(spacing: 12) {
+                                        Image(systemName: backup.isLatest == 1 ? "icloud.fill" : "clock.arrow.circlepath")
+                                            .foregroundStyle(NativePalette.accent)
+                                            .frame(width: 30, height: 30)
+                                            .background(NativePalette.surface, in: Circle())
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+                                                .font(NativeStyle.FontRole.body)
+                                            if let size = backup.fileSize {
+                                                Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                                                    .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                            }
+                                        }
+                                        Spacer()
+                                        if backup.isLatest == 1 {
+                                            Text(AppLocalization.string("最新")).font(NativeStyle.FontRole.micro)
+                                                .foregroundStyle(NativePalette.accent)
+                                                .padding(.horizontal, 8).padding(.vertical, 4)
+                                                .background(NativePalette.softGold, in: Capsule())
+                                        }
+                                    }
+                                    .padding(.vertical, 7)
+                                    .accessibilityElement(children: .combine)
+                                }
+                            }
+                        }
+                        VStack(spacing: 10) {
+                            action("导出本机记录", symbol: "square.and.arrow.up") { Task { await exportRecords() } }
+                            if !cloud.backups.isEmpty {
+                                action("恢复最近一次备份", symbol: "arrow.clockwise.icloud") { confirmsRestore = true }
+                            }
+                        }
+                        .disabled(busy)
+                        if let exportMessage {
+                            Text(exportMessage).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive)
+                        }
+                        HStack {
+                            Text(cloud.currentUser?.displayName ?? "")
+                                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                            Spacer()
+                            Button(AppLocalization.string("退出登录")) { cloud.logout() }.disabled(busy)
+                        }
+                    }
+                }
+                .padding(NativeStyle.Space.section)
+            }
+        }
+        .foregroundStyle(NativePalette.text)
+        .background(NativePalette.canvas)
+        .tint(NativePalette.accent)
+        .frame(width: 480)
+        .frame(minHeight: 310, maxHeight: 580)
+        .task { await refresh() }
+        .sheet(isPresented: $showsLogin) {
+            NativeAccountChoice(cloud: cloud, allowsOffline: false) { showsLogin = false }
+                .environment(\.modelContext, context)
+        }
+        .alert(AppLocalization.format("确认关联至 %@？", cloud.currentUser?.displayName ?? "—"), isPresented: $confirmsOwnership) {
+            Button(AppLocalization.string("取消"), role: .cancel) {}
+            Button(AppLocalization.string("确认并同步")) { Task { await cloud.authorizeLocalDataForCurrentAccount(from: context) } }
+        } message: {
+            Text(AppLocalization.string("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。"))
+        }
+        .alert(AppLocalization.string("从云端恢复最新备份？"), isPresented: $confirmsRestore) {
+            Button(AppLocalization.string("取消"), role: .cancel) {}
+            Button(AppLocalization.string("恢复备份"), role: .destructive) {
+                Task { await cloud.restoreLatestBackup(into: context) }
+            }
+        } message: {
+            Text(AppLocalization.string("会使用云端最新备份更新本机记录。"))
+        }
+    }
+
+    private func action(_ title: String, symbol: String, primary: Bool = false, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            Label(AppLocalization.string(title), systemImage: symbol)
+                .font(NativeStyle.FontRole.action)
+                .frame(maxWidth: .infinity, minHeight: 20)
+                .padding(10)
+                .foregroundStyle(primary ? NativePalette.onAccent : NativePalette.text)
+                .background(primary ? NativePalette.accent : NativePalette.surface,
+                            in: RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
+                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.field)
+                    .stroke(NativePalette.line.opacity(primary ? 0 : 1), lineWidth: 0.7))
+        }
+        .buttonStyle(NativeHomeButtonStyle())
+    }
+
+    private func refresh() async {
+        guard !AppPreviewSession.isActive, !cloud.isWorking else { return }
+        await cloud.refreshIfNeeded(from: context)
+    }
+
+    private func exportRecords() async {
+        isExporting = true
+        defer { isExporting = false }
+        do {
+            let data = try await cloud.exportLocalRecords(from: context)
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.json]
+            panel.nameFieldStringValue = "AssetTimeMachine-Local.json"
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            try data.write(to: url, options: .atomic)
+            exportMessage = AppLocalization.string("导出成功")
+        } catch { cloud.errorMessage = error.localizedDescription }
     }
 }
 

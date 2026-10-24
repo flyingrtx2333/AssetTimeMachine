@@ -98,6 +98,8 @@ struct NativeRootView: View {
     @State private var page: NativePage = .home
     @State private var recordEditor = NativeRecordEditor()
     @State private var showsAccountChoice = false
+    @State private var showsCloudSync = false
+    @State private var applicationIsActive = NSApp.isActive
     @State private var hasMadeAccountChoice = UserDefaults.standard.bool(forKey: "nativeMac.hasMadeAccountChoice")
     @Environment(\.scenePhase) private var scenePhase
     @State private var performanceTourStarted = false
@@ -106,6 +108,11 @@ struct NativeRootView: View {
         systemReducedMotion || (AppPreviewSession.isActive && ProcessInfo.processInfo.arguments.contains("-macHomeReduceMotion"))
     }
     @Namespace private var sidebarSelection
+
+    private var allowsCloudRefresh: Bool {
+        !AppPreviewSession.isActive && applicationIsActive && scenePhase == .active
+            && cloud.hasToken && (!startsOffline || cloud.currentUser != nil)
+    }
 
     private static func makeCloudStore() -> AssetTimeMachineCloudStore {
         guard AppPreviewSession.isActive else { return AssetTimeMachineCloudStore() }
@@ -119,14 +126,19 @@ struct NativeRootView: View {
             sidebar
             Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7)
             Group {
-                switch page {
-                case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records }, openSettings: { page = .settings })
-                case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor)
-                case .timeMachine: NativeTimeMachineView(history: history)
-                case .quant: NativeQuantView(store: quant)
-                case .settings: NativeSettingsView(history: history, cloud: cloud)
+                if cloud.isApplyingLocalData {
+                    ProgressView("正在更新本机记录")
+                } else {
+                    switch page {
+                    case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records }, openCloudSync: { showsCloudSync = true })
+                    case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor)
+                    case .timeMachine: NativeTimeMachineView(history: history)
+                    case .quant: NativeQuantView(store: quant)
+                    case .settings: NativeSettingsView(history: history, cloud: cloud, openCloudSync: { showsCloudSync = true })
+                    }
                 }
             }
+            .id(cloud.localDataRevision)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(NativePalette.canvas)
             .transition(.opacity)
@@ -139,6 +151,7 @@ struct NativeRootView: View {
         .tint(NativePalette.accent)
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-openQuantTab") { page = .quant }
+            if ProcessInfo.processInfo.arguments.contains("-openCloudSync") { showsCloudSync = true }
             if AppPreviewSession.isActive {
                 NSApplication.shared.activate(ignoringOtherApps: true)
                 if ProcessInfo.processInfo.arguments.contains("-macHomeSmallWindow") {
@@ -196,7 +209,6 @@ struct NativeRootView: View {
             }
             if !AppPreviewSession.isActive && !startsOffline {
                 if !hasMadeAccountChoice && !cloud.hasToken { showsAccountChoice = true }
-                await cloud.refreshIfNeeded(from: context)
             }
             if ProcessInfo.processInfo.arguments.contains("-macPerfAutoBrowse"), !performanceTourStarted {
                 performanceTourStarted = true
@@ -229,12 +241,28 @@ struct NativeRootView: View {
                 }
             }
         }
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .active, !AppPreviewSession.isActive, !startsOffline else { return }
-            Task { await cloud.refreshIfNeeded(from: context) }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            applicationIsActive = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            applicationIsActive = false
+        }
+        .task(id: allowsCloudRefresh) {
+            guard allowsCloudRefresh else { return }
+            while !Task.isCancelled {
+                if !cloud.isWorking && !cloud.requiresLocalOwnershipConfirmation {
+                    await cloud.refreshIfNeeded(from: context)
+                }
+                do { try await Task.sleep(for: .seconds(60)) }
+                catch { return }
+            }
         }
         .onChange(of: cloud.localDataRevision) { _, _ in
-            Task { await history.load(from: context.container, force: true) }
+            Task {
+                await history.load(from: context.container, force: true)
+                NSLog("[NativeMac] cloud records refreshed count=%ld latest=%@", history.summaries.count,
+                      history.summaries.last?.date.ISO8601Format() ?? "none")
+            }
         }
         .sheet(isPresented: $showsAccountChoice) {
             NativeAccountChoice(cloud: cloud) {
@@ -243,6 +271,10 @@ struct NativeRootView: View {
                 showsAccountChoice = false
             }
             .environment(\.modelContext, context)
+        }
+        .sheet(isPresented: $showsCloudSync) {
+            NativeCloudSyncView(cloud: cloud)
+                .environment(\.modelContext, context)
         }
     }
 
@@ -258,6 +290,32 @@ struct NativeRootView: View {
                 ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
         let small = ProcessInfo.processInfo.arguments.contains("-macHomeSmallWindow")
         window.setContentSize(NSSize(width: small ? NativeStyle.Layout.windowMinWidth : 1040, height: small ? 620 : 688))
+        if ProcessInfo.processInfo.arguments.contains("-macCloudCapture") {
+            let originalPage = page
+            cloud.currentUser = AssetTimeMachineCloudUser(id: 42, userName: "示例账户", userEmail: nil)
+            let now = Date()
+            cloud.lastSyncAt = now
+            cloud.backups = (0..<3).map { index in
+                AssetTimeMachineCloudBackup(id: 3 - index, fileName: nil, fileSize: 2_200_000,
+                    storageURL: nil, uploadedAt: now.addingTimeInterval(Double(-index) * 3600),
+                    lastDownloadedAt: nil, isLatest: index == 0 ? 1 : 0, note: nil)
+            }
+            showsCloudSync = true
+            try? await Task.sleep(for: .seconds(1))
+            if let view = window.attachedSheet?.contentView,
+               let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
+                view.cacheDisplay(in: view.bounds, to: rep)
+                if let data = rep.representation(using: .png, properties: [:]),
+                   let encoded = try? JSONSerialization.data(withJSONObject: [
+                    "page": "cloud", "png": data.base64EncodedString(),
+                    "keptCurrentPage": page == originalPage,
+                    "fixtureOnly": true
+                   ]) {
+                    FileHandle.standardOutput.write(encoded); FileHandle.standardOutput.write(Data([10]))
+                }
+            }
+            return
+        }
         if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") {
             page = .settings
             try? await Task.sleep(for: .seconds(1))

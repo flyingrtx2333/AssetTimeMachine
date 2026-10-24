@@ -5,9 +5,26 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DERIVED="$PROJECT_ROOT/build/native-release"
 LOG="$PROJECT_ROOT/build/native-mac-build.log"
 mkdir -p "$PROJECT_ROOT/build"
+NATIVE_VERSIONS="$(python3 - "$PROJECT_ROOT/AssetTimeMachine.xcodeproj/project.pbxproj" <<'PY'
+from pathlib import Path
+import re, sys
+text = Path(sys.argv[1]).read_text()
+for key in ("MARKETING_VERSION", "CURRENT_PROJECT_VERSION"):
+    values = set(re.findall(key + r" = ([^;]+);", text))
+    if len(values) != 1:
+        raise SystemExit("Inconsistent app version settings")
+    print(values.pop())
+PY
+)"
+NATIVE_MARKETING_VERSION="$(printf '%s\n' "$NATIVE_VERSIONS" | sed -n '1p')"
+NATIVE_BUILD_VERSION="$(printf '%s\n' "$NATIVE_VERSIONS" | sed -n '2p')"
+NATIVE_SOURCE_REVISION="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
+if ! git -C "$PROJECT_ROOT" diff --quiet; then NATIVE_SOURCE_REVISION="$NATIVE_SOURCE_REVISION-modified"; fi
 xcodebuild -project "$PROJECT_ROOT/AssetTimeMachineNativeMac/AssetTimeMachineNativeMac.xcodeproj" \
   -scheme AssetTimeMachineNativeMac -configuration Release -destination 'platform=macOS' \
-  -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO build > "$LOG" 2>&1 || {
+  -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO \
+  MARKETING_VERSION="$NATIVE_MARKETING_VERSION" CURRENT_PROJECT_VERSION="$NATIVE_BUILD_VERSION" \
+  build > "$LOG" 2>&1 || {
     tail -80 "$LOG"
     exit 1
   }
@@ -19,6 +36,14 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 STAGED_APP="$STAGING/AssetTimeMachine.app"
 ditto "$SOURCE" "$STAGED_APP"
+python3 - "$STAGED_APP/Contents/Info.plist" "$NATIVE_SOURCE_REVISION" <<'PY'
+from pathlib import Path
+import plistlib, sys
+path = Path(sys.argv[1])
+info = plistlib.loads(path.read_bytes())
+info["ATMSourceRevision"] = sys.argv[2]
+path.write_bytes(plistlib.dumps(info))
+PY
 PROFILE="$PROJECT_ROOT/build/AssetTimeMachine-Mac-Signed.app/Contents/embedded.provisionprofile"
 if [[ ! -f "$PROFILE" && -f "$DEST/Contents/embedded.provisionprofile" ]]; then
   PROFILE="$DEST/Contents/embedded.provisionprofile"

@@ -1,7 +1,7 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。" : {
+    "配对回归：在低噪增强持仓上，按上一交易日已知的252日对数价比，分别比较纳指与标普、沪深300与上证综指。偏离超过一个标准差时，在对应组内转移25%的组合仓位，最多转出该资产已有仓位；组总仓保持不变。仅使用原五项资产，剩余现金按人民币活期计息，不融资、不做空。历史表现以当前回测结果为准。": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
@@ -33843,6 +33843,94 @@
           "stringUnit": {
             "state": "translated",
             "value": "暫無持倉建議"
+          }
+        }
+      }
+    },
+    "从云端恢复最新备份？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore the latest cloud backup?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "从云端恢复最新备份？"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "從雲端還原最新備份？"
+          }
+        }
+      }
+    },
+    "会使用云端最新备份更新本机记录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your local records will be updated from the latest cloud backup."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会使用云端最新备份更新本机记录。"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "將使用雲端最新備份更新本機記錄。"
+          }
+        }
+      }
+    },
+    "导出成功": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exported"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出成功"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "匯出成功"
+          }
+        }
+      }
+    },
+    "正在更新本机记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating local records"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在更新本机记录"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在更新本機記錄"
           }
         }
       }

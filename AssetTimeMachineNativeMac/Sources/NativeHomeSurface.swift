@@ -34,7 +34,7 @@ struct NativeHomeView: View {
     @ObservedObject var history: NativeHistoryModel
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     let openRecords: () -> Void
-    let openSettings: () -> Void
+    let openCloudSync: () -> Void
     @AppStorage("dashboard.monthlyExpense", store: HomePreferences.defaults) private var monthlyExpense = 3000.0
     @AppStorage("dashboard.monthlySalary", store: HomePreferences.defaults) private var monthlySalary = 10000.0
     @AppStorage("dashboard.annualReturnRate", store: HomePreferences.defaults) private var annualReturnRate = 0.03
@@ -111,18 +111,18 @@ struct NativeHomeView: View {
             metric("负债", debt).padding(.top, 22)
             Spacer(minLength: 0)
             HStack(spacing: 13) {
-                Button(action: openSettings) {
+                Button(action: openCloudSync) {
                     if width < 760 {
                         Image(systemName: cloud.indicatorState.cloudSymbolName)
                             .font(NativeStyle.FontRole.micro).foregroundStyle(NativeHomeStyle.secondary)
-                            .frame(width: 20, height: NativeStyle.Control.height)
+                            .frame(width: NativeStyle.Control.height, height: NativeStyle.Control.height)
                             .help(cloud.indicatorLabel)
                     } else {
                         Label(cloud.indicatorLabel, systemImage: cloud.indicatorState.cloudSymbolName)
                             .font(NativeStyle.FontRole.micro).foregroundStyle(NativeHomeStyle.secondary)
                             .padding(.vertical, NativeStyle.Space.sm).lineLimit(1)
                     }
-                }.buttonStyle(NativeHomeButtonStyle()).accessibilityLabel(cloud.indicatorLabel + "，云同步设置")
+                }.buttonStyle(NativeHomeButtonStyle()).accessibilityLabel("云同步，" + cloud.indicatorLabel)
                 Button(action: openRecords) {
                     Label("记录资产", systemImage: "plus").font(NativeStyle.FontRole.action).fixedSize()
                         .foregroundStyle(NativePalette.onAccent).padding(.horizontal, 13).frame(height: NativeStyle.Control.fieldHeight)
