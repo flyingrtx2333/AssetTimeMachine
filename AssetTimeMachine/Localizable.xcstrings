@@ -1,6 +1,72 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "暂无回测指标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backtest metrics unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无回测指标"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫無回測指標"
+          }
+        }
+      }
+    },
+    "回测截至 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backtest through %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回测截至 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "回測截至 %@"
+          }
+        }
+      }
+    },
+    "%@ 至 %@ · 费率 %@ · 滑点 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ to %@ · Fee %@ · Slippage %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 至 %@ · 费率 %@ · 滑点 %@"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 至 %@ · 費率 %@ · 滑點 %@"
+          }
+        }
+      }
+    },
     "计算基础仓位": {
       "localizations": {
         "en": {

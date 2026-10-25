@@ -379,6 +379,8 @@ private struct NativeQuantStrategyLibrary: View {
         VStack(alignment: .leading, spacing: 22) {
             HStack {
                 Text("策略库").font(NativeStyle.FontRole.sectionTitle)
+                Text(AppLocalization.format("回测截至 %@", StrategyCatalogMetrics.asOfDate))
+                    .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                 Spacer()
                 Button("完成") { dismiss() }
             }
@@ -401,7 +403,7 @@ private struct NativeQuantStrategyLibrary: View {
                                 Spacer(minLength: 12)
                                 if selectedID == template.id { Image(systemName: "checkmark").foregroundStyle(NativeHomeStyle.accent) }
                             }.padding(.vertical, 18).contentShape(Rectangle())
-                        }
+                        }.help(template.metricReferenceDetails)
                         Divider()
                     }
                 }

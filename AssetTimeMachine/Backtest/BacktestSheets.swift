@@ -844,6 +844,8 @@ struct AdvancedStrategyLibrarySheet: View {
                         if availableGroups.count > 1 {
                             strategyGroupPicker
                         }
+                        Text(AppLocalization.format("回测截至 %@", StrategyCatalogMetrics.asOfDate))
+                            .font(AppTypography.caption).foregroundStyle(AssetTheme.textSecondary)
 
                         if matchingTemplates.isEmpty {
                             strategyEmptyState
@@ -1280,6 +1282,7 @@ struct AdvancedStrategyTemplateRow: View {
                 .padding(.vertical, isFeatured ? 13 : 11)
             }
             .buttonStyle(.plain)
+            .accessibilityHint(template.metricReferenceDetails)
 
             if let onInfo {
                 Button(action: onInfo) {
@@ -1343,6 +1346,9 @@ struct AdvancedStrategyTemplateRow: View {
 
     private var strategyMetricsView: some View {
         guard template.annualizedReturn != 0 || template.maxDrawdown != 0 || template.sharpeRatio != 0 else {
+            if BacktestProductStrategyCatalog.templateIDs.contains(template.id) {
+                return AnyView(Text(template.subtitle).font(AppTypography.caption).foregroundStyle(AssetTheme.textSecondary))
+            }
             return AnyView(EmptyView())
         }
         return AnyView(

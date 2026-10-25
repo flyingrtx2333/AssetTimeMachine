@@ -1603,9 +1603,27 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     public var selectedAssetSymbols: [String]? = nil
     public let categoryLocalizationKey: String
     public let titleLocalizationKey: String
-    public let annualizedReturn: Double
-    public let maxDrawdown: Double
-    public let sharpeRatio: Double
+    private let historicalAnnualizedReturn: Double
+    private let historicalMaxDrawdown: Double
+    private let historicalSharpeRatio: Double
+    public var referenceMetric: StrategyCatalogMetric? {
+        guard StrategyCatalogMetrics.engineVersion == BacktestCoreEngine.defaultEngineVersion else { return nil }
+        guard let metric = StrategyCatalogMetrics.entries[id],
+              metric.strategyVersion == (try? StrategyRegistry.definition(id: id).reference.version),
+              metric.feePercent == mode.defaultFeeRatePercent,
+              metric.slippagePercent == mode.defaultSlippageRatePercent else { return nil }
+        return metric
+    }
+    private var isProductTemplate: Bool { BacktestProductStrategyCatalog.templateIDs.contains(id) }
+    public var annualizedReturn: Double {
+        isProductTemplate ? referenceMetric?.annualizedReturn ?? 0 : historicalAnnualizedReturn
+    }
+    public var maxDrawdown: Double {
+        isProductTemplate ? referenceMetric?.maxDrawdown ?? 0 : historicalMaxDrawdown
+    }
+    public var sharpeRatio: Double {
+        isProductTemplate ? referenceMetric?.sharpeRatio ?? 0 : historicalSharpeRatio
+    }
     public let buyRule: AdvancedBacktestRule
     public let sellRule: AdvancedBacktestRule
     public let tradeAmountRatio: Double
@@ -1618,6 +1636,7 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     public var title: String { BacktestText.string(titleLocalizationKey) }
 
     public var subtitle: String {
+        if isProductTemplate && referenceMetric == nil { return BacktestText.string("暂无回测指标") }
         if annualizedReturn == 0, maxDrawdown == 0, sharpeRatio == 0 {
             return ""
         }
@@ -2358,9 +2377,9 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
         self.selectedAssetSymbols = selectedAssetSymbols
         self.categoryLocalizationKey = categoryLocalizationKey
         self.titleLocalizationKey = titleLocalizationKey
-        self.annualizedReturn = annualizedReturn
-        self.maxDrawdown = maxDrawdown
-        self.sharpeRatio = sharpeRatio
+        self.historicalAnnualizedReturn = annualizedReturn
+        self.historicalMaxDrawdown = maxDrawdown
+        self.historicalSharpeRatio = sharpeRatio
         self.buyRule = buyRule
         self.sellRule = sellRule
         self.tradeAmountRatio = tradeAmountRatio

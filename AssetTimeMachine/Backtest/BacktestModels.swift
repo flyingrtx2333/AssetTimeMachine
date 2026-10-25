@@ -406,6 +406,12 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     var subtitle: String {
         BacktestText.$context.withValue(AppLocalization.backtestTextContext()) { core.subtitle }
     }
+    var metricReferenceDetails: String {
+        guard let metric = core.referenceMetric else { return subtitle }
+        return AppLocalization.format("%@ 至 %@ · 费率 %@ · 滑点 %@", metric.startDate, metric.endDate,
+            (metric.feePercent / 100).backtestPercentString(maxFractionDigits: 3),
+            (metric.slippagePercent / 100).backtestPercentString(maxFractionDigits: 3))
+    }
     var mode: AdvancedBacktestStrategyMode { core.mode }
     var selectedAssetSymbols: [String]? { core.selectedAssetSymbols }
     var categoryLocalizationKey: String { core.categoryLocalizationKey }

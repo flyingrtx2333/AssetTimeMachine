@@ -388,12 +388,13 @@ public enum StrategyMetricDumpCLI {
     private static func collectAppStrategyRows(
         seriesBySymbol: [String: PublicHistorySeries],
         settings: AdvancedBacktestRiskSettings,
-        macroSnapshot: BacktestNFCIAsOfData?
+        macroSnapshot: BacktestNFCIAsOfData?,
+        inventory: [AdvancedBacktestStrategyTemplate] = AdvancedBacktestStrategyTemplate.all
     ) -> (rows: [MetricRow], sliceRows: [SliceMetricRow]) {
         var rows: [MetricRow] = []
         var sliceRows: [SliceMetricRow] = []
         let requestedStrategyID = ProcessInfo.processInfo.environment["ATM_APP_STRATEGY_ID"]
-        let templates = AdvancedBacktestStrategyTemplate.all.filter { template in
+        let templates = inventory.filter { template in
             requestedStrategyID.map { template.id == $0 } ?? true
         }
         for template in templates {
@@ -468,6 +469,49 @@ public enum StrategyMetricDumpCLI {
             sliceRows.append(contentsOf: metricRowsForSlices(title: template.title, id: template.id, points: report.points, fullRow: row))
         }
         return (rows, sliceRows)
+    }
+
+    /// Current product defaults, separate from the historical 1% diagnostic baseline.
+    private static func printCatalogMetrics(dataset: PublicBacktestDataset, history: Data,
+                                            macro: BacktestNFCIAsOfData?, macroData: Data?) throws {
+        var rows: [[String: Any]] = []
+        let templates = AdvancedBacktestStrategyTemplate.productCatalog
+        for (index, template) in templates.enumerated() {
+            let definition = try StrategyRegistry.definition(id: template.id)
+            let needed = definition.dataRequirements.priceSymbols + definition.dataRequirements.fxSymbols
+            let missing = needed.filter { dataset.seriesBySymbol[normalizedHistorySymbol($0)]?.dates.isEmpty != false }
+            let settings = AdvancedBacktestRiskSettings(feeRate: template.mode.defaultFeeRatePercent,
+                slippageRate: template.mode.defaultSlippageRatePercent, maxPositionRatio: template.maxPositionRatio,
+                cooldownDays: template.cooldownDays, stopLossRatio: template.stopLossRatio, takeProfitRatio: template.takeProfitRatio)
+            var row: [String: Any] = ["id": template.id, "title": template.title,
+                "strategy_version": definition.reference.version,
+                "parameters_sha256": ResearchRunEvidence.sha256(try definition.frozenParametersJSON),
+                "fee_percent": settings.feeRate, "slippage_percent": settings.slippageRate,
+                "missing_symbols": missing]
+            let needsMacro = definition.dataRequirements.requiresNFCIAsOf && macro == nil
+            if missing.isEmpty && !needsMacro,
+               let metric = collectAppStrategyRows(seriesBySymbol: dataset.seriesBySymbol, settings: settings,
+                    macroSnapshot: macro, inventory: [template]).rows.first,
+               let annualized = metric.annualized, let drawdown = metric.maxDrawdown, let sharpe = metric.sharpe,
+               [annualized, drawdown, sharpe].allSatisfy(\.isFinite), metric.pointCount > 1 {
+                row.merge(["status": "ready", "annualized_return": annualized, "max_drawdown": drawdown,
+                    "sharpe_ratio": sharpe, "start": metric.start, "end": metric.end, "points": metric.pointCount,
+                    "trades": metric.tradeCount ?? 0]) { _, new in new }
+            } else {
+                row["status"] = needsMacro ? "missing-macro" : (missing.isEmpty ? "unavailable" : "missing-history")
+            }
+            rows.append(row)
+            FileHandle.standardError.write(Data("Catalog \(index + 1)/\(templates.count): \(template.id) \(row["status"]!)\n".utf8))
+        }
+        let document: [String: Any] = ["schema": "app-strategy-catalog-metrics-v1",
+            "engine_version": BacktestCoreEngine.defaultEngineVersion,
+            "generated_at": ISO8601DateFormatter().string(from: Date()), "initial_cash": 100_000,
+            "history_sha256": ResearchRunEvidence.sha256(history),
+            "macro_sha256": macroData.map(ResearchRunEvidence.sha256) ?? "unavailable",
+            "metric_scope": "historical_app_engine_replay_not_formal_validation",
+            "strategies": rows]
+        let data = try JSONSerialization.data(withJSONObject: document, options: [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes])
+        FileHandle.standardOutput.write(data); FileHandle.standardOutput.write(Data([10]))
     }
 
     private static func printRows(_ rows: [MetricRow], header: String) {
@@ -555,6 +599,14 @@ public enum StrategyMetricDumpCLI {
         let dataset = try PublicBacktestCore.loadDataset(from: data, datasetHash: ResearchRunEvidence.sha256(data), dataStale: false)
         let macroPath = argumentValue(after: "--macro", in: arguments) ?? environment["ATM_NFCI_ASOF_FIXTURE"]
         let macroSnapshot = try macroPath.map { try ResearchRunEvidence.macroSnapshot(from: Data(contentsOf: URL(fileURLWithPath: $0))) }
+        if arguments.contains("--catalog-metrics") {
+            guard environment["ATM_APP_STRATEGY_ID"] == nil else {
+                throw BacktestConfigurationError.invalidParameter("catalog metrics require the complete product catalog")
+            }
+            try printCatalogMetrics(dataset: dataset, history: data, macro: macroSnapshot,
+                                    macroData: try macroPath.map { try Data(contentsOf: URL(fileURLWithPath: $0)) })
+            return
+        }
         func percentage(_ key: String, defaultValue: Double) throws -> Double {
             guard let raw = environment[key] else { return defaultValue }
             guard let value = Double(raw), value.isFinite, value >= 0 else { throw BacktestConfigurationError.invalidParameter(key) }
