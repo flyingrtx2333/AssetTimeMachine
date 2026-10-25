@@ -399,6 +399,15 @@ private enum CloudOperationResult {
     case skippedBusy
     case cancelled
     case failed
+    case retryableFailure
+}
+
+nonisolated private struct PendingCloudUpload: Codable, Sendable {
+    let userID: Int
+    let baseBackupID: Int?
+    let baselineSignature: String?
+    let signature: String
+    let payload: ExportPayload
 }
 
 nonisolated private struct CloudPayloadFingerprint: Sendable {
@@ -440,11 +449,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private var cachedAccessToken: String?
     private var cachedRefreshToken: String?
     private var hasLoadedInitialState = false
+    private var lastVerifiedBackupID: Int?
     private var lastAutoSyncAttemptSignature: String?
     private var pendingAutoSyncCoordinatorTask: Task<Void, Never>?
     private var autoSyncCoordinatorTaskID: UUID?
     private var autoSyncGeneration = 0
     private var autoSyncRequestedDelayNanoseconds: UInt64 = 0
+    private var automaticSyncIsActive = true
+    private var autoSyncEncounteredTransientFailure = false
 
     init(tokenStore: CloudTokenStore? = nil, defaults: UserDefaults = .standard, isolatedTest: Bool = false) {
         precondition(!isolatedTest || (AppPreviewSession.isActive && tokenStore != nil
@@ -525,6 +537,16 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         if currentUser != nil {
             scheduleAutoSync(from: context, quietly: true, delayNanoseconds: 0)
         }
+    }
+
+    /// The local store and pending-upload journal survive suspension; timers do not
+    /// need to keep a hidden or background application awake.
+    func setAutomaticSyncActive(_ active: Bool) {
+        automaticSyncIsActive = active
+        guard !active else { return }
+        pendingAutoSyncCoordinatorTask?.cancel()
+        pendingAutoSyncCoordinatorTask = nil
+        autoSyncCoordinatorTaskID = nil
     }
 
     func login(username: String, password: String) async {
@@ -692,6 +714,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
               !ProcessInfo.processInfo.arguments.contains("-macCloudRecovery"),
               currentUser != nil, hasToken else { return }
         hasPendingSync = true
+        guard automaticSyncIsActive else { return }
         autoSyncGeneration &+= 1
         autoSyncRequestedDelayNanoseconds = delayNanoseconds
         guard pendingAutoSyncCoordinatorTask == nil else { return }
@@ -702,6 +725,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             guard let self else { return }
             var waitingGeneration = self.autoSyncGeneration
             var nextDelayNanoseconds = delayNanoseconds
+            var transientFailures = 0
 
             while !Task.isCancelled {
                 if nextDelayNanoseconds > 0 {
@@ -709,7 +733,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 } else {
                     await Task.yield()
                 }
-                guard !Task.isCancelled else { break }
+                guard !Task.isCancelled, self.automaticSyncIsActive else { break }
                 if waitingGeneration != self.autoSyncGeneration {
                     waitingGeneration = self.autoSyncGeneration
                     nextDelayNanoseconds = self.autoSyncRequestedDelayNanoseconds
@@ -742,7 +766,13 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 guard !Task.isCancelled else { break }
 
                 if !didFinish {
-                    nextDelayNanoseconds = 400_000_000
+                    if self.autoSyncEncounteredTransientFailure {
+                        transientFailures = min(transientFailures + 1, 6)
+                        nextDelayNanoseconds = UInt64(min(60, 1 << transientFailures)) * 1_000_000_000
+                    } else {
+                        transientFailures = 0
+                        nextDelayNanoseconds = 400_000_000
+                    }
                     continue
                 }
 
@@ -768,6 +798,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
     @discardableResult
     private func autoSyncIfNeeded(from context: ModelContext, quietly: Bool) async -> Bool {
+        autoSyncEncounteredTransientFailure = false
         guard !AppPreviewSession.isActive || isolatedTest else { return true }
         guard hasToken else { return true }
         guard !context.hasChanges,
@@ -805,13 +836,40 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     wasSupersededByLocalSave = true
                     throw CancellationError()
                 }
-                // Unchanged local data says nothing about edits made on another device.
-                // Always fetch the cloud head before deciding that synchronization is complete.
+                // Poll a lightweight authenticated head receipt when both local content
+                // and its durable baseline are unchanged. Do not download 2 MB each minute.
+                if let headID = self.lastVerifiedBackupID,
+                   localSignature == self.defaults.string(forKey: self.lastUploadedSignatureKey),
+                   let userID = self.currentUser?.id,
+                   !FileManager.default.fileExists(atPath: try self.pendingUploadURL(userID: userID).path),
+                   let baseline = try await self.loadSyncBaseline(),
+                   try await Self.payloadFingerprint(for: baseline).signature == localSignature {
+                    let heads = try await self.withTokenRefresh { token in
+                        try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 1)
+                    }
+                    if let head = heads.first, head.isLatest == 1, head.id == headID {
+                        try self.validateLocalOwner(local: localPayload, remote: baseline)
+                        guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+                              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                              ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
+                            wasSupersededByLocalSave = true
+                            throw CancellationError()
+                        }
+                        completedLocalSignature = localSignature
+                        return
+                    }
+                }
+                // A different head still requires the full payload and three-way merge.
 
-                let latestBackup = try await self.fetchLatestBackupIfAvailable()
+                var latestBackup = try await self.fetchLatestBackupIfAvailable()
                 let baseBackupID = latestBackup?.id
                 try self.validateLocalOwner(local: localPayload, remote: latestBackup?.payload)
+                try await self.recoverPendingUpload(latest: latestBackup)
                 let baseline = try await self.loadSyncBaseline()
+                let rawRemoteFingerprint: CloudPayloadFingerprint?
+                if let latestBackup { rawRemoteFingerprint = try await Self.payloadFingerprint(for: latestBackup.payload) }
+                else { rawRemoteFingerprint = nil }
+                latestBackup = try await self.resolveDeletionHistory(latestBackup, local: localPayload, baseline: baseline)
                 if latestBackup == nil,
                    SyncMergeService.isEmptyUserData(localPayload) || SyncMergeService.looksLikeSeedOnly(localPayload) {
                     try await self.persistSyncBaseline(localPayload)
@@ -829,7 +887,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                         local: localPayload,
                         localCanonicalData: localFingerprint.canonicalData,
                         remote: latestBackup.payload,
-                        baseline: baseline
+                        baseline: baseline,
+                        serverCanonicalData: rawRemoteFingerprint?.canonicalData
                     )
 
                     switch reconciliation {
@@ -845,8 +904,12 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                             throw CancellationError()
                         }
                         completedLocalSignature = signature
+                        self.lastVerifiedBackupID = signature == rawRemoteFingerprint?.signature ? latestBackup.id : nil
                         try await self.rememberSync(signature: signature, at: latestBackup.uploadedAt, payload: latestBackup.payload)
-                        try await self.loadHistory()
+                        if signature != rawRemoteFingerprint?.signature {
+                            self.scheduleAutoSync(from: context, delayNanoseconds: 0)
+                        }
+                        try await self.loadHistoryAfterSync()
                         self.statusMessage = quietly ? AppLocalization.string("已恢复云端最新数据") : AppLocalization.string("已从云端恢复最新资产数据")
                         return
 
@@ -872,6 +935,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                         payloadToUpload = mergedPayload
                         uploadSignature = signature
                         if matchesRemote {
+                            self.lastVerifiedBackupID = latestBackup.id
                             completedLocalSignature = signature
                             try await self.rememberSync(signature: signature, at: latestBackup.uploadedAt, payload: latestBackup.payload)
                             shouldUpload = false
@@ -886,8 +950,13 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     wasSupersededByLocalSave = true
                     throw CancellationError()
                 }
-                guard shouldUpload else { return }
+                guard shouldUpload else {
+                    try await self.loadHistoryAfterSync()
+                    return
+                }
 
+                try await self.persistPendingUpload(payloadToUpload, signature: uploadSignature,
+                    baseBackupID: baseBackupID, baseline: baseline)
                 let backup: AssetTimeMachineCloudBackup
                 do {
                     backup = try await self.withTokenRefresh { token in
@@ -899,12 +968,20 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     )
                     }
                 } catch {
-                    if (error as NSError).code == 409, attempt < 2 {
-                        cloudConflict = true
-                        throw CancellationError()
+                    if (error as NSError).code == 409 {
+                        try self.clearPendingUpload()
+                        if attempt < 2 {
+                            cloudConflict = true
+                            throw CancellationError()
+                        }
                     }
                     throw error
                 }
+                // Acknowledgment belongs to the uploaded revision, even if another
+                // local save arrived during the request. Never lose this ancestor.
+                try await self.persistSyncBaseline(payloadToUpload)
+                self.lastVerifiedBackupID = backup.id
+                try self.clearPendingUpload()
                 guard !context.hasChanges,
                       !ModelContextMutationBarrier.shared.hasPendingWrites,
                       !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
@@ -912,9 +989,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     wasSupersededByLocalSave = true
                     throw CancellationError()
                 }
-                try await self.loadHistory()
-                try await self.rememberSync(signature: uploadSignature, at: backup.uploadedAt, payload: payloadToUpload)
+                self.recordSyncMetadata(signature: uploadSignature, at: backup.uploadedAt)
                 completedLocalSignature = uploadSignature
+                try await self.loadHistoryAfterSync()
                 self.statusMessage = quietly ? AppLocalization.string("双向同步完成") : AppLocalization.format("云端同步完成，时间：%@", backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
             }
 
@@ -922,6 +999,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 lastAutoSyncAttemptSignature = completedLocalSignature
             }
             if syncResult == .skippedBusy {
+                return false
+            }
+            if syncResult == .retryableFailure {
+                autoSyncEncounteredTransientFailure = true
                 return false
             }
             guard (wasSupersededByLocalSave || cloudConflict), !Task.isCancelled else {
@@ -975,8 +1056,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请稍后再试")]
                 )
             }
-            try await self.loadHistory()
             try await self.rememberSync(signature: fingerprint.signature, at: latest.uploadedAt, payload: latest.payload)
+            self.lastVerifiedBackupID = latest.id
+            try self.clearPendingUpload()
+            try await self.loadHistoryAfterSync()
             self.statusMessage = AppLocalization.string("最近一次云端备份已恢复")
         }
     }
@@ -1024,6 +1107,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func clearTokens() {
+        lastVerifiedBackupID = nil
         try? tokenStore.clear()
         cachedAccessToken = nil
         cachedRefreshToken = nil
@@ -1067,6 +1151,15 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 8)
         }
         // Listing backups is not proof that this device has applied their contents.
+    }
+
+    private func loadHistoryAfterSync() async throws {
+        do { try await loadHistory() }
+        catch {
+            // The data revision is already committed. A temporary list failure is
+            // retried by the next active check, not an undo of that acknowledgment.
+            guard Self.isTransientFailure(error) else { throw error }
+        }
     }
 
     private func fetchLatestBackupIfAvailable() async throws -> AssetTimeMachineCloudLatestBackup? {
@@ -1237,6 +1330,117 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
+    /// Old clients sent only deletion UUIDs. Recover their logical identity from
+    /// this account's authenticated history instead of resurrecting an offline alias.
+    private func resolveDeletionHistory(_ latest: AssetTimeMachineCloudLatestBackup?,
+        local: ExportPayload, baseline: ExportPayload?) async throws -> AssetTimeMachineCloudLatestBackup? {
+        guard let latest else { return nil }
+        var contexts = [local] + (baseline.map { [$0] } ?? [])
+        var resolved = SyncMergeService.enrichingDeletionIdentities(in: latest.payload, using: contexts)
+        var unresolved = SyncMergeService.unresolvedDeletionIdentities(in: resolved, knownBy: baseline.map { [$0] } ?? [])
+        if !unresolved.isEmpty {
+            let history = try await withTokenRefresh { token in
+                try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 20)
+            }
+            for backup in history where backup.id != latest.id {
+                guard let url = backup.storageURL else { continue }
+                do {
+                    contexts.append(try await AssetTimeMachineCloudAPI.downloadBackupPayload(at: url))
+                    resolved = SyncMergeService.enrichingDeletionIdentities(in: resolved, using: contexts)
+                    unresolved = SyncMergeService.unresolvedDeletionIdentities(in: resolved, knownBy: baseline.map { [$0] } ?? [])
+                    if unresolved.isEmpty { break }
+                } catch {
+                    guard (error as NSError).code == 403 || (error as NSError).code == 404 else { throw error }
+                }
+            }
+        }
+        guard unresolved.isEmpty else {
+            throw NSError(domain: "CloudSyncDeletionHistory", code: 409,
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("暂时无法核对删除记录，已保留本机数据")])
+        }
+        return .init(id: latest.id, uploadedAt: latest.uploadedAt, payload: resolved, note: latest.note)
+    }
+
+    private func pendingUploadURL(userID: Int) throws -> URL {
+        try baselineURL(userID: userID).deletingLastPathComponent()
+            .appendingPathComponent("account-\(userID)-pending-upload.json")
+    }
+
+    private func persistPendingUpload(_ payload: ExportPayload, signature: String,
+        baseBackupID: Int?, baseline: ExportPayload?) async throws {
+        guard let userID = currentUser?.id else { throw URLError(.userAuthenticationRequired) }
+        let file = try pendingUploadURL(userID: userID)
+        let baselineSignature: String?
+        if let baseline { baselineSignature = try await Self.payloadFingerprint(for: baseline).signature }
+        else { baselineSignature = nil }
+        let pending = PendingCloudUpload(userID: userID, baseBackupID: baseBackupID,
+            baselineSignature: baselineSignature, signature: signature, payload: payload)
+        try await SyncPayloadWork.detached {
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+            try encoder.encode(pending).write(to: file, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+        }
+    }
+
+    private func clearPendingUpload() throws {
+        guard let userID = currentUser?.id else { return }
+        let file = try pendingUploadURL(userID: userID)
+        if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
+    }
+
+    /// Recover only a proven accepted candidate. A timeout does not say whether
+    /// the server committed it; timestamps or the latest device clock cannot decide.
+    private func recoverPendingUpload(latest: AssetTimeMachineCloudLatestBackup?) async throws {
+        guard let userID = currentUser?.id else { return }
+        let file = try pendingUploadURL(userID: userID)
+        guard FileManager.default.fileExists(atPath: file.path) else { return }
+        let pending = try await SyncPayloadWork.detached {
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(PendingCloudUpload.self, from: Data(contentsOf: file))
+        }
+        guard pending.userID == userID,
+              try await Self.payloadFingerprint(for: pending.payload).signature == pending.signature else {
+            throw URLError(.cannotDecodeContentData)
+        }
+        let baseline = try await loadSyncBaseline()
+        let currentSignature: String?
+        if let baseline { currentSignature = try await Self.payloadFingerprint(for: baseline).signature }
+        else { currentSignature = nil }
+        if currentSignature == pending.signature || currentSignature != pending.baselineSignature {
+            // Already acknowledged, or a later explicit operation moved the base.
+            try clearPendingUpload()
+            return
+        }
+        if let latest, try await Self.payloadFingerprint(for: latest.payload).signature == pending.signature {
+            try await persistSyncBaseline(latest.payload)
+            try clearPendingUpload()
+            return
+        }
+        if latest?.id == pending.baseBackupID {
+            // The head did not advance: this candidate was never accepted.
+            try clearPendingUpload()
+            return
+        }
+        let history = try await withTokenRefresh { token in
+            try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 20)
+        }
+        for backup in history where backup.id != latest?.id && backup.id > (pending.baseBackupID ?? 0) {
+            guard let url = backup.storageURL else { continue }
+            do {
+                let payload = try await AssetTimeMachineCloudAPI.downloadBackupPayload(at: url)
+                if try await Self.payloadFingerprint(for: payload).signature == pending.signature {
+                    try await persistSyncBaseline(payload)
+                    try clearPendingUpload()
+                    return
+                }
+            } catch {
+                guard (error as NSError).code == 403 || (error as NSError).code == 404 else { throw error }
+            }
+        }
+        // No exact receipt was found. Keep the journal and use the existing base;
+        // ordinary reconciliation may still succeed, but must never guess acceptance.
+    }
+
     /// Available only to the isolated preview harness; tokens and defaults are supplied by the test.
     func runIsolatedSync(from context: ModelContext) async -> Bool {
         precondition(isolatedTest && AppPreviewSession.isActive)
@@ -1256,6 +1460,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
     private func rememberSync(signature: String, at date: Date, payload: ExportPayload) async throws {
         try await persistSyncBaseline(payload)
+        recordSyncMetadata(signature: signature, at: date)
+    }
+
+    private func recordSyncMetadata(signature: String, at date: Date) {
         defaults.set(signature, forKey: lastUploadedSignatureKey)
         defaults.set(date, forKey: lastSyncAtKey)
         lastSyncAt = date
@@ -1308,7 +1516,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         local: ExportPayload,
         localCanonicalData: Data?,
         remote: ExportPayload,
-        baseline: ExportPayload?
+        baseline: ExportPayload?,
+        serverCanonicalData: Data? = nil
     ) async throws -> CloudPayloadReconciliation {
         try await SyncPayloadWork.detached {
             if SyncMergeService.looksLikeSeedOnly(local), !SyncMergeService.isEmptyUserData(remote) {
@@ -1331,7 +1540,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try Task.checkCancellation()
             let mergedCanonicalData = try? SyncMergeService.canonicalData(for: merged)
             try Task.checkCancellation()
-            let remoteCanonicalData = try? SyncMergeService.canonicalData(for: remote)
+            let remoteCanonicalData = serverCanonicalData ?? (try? SyncMergeService.canonicalData(for: remote))
             try Task.checkCancellation()
 
             return .merge(
@@ -1396,8 +1605,19 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 return .failed
             }
             errorMessage = error.localizedDescription
-            return .failed
+            return Self.isTransientFailure(error) ? .retryableFailure : .failed
         }
+    }
+
+    nonisolated private static func isTransientFailure(_ error: any Error) -> Bool {
+        let error = error as NSError
+        if error.domain == NSURLErrorDomain {
+            return [URLError.timedOut, .cannotFindHost, .cannotConnectToHost, .networkConnectionLost,
+                    .dnsLookupFailed, .notConnectedToInternet, .internationalRoamingOff,
+                    .callIsActive, .dataNotAllowed, .resourceUnavailable].contains { $0.rawValue == error.code }
+        }
+        return error.domain == "AssetTimeMachineCloudAPI"
+            && (error.code == 408 || error.code == 429 || (500...599).contains(error.code))
     }
 
     private static func isCancellation(_ error: any Error) -> Bool {

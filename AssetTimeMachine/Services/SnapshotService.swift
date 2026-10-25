@@ -57,6 +57,7 @@ enum SnapshotService {
                     snapshot: snapshot,
                     item: previousEntry.item
                 )
+                entry.inheritedFromEntryID = previousEntry.id
                 context.insert(entry)
             }
         }
@@ -126,12 +127,14 @@ enum SnapshotService {
                 || valuesDiffer(existing.unitPrice, unitPrice)
                 || existing.note != note
 
-            guard didChange else { return }
+            // Saving an inherited value confirms it even when the number is unchanged.
+            guard didChange || existing.inheritedFromEntryID != nil else { return }
 
             existing.amount = amount
             existing.quantity = quantity
             existing.unitPrice = unitPrice
             existing.note = note
+            existing.inheritedFromEntryID = nil
             existing.updatedAt = .now
         } else {
             guard amount != nil || quantity != nil || unitPrice != nil || !note.isEmpty else {

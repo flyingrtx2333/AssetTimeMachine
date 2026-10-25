@@ -200,11 +200,15 @@ private final class NativeCloudMockServer: @unchecked Sendable {
     var payload: ExportPayload
     var head = 100
     var historicalPayload: ExportPayload?
+    var historicalBackupID: Int?
     var historicalDownloads = 0
     var storageReceivedToken = false
     var latestReads = 0; var uploads = 0; var acceptedUploads = 0; var refreshes = 0
     var offline = false; var rejectRefresh = false; var alwaysConflict = false; var noHead = false
     var beforeNextUpload: (() -> Void)?
+    var afterAcceptedUpload: (() -> Void)?
+    var failHistoryRequests = 0
+    var loseNextAcceptedUploadResponse = false
     init(_ payload: ExportPayload) { self.payload = payload }
 
     func change(_ itemID: UUID, to amount: Double) {
@@ -218,7 +222,7 @@ private final class NativeCloudMockServer: @unchecked Sendable {
                     ExportPayload.EntryPayload(id: entry.id, amount: entry.itemID == itemID ? amount : entry.amount,
                         quantity: entry.quantity, unitPrice: entry.unitPrice, note: entry.note,
                         createdAt: entry.createdAt, updatedAt: entry.itemID == itemID ? .now : entry.updatedAt,
-                        itemID: entry.itemID)
+                        itemID: entry.itemID, inheritedFromEntryID: entry.inheritedFromEntryID)
                 })
         }
         payload = ExportPayload(exportedAt: .now, categories: payload.categories, items: payload.items,
@@ -257,9 +261,12 @@ private final class NativeCloudMockServer: @unchecked Sendable {
             if noHead { status = 404; object = ["detail": "no backup"] }
             else { object = value }
         } else if path.hasSuffix("/cloud/history") {
-            if noHead { object = [[String: Any]]() }
+            if failHistoryRequests > 0 {
+                failHistoryRequests -= 1
+                status = 503; object = ["detail": "synthetic temporary list failure"]
+            } else if noHead { object = [[String: Any]]() }
             else if historicalPayload != nil {
-                var old = metadata(); old["id"] = head - 1
+                var old = metadata(); old["id"] = historicalBackupID ?? head - 1
                 old["storage_url"] = "https://storage.invalid/legacy.json"
                 object = [metadata(), old]
             } else { object = [metadata()] }
@@ -277,6 +284,12 @@ private final class NativeCloudMockServer: @unchecked Sendable {
                 payload = try decoder.decode(ExportPayload.self,
                     from: JSONSerialization.data(withJSONObject: value["payload"]!))
                 head += 1; noHead = false; acceptedUploads += 1; object = metadata()
+                let accepted = afterAcceptedUpload; afterAcceptedUpload = nil; accepted?()
+                if loseNextAcceptedUploadResponse {
+                    loseNextAcceptedUploadResponse = false
+                    historicalPayload = payload; historicalBackupID = head
+                    throw URLError(.networkConnectionLost)
+                }
             }
         } else if path.hasSuffix("/users/me") { object = ["id": 11, "user_name": "Synthetic A"] }
         else { throw URLError(.unsupportedURL) }
@@ -364,10 +377,11 @@ enum NativeCloudSyncProbe {
             try edit(aID, 11)
             server.beforeNextUpload = { server.change(bID, to: 30) }
             let before = server.uploads
+            let acceptedBeforeRetry = server.acceptedUploads
             _ = await cloud.runIsolatedSync(from: context)
             let retried = try await local()
             checks["cloud409RefetchesAndMergesBeforeRetry"] = server.uploads == before + 2 && amount(retried, aID) == 11 && amount(retried, bID) == 30 && cloud.errorMessage == nil
-            checks["oneAcceptedUploadAfterConflict"] = server.acceptedUploads == 1
+            checks["oneAcceptedUploadAfterConflict"] = server.acceptedUploads == acceptedBeforeRetry + 1
             let draft = ModelContextMutationBarrier.shared.beginEditorDraft()!
             let draftReads = server.latestReads
             let draftCompleted = await cloud.runIsolatedSync(from: context)
@@ -455,6 +469,7 @@ enum NativeCloudSyncProbe {
             server.payload = try await ImportExportService.exportPayloadCooperatively(from: freshContext).payload
             server.change(freshItem.id, to: 999)
             server.noHead = false
+            let acceptedBeforeAssociation = server.acceptedUploads
             await fresh.authorizeLocalDataForCurrentAccount(from: freshContext)
             checks["conflictingCloudAppearsBeforeAssociationBlocksUpload"] = fresh.errorMessage != nil && server.uploads == emptyUploads && freshDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
             server.noHead = true
@@ -464,7 +479,7 @@ enum NativeCloudSyncProbe {
                 if server.uploads > emptyUploads && !fresh.isWorking { break }
                 try await Task.sleep(nanoseconds: 50_000_000)
             }
-            checks["explicitAssociationBacksUpThenUploads"] = server.acceptedUploads == 4 && fresh.errorMessage == nil && freshDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && freshDefaults.string(forKey: "assettimemachine.cloud.lastLocalSafetyBackup").map { FileManager.default.fileExists(atPath: $0) } == true
+            checks["explicitAssociationBacksUpThenUploads"] = server.acceptedUploads == acceptedBeforeAssociation + 1 && fresh.errorMessage == nil && freshDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && freshDefaults.string(forKey: "assettimemachine.cloud.lastLocalSafetyBackup").map { FileManager.default.fileExists(atPath: $0) } == true
             // Legacy phone: prior sync metadata exists, but no owner/baseline; both
             // devices have since added different days. No production store or token.
             let legacySuite = "CloudSyncLegacy-" + UUID().uuidString
@@ -560,8 +575,181 @@ enum NativeCloudSyncProbe {
             conflictDefaults.set(String(repeating: "0", count: 64), forKey: "assettimemachine.cloud.lastUploadedSignature")
             await conflict.authorizeLocalDataForCurrentAccount(from: context)
             checks["unmatchedHistoricalFingerprintCannotBindOrUpload"] = conflict.errorMessage != nil && server.uploads == conflictUploads && conflictDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
+            checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
+            checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }
             return ["checks": checks, "allPassed": checks.values.allSatisfy { $0 }, "count": checks.count,
                     "latestReads": server.latestReads, "uploads": server.uploads, "acceptedUploads": server.acceptedUploads]
         } catch { return ["checks": checks, "allPassed": false, "error": error.localizedDescription] }
+    }
+
+    private static func durabilityChecks(schema: Schema) async throws -> [String: Bool] {
+        var checks: [String: Bool] = [:]
+        let suite = "CloudSyncDurability-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        let previousServer = NativeCloudMockProtocol.server
+        defer { defaults.removePersistentDomain(forName: suite); NativeCloudMockProtocol.server = previousServer }
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+        let context = ModelContext(container); context.autosaveEnabled = false
+        let category = AssetCategory(name: "Synthetic durability", group: .financial)
+        let a = AssetItem(name: "Synthetic durability A", category: category)
+        let b = AssetItem(name: "Synthetic durability B", category: category)
+        let day = AssetSnapshot(date: Calendar.current.startOfDay(for: .now))
+        context.insert(category); context.insert(a); context.insert(b); context.insert(day)
+        context.insert(AssetEntry(amount: 10, snapshot: day, item: a))
+        context.insert(AssetEntry(amount: 30, snapshot: day, item: b))
+        try context.save()
+        let bID = b.id
+        func local() async throws -> ExportPayload { try await ImportExportService.exportPayloadCooperatively(from: context).payload }
+        func amount(_ payload: ExportPayload, _ id: UUID) -> Double? {
+            payload.snapshots.first { $0.id == day.id }?.entries.first { $0.itemID == id }?.amount
+        }
+        @MainActor func edit(_ value: Double) throws {
+            try SnapshotService.upsertEntry(snapshot: day, item: a, amount: value, in: context)
+        }
+        let server = NativeCloudMockServer(try await local())
+        NativeCloudMockProtocol.server = server
+        let cloud = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+        cloud.currentUser = AssetTimeMachineCloudUser(id: 11, userName: "Synthetic durability", userEmail: nil)
+        defer { cloud.setAutomaticSyncActive(false) }
+        _ = await cloud.runIsolatedSync(from: context)
+
+        try edit(20)
+        server.failHistoryRequests = 1
+        _ = await cloud.runIsolatedSync(from: context)
+        server.change(a.id, to: 21)
+        _ = await cloud.runIsolatedSync(from: context)
+        let afterHistoryFailure = try await local()
+        checks["acceptedUploadBaselineSurvivesHistoryFailure"] = cloud.errorMessage == nil
+            && amount(afterHistoryFailure, a.id) == 21 && cloud.lastSyncAt != nil
+
+        try edit(22)
+        server.offline = true
+        cloud.scheduleAutoSync(from: context, delayNanoseconds: 0)
+        for _ in 0..<40 {
+            if cloud.errorMessage != nil { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let observedOfflineFailure = cloud.errorMessage != nil
+        server.offline = false
+        for _ in 0..<120 {
+            if amount(server.payload, a.id) == 22 && !cloud.isWorking { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        checks["queuedOfflineEditAutomaticallyRetriesAfterReconnect"] = observedOfflineFailure
+            && amount(server.payload, a.id) == 22 && cloud.errorMessage == nil
+
+        try edit(23)
+        server.loseNextAcceptedUploadResponse = true
+        _ = await cloud.runIsolatedSync(from: context)
+        let pendingFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CloudSyncProbe-" + String(ObjectIdentifier(defaults).hashValue))
+            .appendingPathComponent("account-11-pending-upload.json")
+        let pendingWasDurable = FileManager.default.fileExists(atPath: pendingFile.path)
+        server.change(a.id, to: 24)
+        let beforeRecoveryUploads = server.uploads
+        let restarted = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+        restarted.currentUser = cloud.currentUser
+        defer { restarted.setAutomaticSyncActive(false) }
+        _ = await restarted.runIsolatedSync(from: context)
+        let afterLostResponse = try await local()
+        checks["lostUploadResponseRecoversAcceptedAncestorAfterRestart"] = pendingWasDurable
+            && restarted.errorMessage == nil && amount(afterLostResponse, a.id) == 24
+            && server.uploads == beforeRecoveryUploads && !FileManager.default.fileExists(atPath: pendingFile.path)
+        checks["pendingAckRecoveryDoesNotSendTokenToStorage"] = server.historicalDownloads == 1 && !server.storageReceivedToken
+
+        try edit(25)
+        let mutationDone = DispatchSemaphore(value: 0)
+        server.afterAcceptedUpload = {
+            Task { @MainActor in
+                defer { mutationDone.signal() }
+                try? edit(26)
+            }
+            _ = mutationDone.wait(timeout: .now() + 2)
+            server.change(bID, to: 31)
+        }
+        _ = await restarted.runIsolatedSync(from: context)
+        let afterConcurrentSave = try await local()
+        checks["localSaveDuringUploadRetainsAcceptedBaseAndNewEdit"] = restarted.errorMessage == nil
+            && amount(afterConcurrentSave, a.id) == 26 && amount(afterConcurrentSave, b.id) == 31
+            && SyncMergeService.isSameContent(afterConcurrentSave, server.payload)
+
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: day.date)!
+        let inherited = try SnapshotService.createSnapshot(on: tomorrow, in: context)
+        let inheritedA = inherited.entries.first { $0.item?.id == a.id }!
+        let sourceA = day.entries.first { $0.item?.id == a.id }!
+        checks["newDayEntriesRetainExplicitInheritanceProvenance"] = inheritedA.inheritedFromEntryID == sourceA.id
+        let exported = try await local()
+        checks["inheritanceProvenanceSurvivesCloudExport"] = exported.snapshots.first { $0.id == inherited.id }?
+            .entries.first { $0.itemID == a.id }?.inheritedFromEntryID == sourceA.id
+        try SnapshotService.upsertEntry(snapshot: inherited, item: a, amount: inheritedA.amount, in: context)
+        checks["confirmingUnchangedInheritedValueRecordsUserIntent"] = inheritedA.inheritedFromEntryID == nil
+        let inheritedB = inherited.entries.first { $0.item?.id == b.id }!
+        try SnapshotService.upsertEntry(snapshot: inherited, item: b, amount: 32, in: context)
+        checks["editingInheritedValueClearsInheritanceProvenance"] = inheritedB.inheritedFromEntryID == nil && inheritedB.amount == 32
+        return checks
+    }
+
+    private static func logicalDeletionChecks(schema: Schema) async throws -> [String: Bool] {
+        let suite = "CloudSyncLogicalDeletion-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        let previousServer = NativeCloudMockProtocol.server
+        defer { defaults.removePersistentDomain(forName: suite); NativeCloudMockProtocol.server = previousServer }
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+        let context = ModelContext(container); context.autosaveEnabled = false
+        let category = AssetCategory(name: "Synthetic deleted alias", group: .financial)
+        let item = AssetItem(name: "Synthetic deleted alias", category: category)
+        let canonicalID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let aliasID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        let canonicalRowID = UUID(uuidString: "00000000-0000-0000-0000-000000000011")!
+        let aliasRowID = UUID(uuidString: "00000000-0000-0000-0000-000000000012")!
+        let day = AssetSnapshot(id: aliasID, date: Calendar.current.startOfDay(for: .now))
+        context.insert(category); context.insert(item); context.insert(day)
+        context.insert(AssetEntry(id: aliasRowID, amount: 100, snapshot: day, item: item))
+        try context.save()
+        func local() async throws -> ExportPayload { try await ImportExportService.exportPayloadCooperatively(from: context).payload }
+        let original = try await local()
+        let server = NativeCloudMockServer(original)
+        NativeCloudMockProtocol.server = server
+        let cloud = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+        cloud.currentUser = AssetTimeMachineCloudUser(id: 11, userName: "Synthetic deleted alias", userEmail: nil)
+        defer { cloud.setAutomaticSyncActive(false) }
+        _ = await cloud.runIsolatedSync(from: context)
+
+        // The other device canonicalized this equal day to A and then deleted it.
+        // This replica still has the earlier B identity as both local and baseline.
+        let sourceDay = original.snapshots[0]
+        let sourceEntry = sourceDay.entries[0]
+        let historicalDay = ExportPayload.SnapshotPayload(id: canonicalID, date: sourceDay.date,
+            note: sourceDay.note, createdAt: sourceDay.createdAt, updatedAt: sourceDay.updatedAt,
+            goldAnchorPriceCNY: nil, goldAnchorPriceDate: nil, btcAnchorPriceUSD: nil,
+            btcAnchorPriceDate: nil, nasdaqAnchorPriceUSD: nil, nasdaqAnchorPriceDate: nil,
+            usdPerCNY: nil, usdPerCNYDate: nil, marketAnchorsUpdatedAt: nil,
+            entries: [.init(id: canonicalRowID, amount: sourceEntry.amount, quantity: nil,
+                unitPrice: nil, note: sourceEntry.note, createdAt: sourceEntry.createdAt,
+                updatedAt: sourceEntry.updatedAt, itemID: sourceEntry.itemID)])
+        server.head += 1
+        server.historicalPayload = .init(exportedAt: original.exportedAt, categories: original.categories,
+            items: original.items, snapshots: [historicalDay], deletions: [])
+        server.historicalBackupID = server.head
+        server.payload = .init(exportedAt: .now, categories: original.categories, items: original.items,
+            snapshots: [], deletions: [.init(entityID: canonicalID, entityKind: "snapshot", deletedAt: .now)])
+        server.head += 1
+        let beforeHealingUploads = server.uploads
+        let beforeHealingAccepted = server.acceptedUploads
+        _ = await cloud.runIsolatedSync(from: context)
+        let healedLocal = try await local()
+        let healingPassed = cloud.errorMessage == nil && healedLocal.snapshots.isEmpty
+            && server.payload.snapshots.isEmpty && server.payload.deletionRecords.first?.snapshotDate == sourceDay.date
+            && server.uploads == beforeHealingUploads + 1 && server.acceptedUploads == beforeHealingAccepted + 1
+            && server.historicalDownloads == 1 && !server.storageReceivedToken
+
+        let healedUploads = server.uploads, healedReads = server.latestReads
+        let healedDownloads = server.historicalDownloads
+        _ = await cloud.runIsolatedSync(from: context)
+        let finalLocal = try await local()
+        return ["legacyDeletionHistoryHealsCloudMetadataOnce": healingPassed,
+                "healedDeletionUsesLightweightPollWithoutRepeatUpload": cloud.errorMessage == nil
+                    && finalLocal.snapshots.isEmpty && server.uploads == healedUploads
+                    && server.latestReads == healedReads && server.historicalDownloads == healedDownloads]
     }
 }

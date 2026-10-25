@@ -310,6 +310,7 @@ final class AssetEntry {
     var note: String
     var createdAt: Date
     var updatedAt: Date
+    var inheritedFromEntryID: UUID?
 
     var snapshot: AssetSnapshot?
     var item: AssetItem?
@@ -323,7 +324,8 @@ final class AssetEntry {
         createdAt: Date = .now,
         updatedAt: Date = .now,
         snapshot: AssetSnapshot? = nil,
-        item: AssetItem? = nil
+        item: AssetItem? = nil,
+        inheritedFromEntryID: UUID? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -334,6 +336,7 @@ final class AssetEntry {
         self.updatedAt = updatedAt
         self.snapshot = snapshot
         self.item = item
+        self.inheritedFromEntryID = inheritedFromEntryID
     }
 
     var resolvedAmount: Double {
@@ -420,17 +423,23 @@ final class SyncDeletionTombstone {
     var entityID: UUID
     var entityKindRawValue: String
     var deletedAt: Date
+    var snapshotDate: Date?
+    var itemID: UUID?
 
     init(
         id: UUID = UUID(),
         entityID: UUID,
         entityKind: SyncDeletedEntityKind,
-        deletedAt: Date = .now
+        deletedAt: Date = .now,
+        snapshotDate: Date? = nil,
+        itemID: UUID? = nil
     ) {
         self.id = id
         self.entityID = entityID
         self.entityKindRawValue = entityKind.rawValue
         self.deletedAt = deletedAt
+        self.snapshotDate = snapshotDate
+        self.itemID = itemID
     }
 
     var entityKind: SyncDeletedEntityKind? {

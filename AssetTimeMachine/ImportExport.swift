@@ -64,12 +64,15 @@ nonisolated struct ExportPayload: Codable, Sendable {
         let createdAt: Date
         let updatedAt: Date
         let itemID: UUID?
+        var inheritedFromEntryID: UUID? = nil
     }
 
     nonisolated struct DeletionPayload: Codable, Sendable {
         let entityID: UUID
         let entityKind: String
         let deletedAt: Date
+        var snapshotDate: Date? = nil
+        var itemID: UUID? = nil
     }
 }
 
@@ -172,7 +175,8 @@ private actor CloudExportProjectionStore {
                             note: entry.note,
                             createdAt: entry.createdAt,
                             updatedAt: entry.updatedAt,
-                            itemID: entry.item?.id
+                            itemID: entry.item?.id,
+                            inheritedFromEntryID: entry.inheritedFromEntryID
                         ))
                     })
                 }
@@ -224,7 +228,8 @@ private actor CloudExportProjectionStore {
                     deletionPayloads.append(.init(
                         entityID: tombstone.entityID,
                         entityKind: entityKind.rawValue,
-                        deletedAt: tombstone.deletedAt
+                        deletedAt: tombstone.deletedAt,
+                        snapshotDate: tombstone.snapshotDate, itemID: tombstone.itemID
                     ))
                 }
                 try checkCancellation(afterProcessing: index + 1)
@@ -395,7 +400,8 @@ enum ImportExportService {
                             note: $0.note,
                             createdAt: $0.createdAt,
                             updatedAt: $0.updatedAt,
-                            itemID: $0.item?.id
+                            itemID: $0.item?.id,
+                            inheritedFromEntryID: $0.inheritedFromEntryID
                         )
                     }
                 )
@@ -405,7 +411,8 @@ enum ImportExportService {
                 return .init(
                     entityID: tombstone.entityID,
                     entityKind: entityKind.rawValue,
-                    deletedAt: tombstone.deletedAt
+                    deletedAt: tombstone.deletedAt,
+                        snapshotDate: tombstone.snapshotDate, itemID: tombstone.itemID
                 )
             }
         )
@@ -797,6 +804,9 @@ enum ImportExportService {
                         if entry.note != entryPayload.note {
                             entry.note = entryPayload.note
                         }
+                        if entry.inheritedFromEntryID != entryPayload.inheritedFromEntryID {
+                            entry.inheritedFromEntryID = entryPayload.inheritedFromEntryID
+                        }
                         if entry.createdAt != entryPayload.createdAt {
                             entry.createdAt = entryPayload.createdAt
                         }
@@ -822,7 +832,8 @@ enum ImportExportService {
                             createdAt: entryPayload.createdAt,
                             updatedAt: entryPayload.updatedAt,
                             snapshot: snapshot,
-                            item: item
+                            item: item,
+                            inheritedFromEntryID: entryPayload.inheritedFromEntryID
                         )
                         context.insert(entry)
                         entryMap[entry.id] = entry
@@ -853,11 +864,14 @@ enum ImportExportService {
                     if tombstone.deletedAt != deletion.deletedAt {
                         tombstone.deletedAt = deletion.deletedAt
                     }
+                    tombstone.snapshotDate = deletion.snapshotDate ?? tombstone.snapshotDate
+                    tombstone.itemID = deletion.itemID ?? tombstone.itemID
                 } else {
                     context.insert(SyncDeletionTombstone(
                         entityID: deletion.entityID,
                         entityKind: kind,
-                        deletedAt: deletion.deletedAt
+                        deletedAt: deletion.deletedAt,
+                        snapshotDate: deletion.snapshotDate, itemID: deletion.itemID
                     ))
                 }
             }
@@ -1026,6 +1040,20 @@ enum SyncDeletionService {
         deletedAt: Date = .now,
         in context: ModelContext
     ) throws {
+        var snapshotDate: Date?
+        var itemID: UUID?
+        if kind == .snapshot {
+            var request = FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.id == entityID })
+            request.fetchLimit = 1
+            snapshotDate = try context.fetch(request).first?.date
+        } else if kind == .entry {
+            var request = FetchDescriptor<AssetEntry>(predicate: #Predicate { $0.id == entityID })
+            request.fetchLimit = 1
+            if let entry = try context.fetch(request).first {
+                snapshotDate = entry.snapshot?.date
+                itemID = entry.item?.id
+            }
+        }
         let kindRawValue = kind.rawValue
         let predicate = #Predicate<SyncDeletionTombstone> { tombstone in
             tombstone.entityID == entityID && tombstone.entityKindRawValue == kindRawValue
@@ -1035,11 +1063,15 @@ enum SyncDeletionService {
 
         if let existing = try context.fetch(descriptor).first {
             existing.deletedAt = max(existing.deletedAt, deletedAt)
+            existing.snapshotDate = existing.snapshotDate ?? snapshotDate
+            existing.itemID = existing.itemID ?? itemID
         } else {
             context.insert(SyncDeletionTombstone(
                 entityID: entityID,
                 entityKind: kind,
-                deletedAt: deletedAt
+                deletedAt: deletedAt,
+                snapshotDate: snapshotDate,
+                itemID: itemID
             ))
         }
     }
@@ -1078,7 +1110,12 @@ nonisolated enum SyncMergeService {
         // Snapshot/day and account/day are logical records. Independently created
         // UUIDs must not double balances; preserve existing intra-device duplicates.
         let (local, remote, baseline) = alignedRecords(local: local, remote: remote, baseline: baseline)
+        guard unresolvedDeletionIdentities(in: local, knownBy: [baseline]).isEmpty,
+              unresolvedDeletionIdentities(in: remote, knownBy: [baseline]).isEmpty else { throw Conflict.divergentEdits }
         let automaticItems = automaticPriceItemIDs(local: local, remote: remote, baseline: baseline)
+        let localInheritance = inheritedEntries(in: local, automaticItems: automaticItems)
+        let remoteInheritance = inheritedEntries(in: remote, automaticItems: automaticItems)
+        let baselineEntries = keyedByID(baseline.snapshots.flatMap(\.entries), id: \.id)
         let categories = try reconcileRecords(local.categories, remote.categories, baseline.categories, id: \.id) { l, r, b in
             ExportPayload.CategoryPayload(id: l.id,
                 name: try mergeValue(l.name, r.name, b.map { $0.name }),
@@ -1088,7 +1125,8 @@ nonisolated enum SyncMergeService {
         let items = try reconcileRecords(local.items, remote.items, baseline.items, id: \.id, merge: reconcileItem)
         let snapshots = try reconcileRecords(local.snapshots, remote.snapshots, baseline.snapshots, id: \.id,
             excluding: ["marketAnchorsUpdatedAt"]) { l, r, b in
-            try reconcileSnapshot(l, r, b, automaticItems: automaticItems)
+            try reconcileSnapshot(l, r, b, automaticItems: automaticItems,
+                localInheritance: localInheritance, remoteInheritance: remoteInheritance, baselineEntries: baselineEntries)
         }
         let remotes = keyedByID(remote.snapshots, id: \.id), bases = keyedByID(baseline.snapshots, id: \.id)
         // Different UUIDs do not make two entries for the same account/day safe
@@ -1212,7 +1250,7 @@ nonisolated enum SyncMergeService {
     private static func sameUserEntry(_ l: ExportPayload.EntryPayload, _ r: ExportPayload.EntryPayload,
         automaticItems: Set<UUID>) -> Bool {
         let derivedPrice = l.itemID == r.itemID && l.itemID.map { automaticItems.contains($0) } == true
-        return sameSemanticContent(l, r, excluding: derivedPrice ? ["unitPrice"] : [])
+        return sameSemanticContent(l, r, excluding: derivedPrice ? ["unitPrice", "inheritedFromEntryID"] : ["inheritedFromEntryID"])
     }
 
     private static func sameUserSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
@@ -1224,23 +1262,60 @@ nonisolated enum SyncMergeService {
         }
     }
 
+    /// A marker alone is not permission to overwrite a balance. Verify the copied
+    /// user values against its actual earlier source; legacy rows remain unknown.
+    private static func inheritedEntries(in payload: ExportPayload, automaticItems: Set<UUID>) -> [UUID: Date] {
+        var sources: [UUID: (Date, ExportPayload.EntryPayload)] = [:]
+        for snapshot in payload.snapshots {
+            for entry in snapshot.entries { sources[entry.id] = (snapshot.date, entry) }
+        }
+        var inherited: [UUID: Date] = [:]
+        for snapshot in payload.snapshots {
+            for entry in snapshot.entries {
+                guard let sourceID = entry.inheritedFromEntryID, let (day, source) = sources[sourceID],
+                      day < snapshot.date, entry.itemID == source.itemID else { continue }
+                var excluded: Set<String> = ["id", "inheritedFromEntryID"]
+                if entry.itemID.map({ automaticItems.contains($0) }) == true { excluded.insert("unitPrice") }
+                if sameSemanticContent(entry, source, excluding: excluded) { inherited[entry.id] = day }
+            }
+        }
+        return inherited
+    }
+
     private static func reconcileSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
-        _ b: ExportPayload.SnapshotPayload?, automaticItems: Set<UUID>) throws -> ExportPayload.SnapshotPayload {
+        _ b: ExportPayload.SnapshotPayload?, automaticItems: Set<UUID>,
+        localInheritance: [UUID: Date], remoteInheritance: [UUID: Date],
+        baselineEntries: [UUID: ExportPayload.EntryPayload]) throws -> ExportPayload.SnapshotPayload {
         let entries = try reconcileRecords(l.entries, r.entries, b?.entries ?? [], id: \.id) { left, right, prior in
             let automatic = left.itemID == right.itemID && left.itemID.map { automaticItems.contains($0) } == true
+            let leftSource = localInheritance[left.id], rightSource = remoteInheritance[right.id]
+            let userValues: ExportPayload.EntryPayload?
+            switch (leftSource, rightSource) {
+            case (.some, .none): userValues = right
+            case (.none, .some): userValues = left
+            case let (a?, b?) where a != b: userValues = a > b ? left : right
+            default: userValues = nil
+            }
+            let userBase = prior ?? (leftSource != nil && rightSource != nil
+                && left.inheritedFromEntryID == right.inheritedFromEntryID
+                ? left.inheritedFromEntryID.flatMap { baselineEntries[$0] } : nil)
             let price: Double?
             if automatic {
                 if let prior, left.unitPrice == prior.unitPrice { price = right.unitPrice ?? left.unitPrice }
                 else if let prior, right.unitPrice == prior.unitPrice { price = left.unitPrice ?? right.unitPrice }
                 else { price = isStrictlyNewer(left.updatedAt, than: right.updatedAt)
                     ? (left.unitPrice ?? right.unitPrice) : (right.unitPrice ?? left.unitPrice) }
-            } else { price = try mergeValue(left.unitPrice, right.unitPrice, prior.map { $0.unitPrice }) }
+            } else if let userValues { price = userValues.unitPrice }
+            else { price = try mergeValue(left.unitPrice, right.unitPrice, userBase.map { $0.unitPrice }) }
+            let inheritedSource = userValues?.inheritedFromEntryID
+                ?? (leftSource != nil && rightSource != nil ? left.inheritedFromEntryID : nil)
             return ExportPayload.EntryPayload(id: left.id,
-                amount: try mergeValue(left.amount, right.amount, prior.map { $0.amount }),
-                quantity: try mergeValue(left.quantity, right.quantity, prior.map { $0.quantity }),
-                unitPrice: price, note: try mergeValue(left.note, right.note, prior.map { $0.note }),
+                amount: try userValues.map { $0.amount } ?? mergeValue(left.amount, right.amount, userBase.map { $0.amount }),
+                quantity: try userValues.map { $0.quantity } ?? mergeValue(left.quantity, right.quantity, userBase.map { $0.quantity }),
+                unitPrice: price, note: try userValues?.note ?? mergeValue(left.note, right.note, userBase.map { $0.note }),
                 createdAt: min(left.createdAt, right.createdAt), updatedAt: max(left.updatedAt, right.updatedAt),
-                itemID: try mergeValue(left.itemID, right.itemID, prior.map { $0.itemID }))
+                itemID: try mergeValue(left.itemID, right.itemID, prior.map { $0.itemID }),
+                inheritedFromEntryID: inheritedSource)
         }
         // Keep each quote and its date together. Prefer source-date freshness, then
         // refresh time; a partial cache must not erase a populated anchor.
@@ -1269,12 +1344,53 @@ nonisolated enum SyncMergeService {
             marketAnchorsUpdatedAt: maxOptional(l.marketAnchorsUpdatedAt, r.marketAnchorsUpdatedAt), entries: entries)
     }
 
+    static func enrichingDeletionIdentities(in payload: ExportPayload, using contexts: [ExportPayload]) -> ExportPayload {
+        var days: [UUID: Date] = [:], rows: [UUID: (Date, UUID?)] = [:]
+        var identities: [String: ExportPayload.DeletionPayload] = [:]
+        for context in contexts + [payload] {
+            for deletion in context.deletionRecords where deletion.snapshotDate != nil {
+                identities[deletion.entityKind + ":" + deletion.entityID.uuidString] = deletion
+            }
+            for snapshot in context.snapshots {
+                days[snapshot.id] = snapshot.date
+                for entry in snapshot.entries { rows[entry.id] = (snapshot.date, entry.itemID) }
+            }
+        }
+        let deletions = payload.deletionRecords.map { original in
+            var value = original
+            if let known = identities[value.entityKind + ":" + value.entityID.uuidString] {
+                value.snapshotDate = value.snapshotDate ?? known.snapshotDate
+                value.itemID = value.itemID ?? known.itemID
+            }
+            if value.entityKind == "snapshot" { value.snapshotDate = value.snapshotDate ?? days[value.entityID] }
+            if value.entityKind == "entry", let row = rows[value.entityID] {
+                value.snapshotDate = value.snapshotDate ?? row.0
+                value.itemID = value.itemID ?? row.1
+            }
+            return value
+        }
+        return .init(exportedAt: payload.exportedAt, categories: payload.categories, items: payload.items,
+                     snapshots: payload.snapshots, deletions: deletions)
+    }
+
+    /// Previously acknowledged opaque tombstones are harmless to leave untouched.
+    /// A new unknown deletion must be hydrated from history before alias merging.
+    static func unresolvedDeletionIdentities(in payload: ExportPayload, knownBy contexts: [ExportPayload]) -> Set<UUID> {
+        let known = Set(contexts.flatMap(\.deletionRecords).map { $0.entityKind + ":" + $0.entityID.uuidString })
+        return Set(payload.deletionRecords.filter {
+            ($0.entityKind == "snapshot" || $0.entityKind == "entry") && $0.snapshotDate == nil
+                && !known.contains($0.entityKind + ":" + $0.entityID.uuidString)
+        }.map(\.entityID))
+    }
+
     private static func alignedRecords(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload)
         -> (ExportPayload, ExportPayload, ExportPayload) {
-        let payloads = [local, remote, baseline]
+        let originals = [local, remote, baseline]
+        let payloads = originals.map { enrichingDeletionIdentities(in: $0, using: originals) }
+        let tombstones = payloads.flatMap(\.deletionRecords)
         let days = payloads.map { Dictionary(grouping: $0.snapshots, by: { Calendar.current.startOfDay(for: $0.date) }) }
-        func canAlign(_ versions: [[UUID]], kind: String) -> Bool {
-            let ids = Set(versions.flatMap { $0 })
+        func canAlign(_ versions: [[UUID]], kind: String, deletedIDs: Set<UUID>) -> Bool {
+            let ids = Set(versions.flatMap { $0 }).union(deletedIDs)
             for index in payloads.indices {
                 let deleted = Set(payloads[index].deletionRecords.filter { $0.entityKind == kind }.map(\.entityID)).intersection(ids)
                 if !deleted.isEmpty && versions[index].contains(where: { !deleted.contains($0) }) { return false }
@@ -1282,23 +1398,28 @@ nonisolated enum SyncMergeService {
             return true
         }
         var snapshotAliases: [UUID: UUID] = [:], entryAliases: [UUID: UUID] = [:]
-        for day in Set(days.flatMap { $0.keys }) {
+        let deletionDays = tombstones.compactMap { $0.snapshotDate.map { Calendar.current.startOfDay(for: $0) } }
+        for day in Set(days.flatMap { $0.keys }).union(deletionDays) {
+            let dayDeletions = tombstones.filter { $0.snapshotDate.map { Calendar.current.startOfDay(for: $0) } == day }
+            let deletedDays = Set(dayDeletions.filter { $0.entityKind == "snapshot" }.map(\.entityID))
             let versions = days.map { $0[day] ?? [] }
             guard versions.allSatisfy({ $0.count <= 1 }) else { continue }
             let snapshots = versions.flatMap { $0 }
             // A delete followed by a new live record on the same side is a new
             // user intent, not an alias. Never apply its old tombstone to the new value.
             // One total order across all replicas prevents identity-only upload loops.
-            guard canAlign(versions.map { $0.map(\.id) }, kind: "snapshot"),
-                  let canonical = snapshots.map(\.id).min(by: { $0.uuidString < $1.uuidString }) else { continue }
-            for snapshot in snapshots { snapshotAliases[snapshot.id] = canonical }
+            guard canAlign(versions.map { $0.map(\.id) }, kind: "snapshot", deletedIDs: deletedDays),
+                  let canonical = Set(snapshots.map(\.id)).union(deletedDays).min(by: { $0.uuidString < $1.uuidString }) else { continue }
+            for id in Set(snapshots.map(\.id)).union(deletedDays) { snapshotAliases[id] = canonical }
             let entries = versions.map { Dictionary(grouping: $0.flatMap(\.entries).filter { $0.itemID != nil }, by: { $0.itemID! }) }
-            for itemID in Set(entries.flatMap { $0.keys }) {
+            let deletedItemIDs = dayDeletions.filter { $0.entityKind == "entry" }.compactMap(\.itemID)
+            for itemID in Set(entries.flatMap { $0.keys }).union(deletedItemIDs) {
+                let deletedRows = Set(dayDeletions.filter { $0.entityKind == "entry" && $0.itemID == itemID }.map(\.entityID))
                 let rows = entries.map { $0[itemID] ?? [] }
                 guard rows.allSatisfy({ $0.count <= 1 }),
-                      canAlign(rows.map { $0.map(\.id) }, kind: "entry"),
-                      let canonicalRow = rows.flatMap({ $0 }).map(\.id).min(by: { $0.uuidString < $1.uuidString }) else { continue }
-                for row in rows.flatMap({ $0 }) { entryAliases[row.id] = canonicalRow }
+                      canAlign(rows.map { $0.map(\.id) }, kind: "entry", deletedIDs: deletedRows),
+                      let canonicalRow = Set(rows.flatMap({ $0 }).map(\.id)).union(deletedRows).min(by: { $0.uuidString < $1.uuidString }) else { continue }
+                for id in Set(rows.flatMap({ $0 }).map(\.id)).union(deletedRows) { entryAliases[id] = canonicalRow }
             }
         }
         func aligned(_ payload: ExportPayload) -> ExportPayload {
@@ -1311,18 +1432,19 @@ nonisolated enum SyncMergeService {
                     usdPerCNY: s.usdPerCNY, usdPerCNYDate: s.usdPerCNYDate, marketAnchorsUpdatedAt: s.marketAnchorsUpdatedAt,
                     entries: s.entries.map { e in
                         .init(id: entryAliases[e.id] ?? e.id, amount: e.amount, quantity: e.quantity,
-                              unitPrice: e.unitPrice, note: e.note, createdAt: e.createdAt, updatedAt: e.updatedAt, itemID: e.itemID)
+                              unitPrice: e.unitPrice, note: e.note, createdAt: e.createdAt, updatedAt: e.updatedAt, itemID: e.itemID,
+                              inheritedFromEntryID: e.inheritedFromEntryID.map { entryAliases[$0] ?? $0 })
                     })
             }
             let deletions = payload.deletionRecords.map { d in
                 ExportPayload.DeletionPayload(entityID: (d.entityKind == "snapshot" ? snapshotAliases[d.entityID]
                     : (d.entityKind == "entry" ? entryAliases[d.entityID] : nil)) ?? d.entityID,
-                    entityKind: d.entityKind, deletedAt: d.deletedAt)
+                    entityKind: d.entityKind, deletedAt: d.deletedAt, snapshotDate: d.snapshotDate, itemID: d.itemID)
             }
             return .init(exportedAt: payload.exportedAt, categories: payload.categories, items: payload.items,
                          snapshots: snapshots, deletions: deletions)
         }
-        return (aligned(local), aligned(remote), aligned(baseline))
+        return (aligned(payloads[0]), aligned(payloads[1]), aligned(payloads[2]))
     }
 
     private static func sameSemanticContent<T: Encodable>(_ lhs: T, _ rhs: T, excluding: Set<String> = []) -> Bool {
@@ -1538,10 +1660,12 @@ nonisolated enum SyncMergeService {
         for deletion in remote + local {
             guard let kind = SyncDeletedEntityKind(rawValue: deletion.entityKind) else { continue }
             let key = DeletionKey(kind: kind, entityID: deletion.entityID)
-            if let existing = merged[key], existing.deletedAt > deletion.deletedAt {
-                continue
-            }
-            merged[key] = deletion
+            if let existing = merged[key] {
+                merged[key] = .init(entityID: deletion.entityID, entityKind: deletion.entityKind,
+                    deletedAt: max(existing.deletedAt, deletion.deletedAt),
+                    snapshotDate: deletion.snapshotDate ?? existing.snapshotDate,
+                    itemID: deletion.itemID ?? existing.itemID)
+            } else { merged[key] = deletion }
         }
         return Array(merged.values)
     }

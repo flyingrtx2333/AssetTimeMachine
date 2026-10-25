@@ -34176,6 +34176,28 @@
           }
         }
       }
+    },
+    "暂时无法核对删除记录，已保留本机数据": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法核对删除记录，已保留本机数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫時無法核對刪除記錄，已保留本機資料"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion history is unavailable. Local data is preserved."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

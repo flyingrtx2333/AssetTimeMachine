@@ -182,6 +182,18 @@ struct ContentView: View {
             }
         }
         .task(id: scenePhase) {
+            cloudStore.setAutomaticSyncActive(scenePhase == .active)
+            guard scenePhase == .active, !AppPreviewSession.isActive else { return }
+            while !didRunStartup && !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+            while !Task.isCancelled {
+                await cloudStore.refreshIfNeeded(from: modelContext)
+                do { try await Task.sleep(for: .seconds(60)) }
+                catch { return }
+            }
+        }
+        .task(id: scenePhase) {
             guard scenePhase == .active, !AppPreviewSession.isActive else { return }
 
             while !didRunStartup && !Task.isCancelled {

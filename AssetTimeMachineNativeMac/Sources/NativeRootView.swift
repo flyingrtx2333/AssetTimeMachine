@@ -243,6 +243,9 @@ struct NativeRootView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             applicationIsActive = false
         }
+        .onChange(of: allowsCloudRefresh, initial: true) { _, active in
+            if !AppPreviewSession.isActive { cloud.setAutomaticSyncActive(active) }
+        }
         .task(id: allowsCloudRefresh) {
             guard allowsCloudRefresh else { return }
             while !Task.isCancelled {

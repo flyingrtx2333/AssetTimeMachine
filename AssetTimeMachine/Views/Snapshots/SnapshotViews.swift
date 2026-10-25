@@ -811,8 +811,6 @@ struct SnapshotListView: View {
 
             let currentRate = entry.unitPrice ?? 0
             if abs(currentRate - rate) > 0.0001 {
-                let resolvedQuantity = normalizedNumber(from: quantityInputs[item.id]) ?? entry.quantity
-                entry.quantity = resolvedQuantity
                 entry.unitPrice = rate
                 entry.updatedAt = .now
                 item.updatedAt = .now
@@ -3412,9 +3410,15 @@ struct RecordValueEditorSheet: View {
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }
         do {
-            try saveCurrentValues(into: snapshot)
-        } catch let error as RecordValueValidationError {
-            errorMessage = error.message
+            // A quote refresh must not save the editor's pending quantity or turn
+            // an inherited balance into a user-confirmed value.
+            if let entry = snapshot.entries.first(where: { $0.item?.id == item.id }),
+               entry.unitPrice != latestRate {
+                entry.unitPrice = latestRate
+                entry.updatedAt = .now
+                snapshot.updatedAt = .now
+                try modelContext.save()
+            }
         } catch {
             errorMessage = AppLocalization.string("刷新后写入记录失败，请稍后再试")
             print("[AssetTimeMachine] manual auto price refresh failed: \(error)")
