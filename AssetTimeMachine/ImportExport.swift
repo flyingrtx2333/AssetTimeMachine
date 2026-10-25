@@ -1264,41 +1264,73 @@ nonisolated enum SyncMergeService {
 
     /// A marker alone is not permission to overwrite a balance. Verify the copied
     /// user values against its actual earlier source; legacy rows remain unknown.
-    private static func inheritedEntries(in payload: ExportPayload, automaticItems: Set<UUID>) -> [UUID: Date] {
+    private struct InheritedEntrySource {
+        let date: Date
+        let entryID: UUID
+    }
+
+    private static func inheritedEntries(in payload: ExportPayload, automaticItems: Set<UUID>) -> [UUID: InheritedEntrySource] {
         var sources: [UUID: (Date, ExportPayload.EntryPayload)] = [:]
         for snapshot in payload.snapshots {
             for entry in snapshot.entries { sources[entry.id] = (snapshot.date, entry) }
         }
-        var inherited: [UUID: Date] = [:]
+        var inherited: [UUID: InheritedEntrySource] = [:]
         for snapshot in payload.snapshots {
             for entry in snapshot.entries {
                 guard let sourceID = entry.inheritedFromEntryID, let (day, source) = sources[sourceID],
                       day < snapshot.date, entry.itemID == source.itemID else { continue }
                 var excluded: Set<String> = ["id", "inheritedFromEntryID"]
                 if entry.itemID.map({ automaticItems.contains($0) }) == true { excluded.insert("unitPrice") }
-                if sameSemanticContent(entry, source, excluding: excluded) { inherited[entry.id] = day }
+                if sameSemanticContent(entry, source, excluding: excluded) {
+                    inherited[entry.id] = .init(date: day, entryID: sourceID)
+                }
             }
         }
         return inherited
     }
 
+    private static func inheritedBaselineEntry(
+        left: ExportPayload.EntryPayload, right: ExportPayload.EntryPayload,
+        localInheritance: [UUID: InheritedEntrySource], remoteInheritance: [UUID: InheritedEntrySource],
+        baselineEntries: [UUID: ExportPayload.EntryPayload]
+    ) -> ExportPayload.EntryPayload? {
+        guard left.itemID == right.itemID,
+              localInheritance[left.id] != nil, remoteInheritance[right.id] != nil else { return nil }
+        // Follow only verified copy edges. Intermediate offline days need not have
+        // reached the cloud, but their common acknowledged source must exist.
+        var localAncestors: Set<UUID> = []
+        var cursor = localInheritance[left.id]?.entryID
+        while let id = cursor, localAncestors.insert(id).inserted {
+            cursor = localInheritance[id]?.entryID
+        }
+        var visited: Set<UUID> = []
+        cursor = remoteInheritance[right.id]?.entryID
+        while let id = cursor, visited.insert(id).inserted {
+            if localAncestors.contains(id), let baseline = baselineEntries[id], baseline.itemID == left.itemID {
+                return baseline
+            }
+            cursor = remoteInheritance[id]?.entryID
+        }
+        return nil
+    }
+
     private static func reconcileSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
         _ b: ExportPayload.SnapshotPayload?, automaticItems: Set<UUID>,
-        localInheritance: [UUID: Date], remoteInheritance: [UUID: Date],
+        localInheritance: [UUID: InheritedEntrySource], remoteInheritance: [UUID: InheritedEntrySource],
         baselineEntries: [UUID: ExportPayload.EntryPayload]) throws -> ExportPayload.SnapshotPayload {
         let entries = try reconcileRecords(l.entries, r.entries, b?.entries ?? [], id: \.id) { left, right, prior in
             let automatic = left.itemID == right.itemID && left.itemID.map { automaticItems.contains($0) } == true
             let leftSource = localInheritance[left.id], rightSource = remoteInheritance[right.id]
+            let userBase = prior ?? inheritedBaselineEntry(left: left, right: right,
+                localInheritance: localInheritance, remoteInheritance: remoteInheritance, baselineEntries: baselineEntries)
             let userValues: ExportPayload.EntryPayload?
             switch (leftSource, rightSource) {
             case (.some, .none): userValues = right
             case (.none, .some): userValues = left
-            case let (a?, b?) where a != b: userValues = a > b ? left : right
+            case (.some, .some) where userBase != nil: userValues = nil
+            case let (a?, b?) where a.date != b.date: userValues = a.date > b.date ? left : right
             default: userValues = nil
             }
-            let userBase = prior ?? (leftSource != nil && rightSource != nil
-                && left.inheritedFromEntryID == right.inheritedFromEntryID
-                ? left.inheritedFromEntryID.flatMap { baselineEntries[$0] } : nil)
             let price: Double?
             if automatic {
                 if let prior, left.unitPrice == prior.unitPrice { price = right.unitPrice ?? left.unitPrice }

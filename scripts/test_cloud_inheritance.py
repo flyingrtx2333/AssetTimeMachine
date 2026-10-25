@@ -71,7 +71,33 @@ def test_cloud_inheritance():
         "automatic quotes must preserve inheritance proof and combine with a confirmed quantity edit")
 
     expectConflict(fixture(), fixture(amount: 200), baseline: cashBase)
-    print("PASS: 4 inherited-balance reconciliation checks")
+    // Two offline carry-forward days must trace back to the acknowledged source,
+    // even though neither intermediate day exists in the common baseline.
+    func carryChain(_ amount: Double) -> ExportPayload {
+        var snapshots: [ExportPayload.SnapshotPayload] = []
+        var sourceID: UUID? = nil
+        for offset in 0..<3 {
+            let date = yesterday.addingTimeInterval(Double(offset) * 86_400)
+            let rowID = offset == 0 ? sourceEntryID : UUID()
+            var row = ExportPayload.EntryPayload(id: rowID, amount: amount,
+                quantity: nil, unitPrice: nil, note: "", createdAt: date, updatedAt: date, itemID: itemID)
+            row.inheritedFromEntryID = sourceID
+            snapshots.append(.init(id: offset == 0 ? yesterdayID : UUID(), date: date, note: "",
+                createdAt: date, updatedAt: date, goldAnchorPriceCNY: nil, goldAnchorPriceDate: nil,
+                btcAnchorPriceUSD: nil, btcAnchorPriceDate: nil, nasdaqAnchorPriceUSD: nil,
+                nasdaqAnchorPriceDate: nil, usdPerCNY: nil, usdPerCNYDate: nil,
+                marketAnchorsUpdatedAt: nil, entries: [row]))
+            sourceID = rowID
+        }
+        return .init(exportedAt: snapshots.last!.date, categories: [], items: cashBase.items,
+            snapshots: snapshots, deletions: [])
+    }
+    let offlineChain = try SyncMergeService.reconciledPayload(
+        local: carryChain(100), remote: carryChain(200), baseline: cashBase)
+    precondition(offlineChain.snapshots.count == 3
+        && offlineChain.snapshots.allSatisfy { $0.entries[0].amount == 200 },
+        "multiple unacknowledged inherited days must accept the edited common source without false conflict")
+    print("PASS: 5 inherited-balance reconciliation checks")
     """
     with tempfile.TemporaryDirectory(prefix="atm-cloud-inheritance-") as folder:
         main = Path(folder) / "main.swift"

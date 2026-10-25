@@ -15,7 +15,7 @@ The previous merge patch fixed derived-quote conflicts, but was not a complete e
 
 Three optional SwiftData fields were added. The migration check compiles the actual old `6e7eadc` model schema and the current schema under the same module identity, creates an isolated on-disk store, verifies original data unchanged after migration, and verifies persistence of the new fields across reopening. The backend stores the complete dictionary payload unchanged, so it retains these optional properties without a server schema change.
 
-- Shared merge (41), logical-deletion (5), and inheritance (4) focused checks passed.
+- Shared merge (41), logical-deletion (5), and inheritance (5) focused checks passed.
 - Actual old-store migration and reopen passed.
 - Localization audit passed.
 - Native Release and final iOS Simulator arm64 Release builds passed. The final isolated cloud transport probe passed all 42 checks, including automatic reconnect, lost-response recovery, concurrent save, provenance persistence and legacy-deletion healing without repeat full downloads. Receipt: `completion-sync-probe.json`.
@@ -23,3 +23,7 @@ Three optional SwiftData fields were added. The migration check compiles the act
 ## Deployment boundary
 
 This document records source and isolated transport validation. It does not claim that the user's iPhone has installed this version or that real iPhone/Mac data has completed a two-device acceptance run. Production records are not restored, replaced or deleted by these checks. Real simultaneous edits to the same user value still require preserving both values rather than guessing a winner.
+
+## Final multi-day carry-forward check
+
+A three-day offline chain reproduced a remaining false conflict in the intermediate build 217. Reconciliation now follows only verified copy edges to the nearest common acknowledged ancestor, including intermediate days that have never reached the cloud. The focused chain check fails before the change and passes afterwards. Build 217 was expired; build 218 is the final release candidate. Existing user-confirmed or unknown legacy values remain protected.
