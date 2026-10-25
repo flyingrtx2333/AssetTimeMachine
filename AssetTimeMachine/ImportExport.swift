@@ -1075,24 +1075,22 @@ nonisolated enum SyncMergeService {
     }
 
     static func reconciledPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload) throws -> ExportPayload {
-        func check<T: Encodable>(_ local: [T], _ remote: [T], _ base: [T],
-                                 id: KeyPath<T, UUID>, excluding: Set<String> = []) throws {
-            let locals = keyedByID(local, id: id), remotes = keyedByID(remote, id: id), bases = keyedByID(base, id: id)
-            for (key, left) in locals {
-                guard let right = remotes[key], !sameSemanticContent(left, right, excluding: excluding) else { continue }
-                guard let prior = bases[key], sameSemanticContent(left, prior, excluding: excluding)
-                        || sameSemanticContent(right, prior, excluding: excluding) else { throw Conflict.divergentEdits }
-            }
+        // Snapshot/day and account/day are logical records. Independently created
+        // UUIDs must not double balances; preserve existing intra-device duplicates.
+        let (local, remote, baseline) = alignedRecords(local: local, remote: remote, baseline: baseline)
+        let automaticItems = automaticPriceItemIDs(local: local, remote: remote, baseline: baseline)
+        let categories = try reconcileRecords(local.categories, remote.categories, baseline.categories, id: \.id) { l, r, b in
+            ExportPayload.CategoryPayload(id: l.id,
+                name: try mergeValue(l.name, r.name, b.map { $0.name }),
+                group: try mergeValue(l.group, r.group, b.map { $0.group }),
+                createdAt: min(l.createdAt, r.createdAt))
         }
-        try check(local.categories, remote.categories, baseline.categories, id: \.id)
-        try check(local.items, remote.items, baseline.items, id: \.id)
-        try check(local.snapshots, remote.snapshots, baseline.snapshots, id: \.id, excluding: ["entries"])
+        let items = try reconcileRecords(local.items, remote.items, baseline.items, id: \.id, merge: reconcileItem)
+        let snapshots = try reconcileRecords(local.snapshots, remote.snapshots, baseline.snapshots, id: \.id,
+            excluding: ["marketAnchorsUpdatedAt"]) { l, r, b in
+            try reconcileSnapshot(l, r, b, automaticItems: automaticItems)
+        }
         let remotes = keyedByID(remote.snapshots, id: \.id), bases = keyedByID(baseline.snapshots, id: \.id)
-        for snapshot in local.snapshots {
-            if let other = remotes[snapshot.id] {
-                try check(snapshot.entries, other.entries, bases[snapshot.id]?.entries ?? [], id: \.id)
-            }
-        }
         // Different UUIDs do not make two entries for the same account/day safe
         // to add together. Preserve legacy duplicates but stop newly introduced ones.
         let calendar = Calendar.current
@@ -1123,7 +1121,7 @@ nonisolated enum SyncMergeService {
                     for item in other.items where item.categoryID == deletion.entityID {
                         guard let prior = priorItems[item.id], sameSemanticContent(prior, item) else { throw Conflict.divergentEdits }
                         for entry in other.snapshots.flatMap(\.entries) where entry.itemID == item.id {
-                            guard let prior = priorEntries[entry.id], sameSemanticContent(prior, entry) else { throw Conflict.divergentEdits }
+                            guard let prior = priorEntries[entry.id], sameUserEntry(prior, entry, automaticItems: automaticItems) else { throw Conflict.divergentEdits }
                         }
                     }
                 case .item:
@@ -1131,15 +1129,15 @@ nonisolated enum SyncMergeService {
                         guard let prior = priorItems[value.id], sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
                     }
                     for entry in other.snapshots.flatMap(\.entries) where entry.itemID == deletion.entityID {
-                        guard let prior = priorEntries[entry.id], sameSemanticContent(prior, entry) else { throw Conflict.divergentEdits }
+                        guard let prior = priorEntries[entry.id], sameUserEntry(prior, entry, automaticItems: automaticItems) else { throw Conflict.divergentEdits }
                     }
                 case .snapshot:
                     if let value = other.snapshots.first(where: { $0.id == deletion.entityID }) {
-                        guard let prior = bases[value.id], sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
+                        guard let prior = bases[value.id], sameUserSnapshot(prior, value, automaticItems: automaticItems) else { throw Conflict.divergentEdits }
                     }
                 case .entry:
                     if let value = other.snapshots.flatMap(\.entries).first(where: { $0.id == deletion.entityID }) {
-                        guard let prior = priorEntries[value.id], sameSemanticContent(prior, value) else { throw Conflict.divergentEdits }
+                        guard let prior = priorEntries[value.id], sameUserEntry(prior, value, automaticItems: automaticItems) else { throw Conflict.divergentEdits }
                     }
                 case nil: break
                 }
@@ -1147,7 +1145,184 @@ nonisolated enum SyncMergeService {
         }
         try checkDeletedEdits(deleting: local, other: remote)
         try checkDeletedEdits(deleting: remote, other: local)
-        return mergedPayload(local: local, remote: remote, baseline: baseline)
+        return normalized(payloadApplyingDeletions(ExportPayload(
+            exportedAt: max(local.exportedAt, remote.exportedAt), categories: categories,
+            items: items, snapshots: snapshots,
+            deletions: mergeDeletions(local: local.deletionRecords, remote: remote.deletionRecords))))
+    }
+
+    /// A common ancestor allows independent fields to merge without a device-clock
+    /// winner. A divergent user value still requires a choice; never discard it.
+    private static func mergeValue<T: Equatable>(_ local: T, _ remote: T, _ baseline: T?) throws -> T {
+        if local == remote { return local }
+        if let baseline {
+            if local == baseline { return remote }
+            if remote == baseline { return local }
+        }
+        throw Conflict.divergentEdits
+    }
+
+    private static func reconcileRecords<T: Encodable, ID: Hashable>(_ local: [T], _ remote: [T], _ baseline: [T],
+        id: KeyPath<T, ID>, excluding: Set<String> = [], merge: (T, T, T?) throws -> T) throws -> [T] {
+        let locals = keyedByID(local, id: id), remotes = keyedByID(remote, id: id), bases = keyedByID(baseline, id: id)
+        return try Set(locals.keys).union(remotes.keys).map { key in
+            if let left = locals[key], let right = remotes[key] {
+                let result = try merge(left, right, bases[key])
+                // Reuse the matching side's metadata. A stale device's later clock
+                // must not turn a pure pull into an otherwise unnecessary upload.
+                if sameSemanticContent(result, right, excluding: excluding) { return right }
+                if sameSemanticContent(result, left, excluding: excluding) { return left }
+                return result
+            }
+            return locals[key] ?? remotes[key]!
+        }
+    }
+
+    private static func reconcileItem(_ l: ExportPayload.ItemPayload, _ r: ExportPayload.ItemPayload,
+        _ b: ExportPayload.ItemPayload?) throws -> ExportPayload.ItemPayload {
+        // The valuation mode and market binding form one setting, not two independent fields.
+        let valuation = try mergeValue([l.valuationMethod, l.autoPricedAssetKind],
+            [r.valuationMethod, r.autoPricedAssetKind], b.map { [$0.valuationMethod, $0.autoPricedAssetKind] })
+        return .init(id: l.id,
+            name: try mergeValue(l.name, r.name, b.map { $0.name }),
+            note: try mergeValue(l.note, r.note, b.map { $0.note }),
+            iconName: try mergeValue(l.iconName, r.iconName, b.map { $0.iconName }),
+            valuationMethod: valuation[0]!, autoPricedAssetKind: valuation[1],
+            quantStrategyProxySymbol: try mergeValue(l.quantStrategyProxySymbol, r.quantStrategyProxySymbol, b.map { $0.quantStrategyProxySymbol }),
+            sortOrder: try mergeValue(l.sortOrder, r.sortOrder, b.map { $0.sortOrder }),
+            isActive: try mergeValue(l.isActive, r.isActive, b.map { $0.isActive }),
+            createdAt: min(l.createdAt, r.createdAt), updatedAt: max(l.updatedAt, r.updatedAt),
+            categoryID: try mergeValue(l.categoryID, r.categoryID, b.map { $0.categoryID }))
+    }
+
+    private static func automaticPriceItemIDs(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload) -> Set<UUID> {
+        let groups = Dictionary(grouping: local.items + remote.items + baseline.items, by: \.id)
+        return Set(groups.compactMap { id, versions in
+            guard let first = versions.first, first.valuationMethod == "quantityAndUnitPrice",
+                  let symbol = first.autoPricedAssetKind, !symbol.isEmpty,
+                  versions.allSatisfy({ $0.valuationMethod == first.valuationMethod && $0.autoPricedAssetKind == symbol }) else { return nil }
+            return id
+        })
+    }
+
+    private static let anchorFields: Set<String> = ["goldAnchorPriceCNY", "goldAnchorPriceDate",
+        "btcAnchorPriceUSD", "btcAnchorPriceDate", "nasdaqAnchorPriceUSD", "nasdaqAnchorPriceDate",
+        "usdPerCNY", "usdPerCNYDate", "marketAnchorsUpdatedAt"]
+
+    private static func sameUserEntry(_ l: ExportPayload.EntryPayload, _ r: ExportPayload.EntryPayload,
+        automaticItems: Set<UUID>) -> Bool {
+        let derivedPrice = l.itemID == r.itemID && l.itemID.map { automaticItems.contains($0) } == true
+        return sameSemanticContent(l, r, excluding: derivedPrice ? ["unitPrice"] : [])
+    }
+
+    private static func sameUserSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
+        automaticItems: Set<UUID>) -> Bool {
+        guard sameSemanticContent(l, r, excluding: anchorFields.union(["entries"])) else { return false }
+        let right = keyedByID(r.entries, id: \.id)
+        return l.entries.count == r.entries.count && l.entries.allSatisfy { entry in
+            right[entry.id].map { sameUserEntry(entry, $0, automaticItems: automaticItems) } == true
+        }
+    }
+
+    private static func reconcileSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
+        _ b: ExportPayload.SnapshotPayload?, automaticItems: Set<UUID>) throws -> ExportPayload.SnapshotPayload {
+        let entries = try reconcileRecords(l.entries, r.entries, b?.entries ?? [], id: \.id) { left, right, prior in
+            let automatic = left.itemID == right.itemID && left.itemID.map { automaticItems.contains($0) } == true
+            let price: Double?
+            if automatic {
+                if let prior, left.unitPrice == prior.unitPrice { price = right.unitPrice ?? left.unitPrice }
+                else if let prior, right.unitPrice == prior.unitPrice { price = left.unitPrice ?? right.unitPrice }
+                else { price = isStrictlyNewer(left.updatedAt, than: right.updatedAt)
+                    ? (left.unitPrice ?? right.unitPrice) : (right.unitPrice ?? left.unitPrice) }
+            } else { price = try mergeValue(left.unitPrice, right.unitPrice, prior.map { $0.unitPrice }) }
+            return ExportPayload.EntryPayload(id: left.id,
+                amount: try mergeValue(left.amount, right.amount, prior.map { $0.amount }),
+                quantity: try mergeValue(left.quantity, right.quantity, prior.map { $0.quantity }),
+                unitPrice: price, note: try mergeValue(left.note, right.note, prior.map { $0.note }),
+                createdAt: min(left.createdAt, right.createdAt), updatedAt: max(left.updatedAt, right.updatedAt),
+                itemID: try mergeValue(left.itemID, right.itemID, prior.map { $0.itemID }))
+        }
+        // Keep each quote and its date together. Prefer source-date freshness, then
+        // refresh time; a partial cache must not erase a populated anchor.
+        func quote(_ value: KeyPath<ExportPayload.SnapshotPayload, Double?>,
+                   _ date: KeyPath<ExportPayload.SnapshotPayload, Date?>) -> (Double?, Date?) {
+            if l[keyPath: value] == nil { return (r[keyPath: value], r[keyPath: date]) }
+            if r[keyPath: value] == nil { return (l[keyPath: value], l[keyPath: date]) }
+            let ld = l[keyPath: date] ?? .distantPast, rd = r[keyPath: date] ?? .distantPast
+            let source = ld == rd
+                ? (isStrictlyNewer(l.marketAnchorsUpdatedAt ?? l.updatedAt, than: r.marketAnchorsUpdatedAt ?? r.updatedAt) ? l : r)
+                : (ld > rd ? l : r)
+            return (source[keyPath: value], source[keyPath: date])
+        }
+        let gold = quote(\.goldAnchorPriceCNY, \.goldAnchorPriceDate)
+        let btc = quote(\.btcAnchorPriceUSD, \.btcAnchorPriceDate)
+        let nasdaq = quote(\.nasdaqAnchorPriceUSD, \.nasdaqAnchorPriceDate)
+        let fx = quote(\.usdPerCNY, \.usdPerCNYDate)
+        return .init(id: l.id,
+            date: try mergeValue(l.date, r.date, b.map { $0.date }),
+            note: try mergeValue(l.note, r.note, b.map { $0.note }),
+            createdAt: min(l.createdAt, r.createdAt), updatedAt: max(l.updatedAt, r.updatedAt),
+            goldAnchorPriceCNY: gold.0, goldAnchorPriceDate: gold.1,
+            btcAnchorPriceUSD: btc.0, btcAnchorPriceDate: btc.1,
+            nasdaqAnchorPriceUSD: nasdaq.0, nasdaqAnchorPriceDate: nasdaq.1,
+            usdPerCNY: fx.0, usdPerCNYDate: fx.1,
+            marketAnchorsUpdatedAt: maxOptional(l.marketAnchorsUpdatedAt, r.marketAnchorsUpdatedAt), entries: entries)
+    }
+
+    private static func alignedRecords(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload)
+        -> (ExportPayload, ExportPayload, ExportPayload) {
+        let payloads = [local, remote, baseline]
+        let days = payloads.map { Dictionary(grouping: $0.snapshots, by: { Calendar.current.startOfDay(for: $0.date) }) }
+        func canAlign(_ versions: [[UUID]], kind: String) -> Bool {
+            let ids = Set(versions.flatMap { $0 })
+            for index in payloads.indices {
+                let deleted = Set(payloads[index].deletionRecords.filter { $0.entityKind == kind }.map(\.entityID)).intersection(ids)
+                if !deleted.isEmpty && versions[index].contains(where: { !deleted.contains($0) }) { return false }
+            }
+            return true
+        }
+        var snapshotAliases: [UUID: UUID] = [:], entryAliases: [UUID: UUID] = [:]
+        for day in Set(days.flatMap { $0.keys }) {
+            let versions = days.map { $0[day] ?? [] }
+            guard versions.allSatisfy({ $0.count <= 1 }) else { continue }
+            let snapshots = versions.flatMap { $0 }
+            // A delete followed by a new live record on the same side is a new
+            // user intent, not an alias. Never apply its old tombstone to the new value.
+            // One total order across all replicas prevents identity-only upload loops.
+            guard canAlign(versions.map { $0.map(\.id) }, kind: "snapshot"),
+                  let canonical = snapshots.map(\.id).min(by: { $0.uuidString < $1.uuidString }) else { continue }
+            for snapshot in snapshots { snapshotAliases[snapshot.id] = canonical }
+            let entries = versions.map { Dictionary(grouping: $0.flatMap(\.entries).filter { $0.itemID != nil }, by: { $0.itemID! }) }
+            for itemID in Set(entries.flatMap { $0.keys }) {
+                let rows = entries.map { $0[itemID] ?? [] }
+                guard rows.allSatisfy({ $0.count <= 1 }),
+                      canAlign(rows.map { $0.map(\.id) }, kind: "entry"),
+                      let canonicalRow = rows.flatMap({ $0 }).map(\.id).min(by: { $0.uuidString < $1.uuidString }) else { continue }
+                for row in rows.flatMap({ $0 }) { entryAliases[row.id] = canonicalRow }
+            }
+        }
+        func aligned(_ payload: ExportPayload) -> ExportPayload {
+            let snapshots = payload.snapshots.map { s in
+                ExportPayload.SnapshotPayload(id: snapshotAliases[s.id] ?? s.id, date: s.date, note: s.note,
+                    createdAt: s.createdAt, updatedAt: s.updatedAt,
+                    goldAnchorPriceCNY: s.goldAnchorPriceCNY, goldAnchorPriceDate: s.goldAnchorPriceDate,
+                    btcAnchorPriceUSD: s.btcAnchorPriceUSD, btcAnchorPriceDate: s.btcAnchorPriceDate,
+                    nasdaqAnchorPriceUSD: s.nasdaqAnchorPriceUSD, nasdaqAnchorPriceDate: s.nasdaqAnchorPriceDate,
+                    usdPerCNY: s.usdPerCNY, usdPerCNYDate: s.usdPerCNYDate, marketAnchorsUpdatedAt: s.marketAnchorsUpdatedAt,
+                    entries: s.entries.map { e in
+                        .init(id: entryAliases[e.id] ?? e.id, amount: e.amount, quantity: e.quantity,
+                              unitPrice: e.unitPrice, note: e.note, createdAt: e.createdAt, updatedAt: e.updatedAt, itemID: e.itemID)
+                    })
+            }
+            let deletions = payload.deletionRecords.map { d in
+                ExportPayload.DeletionPayload(entityID: (d.entityKind == "snapshot" ? snapshotAliases[d.entityID]
+                    : (d.entityKind == "entry" ? entryAliases[d.entityID] : nil)) ?? d.entityID,
+                    entityKind: d.entityKind, deletedAt: d.deletedAt)
+            }
+            return .init(exportedAt: payload.exportedAt, categories: payload.categories, items: payload.items,
+                         snapshots: snapshots, deletions: deletions)
+        }
+        return (aligned(local), aligned(remote), aligned(baseline))
     }
 
     private static func sameSemanticContent<T: Encodable>(_ lhs: T, _ rhs: T, excluding: Set<String> = []) -> Bool {
@@ -1156,6 +1331,9 @@ nonisolated enum SyncMergeService {
             guard let data = try? encoder.encode(value),
                   var object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
             for key in excluding.union(["updatedAt", "createdAt"]) { object.removeValue(forKey: key) }
+            if let entries = object["entries"] as? [[String: Any]] {
+                object["entries"] = entries.sorted { ($0["id"] as? String ?? "") < ($1["id"] as? String ?? "") }
+            }
             return try? JSONSerialization.data(withJSONObject: object, options: .sortedKeys)
         }
         guard let left = content(lhs), let right = content(rhs) else { return false }

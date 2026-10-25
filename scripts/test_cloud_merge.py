@@ -58,6 +58,8 @@ def test_cloud_merge():
     let changedPhone = payload(200, 2000)
     let safeRemote = try SyncMergeService.reconciledPayload(local: skewedStaleMac, remote: changedPhone, baseline: baseline)
     precondition(amount(safeRemote) == 200, "unchanged stale local value must not win through clock skew")
+    precondition(SyncMergeService.isSameContent(safeRemote, changedPhone),
+        "a pure pull must reuse cloud metadata instead of uploading a stale device timestamp")
     let slowClockEdit = try SyncMergeService.reconciledPayload(local: payload(300, 900), remote: baseline, baseline: baseline)
     precondition(amount(slowClockEdit) == 300, "genuine local edit survives a slow device clock")
     let sameSecondBase = payload(100, 2000)
@@ -102,15 +104,150 @@ def test_cloud_merge():
         return ExportPayload(exportedAt: Date(), categories: [], items: [item], snapshots: [day], deletions: [])
     }
     // Independently created entry UUIDs for one item must not double the balance.
-    expectConflict(withEntry(baseline, UUID(), 50), withEntry(baseline, UUID(), 50), baseline)
+    let coalescedEntry = try SyncMergeService.reconciledPayload(
+        local: withEntry(baseline, UUID(), 50), remote: withEntry(baseline, UUID(), 50), baseline: baseline)
+    precondition(coalescedEntry.snapshots[0].entries.count == 2,
+        "equal independent entries must coalesce into one logical account/day row")
     let otherSnapshot = ExportPayload.SnapshotPayload(id: UUID(), date: baseline.snapshots[0].date,
         note: "", createdAt: Date(), updatedAt: Date(), goldAnchorPriceCNY: nil, goldAnchorPriceDate: nil,
         btcAnchorPriceUSD: nil, btcAnchorPriceDate: nil, nasdaqAnchorPriceUSD: nil, nasdaqAnchorPriceDate: nil,
         usdPerCNY: nil, usdPerCNYDate: nil, marketAnchorsUpdatedAt: nil, entries: [])
     let duplicateDay = ExportPayload(exportedAt: Date(), categories: [], items: [], snapshots: [otherSnapshot], deletions: [])
     let emptyBase = ExportPayload(exportedAt: Date(), categories: [], items: [], snapshots: [], deletions: [])
-    expectConflict(baseline, duplicateDay, emptyBase)
-    print("PASS: 21 cloud merge regression checks")
+    let coalescedDay = try SyncMergeService.reconciledPayload(local: baseline, remote: duplicateDay, baseline: emptyBase)
+    precondition(coalescedDay.snapshots.count == 1 && amount(coalescedDay) == 100,
+        "an independently created empty same-day snapshot must not hide a populated record")
+
+    // Automatic market data is a cache, not an independently edited account balance.
+    let quoteItemID = UUID(), quoteSnapshotID = UUID(), quoteEntryID = UUID()
+    func quoted(_ price: Double = 800, quantity: Double = 12, stamp: Double = 100,
+                anchor: Double = 800, automatic: Bool = true,
+                itemName: String = "Synthetic account", itemNote: String = "", entryNote: String = "",
+                dayID: UUID? = nil, rowID: UUID? = nil, empty: Bool = false,
+                deleting: String? = nil) -> ExportPayload {
+        let time = Date(timeIntervalSince1970: stamp)
+        let item = ExportPayload.ItemPayload(id: quoteItemID, name: itemName, note: itemNote,
+            iconName: nil, valuationMethod: "quantityAndUnitPrice",
+            autoPricedAssetKind: automatic ? "gold" : nil, quantStrategyProxySymbol: nil,
+            sortOrder: 0, isActive: true, createdAt: Date(timeIntervalSince1970: 1),
+            updatedAt: time, categoryID: nil)
+        let entry = ExportPayload.EntryPayload(id: rowID ?? quoteEntryID, amount: nil,
+            quantity: quantity, unitPrice: price, note: entryNote,
+            createdAt: Date(timeIntervalSince1970: 1), updatedAt: time, itemID: quoteItemID)
+        let day = ExportPayload.SnapshotPayload(id: dayID ?? quoteSnapshotID,
+            date: Date(timeIntervalSince1970: 1000), note: "",
+            createdAt: Date(timeIntervalSince1970: 1), updatedAt: time,
+            goldAnchorPriceCNY: anchor, goldAnchorPriceDate: Date(timeIntervalSince1970: 1000),
+            btcAnchorPriceUSD: nil, btcAnchorPriceDate: nil, nasdaqAnchorPriceUSD: nil,
+            nasdaqAnchorPriceDate: nil, usdPerCNY: nil, usdPerCNYDate: nil,
+            marketAnchorsUpdatedAt: time, entries: empty ? [] : [entry])
+        let deletions = deleting.map { kind in
+            [ExportPayload.DeletionPayload(entityID: kind == "snapshot" ? day.id : entry.id,
+                entityKind: kind, deletedAt: Date(timeIntervalSince1970: 400))]
+        } ?? []
+        return ExportPayload(exportedAt: time, categories: [], items: [item],
+            snapshots: [day], deletions: deletions)
+    }
+    let quoteBase = quoted()
+    let timestampOnly = try SyncMergeService.reconciledPayload(
+        local: quoted(stamp: 200), remote: quoted(stamp: 300), baseline: quoteBase)
+    precondition(timestampOnly.snapshots.count == 1, "independent anchor refresh timestamps must not conflict")
+    precondition(SyncMergeService.isSameContent(timestampOnly, quoted(stamp: 300)),
+        "timestamp-only market refreshes must converge without creating another upload")
+    let refreshedAnchors = try SyncMergeService.reconciledPayload(
+        local: quoted(stamp: 200, anchor: 810), remote: quoted(stamp: 300, anchor: 820), baseline: quoteBase)
+    precondition(refreshedAnchors.snapshots[0].goldAnchorPriceCNY == 820,
+        "derived anchor values must reconcile using market freshness")
+    let quantityAndQuote = try SyncMergeService.reconciledPayload(
+        local: quoted(quantity: 13, stamp: 200), remote: quoted(805, stamp: 300), baseline: quoteBase)
+    precondition(quantityAndQuote.snapshots[0].entries[0].quantity == 13
+        && quantityAndQuote.snapshots[0].entries[0].unitPrice == 805,
+        "user quantity and automatic quote changes must both survive")
+    let twoQuotes = try SyncMergeService.reconciledPayload(
+        local: quoted(805, stamp: 200), remote: quoted(810, stamp: 300), baseline: quoteBase)
+    precondition(twoQuotes.snapshots[0].entries[0].unitPrice == 810,
+        "two automatic quotes must not be treated as conflicting user edits")
+    let disjointItem = try SyncMergeService.reconciledPayload(
+        local: quoted(itemName: "Renamed account"), remote: quoted(itemNote: "Memo"), baseline: quoteBase)
+    precondition(disjointItem.items[0].name == "Renamed account" && disjointItem.items[0].note == "Memo",
+        "independent item fields must merge without dropping either edit")
+    let disjointEntry = try SyncMergeService.reconciledPayload(
+        local: quoted(quantity: 13), remote: quoted(entryNote: "Memo"), baseline: quoteBase)
+    precondition(disjointEntry.snapshots[0].entries[0].quantity == 13
+        && disjointEntry.snapshots[0].entries[0].note == "Memo",
+        "independent entry fields must merge without dropping either edit")
+    expectConflict(quoted(810, automatic: false), quoted(820, automatic: false), quoted(automatic: false))
+    expectConflict(quoted(quantity: 13), quoted(quantity: 14), quoteBase)
+    let deleteWithQuote = try SyncMergeService.reconciledPayload(
+        local: quoted(deleting: "entry"), remote: quoted(805, stamp: 300), baseline: quoteBase)
+    precondition(deleteWithQuote.snapshots[0].entries.isEmpty,
+        "deleting an entry must not conflict with its automatic quote refresh")
+    let deleteWithAnchor = try SyncMergeService.reconciledPayload(
+        local: quoted(deleting: "snapshot"), remote: quoted(stamp: 300, anchor: 810), baseline: quoteBase)
+    precondition(deleteWithAnchor.snapshots.isEmpty,
+        "deleting a snapshot must not conflict with its automatic anchor refresh")
+    let emptyQuoteBase = ExportPayload(exportedAt: Date(), categories: [], items: quoteBase.items,
+        snapshots: [], deletions: [])
+    let duplicateQuotes = try SyncMergeService.reconciledPayload(
+        local: quoted(805, stamp: 200, dayID: UUID(), rowID: UUID()),
+        remote: quoted(810, stamp: 300, dayID: UUID(), rowID: UUID()), baseline: emptyQuoteBase)
+    precondition(duplicateQuotes.snapshots.count == 1 && duplicateQuotes.snapshots[0].entries.count == 1
+        && duplicateQuotes.snapshots[0].entries[0].unitPrice == 810,
+        "same account/day created independently must not double balances or conflict over automatic quotes")
+    let duplicateRows = try SyncMergeService.reconciledPayload(
+        local: quoted(805, stamp: 200, rowID: UUID()), remote: quoted(810, stamp: 300, rowID: UUID()),
+        baseline: quoted(empty: true))
+    precondition(duplicateRows.snapshots[0].entries.count == 1,
+        "independently populated entry UUIDs with equal user values must coalesce")
+    expectConflict(quoted(quantity: 13, dayID: UUID(), rowID: UUID()),
+        quoted(quantity: 14, dayID: UUID(), rowID: UUID()), emptyQuoteBase)
+    expectConflict(quoted(quantity: 13, rowID: UUID()), quoted(quantity: 14, rowID: UUID()), quoted(empty: true))
+
+    func preservesRecreation(_ recreated: ExportPayload, deletedID: UUID, kind: String) throws {
+        let local = ExportPayload(exportedAt: recreated.exportedAt, categories: recreated.categories,
+            items: recreated.items, snapshots: recreated.snapshots,
+            deletions: [.init(entityID: deletedID, entityKind: kind, deletedAt: Date(timeIntervalSince1970: 200))])
+        do {
+            let result = try SyncMergeService.reconciledPayload(local: local, remote: quoteBase, baseline: quoteBase)
+            precondition(result.snapshots.flatMap(\.entries).contains { $0.quantity == 13 },
+                "identity coalescing must not apply an old tombstone to a recreated user record")
+        } catch SyncMergeService.Conflict.divergentEdits {
+            // An explicit ambiguity is safe; silently discarding the recreated value is not.
+        }
+    }
+    try preservesRecreation(quoted(quantity: 13, rowID: UUID()), deletedID: quoteEntryID, kind: "entry")
+    try preservesRecreation(quoted(quantity: 13, dayID: UUID(), rowID: UUID()), deletedID: quoteSnapshotID, kind: "snapshot")
+
+    let replicaA = quoted(dayID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        rowID: UUID(uuidString: "00000000-0000-0000-0000-000000000011")!)
+    let replicaB = quoted(dayID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+        rowID: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!)
+    let convergedA = try SyncMergeService.reconciledPayload(local: replicaA, remote: replicaB, baseline: replicaA)
+    let convergedB = try SyncMergeService.reconciledPayload(local: replicaB, remote: replicaA, baseline: replicaB)
+    precondition(SyncMergeService.isSameContent(convergedA, convergedB),
+        "independent prior IDs must converge instead of alternating canonical UUIDs on every sync")
+
+    func reorderedRows(_ original: ExportPayload, reverse: Bool) -> ExportPayload {
+        let prior = original.snapshots[0]
+        let extra = ExportPayload.EntryPayload(id: UUID(uuidString: "00000000-0000-0000-0000-000000000099")!,
+            amount: 50, quantity: nil, unitPrice: nil, note: "", createdAt: Date(timeIntervalSince1970: 1),
+            updatedAt: Date(timeIntervalSince1970: 1), itemID: nil)
+        let rows = prior.entries + [extra]
+        let day = ExportPayload.SnapshotPayload(id: prior.id, date: prior.date, note: prior.note,
+            createdAt: prior.createdAt, updatedAt: prior.updatedAt, goldAnchorPriceCNY: nil,
+            goldAnchorPriceDate: nil, btcAnchorPriceUSD: nil, btcAnchorPriceDate: nil,
+            nasdaqAnchorPriceUSD: nil, nasdaqAnchorPriceDate: nil, usdPerCNY: nil,
+            usdPerCNYDate: nil, marketAnchorsUpdatedAt: nil, entries: reverse ? Array(rows.reversed()) : rows)
+        return ExportPayload(exportedAt: original.exportedAt, categories: original.categories,
+            items: original.items, snapshots: [day], deletions: original.deletionRecords)
+    }
+    let orderedCloud = reorderedRows(changedPhone, reverse: false)
+    let multiEntryPull = try SyncMergeService.reconciledPayload(
+        local: reorderedRows(skewedStaleMac, reverse: true), remote: orderedCloud,
+        baseline: reorderedRows(baseline, reverse: false))
+    precondition(SyncMergeService.isSameContent(multiEntryPull, orderedCloud),
+        "entry array ordering must not retain a stale header timestamp or cause another upload")
+    print("PASS: 41 cloud merge regression checks")
     """
     with tempfile.TemporaryDirectory(prefix="atm-cloud-merge-") as folder:
         main = pathlib.Path(folder) / "main.swift"

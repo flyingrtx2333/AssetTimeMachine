@@ -785,7 +785,8 @@ struct SnapshotListView: View {
 
     @MainActor
     private func syncAutoRatesIfPossible() async {
-        guard let snapshot = currentSnapshot else { return }
+        guard let snapshot = currentSnapshot,
+              Calendar.current.isDateInToday(snapshot.date) else { return }
         guard snapshot.entries.contains(where: { entry in
             entry.item?.autoPricedMarketSymbol != nil
         }) else { return }
