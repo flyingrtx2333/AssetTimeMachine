@@ -1,0 +1,14 @@
+{
+  "source": "b92c2a9b25434fef2a48d78ef63adfc0f248d01d",
+  "version": "1.14",
+  "build": "218",
+  "archiveSucceeded": true,
+  "ipaSHA256": "3b3c34630fef92b64a39f278603b797bd8ca49a670259a55548915097e0c2b45",
+  "ipaBytes": 17486500,
+  "releaseSourceCleanAtArchiveVerification": true,
+  "deliveryUUID": "d4fcc8dd-484f-4a3b-a677-8d964bce57c1",
+  "appleProcessing": "VALID",
+  "internalTesting": "IN_BETA_TESTING",
+  "externalBetaReviewSubmitted": false,
+  "expiredIntermediateBuild": "217"
+}

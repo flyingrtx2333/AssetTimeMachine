@@ -1,0 +1,14 @@
+{
+  "build": "218",
+  "id": "d4fcc8dd-484f-4a3b-a677-8d964bce57c1",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "externalBuildState": "READY_FOR_BETA_SUBMISSION",
+  "locales": [
+    "en-US",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "internalGroupAssigned": true,
+  "externalBetaReviewSubmitted": false
+}

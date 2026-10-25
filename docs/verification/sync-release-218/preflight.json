@@ -1,0 +1,17 @@
+{
+  "source": "b92c2a9b25434fef2a48d78ef63adfc0f248d01d",
+  "version": "1.14",
+  "build": "218",
+  "sharedMergeCases": 41,
+  "logicalDeletionCases": 5,
+  "inheritanceCases": 5,
+  "nativeTransportCases": 42,
+  "oldSchemaMigrationAndReopen": "PASS actual old and new SwiftData schemas",
+  "nativeReleaseBuild": "PASS",
+  "finalIOSReleaseArchive": "PASS signed archive/export and Apple VALID",
+  "published216RuntimeUpdatesPreserved": true,
+  "intermediate217Expired": true,
+  "realIPhoneAcceptance": "pending installation of218",
+  "native218Installation": "pending normal quit; application canceled its quit event",
+  "migrationBaselineMatchesPublished216Schema": true
+}

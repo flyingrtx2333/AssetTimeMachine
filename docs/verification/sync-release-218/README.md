@@ -1,0 +1,11 @@
+# Cloud sync repair · TestFlight 1.14 (218)
+
+Signed source: `b92c2a9b25434fef2a48d78ef63adfc0f248d01d`, branch `codex/macos-app`. Includes the already published 216 calculation/display corrections without the macmini checkout's unpublished research work. Apple processing is `VALID`; the existing internal group is `IN_BETA_TESTING`, with English, Simplified Chinese and Traditional Chinese notes. No external beta review was submitted.
+
+The repair separates automatic quote refresh from user values, retains validated inheritance provenance across multiple offline days, preserves logical identity on deletions across alias changes, retries temporary failures while active with bounded backoff, and durably reconciles accepted or uncertain upload results. Recovered legacy deletion metadata is healed back to the actual cloud head through compare-and-swap. Unchanged periodic checks use head metadata rather than downloading the full payload. Ownership, editor barriers and true conflicting user-value protection remain in force.
+
+Intermediate build 217 was expired after the final three-day offline check reproduced a missing inheritance-ancestor case. The exact failing case now passes; 218 is the final candidate. Published 216 remains available.
+
+Focused proof: 41 shared merge checks, 5 logical-deletion checks, 5 inheritance checks, 42 isolated transport checks, and an actual old SwiftData on-disk migration/reopen. The final native build and signed iOS archive/export passed. See the retained JSON receipts and `../cloud-merge-20261025/completion.md`.
+
+Mac 217 was installed with matching app-group/keychain entitlements, a fresh built-in SQLite backup and verified database opening. Its local data was compared read-only with the current cloud archive and matched, including the latest calendar day. Mac 218 is built and verified, but the app canceled its normal quit event, so replacement awaits the user's save/quit. The installer did not force termination or restore cloud data. Physical iPhone acceptance remains pending installation of 218; isolated checks and Apple processing are not a claim of that acceptance.
