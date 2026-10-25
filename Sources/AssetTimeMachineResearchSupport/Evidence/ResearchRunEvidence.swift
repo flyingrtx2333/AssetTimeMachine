@@ -95,10 +95,10 @@ public enum ResearchRunEvidence {
             options: [.sortedKeys, .withoutEscapingSlashes])
         let mode = try StrategyRegistry.definition(reference: result.provenance.strategy).template.mode
         let hasDecisionShadow = [.riskContributionCashConfidenceLowNoise,
-            .riskContributionCashConfidenceRouter, .recentPairSpreadZ252Shift25, .nfciDualCoreV1,
+            .riskContributionCashConfidenceRouter, .recentPairSpreadZ252Shift25,
+                                     .recentVolatilityManagedIdleCash, .recentGoldEquityRelativeZ252Shift25, .nfciDualCoreV1,
             .nfciDualCoreSimplifiedV11, .nfciDualCoreSimplifiedV11QualRole].contains(mode)
-        let knownFrozenTargetReplay = [.recentVolatilityManagedIdleCash,
-            .recentGoldEquityRelativeZ252Shift25].contains(mode)
+        let knownFrozenTargetReplay = false // All three current overlay entry points rebuild native-index targets.
         let internalCosts: Any = hasDecisionShadow
             ? ["fee_percent": CashConfidenceFrozenParameters.frozenV1.frozenDecisionFeeRatePercent,
                "slippage_percent": CashConfidenceFrozenParameters.frozenV1.frozenDecisionSlippageRatePercent]

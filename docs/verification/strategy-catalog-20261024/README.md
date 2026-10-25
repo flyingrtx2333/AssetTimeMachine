@@ -1,5 +1,7 @@
 # Strategy library metric refresh · 2026-10-24
 
+Historical receipt for commit `26d4e4a`. This snapshot and its runtime generator were superseded when published TestFlight 216 was integrated for build 217. Runtime metrics now retain the audited 216 template values and natural periods; see `docs/verification/current-strategy-metrics-20261024/`. The commands and generated-source paths below describe that older revision, not the current runtime authority.
+
 The 25 visible product strategies use one generated reference snapshot shared by iOS and native macOS. The old template literals remain historical diagnostic inputs for non-product inventory; product getters and subtitles read the verified snapshot instead. Engine/rule-version or default-cost mismatches suppress reference values rather than silently showing stale numbers.
 
 ## Evidence and scope

@@ -404,13 +404,15 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     var title: String { AppLocalization.string(core.titleLocalizationKey) }
     var category: String { AppLocalization.string(core.categoryLocalizationKey) }
     var subtitle: String {
-        BacktestText.$context.withValue(AppLocalization.backtestTextContext()) { core.subtitle }
+        if performancePeriod == nil, annualizedReturn == 0, maxDrawdown == 0, sharpeRatio == 0,
+           BacktestProductStrategyCatalog.templateIDs.contains(id) {
+            return AppLocalization.string("暂无回测指标")
+        }
+        return BacktestText.$context.withValue(AppLocalization.backtestTextContext()) { core.subtitle }
     }
     var metricReferenceDetails: String {
-        guard let metric = core.referenceMetric else { return subtitle }
-        return AppLocalization.format("%@ 至 %@ · 费率 %@ · 滑点 %@", metric.startDate, metric.endDate,
-            (metric.feePercent / 100).backtestPercentString(maxFractionDigits: 3),
-            (metric.slippagePercent / 100).backtestPercentString(maxFractionDigits: 3))
+        guard let period = performancePeriod else { return subtitle }
+        return period + " · " + AppLocalization.string("全历史回测 · 每笔费用0.025% · 零滑点 · 夏普Rf=0")
     }
     var mode: AdvancedBacktestStrategyMode { core.mode }
     var selectedAssetSymbols: [String]? { core.selectedAssetSymbols }
@@ -419,6 +421,7 @@ struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
     var annualizedReturn: Double { core.annualizedReturn }
     var maxDrawdown: Double { core.maxDrawdown }
     var sharpeRatio: Double { core.sharpeRatio }
+    var performancePeriod: String? { core.performancePeriod }
     var buyRule: AdvancedBacktestRule { core.buyRule }
     var sellRule: AdvancedBacktestRule { core.sellRule }
     var tradeAmountRatio: Double { core.tradeAmountRatio }

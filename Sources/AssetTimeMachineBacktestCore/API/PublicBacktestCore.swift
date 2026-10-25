@@ -1073,9 +1073,9 @@ public enum PublicBacktestCore {
         let historyProvider: (String) -> PublicHistorySeries? = { symbol in
             extendedSeriesBySymbol[normalizedHistorySymbol(symbol)]
         }
-        let inputs = options.map { option in
+        let inputs = MarketInputPreparation.publicIndexHistoryInputs(options.map { option in
             MarketInputPreparation.advancedAssetInput(for: option, historyProvider: historyProvider)
-        }
+        }, preservingFrozenMacroInputs: template.mode.requiresNFCIAsOf)
         let settings = AdvancedBacktestRiskSettings(
             feeRate: BacktestCoreDefaults.advancedFeeRatePercent,
             slippageRate: BacktestCoreDefaults.advancedSlippageRatePercent,
@@ -1240,9 +1240,9 @@ public enum PublicBacktestCore {
         let historyProvider: (String) -> PublicHistorySeries? = { symbol in
             dataset.seriesBySymbol[normalizedHistorySymbol(symbol)]
         }
-        let inputs = options.map { option in
+        let inputs = MarketInputPreparation.publicIndexHistoryInputs(options.map { option in
             MarketInputPreparation.advancedAssetInput(for: option, historyProvider: historyProvider)
-        }
+        })
         let settings = AdvancedBacktestRiskSettings(
             feeRate: BacktestCoreDefaults.advancedFeeRatePercent,
             slippageRate: BacktestCoreDefaults.advancedSlippageRatePercent,
@@ -1446,9 +1446,9 @@ public enum PublicBacktestCore {
         let historyProvider: (String) -> PublicHistorySeries? = { symbol in
             dataset.seriesBySymbol[normalizedHistorySymbol(symbol)]
         }
-        let inputs = options.map { option in
+        let inputs = MarketInputPreparation.publicIndexHistoryInputs(options.map { option in
             MarketInputPreparation.advancedAssetInput(for: option, historyProvider: historyProvider)
-        }
+        }, preservingFrozenMacroInputs: template.mode.requiresNFCIAsOf)
         let bounds = try availableBounds(for: template, dataset: dataset)
         return MarketInputPreparation.filteredAdvancedAssetInputs(inputs, within: bounds)
     }

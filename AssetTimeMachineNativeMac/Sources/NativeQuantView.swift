@@ -379,8 +379,6 @@ private struct NativeQuantStrategyLibrary: View {
         VStack(alignment: .leading, spacing: 22) {
             HStack {
                 Text("策略库").font(NativeStyle.FontRole.sectionTitle)
-                Text(AppLocalization.format("回测截至 %@", StrategyCatalogMetrics.asOfDate))
-                    .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                 Spacer()
                 Button("完成") { dismiss() }
             }
