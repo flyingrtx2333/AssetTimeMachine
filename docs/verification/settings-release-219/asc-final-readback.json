@@ -1,0 +1,22 @@
+{
+  "version": "1.14",
+  "build": "219",
+  "buildID": "551709a2-52a9-4eb7-82cf-bbd6ab8375c1",
+  "processingState": "VALID",
+  "expired": false,
+  "internalBuildState": "IN_BETA_TESTING",
+  "externalBuildState": "READY_FOR_BETA_SUBMISSION",
+  "groups": [
+    {
+      "id": "d22a703d-595c-448c-b297-2c7661cfabe9",
+      "name": "flyingrtx",
+      "isInternalGroup": true
+    }
+  ],
+  "notesLocales": [
+    "zh-Hant",
+    "en-US",
+    "zh-Hans"
+  ],
+  "checkedAt": "2026-10-27T09:49:47.012Z"
+}

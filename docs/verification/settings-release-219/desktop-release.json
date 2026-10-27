@@ -1,0 +1,11 @@
+{
+  "label": "com.flyingrtx.atm.release-219",
+  "state": [
+    "state = not running",
+    "program = /bin/bash",
+    "working directory = /Users/xiangjunsheng/.codex/worktrees/atm-settings-testflight-219/AssetTimeMachine",
+    "last exit code = 0",
+    "state = active",
+    "state = active"
+  ]
+}
