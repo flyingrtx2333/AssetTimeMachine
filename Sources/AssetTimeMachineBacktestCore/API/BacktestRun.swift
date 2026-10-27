@@ -214,7 +214,7 @@ public enum StrategyRegistry {
         switch template.id {
         case "ke25": version = "ke25-public-index-correction-v2-2026-10-24"
         case "kvo": version = "kvo-forward-v1-2026-10-22"
-        case "kvo-satellite-dual-engine": version = "kvo-satellite-dual-engine-v1-2026-10-24"
+        case "kvo-satellite-dual-engine": version = "kvo-satellite-dual-engine-v2-2026-10-27"
         case "recent-pair-spread-z252-shift25": version = "pair-index-bounded-correction-v4-2026-10-24"
         case "recent-volatility-managed-idle-cash": version = "vol-index-current-rule-correction-v1-2026-10-24"
         case "recent-gold-equity-relative-z252-shift25": version = "gold-equity-index-current-rule-correction-v1-2026-10-24"

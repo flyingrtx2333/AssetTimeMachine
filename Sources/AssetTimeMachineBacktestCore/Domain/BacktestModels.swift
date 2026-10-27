@@ -434,7 +434,7 @@ nonisolated public struct BacktestNFCIAsOfData: Codable, Equatable, Sendable {
         case .kvo:
             return BacktestText.string("黄金、纳指、标普500、沪深300与上证综指的量价组合。以75%防守组合搭配25%突破持仓，KVO34/55与13日信号线确认A股入场；默认每笔手续费0.025%、零滑点，不使用杠杆。")
         case .kvoSatelliteDualEngine:
-            return BacktestText.string("由KVO量价防守底仓（68%）与核心黄金卫星动量（32%）组成的多引擎宏观协同策略，采用年度动态再平衡与前缀合规现金承接；默认每笔手续费0.025%、零滑点，不使用杠杆。")
+            return BacktestText.string("由KVO量价防守底仓（55%）、回撤再入场动量（25%）、黄金卫星动量（15%）与控波动量（5%）组成的多引擎宏观协同策略，采用年度动态再平衡与前缀合规现金承接；默认每笔手续费0.025%、零滑点，不使用杠杆。")
         case .ruleBased:
             return BacktestText.string("按买入/卖出条件独立回测每个资产")
         case .ultraDefensiveRotation:
@@ -1652,7 +1652,7 @@ public struct AdvancedBacktestStrategyTemplate: Identifiable, Sendable {
             id: "kvo-satellite-dual-engine", mode: .kvoSatelliteDualEngine,
             selectedAssetSymbols: ["gold_cny", "nasdaq", "sp500", "csi300", "shanghai_composite"],
             categoryLocalizationKey: "高级策略", titleLocalizationKey: "KVO黄金卫星双引擎",
-            annualizedReturn: 0.070104, maxDrawdown: 0.075124, sharpeRatio: 1.30528,
+            annualizedReturn: 0.0726, maxDrawdown: 0.0721, sharpeRatio: 1.3540,
             performancePeriod: "2002-02-05—2026-10-22",
             buyRule: .init(direction: .alwaysBuy, days: 1),
             sellRule: .init(direction: .neverSell, days: 1),

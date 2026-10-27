@@ -1,33 +1,58 @@
 import Foundation
 
 nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
-    public static let defaultKVOWeight: Double = 0.68
-    public static let defaultSatelliteWeight: Double = 0.32
+    public static let defaultKVOWeight: Double = 0.55
+    public static let defaultDrawdownReentryWeight: Double = 0.25
+    public static let defaultSatelliteWeight: Double = 0.15
+    public static let defaultVolManagedWeight: Double = 0.05
 
     public static func advice(
         assetInputs: [(assetSeries: PublicHistorySeries?, assetOption: BacktestInstrument, fxSeries: PublicHistorySeries?)]
     ) -> StrategyRebalanceAdvice? {
-        let kvoAdvice = KE25LiveStrategy.advice(assetInputs: assetInputs, useKVO: true)
-        let satAdvice = StrategyAdviceCalculator.advancedRotationRebalanceAdvice(
+        let preparedInputs = MarketInputPreparation.publicIndexHistoryInputs(assetInputs)
+        let kvoAdvice = KE25LiveStrategy.advice(assetInputs: preparedInputs, useKVO: true)
+        let ddAdvice = StrategyAdviceCalculator.advancedRotationRebalanceAdvice(
             assetInputs: assetInputs,
+            mode: .drawdownReentryMomentum
+        )
+        let satAdvice = StrategyAdviceCalculator.advancedRotationRebalanceAdvice(
+            assetInputs: preparedInputs,
             mode: .coreGoldSatelliteAssetRiskGateMomentum
         )
+        let volAdvice = StrategyAdviceCalculator.advancedRotationRebalanceAdvice(
+            assetInputs: assetInputs,
+            mode: .coreGoldSatelliteOneWayVolManagedMomentum
+        )
 
-        let wKVO = defaultKVOWeight
-        let wSat = defaultSatelliteWeight
+        let wK = defaultKVOWeight
+        let wD = defaultDrawdownReentryWeight
+        let wS = defaultSatelliteWeight
+        let wV = defaultVolManagedWeight
 
         var combinedWeights: [String: Double] = [:]
         var titlesBySymbol: [String: String] = [:]
 
         if let kvo = kvoAdvice {
             for alloc in kvo.allocations {
-                combinedWeights[alloc.symbol, default: 0] += alloc.targetWeight * wKVO
+                combinedWeights[alloc.symbol, default: 0] += alloc.targetWeight * wK
+                titlesBySymbol[alloc.symbol] = alloc.title
+            }
+        }
+        if let dd = ddAdvice {
+            for alloc in dd.allocations {
+                combinedWeights[alloc.symbol, default: 0] += alloc.targetWeight * wD
                 titlesBySymbol[alloc.symbol] = alloc.title
             }
         }
         if let sat = satAdvice {
             for alloc in sat.allocations {
-                combinedWeights[alloc.symbol, default: 0] += alloc.targetWeight * wSat
+                combinedWeights[alloc.symbol, default: 0] += alloc.targetWeight * wS
+                titlesBySymbol[alloc.symbol] = alloc.title
+            }
+        }
+        if let vol = volAdvice {
+            for alloc in vol.allocations {
+                combinedWeights[alloc.symbol, default: 0] += alloc.targetWeight * wV
                 titlesBySymbol[alloc.symbol] = alloc.title
             }
         }
@@ -45,7 +70,7 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
             $0.targetWeight == $1.targetWeight ? $0.symbol < $1.symbol : $0.targetWeight > $1.targetWeight
         }
 
-        let asOfDate = satAdvice?.asOfDate ?? kvoAdvice?.asOfDate ?? Date()
+        let asOfDate = satAdvice?.asOfDate ?? kvoAdvice?.asOfDate ?? ddAdvice?.asOfDate ?? Date()
 
         return StrategyRebalanceAdvice(
             strategyTitle: BacktestText.string("KVO黄金卫星双引擎"),
@@ -54,7 +79,7 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
             rebalanceSessions: 1,
             targetAnnualVolatility: nil,
             allocations: allocations,
-            signalReason: BacktestText.string("KVO量价防守底仓（68%）搭配黄金卫星动量（32%）宏观协同"),
+            signalReason: BacktestText.string("四引擎宏观量价复合：55% KVO量价防守 ＋ 25% 回撤再入场 ＋ 15% 黄金卫星 ＋ 5% 控波单向动量"),
             nextReviewDate: BacktestSeriesAlignment.nextStrategyWeekday(after: asOfDate)
         )
     }
@@ -66,26 +91,50 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
         dateBounds: ClosedRange<Date>? = nil
     ) -> AdvancedRotationStrategyRun? {
         let preparedInputs = MarketInputPreparation.publicIndexHistoryInputs(assetInputs)
-        let wKVO = defaultKVOWeight
-        let wSat = defaultSatelliteWeight
+        let wK = defaultKVOWeight
+        let wD = defaultDrawdownReentryWeight
+        let wS = defaultSatelliteWeight
+        let wV = defaultVolManagedWeight
 
+        // 1. KVO run
         let kvoInput = StrategyRuntimeRegistry.Input(
             assetInputs: preparedInputs,
-            initialCash: initialCash * wKVO,
+            initialCash: initialCash * wK,
             settings: settings,
             nfciAsOf: nil,
             dateBounds: dateBounds
         )
         guard let kvoRun = StrategyRuntimeRegistry.specialized[.kvo]?(kvoInput) else { return nil }
 
+        // 2. Drawdown Reentry run
+        let ddInput = StrategyRuntimeRegistry.Input(
+            assetInputs: assetInputs,
+            initialCash: initialCash * wD,
+            settings: settings,
+            nfciAsOf: nil,
+            dateBounds: dateBounds
+        )
+        guard let ddRun = StrategyRuntimeRegistry.run(mode: .drawdownReentryMomentum, input: ddInput) else { return nil }
+
+        // 3. Core Gold Satellite run
         let satInput = StrategyRuntimeRegistry.Input(
             assetInputs: preparedInputs,
-            initialCash: initialCash * wSat,
+            initialCash: initialCash * wS,
             settings: settings,
             nfciAsOf: nil,
             dateBounds: dateBounds
         )
         guard let satRun = StrategyRuntimeRegistry.run(mode: .coreGoldSatelliteAssetRiskGateMomentum, input: satInput) else { return nil }
+
+        // 4. Vol Managed run
+        let volInput = StrategyRuntimeRegistry.Input(
+            assetInputs: assetInputs,
+            initialCash: initialCash * wV,
+            settings: settings,
+            nfciAsOf: nil,
+            dateBounds: dateBounds
+        )
+        guard let volRun = StrategyRuntimeRegistry.run(mode: .coreGoldSatelliteOneWayVolManagedMomentum, input: volInput) else { return nil }
 
         let allKVOStates = kvoRun.dailyStates
         guard !allKVOStates.isEmpty, let satFirst = satRun.dailyStates.first else { return nil }
@@ -93,25 +142,36 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
         let allDates = allKVOStates.map { $0.date }
         let allCivilDates = allDates.map { BacktestSeriesAlignment.historicalSeriesDateString(from: $0) }
 
+        var ddStateMap: [String: BacktestDailyState] = [:]
+        for s in ddRun.dailyStates { ddStateMap[BacktestSeriesAlignment.historicalSeriesDateString(from: s.date)] = s }
+
         var satStateMap: [String: BacktestDailyState] = [:]
-        for s in satRun.dailyStates {
-            let key = BacktestSeriesAlignment.historicalSeriesDateString(from: s.date)
-            satStateMap[key] = s
-        }
+        for s in satRun.dailyStates { satStateMap[BacktestSeriesAlignment.historicalSeriesDateString(from: s.date)] = s }
+
+        var volStateMap: [String: BacktestDailyState] = [:]
+        for s in volRun.dailyStates { volStateMap[BacktestSeriesAlignment.historicalSeriesDateString(from: s.date)] = s }
 
         let satStartDate = BacktestSeriesAlignment.historicalSeriesDateString(from: satFirst.date)
 
-        var scaleKVO: Double = 1.0
-        var scaleSat: Double = 1.0
-
-        var satCashPre = initialCash * wSat
+        var satCashPre = initialCash * wS
         var satActivated = false
         var lastSatState: BacktestDailyState?
 
         var points: [BacktestSeriesPoint] = []
         var dailyStates: [BacktestDailyState] = []
-        var totalRebalanceFees: Double = 0.0
+        var allTrades: [AdvancedBacktestTrade] = []
 
+        // Aggregated physical trades from each audited engine
+        allTrades.append(contentsOf: kvoRun.report.trades)
+        allTrades.append(contentsOf: ddRun.report.trades)
+        allTrades.append(contentsOf: satRun.report.trades)
+        allTrades.append(contentsOf: volRun.report.trades)
+        allTrades.sort { $0.date == $1.date ? $0.assetSymbol < $1.assetSymbol : $0.date < $1.date }
+
+        var scaleK = 1.0
+        var scaleD = 1.0
+        var scaleS = 1.0
+        var scaleV = 1.0
         var previousYear = String(allCivilDates[0].prefix(4))
 
         for i in 0..<allDates.count {
@@ -120,7 +180,9 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
             let currentYear = String(civilDate.prefix(4))
 
             let sK = allKVOStates[i]
+            let sD = ddStateMap[civilDate] ?? sK
             var sS = satStateMap[civilDate]
+            let sV = volStateMap[civilDate] ?? sK
 
             if let ss = sS {
                 lastSatState = ss
@@ -136,56 +198,69 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
                 }
             }
 
-            // Activation handoff: scale seamlessly bridges accumulated cash into sleeve initial value
+            // Activation handoff: bridge accumulated cash into satellite sleeve
             if !satActivated && civilDate >= satStartDate {
                 satActivated = true
                 guard let validSatState = sS else { return nil }
-                scaleSat = satCashPre / validSatState.portfolioValue
+                scaleS = satCashPre / validSatState.portfolioValue
             }
 
-            var valKVO = sK.portfolioValue * scaleKVO
-            var valSat = !satActivated ? satCashPre : (sS!.portfolioValue * scaleSat)
-            var totalVal = valKVO + valSat
+            var valK = sK.portfolioValue * scaleK
+            var valD = sD.portfolioValue * scaleD
+            var valS = !satActivated ? satCashPre : (sS!.portfolioValue * scaleS)
+            var valV = sV.portfolioValue * scaleV
+            var totalVal = valK + valD + valS + valV
 
-            // Annual rebalancing (from 2006 onwards, once both are active)
+            // Annual sleeve rebalancing with realistic turnover fee
             if currentYear != previousYear && satActivated {
-                let targetKVO = totalVal * wKVO
-                let targetSat = totalVal * wSat
+                let targetK = totalVal * wK
+                let targetD = totalVal * wD
+                let targetS = totalVal * wS
+                let targetV = totalVal * wV
 
-                let diffKVO = abs(targetKVO - valKVO)
-                let diffSat = abs(targetSat - valSat)
-                let fee = (diffKVO + diffSat) * 0.5 * 0.00025
-                totalRebalanceFees += fee
+                let diffK = abs(targetK - valK)
+                let diffD = abs(targetD - valD)
+                let diffS = abs(targetS - valS)
+                let diffV = abs(targetV - valV)
+                let fee = (diffK + diffD + diffS + diffV) * 0.5 * 0.00025
                 totalVal -= fee
 
-                scaleKVO = (totalVal * wKVO) / sK.portfolioValue
-                scaleSat = (totalVal * wSat) / sS!.portfolioValue
+                scaleK = (totalVal * wK) / sK.portfolioValue
+                scaleD = (totalVal * wD) / sD.portfolioValue
+                scaleS = (totalVal * wS) / sS!.portfolioValue
+                scaleV = (totalVal * wV) / sV.portfolioValue
 
-                valKVO = sK.portfolioValue * scaleKVO
-                valSat = sS!.portfolioValue * scaleSat
+                valK = sK.portfolioValue * scaleK
+                valD = sD.portfolioValue * scaleD
+                valS = sS!.portfolioValue * scaleS
+                valV = sV.portfolioValue * scaleV
                 previousYear = currentYear
             } else if currentYear != previousYear {
                 previousYear = currentYear
             }
 
-            let cashKVO = sK.cash * scaleKVO
-            let cashSat = !satActivated ? satCashPre : (sS!.cash * scaleSat)
-            let totalCash = cashKVO + cashSat
+            let cashK = sK.cash * scaleK
+            let cashD = sD.cash * scaleD
+            let cashS = !satActivated ? satCashPre : (sS!.cash * scaleS)
+            let cashV = sV.cash * scaleV
+            let totalCash = cashK + cashD + cashS + cashV
 
             var totalHoldings: [String: Double] = [:]
-            for (sym, qty) in sK.holdingsBySymbol { totalHoldings[sym, default: 0] += qty * scaleKVO }
+            for (sym, qty) in sK.holdingsBySymbol { totalHoldings[sym, default: 0] += qty * scaleK }
+            for (sym, qty) in sD.holdingsBySymbol { totalHoldings[sym, default: 0] += qty * scaleD }
             if satActivated, let sS {
-                for (sym, qty) in sS.holdingsBySymbol { totalHoldings[sym, default: 0] += qty * scaleSat }
+                for (sym, qty) in sS.holdingsBySymbol { totalHoldings[sym, default: 0] += qty * scaleS }
             }
+            for (sym, qty) in sV.holdingsBySymbol { totalHoldings[sym, default: 0] += qty * scaleV }
 
-            let actualWeightKVO = valKVO / totalVal
-            let actualWeightSat = valSat / totalVal
-
+            // Target weights mirror strategy policy perfectly (100% parity with advice)
             var targetWeights: [String: Double] = [:]
-            for (sym, w) in sK.targetWeights { targetWeights[sym, default: 0] += w * actualWeightKVO }
+            for (sym, w) in sK.targetWeights { targetWeights[sym, default: 0] += w * wK }
+            for (sym, w) in sD.targetWeights { targetWeights[sym, default: 0] += w * wD }
             if satActivated, let sS {
-                for (sym, w) in sS.targetWeights { targetWeights[sym, default: 0] += w * actualWeightSat }
+                for (sym, w) in sS.targetWeights { targetWeights[sym, default: 0] += w * wS }
             }
+            for (sym, w) in sV.targetWeights { targetWeights[sym, default: 0] += w * wV }
 
             points.append(BacktestSeriesPoint(date: date, portfolioValue: totalVal, sequence: i))
             dailyStates.append(BacktestDailyState(
@@ -212,7 +287,7 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
             points: points,
             benchmarkPoints: kvoRun.report.benchmarkPoints,
             pricePoints: [],
-            trades: [],
+            trades: allTrades,
             finalPortfolioValue: finalValue,
             finalCash: finalCash,
             finalUnits: 0,
@@ -223,7 +298,7 @@ nonisolated public enum KVOGoldSatelliteDualEngineStrategy {
             points: points,
             benchmarkPoints: kvoRun.report.benchmarkPoints,
             benchmarkSeries: kvoRun.report.benchmarkSeries,
-            trades: [],
+            trades: allTrades,
             assetReports: [syntheticReport],
             finalPortfolioValue: finalValue,
             finalCash: finalCash,

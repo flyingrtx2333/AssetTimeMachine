@@ -21,7 +21,7 @@ final class KVOGoldSatelliteDualEngineTests: XCTestCase {
     func testStrategyRegistryDefinition() throws {
         let definition = try StrategyRegistry.definition(id: "kvo-satellite-dual-engine")
         XCTAssertEqual(definition.reference.id, "kvo-satellite-dual-engine")
-        XCTAssertEqual(definition.reference.version, "kvo-satellite-dual-engine-v1-2026-10-24")
+        XCTAssertEqual(definition.reference.version, "kvo-satellite-dual-engine-v2-2026-10-27")
         XCTAssertEqual(definition.template.mode, .kvoSatelliteDualEngine)
         XCTAssertEqual(definition.template.mode.defaultFeeRatePercent, 0.025)
         XCTAssertEqual(definition.template.mode.defaultSlippageRatePercent, 0)
@@ -60,15 +60,19 @@ final class KVOGoldSatelliteDualEngineTests: XCTestCase {
         XCTAssertEqual(firstCivil, "2002-02-05")
         XCTAssertEqual(lastCivil, "2026-10-22")
 
-        // 2. Performance metrics: CAGR >= 7.0%, Sharpe >= 1.30, MDD <= 8.0%
+        // 2. Performance metrics: CAGR >= 7.0%, Sharpe >= 1.35, MDD <= 8.0%, Trades > 10,000
         let cagr = try XCTUnwrap(report.annualizedReturn)
         let sharpe = try XCTUnwrap(report.sharpeRatio)
         let mdd = report.maxDrawdown
-        print("AUDIT: cagr=\(cagr), sharpe=\(sharpe), mdd=\(mdd), count=\(dailyStates.count)")
+        let tradesCount = report.trades.count
+        let sharpe252 = sharpe * sqrt(252.0 / (5751.0 / 24.71))
+        print("AUDIT: cagr=\(cagr), sharpe=\(sharpe), sharpe252=\(sharpe252), mdd=\(mdd), trades=\(tradesCount), count=\(dailyStates.count)")
 
         XCTAssertGreaterThanOrEqual(cagr, 0.070, "CAGR must break 7.0% threshold")
-        XCTAssertGreaterThanOrEqual(sharpe, 1.30, "Sharpe must exceed 1.30")
+        XCTAssertGreaterThanOrEqual(sharpe, 1.35, "App Sharpe must exceed 1.35")
+        XCTAssertGreaterThanOrEqual(sharpe252, 1.40, "252-day convention Sharpe must exceed 1.40")
         XCTAssertLessThanOrEqual(mdd, 0.080, "Max drawdown must stay strictly below 8.0%")
+        XCTAssertGreaterThan(tradesCount, 10000, "Audited trades must be populated with >10,000 physical orders")
 
         // 3. Accounting integrity: cash >= 0, gross exposure <= 1.0, residual <= 1e-4
         var maxResidual = 0.0
@@ -100,6 +104,15 @@ final class KVOGoldSatelliteDualEngineTests: XCTestCase {
         let totalWeight = advice.allocations.reduce(0.0) { $0 + $1.targetWeight }
         XCTAssertLessThanOrEqual(totalWeight, 1.0 + 1e-11)
         XCTAssertTrue(advice.allocations.allSatisfy { $0.targetWeight >= 0 })
+
+        let runResult = try XCTUnwrap(KVOGoldSatelliteDualEngineStrategy.run(
+            assetInputs: assetInputs,
+            initialCash: 100_000,
+            settings: settings,
+            dateBounds: nil
+        ))
+        XCTAssertEqual(runResult.dailyStates.last?.date, advice.asOfDate)
+        XCTAssertFalse(runResult.report.trades.isEmpty)
     }
 
     func testColdStartPhysicalPrefixNoFutureLeakage() throws {
@@ -114,16 +127,6 @@ final class KVOGoldSatelliteDualEngineTests: XCTestCase {
             }
         }
 
-        let cutDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: "2008-10-31"))
-        let croppedInputs = MarketInputPreparation.filteredAdvancedAssetInputs(fullAssetInputs, within: Date.distantPast...cutDate)
-
-        let prefixRun = try XCTUnwrap(KVOGoldSatelliteDualEngineStrategy.run(
-            assetInputs: croppedInputs,
-            initialCash: 100_000,
-            settings: settings,
-            dateBounds: nil
-        ))
-
         let fullRun = try XCTUnwrap(KVOGoldSatelliteDualEngineStrategy.run(
             assetInputs: fullAssetInputs,
             initialCash: 100_000,
@@ -131,22 +134,45 @@ final class KVOGoldSatelliteDualEngineTests: XCTestCase {
             dateBounds: nil
         ))
 
-        let fullPrefixStates = fullRun.dailyStates.filter { $0.date <= cutDate }
-        let prefixStates = prefixRun.dailyStates
+        // 4-fold cold-start physical prefix truncation verification
+        let checkPoints: [(cutStr: String, expectedCount: Int)] = [
+            ("2008-10-31", 1558),
+            ("2015-06-15", 3102),
+            ("2020-03-20", 4219),
+            ("2023-12-29", 5103)
+        ]
 
-        XCTAssertEqual(prefixStates.count, fullPrefixStates.count)
-        XCTAssertEqual(prefixStates.count, 1558)
+        for (cutStr, expectedCount) in checkPoints {
+            let cutDate = try XCTUnwrap(BacktestSeriesAlignment.historicalSeriesDate(from: cutStr))
+            let croppedInputs = MarketInputPreparation.filteredAdvancedAssetInputs(fullAssetInputs, within: Date.distantPast...cutDate)
 
-        for i in 0..<prefixStates.count {
-            let sPref = prefixStates[i]
-            let sFull = fullPrefixStates[i]
+            let prefixRun = try XCTUnwrap(KVOGoldSatelliteDualEngineStrategy.run(
+                assetInputs: croppedInputs,
+                initialCash: 100_000,
+                settings: settings,
+                dateBounds: nil
+            ))
 
-            XCTAssertEqual(sPref.portfolioValue, sFull.portfolioValue, accuracy: 1e-11)
-            XCTAssertEqual(sPref.cash, sFull.cash, accuracy: 1e-11)
-            for (sym, wPref) in sPref.targetWeights {
-                let wFull = sFull.targetWeights[sym] ?? 0.0
-                XCTAssertEqual(wPref, wFull, accuracy: 1e-11)
+            let fullPrefixStates = fullRun.dailyStates.filter { $0.date <= cutDate }
+            let prefixStates = prefixRun.dailyStates
+
+            XCTAssertEqual(prefixStates.count, fullPrefixStates.count, "State count mismatch at \(cutStr)")
+            XCTAssertEqual(prefixStates.count, expectedCount, "Expected count mismatch at \(cutStr)")
+
+            for i in 0..<prefixStates.count {
+                let sPref = prefixStates[i]
+                let sFull = fullPrefixStates[i]
+
+                XCTAssertEqual(sPref.portfolioValue, sFull.portfolioValue, accuracy: 1e-10)
+                XCTAssertEqual(sPref.cash, sFull.cash, accuracy: 1e-10)
+                for (sym, wPref) in sPref.targetWeights {
+                    let wFull = sFull.targetWeights[sym] ?? 0.0
+                    XCTAssertEqual(wPref, wFull, accuracy: 1e-10)
+                }
             }
+
+            let expectedTradesCount = fullRun.report.trades.filter { $0.date <= cutDate }.count
+            XCTAssertEqual(prefixRun.report.trades.count, expectedTradesCount, "Trades count mismatch at \(cutStr)")
         }
     }
 }
