@@ -691,11 +691,11 @@ private struct SettingsOverviewItem: View {
     var accessorySystemImage: String? = nil
 
     var body: some View {
-        HStack(alignment: .top, spacing: 6) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: systemImage)
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(AssetTheme.textPrimary)
-                .frame(width: 24, height: 38, alignment: .top)
+                .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -712,14 +712,14 @@ private struct SettingsOverviewItem: View {
             }
 
             if let accessorySystemImage {
+                Spacer(minLength: 4)
                 Image(systemName: accessorySystemImage)
                     .font(.system(size: 8, weight: .bold))
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                    .frame(height: 38, alignment: .center)
                     .accessibilityHidden(true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 44, alignment: .center)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
@@ -755,6 +755,7 @@ private struct SettingsSectionHeader: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 22)
             .padding(.bottom, 5)
+            .listRowInsets(EdgeInsets())
     }
 }
 
@@ -898,7 +899,7 @@ private struct SettingsDisclosureIcon: View {
         Image(systemName: "chevron.right")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(AssetTheme.textSecondary)
-            .frame(width: isInteractive ? 44 : 12, height: 44)
+            .frame(width: isInteractive ? 44 : 12, height: 44, alignment: .trailing)
             .contentShape(Rectangle())
     }
 }
@@ -932,6 +933,7 @@ private extension View {
         listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
             .listRowBackground(AssetTheme.surface.opacity(0.48))
             .listRowSeparatorTint(AssetTheme.border.opacity(0.82))
+            .alignmentGuide(.listRowSeparatorLeading) { _ in 36 }
     }
 }
 
