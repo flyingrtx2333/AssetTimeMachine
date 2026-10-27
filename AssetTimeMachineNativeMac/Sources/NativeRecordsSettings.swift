@@ -843,9 +843,11 @@ struct NativeCloudSyncView: View {
     @State private var confirmsOwnership = false
     @State private var isExporting = false
     @State private var exportMessage: String?
+    @State private var showsEntryReview = false
 
     private var busy: Bool { cloud.isWorking || isExporting }
     private var sheetHeight: CGFloat {
+        if showsEntryReview { return 440 }
         let errorHeight: CGFloat = cloud.errorMessage?.isEmpty == false ? 40 : 0
         guard cloud.currentUser != nil else { return 176 + errorHeight }
         return min(472, 280 + CGFloat(min(cloud.backups.count, 3)) * 38 + errorHeight
@@ -865,6 +867,15 @@ struct NativeCloudSyncView: View {
             if showsLogin {
                 NativeAccountChoice(cloud: cloud, allowsOffline: false, width: 448) { showsLogin = false }
                     .environment(\.modelContext, context)
+            } else if showsEntryReview, let review = cloud.entryConflictReview {
+                NativeSheet("同步差异", width: 448, height: sheetHeight, close: { showsEntryReview = false }) {
+                    CloudSyncEntryReviewView(review: review, busy: busy,
+                        cancel: { showsEntryReview = false }) { choices in
+                        if await cloud.confirmEntryConflicts(reviewID: review.id, choices: choices, from: context) {
+                            showsEntryReview = false
+                        }
+                    }.id(review.id)
+                }
             } else {
                 NativeSheet("云同步", width: 448, height: sheetHeight, close: { dismiss() }) {
                     ScrollView {
@@ -889,6 +900,10 @@ struct NativeCloudSyncView: View {
                                     .font(NativeStyle.FontRole.body).foregroundStyle(AssetTheme.negative)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .help(error)
+                            }
+                            if cloud.entryConflictReview != nil {
+                                Button(AppLocalization.string("查看差异")) { showsEntryReview = true }
+                                    .buttonStyle(.borderedProminent).tint(NativePalette.accent).disabled(busy)
                             }
                             if cloud.currentUser == nil {
                                 if !cloud.isSessionPending {
@@ -963,6 +978,9 @@ struct NativeCloudSyncView: View {
         .fixedSize(horizontal: false, vertical: true)
         .modifier(NativeWorkspaceSurface())
         .task { await refresh() }
+        .onChange(of: cloud.entryConflictReview?.id) { _, id in
+            if id == nil { showsEntryReview = false }
+        }
         .alert(AppLocalization.format("确认关联至 %@？", cloud.currentUser?.displayName ?? "—"), isPresented: $confirmsOwnership) {
             Button(AppLocalization.string("取消"), role: .cancel) {}
             Button(AppLocalization.string("确认并同步")) { Task { await cloud.authorizeLocalDataForCurrentAccount(from: context) } }

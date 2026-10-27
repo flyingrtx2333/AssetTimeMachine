@@ -209,6 +209,7 @@ private final class NativeCloudMockServer: @unchecked Sendable {
     var afterAcceptedUpload: (() -> Void)?
     var failHistoryRequests = 0
     var loseNextAcceptedUploadResponse = false
+    var failNextUploadBeforeAcceptance = false
     init(_ payload: ExportPayload) { self.payload = payload }
 
     func change(_ itemID: UUID, to amount: Double) {
@@ -274,6 +275,10 @@ private final class NativeCloudMockServer: @unchecked Sendable {
         else if path.hasSuffix("/cloud/upload") {
             uploads += 1
             let action = beforeNextUpload; beforeNextUpload = nil; action?()
+            if failNextUploadBeforeAcceptance {
+                failNextUploadBeforeAcceptance = false
+                throw URLError(.networkConnectionLost)
+            }
             let value = try JSONSerialization.jsonObject(with: body ?? Data()) as? [String: Any] ?? [:]
             let submittedBase = value["base_backup_id"] as? Int
             let baseConflict = noHead ? submittedBase != nil : submittedBase != head
@@ -577,9 +582,104 @@ enum NativeCloudSyncProbe {
             checks["unmatchedHistoricalFingerprintCannotBindOrUpload"] = conflict.errorMessage != nil && server.uploads == conflictUploads && conflictDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
             checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
             checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }
+            checks.merge(try await conflictReviewChecks(schema: schema)) { _, latest in latest }
             return ["checks": checks, "allPassed": checks.values.allSatisfy { $0 }, "count": checks.count,
                     "latestReads": server.latestReads, "uploads": server.uploads, "acceptedUploads": server.acceptedUploads]
         } catch { return ["checks": checks, "allPassed": false, "error": error.localizedDescription] }
+    }
+
+    private static func conflictReviewChecks(schema: Schema) async throws -> [String: Bool] {
+        var checks: [String: Bool] = [:]
+        let suite = "CloudSyncEntryReview-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        let previousServer = NativeCloudMockProtocol.server
+        defer { defaults.removePersistentDomain(forName: suite); NativeCloudMockProtocol.server = previousServer }
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+        let context = ModelContext(container); context.autosaveEnabled = false
+        let category = AssetCategory(name: "Synthetic review", group: .financial)
+        let a = AssetItem(name: "Synthetic review A", category: category)
+        let b = AssetItem(name: "Synthetic review B", category: category)
+        let day = AssetSnapshot(date: Calendar.current.startOfDay(for: .now))
+        context.insert(category); context.insert(a); context.insert(b); context.insert(day)
+        context.insert(AssetEntry(amount: 10, snapshot: day, item: a))
+        context.insert(AssetEntry(amount: 20, snapshot: day, item: b))
+        try context.save()
+        func local() async throws -> ExportPayload { try await ImportExportService.exportPayloadCooperatively(from: context).payload }
+        func amount(_ payload: ExportPayload, _ item: UUID) -> Double? {
+            payload.snapshots.first { $0.id == day.id }?.entries.first { $0.itemID == item }?.amount
+        }
+        let server = NativeCloudMockServer(try await local())
+        NativeCloudMockProtocol.server = server
+        func store() -> AssetTimeMachineCloudStore {
+            let cloud = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+            cloud.currentUser = AssetTimeMachineCloudUser(id: 11, userName: "Synthetic review", userEmail: nil)
+            cloud.setAutomaticSyncActive(false)
+            return cloud
+        }
+        let cloud = store()
+        _ = await cloud.runIsolatedSync(from: context)
+        try SnapshotService.upsertEntry(snapshot: day, item: a, amount: 11, in: context)
+        server.change(a.id, to: 99)
+        let uploads = server.uploads
+        _ = await cloud.runIsolatedSync(from: context)
+        guard let initial = cloud.entryConflictReview else { throw URLError(.cannotParseResponse) }
+        let beforeChoice = try await local()
+        checks["conflictReviewHasExactFieldWithoutMutation"] = initial.conflicts.count == 1
+            && initial.conflicts[0].field == .amount && initial.conflicts[0].itemID == a.id
+            && amount(beforeChoice, a.id) == 11 && amount(server.payload, a.id) == 99 && server.uploads == uploads
+        let partial = await cloud.confirmEntryConflicts(reviewID: initial.id, choices: [:], from: context)
+        checks["partialReviewCannotApplyOrUpload"] = !partial && server.uploads == uploads
+        server.change(b.id, to: 33)
+        let stale = await cloud.confirmEntryConflicts(reviewID: initial.id,
+            choices: Dictionary(uniqueKeysWithValues: initial.conflicts.map { ($0.id, .local) }), from: context)
+        let afterCloudChanged = try await local()
+        checks["changedCloudInvalidatesConfirmedChoices"] = !stale && server.uploads == uploads
+            && amount(afterCloudChanged, a.id) == 11 && amount(server.payload, a.id) == 99
+        _ = await cloud.runIsolatedSync(from: context)
+        guard let current = cloud.entryConflictReview else { throw URLError(.cannotParseResponse) }
+        let choices = Dictionary(uniqueKeysWithValues: current.conflicts.map { ($0.id, SyncMergeService.EntryChoice.local) })
+        server.failNextUploadBeforeAcceptance = true
+        _ = await cloud.confirmEntryConflicts(reviewID: current.id, choices: choices, from: context)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("CloudSyncProbe-" + String(ObjectIdentifier(defaults).hashValue))
+        let pendingFile = folder.appendingPathComponent("account-11-pending-upload.json")
+        let pending = try JSONSerialization.jsonObject(with: Data(contentsOf: pendingFile)) as? [String: Any]
+        let afterFailedUpload = try await local()
+        checks["confirmedChoiceJournalSurvivesUploadFailure"] = pending?["confirmation"] != nil
+            && cloud.entryConflictReview == nil && amount(afterFailedUpload, a.id) == 11 && amount(server.payload, a.id) == 99
+        let safety = defaults.string(forKey: "assettimemachine.cloud.lastLocalSafetyBackup").map { URL(fileURLWithPath: $0) }
+        checks["confirmedReviewBacksUpBothReplicas"] = safety.map { FileManager.default.fileExists(atPath: $0.path)
+            && FileManager.default.fileExists(atPath: $0.deletingLastPathComponent().appendingPathComponent("cloud.json").path) } == true
+        let restarted = store()
+        _ = await restarted.runIsolatedSync(from: context)
+        checks["restartRetriesConfirmedCandidateWithoutReasking"] = restarted.errorMessage == nil && restarted.entryConflictReview == nil
+            && amount(server.payload, a.id) == 11 && amount(server.payload, b.id) == 33
+            && !FileManager.default.fileExists(atPath: pendingFile.path)
+        try SnapshotService.upsertEntry(snapshot: day, item: a, amount: 12, in: context)
+        server.change(a.id, to: 88)
+        _ = await restarted.runIsolatedSync(from: context)
+        guard let review = restarted.entryConflictReview else { throw URLError(.cannotParseResponse) }
+        try SnapshotService.upsertEntry(snapshot: day, item: a, amount: 13, in: context)
+        let beforeStale = server.uploads
+        let staleLocal = await restarted.confirmEntryConflicts(reviewID: review.id,
+            choices: Dictionary(uniqueKeysWithValues: review.conflicts.map { ($0.id, .remote) }), from: context)
+        let afterLocalChanged = try await local()
+        checks["newLocalEditInvalidatesOldReview"] = !staleLocal && amount(afterLocalChanged, a.id) == 13
+            && amount(server.payload, a.id) == 88 && server.uploads == beforeStale
+        _ = await restarted.runIsolatedSync(from: context)
+        guard let newest = restarted.entryConflictReview else { throw URLError(.cannotParseResponse) }
+        server.loseNextAcceptedUploadResponse = true
+        _ = await restarted.confirmEntryConflicts(reviewID: newest.id,
+            choices: Dictionary(uniqueKeysWithValues: newest.conflicts.map { ($0.id, .local) }), from: context)
+        let accepted = server.acceptedUploads
+        let afterLost = store()
+        _ = await afterLost.runIsolatedSync(from: context)
+        checks["lostConfirmationAckRecoversWithoutDuplicateUpload"] = afterLost.errorMessage == nil
+            && afterLost.entryConflictReview == nil && server.acceptedUploads == accepted
+            && amount(server.payload, a.id) == 13 && !FileManager.default.fileExists(atPath: pendingFile.path)
+        afterLost.setAutomaticSyncActive(false)
+        restarted.setAutomaticSyncActive(false)
+        cloud.setAutomaticSyncActive(false)
+        return checks
     }
 
     private static func durabilityChecks(schema: Schema) async throws -> [String: Bool] {

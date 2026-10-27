@@ -1106,12 +1106,80 @@ nonisolated enum SyncMergeService {
         }
     }
 
+    enum EntryField: String, Codable, Sendable { case amount, quantity, unitPrice, note }
+    enum EntryChoice: String, Codable, Sendable { case local, remote }
+
+    nonisolated struct EntryConflict: Identifiable, Sendable {
+        let entryID: UUID
+        let itemID: UUID?
+        let date: Date
+        let field: EntryField
+        let localValue: Data
+        let remoteValue: Data
+        var id: String { entryID.uuidString + ":" + field.rawValue }
+    }
+
+    nonisolated struct EntryConflicts: LocalizedError, Sendable {
+        let conflicts: [EntryConflict]
+        var errorDescription: String? { Conflict.divergentEdits.errorDescription }
+    }
+
+    nonisolated struct EntryReviewResult: Sendable {
+        // A diagnostic traversal can contain provisional values. Never expose a
+        // candidate until every conflicting field has an explicit choice.
+        let payload: ExportPayload?
+        let conflicts: [EntryConflict]
+    }
+
+    nonisolated private final class EntryReviewContext {
+        let choices: [String: EntryChoice]
+        var conflicts: [EntryConflict] = []
+        var unresolved = false
+        init(choices: [String: EntryChoice]) { self.choices = choices }
+
+        func value<T: Equatable & Encodable>(_ local: T, _ remote: T, _ baseline: T?,
+            entry: ExportPayload.EntryPayload, date: Date, field: EntryField) throws -> T {
+            do { return try mergeValue(local, remote, baseline) }
+            catch Conflict.divergentEdits {
+                let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+                let conflict = EntryConflict(entryID: entry.id, itemID: entry.itemID, date: date,
+                    field: field, localValue: try encoder.encode(local), remoteValue: try encoder.encode(remote))
+                conflicts.append(conflict)
+                switch choices[conflict.id] {
+                case .local: return local
+                case .remote: return remote
+                case nil: unresolved = true; return local
+                }
+            }
+        }
+    }
+
+    static func reviewedPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload,
+        choices: [String: EntryChoice] = [:]) throws -> EntryReviewResult {
+        let review = EntryReviewContext(choices: choices)
+        let payload = try reconciledPayload(local: local, remote: remote, baseline: baseline, entryReview: review)
+        guard Set(choices.keys).isSubset(of: Set(review.conflicts.map(\.id))) else { throw Conflict.divergentEdits }
+        let conflicts = review.conflicts.sorted {
+            if $0.date != $1.date { return $0.date < $1.date }
+            return $0.id < $1.id
+        }
+        return EntryReviewResult(payload: review.unresolved ? nil : payload, conflicts: conflicts)
+    }
+
     static func reconciledPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload) throws -> ExportPayload {
+        try reconciledPayload(local: local, remote: remote, baseline: baseline, entryReview: nil)
+    }
+
+    private static func reconciledPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload,
+        entryReview: EntryReviewContext?) throws -> ExportPayload {
         // Snapshot/day and account/day are logical records. Independently created
         // UUIDs must not double balances; preserve existing intra-device duplicates.
         let (local, remote, baseline) = alignedRecords(local: local, remote: remote, baseline: baseline)
         guard unresolvedDeletionIdentities(in: local, knownBy: [baseline]).isEmpty,
               unresolvedDeletionIdentities(in: remote, knownBy: [baseline]).isEmpty else { throw Conflict.divergentEdits }
+        // Agreement is already a common ancestor, including legacy duplicate rows.
+        // An older baseline must not turn identical replicas into a false conflict.
+        if isSameContent(local, remote) { return normalized(payloadApplyingDeletions(remote)) }
         let automaticItems = automaticPriceItemIDs(local: local, remote: remote, baseline: baseline)
         let localInheritance = inheritedEntries(in: local, automaticItems: automaticItems)
         let remoteInheritance = inheritedEntries(in: remote, automaticItems: automaticItems)
@@ -1126,7 +1194,8 @@ nonisolated enum SyncMergeService {
         let snapshots = try reconcileRecords(local.snapshots, remote.snapshots, baseline.snapshots, id: \.id,
             excluding: ["marketAnchorsUpdatedAt"]) { l, r, b in
             try reconcileSnapshot(l, r, b, automaticItems: automaticItems,
-                localInheritance: localInheritance, remoteInheritance: remoteInheritance, baselineEntries: baselineEntries)
+                localInheritance: localInheritance, remoteInheritance: remoteInheritance, baselineEntries: baselineEntries,
+                entryReview: entryReview)
         }
         let remotes = keyedByID(remote.snapshots, id: \.id), bases = keyedByID(baseline.snapshots, id: \.id)
         // Different UUIDs do not make two entries for the same account/day safe
@@ -1317,8 +1386,15 @@ nonisolated enum SyncMergeService {
     private static func reconcileSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
         _ b: ExportPayload.SnapshotPayload?, automaticItems: Set<UUID>,
         localInheritance: [UUID: InheritedEntrySource], remoteInheritance: [UUID: InheritedEntrySource],
-        baselineEntries: [UUID: ExportPayload.EntryPayload]) throws -> ExportPayload.SnapshotPayload {
+        baselineEntries: [UUID: ExportPayload.EntryPayload], entryReview: EntryReviewContext?) throws -> ExportPayload.SnapshotPayload {
+        let lSnapshotDate = l.date
         let entries = try reconcileRecords(l.entries, r.entries, b?.entries ?? [], id: \.id) { left, right, prior in
+            func value<T: Equatable & Encodable>(_ field: EntryField, _ l: T, _ r: T, _ base: T?) throws -> T {
+                if let entryReview {
+                    return try entryReview.value(l, r, base, entry: left, date: lSnapshotDate, field: field)
+                }
+                return try mergeValue(l, r, base)
+            }
             let automatic = left.itemID == right.itemID && left.itemID.map { automaticItems.contains($0) } == true
             let leftSource = localInheritance[left.id], rightSource = remoteInheritance[right.id]
             let userBase = prior ?? inheritedBaselineEntry(left: left, right: right,
@@ -1338,13 +1414,13 @@ nonisolated enum SyncMergeService {
                 else { price = isStrictlyNewer(left.updatedAt, than: right.updatedAt)
                     ? (left.unitPrice ?? right.unitPrice) : (right.unitPrice ?? left.unitPrice) }
             } else if let userValues { price = userValues.unitPrice }
-            else { price = try mergeValue(left.unitPrice, right.unitPrice, userBase.map { $0.unitPrice }) }
+            else { price = try value(.unitPrice, left.unitPrice, right.unitPrice, userBase.map { $0.unitPrice }) }
             let inheritedSource = userValues?.inheritedFromEntryID
                 ?? (leftSource != nil && rightSource != nil ? left.inheritedFromEntryID : nil)
             return ExportPayload.EntryPayload(id: left.id,
-                amount: try userValues.map { $0.amount } ?? mergeValue(left.amount, right.amount, userBase.map { $0.amount }),
-                quantity: try userValues.map { $0.quantity } ?? mergeValue(left.quantity, right.quantity, userBase.map { $0.quantity }),
-                unitPrice: price, note: try userValues?.note ?? mergeValue(left.note, right.note, userBase.map { $0.note }),
+                amount: try userValues.map { $0.amount } ?? value(.amount, left.amount, right.amount, userBase.map { $0.amount }),
+                quantity: try userValues.map { $0.quantity } ?? value(.quantity, left.quantity, right.quantity, userBase.map { $0.quantity }),
+                unitPrice: price, note: try userValues?.note ?? value(.note, left.note, right.note, userBase.map { $0.note }),
                 createdAt: min(left.createdAt, right.createdAt), updatedAt: max(left.updatedAt, right.updatedAt),
                 itemID: try mergeValue(left.itemID, right.itemID, prior.map { $0.itemID }),
                 inheritedFromEntryID: inheritedSource)
@@ -1510,6 +1586,33 @@ nonisolated enum SyncMergeService {
 
     static func isSameContent(_ lhs: ExportPayload, _ rhs: ExportPayload) -> Bool {
         (try? canonicalData(for: lhs)) == (try? canonicalData(for: rhs))
+    }
+
+    /// Binds an explicit choice to user intent, while allowing an automatic quote
+    /// refresh during review. Provenance is retained: confirming an unchanged
+    /// inherited value is a user action and must invalidate an older review.
+    static func userContentData(for payload: ExportPayload) throws -> Data {
+        let data = try canonicalData(for: payload)
+        var object = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        let automatic = Set(automaticPriceItemIDs(local: payload, remote: payload, baseline: payload).map(\.uuidString))
+        object.removeValue(forKey: "exportedAt")
+        func stripDates(_ row: [String: Any]) -> [String: Any] {
+            var row = row; row.removeValue(forKey: "createdAt"); row.removeValue(forKey: "updatedAt"); return row
+        }
+        for collection in ["categories", "items"] {
+            object[collection] = (object[collection] as? [[String: Any]] ?? []).map(stripDates)
+        }
+        object["snapshots"] = (object["snapshots"] as? [[String: Any]] ?? []).map { original in
+            var snapshot = stripDates(original)
+            for key in anchorFields { snapshot.removeValue(forKey: key) }
+            snapshot["entries"] = (snapshot["entries"] as? [[String: Any]] ?? []).map { original in
+                var entry = stripDates(original)
+                if let itemID = entry["itemID"] as? String, automatic.contains(itemID) { entry.removeValue(forKey: "unitPrice") }
+                return entry
+            }
+            return snapshot
+        }
+        return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
     }
 
     static func looksLikeSeedOnly(_ payload: ExportPayload) -> Bool {

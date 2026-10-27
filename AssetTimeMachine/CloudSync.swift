@@ -408,6 +408,30 @@ nonisolated private struct PendingCloudUpload: Codable, Sendable {
     let baselineSignature: String?
     let signature: String
     let payload: ExportPayload
+    let confirmation: PendingEntryConfirmation?
+}
+
+nonisolated private struct PendingEntryConfirmation: Codable, Sendable {
+    let originalLocalUserSignature: String
+    let candidateUserSignature: String
+    let remoteSignature: String
+    let choices: [String: SyncMergeService.EntryChoice]
+}
+
+nonisolated struct CloudSyncEntryReview: Identifiable, Sendable {
+    var id = UUID()
+    let userID: Int
+    let backupID: Int
+    let localUserSignature: String
+    let remoteSignature: String
+    let baselineSignature: String?
+    let conflicts: [SyncMergeService.EntryConflict]
+    let itemNames: [UUID: String]
+}
+
+nonisolated private struct EntryConfirmationRequest: Sendable {
+    let review: CloudSyncEntryReview
+    let choices: [String: SyncMergeService.EntryChoice]
 }
 
 nonisolated private struct CloudPayloadFingerprint: Sendable {
@@ -427,7 +451,9 @@ nonisolated private enum CloudPayloadReconciliation: Sendable {
 
 @MainActor
 final class AssetTimeMachineCloudStore: ObservableObject {
-    @Published var currentUser: AssetTimeMachineCloudUser?
+    @Published var currentUser: AssetTimeMachineCloudUser? {
+        didSet { if oldValue?.id != currentUser?.id { entryConflictReview = nil } }
+    }
     @Published var backups: [AssetTimeMachineCloudBackup] = []
     @Published var isWorking = false
     @Published var errorMessage: String?
@@ -437,6 +463,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     @Published private(set) var requiresLocalOwnershipConfirmation = false
     @Published private(set) var isApplyingLocalData = false
     @Published private(set) var localDataRevision = 0
+    @Published private(set) var entryConflictReview: CloudSyncEntryReview?
 
     private let tokenKey = "assettimemachine.cloud.accessToken"
     private let refreshTokenKey = "assettimemachine.cloud.refreshToken"
@@ -485,7 +512,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     var indicatorState: AssetTimeMachineCloudIndicatorState {
-        if (errorMessage?.isEmpty == false) {
+        if (errorMessage?.isEmpty == false) || entryConflictReview != nil {
             return .warning
         }
         if isWorking || hasPendingSync || isSessionPending {
@@ -797,7 +824,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     @discardableResult
-    private func autoSyncIfNeeded(from context: ModelContext, quietly: Bool) async -> Bool {
+    private func autoSyncIfNeeded(from context: ModelContext, quietly: Bool,
+        confirmation: EntryConfirmationRequest? = nil) async -> Bool {
         autoSyncEncounteredTransientFailure = false
         guard !AppPreviewSession.isActive || isolatedTest else { return true }
         guard hasToken else { return true }
@@ -881,15 +909,68 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 var payloadToUpload = localPayload
                 var uploadSignature = localSignature
                 var shouldUpload = true
+                var confirmedUpload: PendingEntryConfirmation?
 
                 if let latestBackup {
-                    let reconciliation = try await Self.reconcile(
-                        local: localPayload,
-                        localCanonicalData: localFingerprint.canonicalData,
-                        remote: latestBackup.payload,
-                        baseline: baseline,
-                        serverCanonicalData: rawRemoteFingerprint?.canonicalData
-                    )
+                    guard let userID = self.currentUser?.id, let remoteFingerprint = rawRemoteFingerprint else {
+                        throw URLError(.userAuthenticationRequired)
+                    }
+                    let pending = try await self.loadPendingUpload()
+                    var choices: [String: SyncMergeService.EntryChoice] = [:]
+                    var resumed: CloudPayloadReconciliation?
+                    var baselineSignature: String?
+                    if let baseline { baselineSignature = try await Self.payloadFingerprint(for: baseline).signature }
+                    if let confirmation {
+                        let review = confirmation.review
+                        guard review.userID == self.currentUser?.id, review.backupID == latestBackup.id,
+                              review.remoteSignature == rawRemoteFingerprint?.signature,
+                              review.baselineSignature == baselineSignature,
+                              review.localUserSignature == (try await Self.userSignature(for: localPayload)) else {
+                            self.entryConflictReview = nil
+                            throw NSError(domain: "CloudSyncReview", code: 409,
+                                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("记录已变化，请重新查看差异")])
+                        }
+                        choices = confirmation.choices
+                    } else if let pending, let saved = pending.confirmation,
+                              pending.baseBackupID == latestBackup.id,
+                              saved.remoteSignature == rawRemoteFingerprint?.signature,
+                              pending.baselineSignature == baselineSignature {
+                        let userSignature = try await Self.userSignature(for: localPayload)
+                        if userSignature == saved.candidateUserSignature {
+                            // Only derived quotes/metadata may have changed since the
+                            // confirmed candidate was applied. The server head is exact.
+                            resumed = .merge(payload: localPayload, needsLocalImport: false,
+                                matchesRemote: false, signature: localSignature)
+                            confirmedUpload = saved
+                        } else if userSignature == saved.originalLocalUserSignature {
+                            choices = saved.choices
+                            confirmedUpload = saved
+                        }
+                    }
+                    let reconciliation: CloudPayloadReconciliation
+                    do {
+                        if let resumed { reconciliation = resumed }
+                        else {
+                            reconciliation = try await Self.reconcile(local: localPayload,
+                                localCanonicalData: localFingerprint.canonicalData, remote: latestBackup.payload,
+                                baseline: baseline, serverCanonicalData: rawRemoteFingerprint?.canonicalData,
+                                choices: choices)
+                        }
+                    } catch let conflict as SyncMergeService.EntryConflicts {
+                        let review = CloudSyncEntryReview(userID: userID, backupID: latestBackup.id,
+                            localUserSignature: try await Self.userSignature(for: localPayload),
+                            remoteSignature: remoteFingerprint.signature, baselineSignature: baselineSignature,
+                            conflicts: conflict.conflicts,
+                            itemNames: Dictionary((localPayload.items + latestBackup.payload.items).map { ($0.id, $0.name) },
+                                uniquingKeysWith: { first, _ in first }))
+                        if let old = self.entryConflictReview,
+                           old.userID == review.userID, old.backupID == review.backupID,
+                           old.localUserSignature == review.localUserSignature,
+                           old.remoteSignature == review.remoteSignature, old.baselineSignature == review.baselineSignature {
+                            // Keep in-progress choices stable during periodic checks.
+                        } else { self.entryConflictReview = review }
+                        throw conflict
+                    }
 
                     switch reconciliation {
                     case let .restoreRemote(remotePayload, signature):
@@ -906,6 +987,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                         completedLocalSignature = signature
                         self.lastVerifiedBackupID = signature == rawRemoteFingerprint?.signature ? latestBackup.id : nil
                         try await self.rememberSync(signature: signature, at: latestBackup.uploadedAt, payload: latestBackup.payload)
+                        self.entryConflictReview = nil
                         if signature != rawRemoteFingerprint?.signature {
                             self.scheduleAutoSync(from: context, delayNanoseconds: 0)
                         }
@@ -914,6 +996,24 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                         return
 
                     case let .merge(mergedPayload, needsLocalImport, matchesRemote, signature):
+                        if confirmation != nil || confirmedUpload != nil {
+                            let originalSignature: String
+                            if let saved = confirmedUpload { originalSignature = saved.originalLocalUserSignature }
+                            else { originalSignature = try await Self.userSignature(for: localPayload) }
+                            let confirmedChoices = confirmation?.choices ?? confirmedUpload?.choices ?? [:]
+                            confirmedUpload = PendingEntryConfirmation(
+                                originalLocalUserSignature: originalSignature,
+                                candidateUserSignature: try await Self.userSignature(for: mergedPayload),
+                                remoteSignature: remoteFingerprint.signature, choices: confirmedChoices)
+                            if let confirmation {
+                                try await self.saveReviewSafetyBackups(local: localPayload, remote: latestBackup.payload,
+                                    id: confirmation.review.id)
+                            }
+                            // The decision survives a crash before local import or an
+                            // uncertain upload. Never persist a partial review candidate.
+                            try await self.persistPendingUpload(mergedPayload, signature: signature,
+                                baseBackupID: baseBackupID, baseline: baseline, confirmation: confirmedUpload)
+                        }
                         if needsLocalImport {
                             do {
                                 expectedStoreRevision = try await self.applyCloudPayload(
@@ -938,6 +1038,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                             self.lastVerifiedBackupID = latestBackup.id
                             completedLocalSignature = signature
                             try await self.rememberSync(signature: signature, at: latestBackup.uploadedAt, payload: latestBackup.payload)
+                            self.entryConflictReview = nil
+                            try self.clearPendingUpload()
                             shouldUpload = false
                         }
                     }
@@ -956,7 +1058,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 }
 
                 try await self.persistPendingUpload(payloadToUpload, signature: uploadSignature,
-                    baseBackupID: baseBackupID, baseline: baseline)
+                    baseBackupID: baseBackupID, baseline: baseline, confirmation: confirmedUpload)
                 let backup: AssetTimeMachineCloudBackup
                 do {
                     backup = try await self.withTokenRefresh { token in
@@ -982,6 +1084,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 try await self.persistSyncBaseline(payloadToUpload)
                 self.lastVerifiedBackupID = backup.id
                 try self.clearPendingUpload()
+                self.entryConflictReview = nil
                 guard !context.hasChanges,
                       !ModelContextMutationBarrier.shared.hasPendingWrites,
                       !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
@@ -997,6 +1100,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
             if syncResult == .completed, let completedLocalSignature {
                 lastAutoSyncAttemptSignature = completedLocalSignature
+                entryConflictReview = nil
             }
             if syncResult == .skippedBusy {
                 return false
@@ -1073,6 +1177,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         autoSyncCoordinatorTaskID = nil
         hasPendingSync = false
         requiresLocalOwnershipConfirmation = false
+        entryConflictReview = nil
         clearTokens()
         defaults.removeObject(forKey: lastUploadedSignatureKey)
         defaults.removeObject(forKey: lastSyncAtKey)
@@ -1367,14 +1472,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func persistPendingUpload(_ payload: ExportPayload, signature: String,
-        baseBackupID: Int?, baseline: ExportPayload?) async throws {
+        baseBackupID: Int?, baseline: ExportPayload?, confirmation: PendingEntryConfirmation? = nil) async throws {
         guard let userID = currentUser?.id else { throw URLError(.userAuthenticationRequired) }
         let file = try pendingUploadURL(userID: userID)
         let baselineSignature: String?
         if let baseline { baselineSignature = try await Self.payloadFingerprint(for: baseline).signature }
         else { baselineSignature = nil }
         let pending = PendingCloudUpload(userID: userID, baseBackupID: baseBackupID,
-            baselineSignature: baselineSignature, signature: signature, payload: payload)
+            baselineSignature: baselineSignature, signature: signature, payload: payload, confirmation: confirmation)
         try await SyncPayloadWork.detached {
             let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
             try encoder.encode(pending).write(to: file, options: .atomic)
@@ -1391,23 +1496,12 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     /// Recover only a proven accepted candidate. A timeout does not say whether
     /// the server committed it; timestamps or the latest device clock cannot decide.
     private func recoverPendingUpload(latest: AssetTimeMachineCloudLatestBackup?) async throws {
-        guard let userID = currentUser?.id else { return }
-        let file = try pendingUploadURL(userID: userID)
-        guard FileManager.default.fileExists(atPath: file.path) else { return }
-        let pending = try await SyncPayloadWork.detached {
-            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(PendingCloudUpload.self, from: Data(contentsOf: file))
-        }
-        guard pending.userID == userID,
-              try await Self.payloadFingerprint(for: pending.payload).signature == pending.signature else {
-            throw URLError(.cannotDecodeContentData)
-        }
+        guard let pending = try await loadPendingUpload() else { return }
         let baseline = try await loadSyncBaseline()
         let currentSignature: String?
         if let baseline { currentSignature = try await Self.payloadFingerprint(for: baseline).signature }
         else { currentSignature = nil }
         if currentSignature == pending.signature || currentSignature != pending.baselineSignature {
-            // Already acknowledged, or a later explicit operation moved the base.
             try clearPendingUpload()
             return
         }
@@ -1417,8 +1511,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             return
         }
         if latest?.id == pending.baseBackupID {
-            // The head did not advance: this candidate was never accepted.
-            try clearPendingUpload()
+            if pending.confirmation == nil { try clearPendingUpload() }
             return
         }
         let history = try await withTokenRefresh { token in
@@ -1437,14 +1530,72 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 guard (error as NSError).code == 403 || (error as NSError).code == 404 else { throw error }
             }
         }
-        // No exact receipt was found. Keep the journal and use the existing base;
-        // ordinary reconciliation may still succeed, but must never guess acceptance.
+    }
+
+    private func loadPendingUpload() async throws -> PendingCloudUpload? {
+        guard let userID = currentUser?.id else { return nil }
+        let file = try pendingUploadURL(userID: userID)
+        guard FileManager.default.fileExists(atPath: file.path) else { return nil }
+        let pending = try await SyncPayloadWork.detached {
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(PendingCloudUpload.self, from: Data(contentsOf: file))
+        }
+        guard pending.userID == userID,
+              try await Self.payloadFingerprint(for: pending.payload).signature == pending.signature else {
+            throw URLError(.cannotDecodeContentData)
+        }
+        return pending
     }
 
     /// Available only to the isolated preview harness; tokens and defaults are supplied by the test.
     func runIsolatedSync(from context: ModelContext) async -> Bool {
         precondition(isolatedTest && AppPreviewSession.isActive)
         return await autoSyncIfNeeded(from: context, quietly: false)
+    }
+
+    @discardableResult
+    func confirmEntryConflicts(reviewID: UUID, choices: [String: SyncMergeService.EntryChoice],
+        from context: ModelContext) async -> Bool {
+        guard !AppPreviewSession.isActive || isolatedTest,
+              !isWorking, let review = entryConflictReview, review.id == reviewID,
+              currentUser?.id == review.userID, hasToken,
+              !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return false }
+        guard Set(choices.keys) == Set(review.conflicts.map(\.id)) else { return false }
+        _ = await autoSyncIfNeeded(from: context, quietly: false,
+            confirmation: EntryConfirmationRequest(review: review, choices: choices))
+        if let pending = try? await loadPendingUpload(), let saved = pending.confirmation,
+           pending.baseBackupID == review.backupID, pending.baselineSignature == review.baselineSignature,
+           saved.originalLocalUserSignature == review.localUserSignature,
+           saved.remoteSignature == review.remoteSignature, saved.choices == choices {
+            // A transient upload failure must not ask for the same decision again.
+            // The private journal binds retry to this exact server head and intent.
+            entryConflictReview = nil
+            statusMessage = AppLocalization.string("选择已保存，等待同步")
+            scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 2_000_000_000)
+            return true
+        }
+        if entryConflictReview == nil, errorMessage != nil {
+            scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0)
+        }
+        return entryConflictReview == nil && errorMessage == nil
+    }
+
+    private func saveReviewSafetyBackups(local: ExportPayload, remote: ExportPayload, id: UUID) async throws {
+        guard let owner = currentUser?.id else { throw URLError(.userAuthenticationRequired) }
+        let directory = try baselineURL(userID: owner).deletingLastPathComponent()
+            .appendingPathComponent("SafetyBackups/review-" + id.uuidString)
+        try await SyncPayloadWork.detached {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
+            let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
+            for (name, payload) in [("local.json", local), ("cloud.json", remote)] {
+                let file = directory.appendingPathComponent(name)
+                try encoder.encode(payload).write(to: file, options: .atomic)
+                try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+            }
+        }
+        defaults.set(directory.appendingPathComponent("local.json").path, forKey: "assettimemachine.cloud.lastLocalSafetyBackup")
     }
 
     private func persistSyncBaseline(_ payload: ExportPayload) async throws {
@@ -1512,12 +1663,19 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
+    nonisolated private static func userSignature(for payload: ExportPayload) async throws -> String {
+        try await SyncPayloadWork.detached {
+            SHA256.hash(data: try SyncMergeService.userContentData(for: payload)).map { String(format: "%02x", $0) }.joined()
+        }
+    }
+
     nonisolated private static func reconcile(
         local: ExportPayload,
         localCanonicalData: Data?,
         remote: ExportPayload,
         baseline: ExportPayload?,
-        serverCanonicalData: Data? = nil
+        serverCanonicalData: Data? = nil,
+        choices: [String: SyncMergeService.EntryChoice] = [:]
     ) async throws -> CloudPayloadReconciliation {
         try await SyncPayloadWork.detached {
             if SyncMergeService.looksLikeSeedOnly(local), !SyncMergeService.isEmptyUserData(remote) {
@@ -1530,7 +1688,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
             let merged: ExportPayload
             if let baseline {
-                merged = try SyncMergeService.reconciledPayload(local: local, remote: remote, baseline: baseline)
+                let review = try SyncMergeService.reviewedPayload(local: local, remote: remote, baseline: baseline, choices: choices)
+                guard let resolved = review.payload else { throw SyncMergeService.EntryConflicts(conflicts: review.conflicts) }
+                merged = resolved
             } else if SyncMergeService.isSameContent(local, remote) || SyncMergeService.isEmptyUserData(local) {
                 merged = SyncMergeService.mergedPayload(local: local, remote: remote)
             } else {
@@ -1604,7 +1764,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 statusMessage = nil
                 return .failed
             }
-            errorMessage = error.localizedDescription
+            errorMessage = error is SyncMergeService.EntryConflicts
+                ? AppLocalization.string("有记录需要确认") : error.localizedDescription
             return Self.isTransientFailure(error) ? .retryableFailure : .failed
         }
     }
@@ -1655,6 +1816,100 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 }
 
+struct CloudSyncEntryReviewView: View {
+    let review: CloudSyncEntryReview
+    let busy: Bool
+    let cancel: () -> Void
+    let confirm: ([String: SyncMergeService.EntryChoice]) async -> Void
+    @State private var choices: [String: SyncMergeService.EntryChoice] = [:]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ForEach(review.conflicts) { conflict in
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text(conflict.itemID.flatMap { review.itemNames[$0] } ?? AppLocalization.string("资产"))
+                                    .font(.system(size: 14, weight: .semibold)).lineLimit(2)
+                                Spacer(minLength: 8)
+                                Text(conflict.date.formatted(date: .numeric, time: .omitted))
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                            }
+                            Text(fieldTitle(conflict.field)).font(.system(size: 12)).foregroundStyle(.secondary)
+                            HStack(alignment: .top, spacing: 8) {
+                                option(.local, conflict: conflict, data: conflict.localValue)
+                                option(.remote, conflict: conflict, data: conflict.remoteValue)
+                            }
+                            Divider()
+                        }
+                    }
+                }
+            }
+            HStack {
+                Button(AppLocalization.string("返回"), action: cancel).keyboardShortcut(.cancelAction)
+                Spacer()
+                Button(AppLocalization.string("确认并同步")) { Task { await confirm(choices) } }
+                    .buttonStyle(.borderedProminent).tint(AssetTheme.gold)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(busy || choices.count != review.conflicts.count)
+            }.disabled(busy)
+        }
+    }
+
+    private func option(_ side: SyncMergeService.EntryChoice, conflict: SyncMergeService.EntryConflict, data: Data) -> some View {
+        let selected = choices[conflict.id] == side
+        return Button { choices[conflict.id] = side } label: {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text(AppLocalization.string(side == .local ? "本机" : "云端"))
+                    Spacer()
+                    Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                }.font(.system(size: 12))
+                Text(displayValue(data, conflict: conflict)).font(.system(size: 14, weight: .medium))
+                    .monospacedDigit().lineLimit(conflict.field == .note ? nil : 1).minimumScaleFactor(0.65)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
+                .background(selected ? AssetTheme.gold.opacity(0.12) : Color.secondary.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(selected ? AssetTheme.gold : Color.secondary.opacity(0.2)))
+        }.buttonStyle(.plain).disabled(busy)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private func fieldTitle(_ field: SyncMergeService.EntryField) -> String {
+        switch field {
+        case .amount: AppLocalization.string("金额")
+        case .quantity: AppLocalization.string("数量")
+        case .unitPrice: AppLocalization.string("单价")
+        case .note: AppLocalization.string("备注")
+        }
+    }
+
+    private func displayValue(_ data: Data, conflict: SyncMergeService.EntryConflict) -> String {
+        // Formatting must never hide the very difference the user is reviewing.
+        let exact = display(conflict.localValue, field: conflict.field) == display(conflict.remoteValue, field: conflict.field)
+        return display(data, field: conflict.field, exact: exact)
+    }
+
+    private func display(_ data: Data, field: SyncMergeService.EntryField, exact: Bool = false) -> String {
+        guard let value = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]), !(value is NSNull) else {
+            return AppLocalization.string("未填写")
+        }
+        if let number = value as? NSNumber {
+            if exact {
+                return (field == .amount || field == .unitPrice ? "CNY " : "") + number.stringValue
+            }
+            if field == .amount || field == .unitPrice {
+                return number.doubleValue.formatted(.currency(code: "CNY").precision(.fractionLength(2...8)))
+            }
+            return number.doubleValue.formatted(.number.precision(.fractionLength(0...8)))
+        }
+        let string = value as? String ?? ""
+        return string.isEmpty ? AppLocalization.string("未填写") : string
+    }
+}
+
 #if !os(macOS)
 private struct AssetTimeMachineCloudStatusSymbol: View {
     let state: AssetTimeMachineCloudIndicatorState
@@ -1697,6 +1952,7 @@ struct AssetTimeMachineCloudPage: View {
     @State private var isExporting = false
     @State private var showRestoreConfirm = false
     @State private var showOwnershipConfirm = false
+    @State private var showsEntryReview = false
     #if targetEnvironment(macCatalyst)
     @State private var showsMacPasswordLogin = false
     #endif
@@ -1705,7 +1961,14 @@ struct AssetTimeMachineCloudPage: View {
         ZStack {
             AssetTheme.pageGradient.ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
+            if showsEntryReview, let review = store.entryConflictReview {
+                CloudSyncEntryReviewView(review: review, busy: store.isWorking,
+                    cancel: { showsEntryReview = false }) { choices in
+                    if await store.confirmEntryConflicts(reviewID: review.id, choices: choices, from: modelContext) {
+                        showsEntryReview = false
+                    }
+                }.id(review.id).padding(20)
+            } else { ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: cloudContentSpacing) {
                     statusHero
                     mainCard
@@ -1715,19 +1978,22 @@ struct AssetTimeMachineCloudPage: View {
                 .padding(.horizontal, cloudHorizontalPadding)
                 .padding(.top, cloudTopPadding)
                 .padding(.bottom, cloudBottomPadding)
-            }
+            } }
         }
-        .navigationTitle(AppLocalization.string("云同步"))
+        .navigationTitle(AppLocalization.string(showsEntryReview ? "同步差异" : "云同步"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(AppLocalization.string("完成")) {
-                    dismiss()
+                    if showsEntryReview { showsEntryReview = false } else { dismiss() }
                 }
             }
         }
         .task {
             await store.refreshIfNeeded(from: modelContext)
+        }
+        .onChange(of: store.entryConflictReview?.id) { _, id in
+            if id == nil { showsEntryReview = false }
         }
         #if targetEnvironment(macCatalyst)
         .sheet(isPresented: $showsMacPasswordLogin) {
@@ -1927,6 +2193,11 @@ struct AssetTimeMachineCloudPage: View {
 
     private var loggedInSection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if store.entryConflictReview != nil {
+                Button(AppLocalization.string("查看差异")) { showsEntryReview = true }
+                    .buttonStyle(ATMActionButtonStyle())
+                    .disabled(store.isWorking || isExporting)
+            }
             if store.requiresLocalOwnershipConfirmation {
                 Button(AppLocalization.string("关联并同步本机记录")) {
                     showOwnershipConfirm = true
@@ -1944,7 +2215,7 @@ struct AssetTimeMachineCloudPage: View {
 
                 Button {
                     Task {
-                        await store.refreshSession()
+                        await store.refreshIfNeeded(from: modelContext)
                     }
                 } label: {
                     Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
