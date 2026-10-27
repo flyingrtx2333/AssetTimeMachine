@@ -25,11 +25,11 @@ struct AssetTimeMachineNativeApp: App {
                     FileHandle.standardError.write(Data(("Workspace fixture: " + (fixture.error ?? "unavailable") + "\n").utf8))
                     return
                 }
-                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1040, height: 688),
+                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 620),
                     styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
                 window.title = "资产时光机 · 独立样例"
                 window.contentView = NSHostingView(rootView: NativeRootView(startsOffline: true, isWorkspaceFixtureHost: true).modelContainer(container))
-                window.contentMinSize = NSSize(width: NativeStyle.Layout.windowMinWidth, height: 620)
+                window.contentMinSize = NSSize(width: NativeStyle.Layout.windowMinWidth, height: NativeStyle.Layout.windowMinHeight)
                 window.center(); window.makeKeyAndOrderFront(nil)
                 Self.workspaceFixtureWindow = window
                 NSApp.activate(ignoringOtherApps: true)
@@ -81,7 +81,7 @@ struct AssetTimeMachineNativeApp: App {
             } else if let container = store.container {
                 NativeRootView(startsOffline: startsOffline)
                     .modelContainer(container)
-                    .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: 620)
+                    .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: NativeStyle.Layout.windowMinHeight)
             } else if store.isMissingStore {
                 NativeFreshStartView { useOffline in
                     let opened = NativeStoreBootstrap(createFresh: true)
@@ -96,7 +96,7 @@ struct AssetTimeMachineNativeApp: App {
                     .frame(width: 820, height: 560)
             }
         }
-        .defaultSize(width: 820, height: 660)
+        .defaultSize(width: 820, height: 620)
     }
 }
 

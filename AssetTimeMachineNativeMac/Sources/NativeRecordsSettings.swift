@@ -4,6 +4,14 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
+private func nativeCloudErrorText(_ message: String) -> String {
+    guard message.contains(NSURLErrorDomain) else { return message }
+    if message.contains("-1009") { return AppLocalization.string("网络未连接") }
+    if message.contains("-1001") { return AppLocalization.string("连接超时，请重试") }
+    if message.contains("-999") { return AppLocalization.string("操作已取消") }
+    return AppLocalization.string("网络连接失败，请重试")
+}
+
 @MainActor
 final class NativeRecordEditor: ObservableObject {
     struct Row: Identifiable {
@@ -80,7 +88,7 @@ final class NativeRecordEditor: ObservableObject {
             rows = items.filter(\.isActive).map { item in
                 let entry = entries[item.id]
                 return Row(id: item.id, name: item.name, category: item.category?.name ?? "资产",
-                           group: item.category?.group ?? .financial, icon: item.iconName,
+                           group: item.category?.group ?? .financial, icon: AssetItemService.resolvedIconKey(for: item),
                            method: item.valuationMethod, autoPriceSymbol: item.autoPricedMarketSymbol, amount: entry?.amount,
                            quantity: entry?.quantity, price: entry?.unitPrice, note: entry?.note ?? "",
                            entryUpdatedAt: entry?.updatedAt)
@@ -179,27 +187,50 @@ final class NativeRecordEditor: ObservableObject {
     }
 }
 
+enum NativeRecordDestination: Equatable {
+    case snapshot(UUID)
+    case today
+}
+
+private struct NativeLedgerColumns {
+    static let horizontalInset: CGFloat = 12
+    static let menuWidth: CGFloat = 22
+    let quantity: CGFloat
+    let unitPrice: CGFloat
+    let amount: CGFloat
+
+    init(width: CGFloat) {
+        let innerWidth = max(0, width - Self.horizontalInset * 2)
+        quantity = max(80, min(136, innerWidth * 0.17))
+        unitPrice = max(96, min(152, innerWidth * 0.18))
+        amount = max(116, min(196, innerWidth * 0.22))
+    }
+}
+
 struct NativeRecordsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \AssetCategory.createdAt) private var categories: [AssetCategory]
     @ObservedObject var history: NativeHistoryModel
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     @ObservedObject var editor: NativeRecordEditor
+    @Binding var requestedDestination: NativeRecordDestination?
     @State private var addingGroup: AssetGroup?
     @State private var deleteRecord = false
     @State private var deletingItem: NativeRecordEditor.Row?
     @State private var confirmsDiscard = false
+    @State private var ledgerWidth: CGFloat = 752
 
     private func money(_ value: Double) -> String { value.formatted(.currency(code: "CNY").precision(.fractionLength(2))) }
     private func total(_ group: AssetGroup) -> Double {
         editor.rows.filter { $0.group == group }.reduce(0) { $0 + editor.displayedAmount(for: $1) }
     }
     private var selectedIndex: Int? { history.summaries.firstIndex { $0.id == editor.snapshotID } }
+    private var ledgerColumns: NativeLedgerColumns { NativeLedgerColumns(width: ledgerWidth) }
 
     @State private var collapsedGroups: Set<AssetGroup> = []
     @State private var showsUnfilled = false
     @State private var expandedZeroGroups: Set<AssetGroup> = []
-    @State private var pendingSnapshotID: UUID?
+    @State private var pendingDestination: NativeRecordDestination?
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     private var reduced: Bool { reducedMotion || NativeHomeStyle.previewReduced }
     private var unfilled: [NativeRecordEditor.Row] { editor.rows.filter(\.isEmpty) }
@@ -211,37 +242,46 @@ struct NativeRecordsView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             HStack(spacing: NativeStyle.Space.lg) {
-                metric("净资产", value: total(.financial) + total(.physical) - total(.liability))
+                metric("净资产", value: total(.financial) + total(.physical) - total(.liability), emphasized: true)
                 Rectangle().fill(NativeHomeStyle.line).frame(width: 0.5, height: 18)
                 metric("总资产", value: total(.financial) + total(.physical))
                 Rectangle().fill(NativeHomeStyle.line).frame(width: 0.5, height: 18)
                 metric("负债", value: total(.liability))
                 Spacer(minLength: 0)
-            }.padding(.top, NativeStyle.Space.sm).padding(.bottom, NativeStyle.Space.sm)
+            }.padding(.vertical, 12)
             if editor.snapshotID != nil {
-                columnHeadings
-                ScrollView {
-                    VStack(spacing: 0) {
-                        groupPanel(.financial)
-                        groupPanel(.physical).padding(.top, 10)
-                        groupPanel(.liability).padding(.top, 10)
-                        if !unfilled.isEmpty {
-                            Button {
-                                withAnimation(NativeStyle.Motion.records(reduced)) { showsUnfilled.toggle() }
-                            } label: {
-                                HStack(spacing: 14) {
-                                    Image(systemName: "chevron.right").rotationEffect(.degrees(showsUnfilled ? 90 : 0))
-                                    Text("未填写 (\(unfilled.count))")
-                                    Spacer()
-                                }.padding(.horizontal, NativeStyle.Space.sm).frame(height: 36)
-                            }.foregroundStyle(NativeHomeStyle.secondary)
-                            if showsUnfilled {
-                                VStack(spacing: 0) { ForEach(unfilled) { accountRow($0) } }
-                                    .transition(disclosureTransition)
+                VStack(spacing: 0) {
+                    columnHeadings
+                    Divider()
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            groupPanel(.financial)
+                            groupPanel(.physical).padding(.top, 4)
+                            groupPanel(.liability).padding(.top, 4)
+                            if !unfilled.isEmpty {
+                                Button {
+                                    withAnimation(NativeStyle.Motion.records(reduced)) { showsUnfilled.toggle() }
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "chevron.right").rotationEffect(.degrees(showsUnfilled ? 90 : 0))
+                                        Text("未填写 (\(unfilled.count))")
+                                        Spacer()
+                                    }.padding(.horizontal, 12).frame(height: 28)
+                                }.buttonStyle(.plain).foregroundStyle(NativeHomeStyle.secondary)
+                                if showsUnfilled {
+                                    VStack(spacing: 0) { ForEach(unfilled) { accountRow($0) } }
+                                        .transition(disclosureTransition)
+                                }
                             }
-                        }
-                    }.padding(.bottom, NativeStyle.Space.md)
-                }.scrollIndicators(.hidden)
+                        }.padding(.bottom, 8)
+                    }.scrollIndicators(.automatic)
+                }
+                .background(NativePalette.canvas)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                    if width > 0 { ledgerWidth = width }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(NativePalette.line, lineWidth: 0.7))
             } else {
                 ContentUnavailableView("暂无记录", systemImage: "calendar")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -249,18 +289,18 @@ struct NativeRecordsView: View {
             footer
         }
         .font(NativeStyle.FontRole.body)
-        .frame(maxWidth: NativeStyle.Layout.ledgerMaxWidth, alignment: .leading)
-        .padding(.horizontal, NativeStyle.Layout.pageInset).padding(.top, NativeStyle.Layout.pageInset).padding(.bottom, NativeStyle.Space.md)
+        .padding(.horizontal, NativeStyle.Layout.pageInset).padding(.top, 16).padding(.bottom, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(NativeOutsideClickDismissal())
-        .buttonStyle(NativeRecordsButtonStyle())
         .modifier(NativeWorkspaceSurface())
         .animation(NativeStyle.Motion.records(reduced), value: editor.isDirty)
         .animation(NativeStyle.Motion.records(reduced), value: editor.error)
         .animation(NativeStyle.Motion.records(reduced), value: editor.savedAt)
         .task {
-            if !editor.isDirty { editor.load(id: editor.snapshotID ?? history.summaries.last?.id, container: context.container) }
+            if requestedDestination != nil { openRequestedDestination() }
+            else if !editor.isDirty { editor.load(id: editor.snapshotID ?? history.summaries.last?.id, container: context.container) }
         }
+        .onChange(of: requestedDestination) { _, destination in if destination != nil { openRequestedDestination() } }
         .onChange(of: history.generation) { _, _ in
             let id = history.summaries.contains { $0.id == editor.snapshotID } ? editor.snapshotID : history.summaries.last?.id
             editor.load(id: id, container: context.container)
@@ -270,15 +310,16 @@ struct NativeRecordsView: View {
         }
         .confirmationDialog("放弃未保存的修改？", isPresented: $confirmsDiscard) {
             Button("放弃修改", role: .destructive) {
-                let destination = pendingSnapshotID ?? editor.snapshotID
-                pendingSnapshotID = nil
+                let destination = pendingDestination
+                pendingDestination = nil
                 withAnimation(NativeStyle.Motion.records(reduced)) {
                     editor.discard()
-                    editor.load(id: destination, container: context.container)
+                    if let destination { performDestination(destination) }
+                    else { editor.load(id: editor.snapshotID, container: context.container) }
                 }
             }
         }
-        .onChange(of: confirmsDiscard) { _, presented in if !presented { pendingSnapshotID = nil } }
+        .onChange(of: confirmsDiscard) { _, presented in if !presented { pendingDestination = nil } }
         .confirmationDialog("删除这天的资产记录？", isPresented: $deleteRecord) {
             Button("删除记录", role: .destructive) { removeRecord() }
         } message: { Text("此操作会参与云端同步。") }
@@ -290,49 +331,65 @@ struct NativeRecordsView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 14) {
-            Text("记录").font(NativeStyle.FontRole.pageTitle)
-            HStack(spacing: 10) {
-                Button { moveDate(-1) } label: { Image(systemName: "chevron.left").frame(width: 18, height: 24) }
-                    .accessibilityLabel("上一条记录").disabled((selectedIndex ?? 0) == 0)
-                Text(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录")
-                    .monospacedDigit().lineLimit(1).frame(minWidth: 116)
-                    .contentTransition(.opacity)
-                Button { moveDate(1) } label: { Image(systemName: "chevron.right").frame(width: 18, height: 24) }
-                    .accessibilityLabel("下一条记录").disabled((selectedIndex ?? 0) >= history.summaries.count - 1)
-            }.padding(.horizontal, NativeStyle.Space.xxs)
-                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(NativeHomeStyle.line, lineWidth: 0.7))
+        HStack(spacing: 8) {
+            Button { moveDate(-1) } label: { Image(systemName: "chevron.left") }
+                .buttonStyle(.borderless).frame(width: 22, height: 28)
+                .accessibilityLabel("上一条记录").disabled((selectedIndex ?? 0) == 0)
+            Menu {
+                Section("最近记录") {
+                    ForEach(Array(history.summaries.suffix(90).reversed()), id: \.id) { snapshot in
+                        Button(snapshot.date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN")))) {
+                            selectDestination(.snapshot(snapshot.id))
+                        }
+                    }
+                }
+            } label: {
+                Label(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录",
+                      systemImage: "calendar")
+                    .monospacedDigit().lineLimit(1)
+            }.menuStyle(.borderedButton).fixedSize()
+                .disabled(history.summaries.isEmpty).accessibilityLabel("选择记录日期")
+                .accessibilityValue(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录")
+            Button { moveDate(1) } label: { Image(systemName: "chevron.right") }
+                .buttonStyle(.borderless).frame(width: 22, height: 28)
+                .accessibilityLabel("下一条记录").disabled((selectedIndex ?? 0) >= history.summaries.count - 1)
+            Divider().frame(height: 18).padding(.horizontal, 4)
+            Button { addingGroup = .financial } label: { Label("添加资产", systemImage: "plus") }
+                .buttonStyle(.bordered).controlSize(.regular).disabled(editor.isDirty)
+            Spacer(minLength: 8)
+            if editor.isDirty {
+                Text("修改 \(editor.drafts.count) 项").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                Button("放弃修改") { pendingDestination = nil; confirmsDiscard = true }
+                    .buttonStyle(.bordered).controlSize(.regular)
+                Button("保存更改", action: saveChanges)
+                    .keyboardShortcut("s", modifiers: .command).modifier(NativeRecordsPrimary())
+            }
             Menu {
                 Button("删除这天的记录", role: .destructive) { deleteRecord = true }
                     .disabled(editor.isDirty || editor.snapshotID == nil)
-            } label: { Image(systemName: "ellipsis").frame(width: 24, height: 28) }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().accessibilityLabel("记录操作")
-            Spacer(minLength: 6)
-            Button("添加资产") { addingGroup = .financial }
-                .padding(.horizontal, NativeStyle.Space.lg).frame(height: 30)
-                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(NativeHomeStyle.line, lineWidth: 0.7))
-                .disabled(editor.isDirty)
-            Button("记录今日资产", action: recordToday).modifier(NativeRecordsPrimary()).disabled(editor.isDirty)
-        }.frame(height: NativeStyle.Control.fieldHeight)
+            } label: { Image(systemName: "ellipsis") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 22)
+                .accessibilityLabel("记录操作")
+        }.frame(height: 30)
     }
-    private func metric(_ title: String, value: Double) -> some View {
+    private func metric(_ title: String, value: Double, emphasized: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: NativeStyle.Space.sm) {
             Text(title).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
-            Text(money(value)).font(NativeStyle.FontRole.subheadingStrong).monospacedDigit()
+            Text(money(value)).font(emphasized ? NativeStyle.FontRole.bodyStrong : NativeStyle.FontRole.body).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.75)
                 .contentTransition(reduced ? .opacity : .numericText())
-        }.fixedSize(horizontal: true, vertical: false)
+        }.frame(maxWidth: .infinity, alignment: .leading)
             .animation(NativeStyle.Motion.records(reduced), value: value)
     }
     private var columnHeadings: some View {
         HStack(spacing: NativeStyle.Space.sm) {
             Text("资产").frame(maxWidth: .infinity, alignment: .leading)
-            Text("数量").frame(width: NativeStyle.Layout.quantityWidth, alignment: .trailing)
-            Text("单价 (¥)").frame(width: NativeStyle.Layout.unitPriceWidth, alignment: .trailing)
-            Text("金额 (¥)").frame(width: NativeStyle.Layout.amountWidth, alignment: .trailing)
-            Color.clear.frame(width: 22)
+            Text("数量").padding(.horizontal, 7).frame(width: ledgerColumns.quantity, alignment: .trailing)
+            Text("单价 (¥)").padding(.horizontal, 7).frame(width: ledgerColumns.unitPrice, alignment: .trailing)
+            Text("金额 (¥)").padding(.horizontal, 7).frame(width: ledgerColumns.amount, alignment: .trailing)
+            Color.clear.frame(width: NativeLedgerColumns.menuWidth)
         }.font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
-            .padding(.horizontal, NativeStyle.Space.sm).frame(height: 26)
+            .padding(.horizontal, NativeLedgerColumns.horizontalInset).frame(height: 26).background(NativePalette.surface)
     }
     @ViewBuilder private func groupPanel(_ group: AssetGroup) -> some View {
         let filled = editor.rows.filter { $0.group == group && !$0.isEmpty }
@@ -353,9 +410,10 @@ struct NativeRecordsView: View {
                             .contentTransition(reduced ? .opacity : .numericText())
                         Image(systemName: "chevron.down").rotationEffect(.degrees(collapsedGroups.contains(group) ? -90 : 0))
                             .foregroundStyle(NativeHomeStyle.secondary).frame(width: 22)
-                    }.padding(.horizontal, NativeStyle.Space.sm).frame(height: NativeStyle.Layout.ledgerGroupHeight)
-                        .background(NativeHomeStyle.text.opacity(0.025))
-                }.accessibilityLabel(group.displayName + (collapsedGroups.contains(group) ? "，展开" : "，收起"))
+                    }.font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        .padding(.horizontal, 12).frame(height: NativeStyle.Layout.ledgerGroupHeight)
+                        .contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel(group.displayName + (collapsedGroups.contains(group) ? "，展开" : "，收起"))
                 if !collapsedGroups.contains(group) {
                     VStack(spacing: 0) { ForEach(balances) { accountRow($0) } }
                         .transition(disclosureTransition)
@@ -383,10 +441,10 @@ struct NativeRecordsView: View {
         }
     }
     private func accountRow(_ row: NativeRecordEditor.Row) -> some View {
-        NativeLedgerRow(row: row, draft: Binding(
+        NativeLedgerRow(row: row, columns: ledgerColumns, draft: Binding(
             get: { editor.drafts[row.id] ?? row.draft },
             set: { editor.update(row, draft: $0) }
-        ), dirty: editor.drafts[row.id] != nil, canDelete: !editor.isDirty,
+        ), dirty: editor.drafts[row.id] != nil, alternating: (editor.rows.firstIndex(where: { $0.id == row.id }) ?? 0).isMultiple(of: 2), canDelete: !editor.isDirty,
         delete: { deletingItem = row })
     }
     private var footer: some View {
@@ -395,21 +453,17 @@ struct NativeRecordsView: View {
             HStack(spacing: 10) {
                 Group {
                     if let error = editor.error { Text(error).foregroundStyle(AssetTheme.negative) }
-                    else if editor.isDirty { Text("修改 \(editor.drafts.count) 项").foregroundStyle(NativeHomeStyle.secondary) }
-                    else { Text(savedStatus).foregroundStyle(NativeHomeStyle.secondary).help(cloud.errorMessage ?? cloud.indicatorLabel) }
+                    else if !editor.isDirty { Text(savedStatus).foregroundStyle(NativeHomeStyle.secondary).help(cloud.errorMessage ?? cloud.indicatorLabel) }
                 }.font(NativeStyle.FontRole.caption).transition(.opacity)
                 Spacer(minLength: 4)
-                if editor.isDirty {
-                    Button("放弃修改") { pendingSnapshotID = nil; confirmsDiscard = true }
-                        .padding(.horizontal, NativeStyle.Space.md).transition(.opacity)
-                }
-                Button("保存更改") {
-                    withAnimation(NativeStyle.Motion.records(reduced)) {
-                        NSApp.keyWindow?.makeFirstResponder(nil)
-                        if editor.save(container: context.container) { refresh() }
-                    }
-                }.keyboardShortcut("s", modifiers: .command).modifier(NativeRecordsPrimary()).disabled(!editor.isDirty)
-            }.frame(minHeight: 34)
+            }.frame(minHeight: 18)
+        }
+    }
+
+    private func saveChanges() {
+        withAnimation(NativeStyle.Motion.records(reduced)) {
+            NSApp.keyWindow?.makeFirstResponder(nil)
+            if editor.save(container: context.container) { refresh() }
         }
     }
 
@@ -427,12 +481,22 @@ struct NativeRecordsView: View {
 
     private func moveDate(_ offset: Int) {
         guard let index = selectedIndex, history.summaries.indices.contains(index + offset) else { return }
-        let destination = history.summaries[index + offset].id
-        if editor.isDirty { pendingSnapshotID = destination; confirmsDiscard = true }
-        else {
-            withAnimation(NativeStyle.Motion.records(reduced)) {
-                editor.load(id: destination, container: context.container)
-            }
+        selectDestination(.snapshot(history.summaries[index + offset].id))
+    }
+    private func openRequestedDestination() {
+        guard let destination = requestedDestination else { return }
+        requestedDestination = nil
+        selectDestination(destination)
+    }
+    private func selectDestination(_ destination: NativeRecordDestination) {
+        if case .snapshot(let id) = destination, id == editor.snapshotID { return }
+        if editor.isDirty { pendingDestination = destination; confirmsDiscard = true }
+        else { withAnimation(NativeStyle.Motion.records(reduced)) { performDestination(destination) } }
+    }
+    private func performDestination(_ destination: NativeRecordDestination) {
+        switch destination {
+        case .snapshot(let id): editor.load(id: id, container: context.container)
+        case .today: recordToday()
         }
     }
     private func refresh() {
@@ -500,8 +564,10 @@ private struct NativeLedgerRow: View {
     @FocusState private var focused: String?
     @State private var hovered = false
     let row: NativeRecordEditor.Row
+    let columns: NativeLedgerColumns
     @Binding var draft: NativeRecordEditor.Draft
     let dirty: Bool
+    let alternating: Bool
     let canDelete: Bool
     let delete: () -> Void
     private var reduced: Bool { systemReduced || NativeHomeStyle.previewReduced }
@@ -510,36 +576,39 @@ private struct NativeLedgerRow: View {
     var body: some View {
         HStack(spacing: NativeStyle.Space.sm) {
             HStack(spacing: 5) {
-                Text(row.name).lineLimit(1).help(row.name)
+                NativeAssetIcon(key: row.icon, group: row.group, title: row.name)
+                Text(row.name).lineLimit(2).lineSpacing(-2).truncationMode(.middle).help(row.name)
                 if dirty { Circle().fill(NativeHomeStyle.accent).frame(width: 3, height: 3) }
             }.frame(maxWidth: .infinity, alignment: .leading)
             if row.method == .directAmount {
-                Color.clear.frame(width: NativeStyle.Layout.quantityWidth)
-                Color.clear.frame(width: NativeStyle.Layout.unitPriceWidth)
-                field("金额", text: $draft.amount, width: NativeStyle.Layout.amountWidth)
+                Text("—").foregroundStyle(NativePalette.secondary.opacity(0.6))
+                    .padding(.horizontal, 7).frame(width: columns.quantity, alignment: .trailing)
+                Text("—").foregroundStyle(NativePalette.secondary.opacity(0.6))
+                    .padding(.horizontal, 7).frame(width: columns.unitPrice, alignment: .trailing)
+                field("金额", text: $draft.amount, width: columns.amount)
             } else {
-                field("数量", text: $draft.quantity, width: NativeStyle.Layout.quantityWidth)
+                field("数量", text: $draft.quantity, width: columns.quantity)
                 if row.autoPriceSymbol != nil {
                     Text(row.price.map { $0.formatted(.number.precision(.fractionLength(2...6))) } ?? "—")
-                        .monospacedDigit().frame(width: NativeStyle.Layout.unitPriceWidth, alignment: .trailing)
+                        .monospacedDigit().padding(.horizontal, 7).frame(width: columns.unitPrice, alignment: .trailing)
+                        .lineLimit(1).minimumScaleFactor(0.8)
                         .foregroundStyle(NativeHomeStyle.secondary)
                         .accessibilityLabel(row.name + " 行情单价，只读")
                         .accessibilityValue(row.price.map { String($0) } ?? "—")
                         .help("当日行情价格")
                 } else {
-                    field("单价", text: $draft.price, width: NativeStyle.Layout.unitPriceWidth)
+                    field("单价", text: $draft.price, width: columns.unitPrice)
                 }
-                Text(amountPreview).monospacedDigit().frame(width: NativeStyle.Layout.amountWidth, alignment: .trailing)
+                Text(amountPreview).monospacedDigit().padding(.horizontal, 7).frame(width: columns.amount, alignment: .trailing)
                     .contentTransition(reduced ? .opacity : .numericText())
                     .animation(NativeStyle.Motion.records(reduced), value: amountPreview)
             }
             Menu { Button("删除资产项目", role: .destructive, action: delete).disabled(!canDelete) }
-                label: { Image(systemName: "ellipsis").foregroundStyle(NativeHomeStyle.secondary).opacity(active ? 1 : 0.3).frame(width: 22, height: 26) }
+                label: { Image(systemName: "ellipsis").foregroundStyle(NativeHomeStyle.secondary).opacity(active ? 1 : 0.3).frame(width: NativeLedgerColumns.menuWidth, height: 26) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .accessibilityLabel(row.name + "操作")
-        }.font(NativeStyle.FontRole.body).padding(.horizontal, NativeStyle.Space.sm).frame(height: NativeStyle.Layout.ledgerRowHeight)
-            .background(NativeHomeStyle.accent.opacity(active ? 0.075 : 0))
-            .overlay(alignment: .bottom) { Rectangle().fill(NativeHomeStyle.line.opacity(active ? 0.8 : 0.18)).frame(height: 0.5) }
+        }.font(NativeStyle.FontRole.body).padding(.horizontal, NativeLedgerColumns.horizontalInset).frame(height: NativeStyle.Layout.ledgerRowHeight)
+            .background(active ? NativePalette.softGold : (alternating ? NativePalette.surface.opacity(0.55) : .clear))
             .onHover { hovered = $0 }
             .animation(NativeStyle.Motion.records(reduced), value: active)
     }
@@ -563,9 +632,9 @@ private struct NativeLedgerRow: View {
             .font(NativeStyle.FontRole.body).monospacedDigit()
             .foregroundStyle(name == "金额" || focused == name ? NativeHomeStyle.text : NativeHomeStyle.secondary)
             .padding(.horizontal, 7).frame(width: width, height: NativeStyle.Layout.ledgerFieldHeight)
-            .background(NativeHomeStyle.text.opacity(active ? 0.025 : 0), in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
+            .background(NativePalette.canvas.opacity(focused == name ? 1 : 0), in: RoundedRectangle(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).strokeBorder(
-                focused == name ? NativeHomeStyle.accent.opacity(0.85) : NativeHomeStyle.line.opacity(active ? 1 : 0), lineWidth: 0.8))
+                focused == name ? NativeHomeStyle.accent.opacity(0.85) : NativeHomeStyle.line.opacity(hovered ? 0.7 : 0), lineWidth: 0.8))
             .animation(NativeStyle.Motion.records(reduced), value: focused)
     }
 
@@ -590,42 +659,57 @@ private struct NativeAddItemSheet: View {
         self.categories = categories
         self.onSaved = onSaved
         _selectedGroup = State(initialValue: initialGroup)
+        _selectedCategoryID = State(initialValue: categories.first(where: { $0.group == initialGroup })?.id)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("添加资产").font(NativeStyle.FontRole.dialogTitle)
-            TextField("资产名称", text: $name).focused($nameFocused)
-            Picker("类型", selection: $selectedGroup) {
-                ForEach(AssetGroup.allCases) { group in Text(group.displayName).tag(group) }
-            }
-            Picker("计价方式", selection: $valuationMethod) {
-                ForEach(ValuationMethod.allCases) { method in Text(method.displayName).tag(method) }
-            }
-            if valuationMethod == .quantityAndUnitPrice {
-                TextField("行情代码（可选）", text: $marketSymbol)
-            }
-            Picker("分类", selection: $selectedCategoryID) {
-                Text("新建分类").tag(Optional<UUID>.none)
-                ForEach(categories.filter { $0.group == selectedGroup }) { category in
-                    Text(category.name).tag(Optional(category.id))
+        NativeSheet(title: "添加资产", width: 416, cancel: { dismiss() }) {
+            VStack(spacing: 8) {
+                NativeFormRow(title: "资产名称") {
+                    TextField("资产名称", text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
+                        .onSubmit { if !name.trimmingCharacters(in: .whitespaces).isEmpty { save() } }
                 }
+                NativeFormRow(title: "类型") {
+                    NativeFormPicker(title: "类型", options: AssetGroup.allCases.map(\.displayName),
+                                     selectedIndex: AssetGroup.allCases.firstIndex(of: selectedGroup) ?? 0) {
+                        selectedGroup = AssetGroup.allCases[$0]
+                    }.frame(height: 26)
+                }
+                NativeFormRow(title: "计价方式") {
+                    NativeFormPicker(title: "计价方式", options: ValuationMethod.allCases.map(\.displayName),
+                                     selectedIndex: ValuationMethod.allCases.firstIndex(of: valuationMethod) ?? 0) {
+                        valuationMethod = ValuationMethod.allCases[$0]
+                    }.frame(height: 26)
+                }
+                if valuationMethod == .quantityAndUnitPrice {
+                    NativeFormRow(title: "行情代码") {
+                        TextField("可选", text: $marketSymbol).textFieldStyle(.roundedBorder)
+                            .accessibilityLabel("行情代码（可选）")
+                    }
+                }
+                NativeFormRow(title: "分类") {
+                    let available = categories.filter { $0.group == selectedGroup }
+                    NativeFormPicker(title: "分类", options: [AppLocalization.string("新建分类")] + available.map(\.name),
+                                     selectedIndex: available.firstIndex(where: { $0.id == selectedCategoryID }).map { $0 + 1 } ?? 0) {
+                        selectedCategoryID = $0 == 0 ? nil : available[$0 - 1].id
+                    }.frame(height: 26)
+                }
+                if selectedCategoryID == nil {
+                    NativeFormRow(title: "新分类名称") {
+                        TextField("新分类名称", text: $newCategory).textFieldStyle(.roundedBorder)
+                    }
+                }
+                if let error { Text(error).foregroundStyle(AssetTheme.negative).font(NativeStyle.FontRole.caption) }
             }
-            if selectedCategoryID == nil { TextField("新分类名称", text: $newCategory) }
-            if let error { Text(error).foregroundStyle(AssetTheme.negative).font(NativeStyle.FontRole.caption) }
-            HStack {
-                Spacer()
-                Button("取消") { dismiss() }
-                Button("添加", action: save).buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
+        } footer: {
+            NativeSheetActions(cancel: { dismiss() }, title: "添加", submit: save,
+                               disabled: name.trimmingCharacters(in: .whitespaces).isEmpty)
         }
-        .padding(22)
-        .frame(width: 390).modifier(NativeWorkspaceSurface())
         .onAppear { nameFocused = true }
         .onExitCommand { dismiss() }
-        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: valuationMethod)
-        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedCategoryID)
-        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: error)
+        .onChange(of: selectedGroup) { _, group in
+            selectedCategoryID = categories.first(where: { $0.group == group })?.id
+        }
     }
     private func save() {
         guard let token = ModelContextMutationBarrier.shared.beginEditorDraft() else {
@@ -666,41 +750,47 @@ struct NativeSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 15) {
-                NativePageHeader(title: "设置", subtitle: "账户、同步与本机数据")
-                NativeCard {
+            VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("账户与同步").font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
                     Button(action: openCloudSync) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: 10) {
                             Image(systemName: cloud.indicatorState.cloudSymbolName)
-                                .foregroundStyle(cloud.indicatorState.symbolColor)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("云同步").font(NativeStyle.FontRole.sectionStrong)
-                                Text(cloud.indicatorLabel).font(NativeStyle.FontRole.body)
-                                    .foregroundStyle(NativePalette.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").foregroundStyle(NativePalette.secondary)
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 40)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(NativeHomeButtonStyle())
+                                .foregroundStyle(cloud.indicatorState.symbolColor).frame(width: 22)
+                            Text("云同步")
+                            Spacer(minLength: 12)
+                            Text(cloud.currentUser.map { $0.displayName + " · " + cloud.indicatorLabel } ?? cloud.indicatorLabel)
+                                .foregroundStyle(NativePalette.secondary).lineLimit(1).truncationMode(.middle)
+                            Image(systemName: "chevron.right").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        }.padding(.horizontal, 14).frame(minHeight: 44).contentShape(Rectangle())
+                    }.buttonStyle(.plain).accessibilityLabel("云同步")
+                        .accessibilityValue(cloud.indicatorLabel)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
                 }
-                NativeCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("本机数据").font(NativeStyle.FontRole.sectionStrong)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("本机数据").font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
+                    HStack(spacing: 10) {
+                        Image(systemName: "clock.arrow.circlepath").foregroundStyle(NativePalette.secondary).frame(width: 22)
                         Text("\(history.summaries.count) 条历史记录")
-                            .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
-                        HStack {
-                            Button("导出 JSON", action: exportJSON)
-                            Button("导入 JSON", action: importJSON)
-                        }
-                        if let message { Text(message).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive) }
-                        if let error { Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative) }
-                    }
+                        Spacer(minLength: 12)
+                        Button("导入记录", action: importJSON).buttonStyle(.bordered).controlSize(.regular)
+                        Button("导出记录", action: exportJSON).buttonStyle(.bordered).controlSize(.regular)
+                    }.padding(.horizontal, 14).frame(minHeight: 48)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    Group {
+                        if let message { Text(message).foregroundStyle(AssetTheme.positive) }
+                        if let error { Text(error).foregroundStyle(AssetTheme.negative) }
+                    }.font(NativeStyle.FontRole.caption).textSelection(.enabled)
                 }
-            }.padding(NativeStyle.Space.section)
+            }
+            .font(NativeStyle.FontRole.body)
+            .frame(maxWidth: 680)
+            .padding(NativeStyle.Layout.pageInset)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
+        .modifier(NativeWorkspaceSurface())
         .task {
             if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") { showsLogin = true }
         }
@@ -755,6 +845,12 @@ struct NativeCloudSyncView: View {
     @State private var exportMessage: String?
 
     private var busy: Bool { cloud.isWorking || isExporting }
+    private var sheetHeight: CGFloat {
+        let errorHeight: CGFloat = cloud.errorMessage?.isEmpty == false ? 40 : 0
+        guard cloud.currentUser != nil else { return 176 + errorHeight }
+        return min(472, 280 + CGFloat(min(cloud.backups.count, 3)) * 38 + errorHeight
+                   + (cloud.requiresLocalOwnershipConfirmation ? 34 : 0))
+    }
     private var title: String {
         switch cloud.indicatorState {
         case .healthy: AppLocalization.string("云同步已启用")
@@ -765,120 +861,108 @@ struct NativeCloudSyncView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(AppLocalization.string("云同步")).font(NativeStyle.FontRole.dialogTitle)
-                Spacer()
-                Button(AppLocalization.string("完成")) { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                    .controlSize(.large)
-            }
-            .padding(NativeStyle.Space.section)
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: NativeStyle.Space.section) {
-                    HStack(spacing: 14) {
-                        Image(systemName: cloud.indicatorState.cloudSymbolName)
-                            .font(NativeStyle.FontRole.pageTitle)
-                            .foregroundStyle(cloud.indicatorState.symbolColor)
-                            .frame(width: 50, height: 50)
-                            .background(NativePalette.surface, in: Circle())
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(title).font(NativeStyle.FontRole.subheadingStrong)
-                            if let date = cloud.lastSyncAt {
-                                Text(AppLocalization.format("最近同步 %@", date.formatted(date: .abbreviated, time: .shortened)))
-                                    .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                            }
-                        }
-                        Spacer(minLength: 0)
-                        if cloud.isWorking { ProgressView().controlSize(.small) }
-                    }
-                    if let error = cloud.errorMessage, !error.isEmpty {
-                        Label(error, systemImage: "exclamationmark.triangle.fill")
-                            .font(NativeStyle.FontRole.body).foregroundStyle(AssetTheme.negative)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if cloud.currentUser == nil {
-                        if !cloud.isSessionPending {
-                            action("登录", symbol: "person.crop.circle", primary: true) { showsLogin = true }
-                                .disabled(busy)
-                        }
-                    } else {
-                        if cloud.requiresLocalOwnershipConfirmation {
-                            action("关联并同步本机记录", symbol: "link", primary: true) { confirmsOwnership = true }
-                                .disabled(busy)
-                        }
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text(AppLocalization.string("最近备份")).font(NativeStyle.FontRole.sectionStrong)
-                                Spacer()
-                                Button { Task { await refresh() } } label: {
-                                    Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
-                                        .frame(minHeight: NativeStyle.Control.height)
+        Group {
+            if showsLogin {
+                NativeAccountChoice(cloud: cloud, allowsOffline: false, width: 448) { showsLogin = false }
+                    .environment(\.modelContext, context)
+            } else {
+                NativeSheet("云同步", width: 448, height: sheetHeight, close: { dismiss() }) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 10) {
+                                Image(systemName: cloud.indicatorState.cloudSymbolName)
+                                    .font(NativeStyle.FontRole.metric)
+                                    .foregroundStyle(cloud.indicatorState.symbolColor)
+                                    .frame(width: 24, height: 28)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(title).font(NativeStyle.FontRole.bodyStrong)
+                                    if let date = cloud.lastSyncAt {
+                                        Text(AppLocalization.format("最近同步 %@", date.formatted(date: .abbreviated, time: .shortened)))
+                                            .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                    }
                                 }
-                                .disabled(busy)
+                                Spacer(minLength: 0)
+                                if cloud.isWorking { ProgressView().controlSize(.small) }
                             }
-                            if cloud.backups.isEmpty {
-                                Text(AppLocalization.string("暂无云端备份"))
-                                    .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
+                            if let error = cloud.errorMessage, !error.isEmpty {
+                                Label(nativeCloudErrorText(error), systemImage: "exclamationmark.triangle.fill")
+                                    .font(NativeStyle.FontRole.body).foregroundStyle(AssetTheme.negative)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .help(error)
+                            }
+                            if cloud.currentUser == nil {
+                                if !cloud.isSessionPending {
+                                    action("登录", symbol: "person.crop.circle", primary: true) { showsLogin = true }
+                                        .disabled(busy)
+                                }
                             } else {
-                                ForEach(Array(cloud.backups.prefix(3))) { backup in
-                                    HStack(spacing: 12) {
-                                        Image(systemName: backup.isLatest == 1 ? "icloud.fill" : "clock.arrow.circlepath")
-                                            .foregroundStyle(NativePalette.accent)
-                                            .frame(width: 30, height: 30)
-                                            .background(NativePalette.surface, in: Circle())
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
-                                                .font(NativeStyle.FontRole.body)
-                                            if let size = backup.fileSize {
-                                                Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
-                                                    .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                                            }
-                                        }
+                                if cloud.requiresLocalOwnershipConfirmation {
+                                    action("关联并同步本机记录", symbol: "link", primary: true) { confirmsOwnership = true }
+                                        .disabled(busy)
+                                }
+                                VStack(alignment: .leading, spacing: 0) {
+                                    HStack {
+                                        Text(AppLocalization.string("最近备份")).font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
                                         Spacer()
-                                        if backup.isLatest == 1 {
-                                            Text(AppLocalization.string("最新")).font(NativeStyle.FontRole.micro)
-                                                .foregroundStyle(NativePalette.accent)
-                                                .padding(.horizontal, 8).padding(.vertical, 4)
-                                                .background(NativePalette.softGold, in: Capsule())
+                                        Button { Task { await refresh() } } label: {
+                                            Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
+                                        }
+                                        .buttonStyle(.borderless).controlSize(.small)
+                                        .disabled(busy)
+                                    }.frame(height: 28)
+                                    if cloud.backups.isEmpty {
+                                        Text(AppLocalization.string("暂无云端备份"))
+                                            .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
+                                            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                                    } else {
+                                        ForEach(Array(cloud.backups.prefix(3))) { backup in
+                                            HStack(spacing: 8) {
+                                                Image(systemName: backup.isLatest == 1 ? "icloud.fill" : "clock.arrow.circlepath")
+                                                    .foregroundStyle(NativePalette.secondary).frame(width: 20)
+                                                Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+                                                    .font(NativeStyle.FontRole.body).monospacedDigit().lineLimit(1)
+                                                Spacer(minLength: 8)
+                                                if let size = backup.fileSize {
+                                                    Text(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
+                                                        .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                                }
+                                                if backup.isLatest == 1 {
+                                                    Text(AppLocalization.string("最新")).font(NativeStyle.FontRole.micro)
+                                                        .foregroundStyle(NativePalette.accent)
+                                                }
+                                            }.frame(height: 36)
+                                            .accessibilityElement(children: .combine)
+                                            Divider()
                                         }
                                     }
-                                    .padding(.vertical, 7)
-                                    .accessibilityElement(children: .combine)
                                 }
+                                HStack(spacing: 8) {
+                                    action("导出本机记录", symbol: "square.and.arrow.up") { Task { await exportRecords() } }
+                                    if !cloud.backups.isEmpty {
+                                        action("恢复最近一次备份", symbol: "arrow.clockwise.icloud") { confirmsRestore = true }
+                                    }
+                                }
+                                .disabled(busy)
+                                if let exportMessage {
+                                    Text(exportMessage).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive)
+                                }
+                                HStack {
+                                    Text(cloud.currentUser?.displayName ?? "")
+                                        .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                    Spacer()
+                                    Button(AppLocalization.string("退出登录")) { cloud.logout() }
+                                        .buttonStyle(.borderless).controlSize(.small).disabled(busy)
+                                }.padding(.top, 4)
                             }
-                        }
-                        VStack(spacing: 10) {
-                            action("导出本机记录", symbol: "square.and.arrow.up") { Task { await exportRecords() } }
-                            if !cloud.backups.isEmpty {
-                                action("恢复最近一次备份", symbol: "arrow.clockwise.icloud") { confirmsRestore = true }
-                            }
-                        }
-                        .disabled(busy)
-                        if let exportMessage {
-                            Text(exportMessage).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.positive)
-                        }
-                        HStack {
-                            Text(cloud.currentUser?.displayName ?? "")
-                                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                            Spacer()
-                            Button(AppLocalization.string("退出登录")) { cloud.logout() }.disabled(busy)
                         }
                     }
                 }
-                .padding(NativeStyle.Space.section)
             }
         }
-        .foregroundStyle(NativePalette.text)
-        .background(NativePalette.canvas)
-        .tint(NativePalette.accent)
-        .frame(width: 480, height: cloud.currentUser != nil || cloud.isSessionPending ? 560 : 310)
+        .frame(width: 448, height: showsLogin ? nil : sheetHeight)
+        .fixedSize(horizontal: false, vertical: true)
+        .modifier(NativeWorkspaceSurface())
         .task { await refresh() }
-        .sheet(isPresented: $showsLogin) {
-            NativeAccountChoice(cloud: cloud, allowsOffline: false) { showsLogin = false }
-                .environment(\.modelContext, context)
-        }
         .alert(AppLocalization.format("确认关联至 %@？", cloud.currentUser?.displayName ?? "—"), isPresented: $confirmsOwnership) {
             Button(AppLocalization.string("取消"), role: .cancel) {}
             Button(AppLocalization.string("确认并同步")) { Task { await cloud.authorizeLocalDataForCurrentAccount(from: context) } }
@@ -895,19 +979,13 @@ struct NativeCloudSyncView: View {
         }
     }
 
-    private func action(_ title: String, symbol: String, primary: Bool = false, perform: @escaping () -> Void) -> some View {
-        Button(action: perform) {
+    @ViewBuilder private func action(_ title: String, symbol: String, primary: Bool = false, perform: @escaping () -> Void) -> some View {
+        let button = Button(action: perform) {
             Label(AppLocalization.string(title), systemImage: symbol)
-                .font(NativeStyle.FontRole.action)
-                .frame(maxWidth: .infinity, minHeight: 20)
-                .padding(10)
-                .foregroundStyle(primary ? NativePalette.onAccent : NativePalette.text)
-                .background(primary ? NativePalette.accent : NativePalette.surface,
-                            in: RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
-                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.field)
-                    .stroke(NativePalette.line.opacity(primary ? 0 : 1), lineWidth: 0.7))
-        }
-        .buttonStyle(NativeHomeButtonStyle())
+                .font(NativeStyle.FontRole.body)
+        }.controlSize(.regular)
+        if primary { button.modifier(NativeWorkspacePrimary()) }
+        else { button.buttonStyle(.bordered) }
     }
 
     private func refresh() async {
@@ -936,6 +1014,7 @@ struct NativeAccountChoice: View {
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     var allowsOffline = true
+    var width: CGFloat = 416
     let done: () -> Void
     @State private var username = ""
     @State private var password = ""
@@ -945,119 +1024,62 @@ struct NativeAccountChoice: View {
     private var canLogin: Bool { !username.isEmpty && !password.isEmpty && !cloud.isWorking }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Image("brand_logo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: NativeStyle.Radius.panel))
-                .accessibilityHidden(true)
-                .frame(maxWidth: .infinity)
-                .overlay(alignment: .topTrailing) {
-                    Button(action: done) {
-                        Image(systemName: "xmark")
-                            .font(NativeStyle.FontRole.captionStrong)
-                            .foregroundStyle(NativeHomeStyle.secondary)
-                            .frame(width: 28, height: 28)
-                            .background(NativeHomeStyle.text.opacity(0.045), in: Circle())
-                            .contentShape(Circle())
+        NativeSheet(title: "登录资产时光机", width: width, cancel: done) {
+            VStack(spacing: 8) {
+                SignInWithAppleButton(.signIn) { request in
+                    request.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    Task {
+                        await cloud.handleAppleSignIn(result, from: context)
+                        if cloud.currentUser != nil { done() }
                     }
-                    .buttonStyle(NativeHomeButtonStyle())
-                    .keyboardShortcut(.cancelAction)
-                    .accessibilityLabel("关闭")
                 }
-            Text("登录资产时光机")
-                .font(NativeStyle.FontRole.pageTitle)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, NativeStyle.Space.xl)
-                .padding(.bottom, 30)
-
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                Task {
-                    await cloud.handleAppleSignIn(result, from: context)
-                    if cloud.currentUser != nil { done() }
-                }
-            }
-            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-            .frame(height: 42)
-            .clipShape(RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
-            .disabled(cloud.isWorking || AppPreviewSession.isActive)
-
-            Button {
-                withAnimation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced)) {
+                .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                .frame(height: 32).disabled(cloud.isWorking || AppPreviewSession.isActive)
+                Button {
                     isShowingPassword.toggle()
-                }
-                focusedField = isShowingPassword ? .username : nil
-            } label: {
-                HStack {
-                    Text("账号登录").font(NativeStyle.FontRole.action)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(NativeStyle.FontRole.microStrong)
-                        .rotationEffect(.degrees(isShowingPassword ? 90 : 0))
-                }
-                .foregroundStyle(NativeHomeStyle.secondary)
-                .frame(height: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(NativeHomeButtonStyle())
-            .accessibilityValue(isShowingPassword ? "已展开" : "已收起")
-            .padding(.top, NativeStyle.Space.sm)
-
-            if isShowingPassword {
-                VStack(spacing: 10) {
-                    TextField("账号", text: $username)
-                        .focused($focusedField, equals: .username)
-                        .onSubmit { focusedField = .password }
-                        .modifier(AccountFieldStyle(isFocused: focusedField == .username))
-                    SecureField("密码", text: $password)
-                        .focused($focusedField, equals: .password)
-                        .onSubmit { if canLogin { login() } }
-                        .modifier(AccountFieldStyle(isFocused: focusedField == .password))
-                    Button(action: login) {
-                        HStack(spacing: NativeStyle.Space.sm) {
-                            if cloud.isWorking { ProgressView().controlSize(.small) }
-                            Text("登录")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .font(NativeStyle.FontRole.action)
-                        .foregroundStyle(NativePalette.onAccent)
-                        .background(NativeHomeStyle.accent, in: RoundedRectangle(cornerRadius: NativeStyle.Radius.field))
+                    focusedField = isShowingPassword ? .username : nil
+                } label: {
+                    HStack {
+                        Text("账号登录")
+                        Spacer()
+                        Image(systemName: isShowingPassword ? "chevron.down" : "chevron.right")
+                    }.frame(height: 28).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityValue(isShowingPassword ? "已展开" : "已收起")
+                if isShowingPassword {
+                    NativeFormRow(title: "账号") {
+                        TextField("账号", text: $username).focused($focusedField, equals: .username)
+                            .onSubmit { focusedField = .password }
+                            .modifier(AccountFieldStyle())
                     }
-                    .buttonStyle(NativeHomeButtonStyle())
-                    .disabled(!canLogin || AppPreviewSession.isActive)
-                    .padding(.top, NativeStyle.Space.xxs)
+                    NativeFormRow(title: "密码") {
+                        SecureField("密码", text: $password).focused($focusedField, equals: .password)
+                            .onSubmit { if canLogin { login() } }
+                            .modifier(AccountFieldStyle())
+                    }
                 }
-                .padding(.bottom, 14)
-                .transition(.opacity.combined(with: .offset(y: reducedMotion ? 0 : -6)))
+                if cloud.isWorking { ProgressView().controlSize(.small) }
+                if let error = cloud.errorMessage {
+                    Text(nativeCloudErrorText(error)).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative)
+                        .frame(maxWidth: .infinity, alignment: .leading).lineLimit(4)
+                        .help(error)
+                }
             }
-            if let error = cloud.errorMessage {
-                Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 14)
-            }
-            if allowsOffline {
-                Rectangle().fill(NativeHomeStyle.line).frame(height: 1)
-                    .padding(.top, NativeStyle.Space.sm)
-                Button("先在本机使用", action: done)
-                    .font(NativeStyle.FontRole.caption)
-                    .foregroundStyle(NativeHomeStyle.secondary)
-                    .buttonStyle(NativeHomeButtonStyle())
-                    .padding(.top, NativeStyle.Space.xl)
+        } footer: {
+            HStack(spacing: 12) {
+                Button(AppLocalization.string(allowsOffline ? "先在本机使用" : "取消"), action: done)
+                    .keyboardShortcut(.cancelAction).buttonStyle(.bordered).controlSize(.regular)
+                Spacer()
+                if isShowingPassword {
+                    Button("登录", action: login).modifier(NativeWorkspacePrimary())
+                        .disabled(!canLogin || AppPreviewSession.isActive).keyboardShortcut(.defaultAction)
+                }
             }
         }
-        .padding(NativeStyle.Space.page)
-        .frame(width: 368)
-        .foregroundStyle(NativeHomeStyle.text)
-        .background(NativeHomeStyle.ink)
-        .tint(NativeHomeStyle.accent)
+        .onExitCommand(perform: done)
         .task {
             if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginExpanded") {
-                isShowingPassword = true
+                isShowingPassword = true; focusedField = .username
             }
         }
     }
