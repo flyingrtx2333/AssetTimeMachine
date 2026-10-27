@@ -3,6 +3,8 @@ import Foundation
 import SwiftUI
 #if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 
 extension MarketAssetDescriptor {
@@ -101,14 +103,14 @@ enum MarketAssetLogoRegistry {
     }
 }
 
-#if canImport(UIKit)
+#if canImport(UIKit) || canImport(AppKit)
 struct MarketAssetLogoView: View {
     let symbol: String
     let sectionID: String
     let title: String
     let logoURL: String?
     var size: CGFloat = 30
-    @State private var remoteImage: UIImage?
+    @State private var remoteImage: MarketAssetLogoImage?
 
     init(asset: MarketAssetDescriptor, size: CGFloat = 30) {
         symbol = asset.canonicalSymbol
@@ -171,10 +173,17 @@ struct MarketAssetLogoView: View {
             }
 
             if let remoteImage {
+                #if canImport(UIKit)
                 Image(uiImage: remoteImage)
                     .resizable()
                     .scaledToFit()
                     .transition(.opacity)
+                #else
+                Image(nsImage: remoteImage)
+                    .resizable()
+                    .scaledToFit()
+                    .transition(.opacity)
+                #endif
             }
         }
         .foregroundStyle(style.foreground)
@@ -189,9 +198,17 @@ struct MarketAssetLogoView: View {
             }
             remoteImage = await MarketAssetLogoImageLoader.image(
                 for: remoteLogoURL,
-                pointSize: max(48, size * UIScreen.main.scale)
+                pointSize: max(48, size * displayScale)
             )
         }
+    }
+
+    private var displayScale: CGFloat {
+        #if canImport(UIKit)
+        UIScreen.main.scale
+        #else
+        NSScreen.main?.backingScaleFactor ?? 2
+        #endif
     }
 
     @ViewBuilder

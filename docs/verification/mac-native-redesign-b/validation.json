@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-27",
+  "nativeTarget": "AssetTimeMachineNativeMac",
+  "visualChoice": "B",
+  "builds": {
+    "nativeRelease": true,
+    "iphoneReleaseCompatibility": true,
+    "nativeCodeSignatureVerified": true
+  },
+  "localizationAudit": {
+    "passed": true,
+    "catalogKeys": 1525,
+    "directCalls": 752,
+    "chineseSourceLiterals": 1063,
+    "scope": "repository audit scans shared iPhone source and catalog; not a full native internationalization claim"
+  },
+  "interactionBeforeFinalPresentationTweaks": {
+    "passed": true,
+    "actualKeyboard": true,
+    "fixtureOnly": true,
+    "actionCount": 119,
+    "note": "Not rerun in full after final presentation tweaks / asset icon repair"
+  },
+  "logoLoader": {
+    "passed": true,
+    "results": {
+      "images": [
+        {
+          "decodedPixels": true,
+          "file": "logo.png",
+          "height": 1024,
+          "memoryCacheReused": true,
+          "width": 1024
+        },
+        {
+          "decodedPixels": true,
+          "file": "logo.svg",
+          "height": 24,
+          "memoryCacheReused": true,
+          "width": 24
+        }
+      ],
+      "missingReturnsNil": true,
+      "passed": true
+    },
+    "source": "actual shared loader, isolated loopback PNG/SVG/404"
+  },
+  "physicalCaptures": {
+    "home": "820x660 full window",
+    "records": "820x660 full window",
+    "quant": "800x620 full window",
+    "strategyLibrary": "earlier B physical capture; icon fix does not affect strategy rows"
+  },
+  "strictComparisonBeforeFinalTweaks": {
+    "normalized_mae": 0.06835941123761333,
+    "pixel_similarity": 0.9316405887623866,
+    "within_tolerance_ratio": 0.8524153225806451,
+    "passed": false
+  },
+  "remainingAcceptance": [
+    "strict concept comparison did not pass; score is from earlier B physical capture",
+    "final full keyboard repeat blocked by system lock on October 26",
+    "icon capture tour later failed to activate Time Machine; native view cache exists locally, minimum Records physical capture not reached",
+    "real account switch / destructive cloud actions not executed",
+    "no fresh full Reduce Motion dynamic replay"
+  ],
+  "dataBoundary": "all screenshots and interactions use explicit in-memory fixtures and pinned public history; no personal financial exports or credentials",
+  "imageSHA256": {
+    "selected-b.png": "c634fa89eac3a401b33193adcbbb24bfadd83cba048256ea7cd57478b944c27d",
+    "before-home.png": "f713600804ffad834e9ef9b9e30fee473d2812c26bc3d8d173f3a007755d099f",
+    "home.png": "5c62826295305d77441bd52e13ae67370e6ff4ba63516aa4e857daef6e82862a",
+    "records.png": "fcfbedfbc21ee46b0a7cecd442434a9eea73fe0e832d69e87e85e035fa98b97e",
+    "quant.png": "62b1a3be3bc33cfad8f4916a5ddce5d06c811214edfbd1087ec55ec2769d00df",
+    "strategy-library.png": "2052eb1b6edd0e3599e1bd456d6c1127cbd929648ece3e52bc652c802f3017d9"
+  }
+}

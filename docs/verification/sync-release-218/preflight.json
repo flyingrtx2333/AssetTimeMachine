@@ -12,6 +12,6 @@
   "published216RuntimeUpdatesPreserved": true,
   "intermediate217Expired": true,
   "realIPhoneAcceptance": "pending installation of218",
-  "native218Installation": "pending normal quit; application canceled its quit event",
+  "native218Installation": "PASS installed and opened after user confirmed quit; signature, metadata, executable and access entitlements match verified candidate",
   "migrationBaselineMatchesPublished216Schema": true
 }

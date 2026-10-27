@@ -1,0 +1,13 @@
+{
+  "version": "1.14",
+  "build": "218",
+  "signedSource": "b92c2a9",
+  "installedPath": "/Applications/资产时光机.app",
+  "signatureVerified": true,
+  "executableMatchesVerifiedCandidate": true,
+  "appGroupAndKeychainEntitlementsPreserved": true,
+  "launchConfirmed": true,
+  "installerChangedUserData": false,
+  "forcedCloudRestore": false,
+  "physicalIPhoneAcceptance": "pending installation of218"
+}

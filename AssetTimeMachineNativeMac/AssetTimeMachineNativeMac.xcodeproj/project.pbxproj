@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A7A1C0A02710000000000002 /* MarketAssetLogoCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */; };
 		DB5973AB306F4C43B262DC12 /* NativeStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5973AB306F4C43B262DC11 /* NativeStyle.swift */; };
 		0112DD0C9E9B668C44D600F2 /* BacktestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608DA2E8E3697651630754D4 /* BacktestModels.swift */; };
 		1611AD379A4B15A0F5DFABFA /* NativeMutationProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FFB314C3123870036863C9 /* NativeMutationProbe.swift */; };
@@ -49,6 +50,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketAssetLogoCache.swift; sourceTree = "<group>"; };
 		DB5973AB306F4C43B262DC11 /* NativeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStyle.swift; sourceTree = "<group>"; };
 		058A5DE5DE282BDBF9E6B58B /* AssetTimeMachine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AssetTimeMachine; path = ..; sourceTree = SOURCE_ROOT; };
 		09793A1C6D886275C4CE8FD3 /* BacktestPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacktestPresentation.swift; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 		AEF852700777A2F9E042EDC3 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */,
 				B935C543B527518FF4DB5B51 /* AssetItemService.swift */,
 				72467AEC65E6DA3FFD12FDB7 /* BackgroundTaskWork.swift */,
 				AC313663E0C6957783660BB3 /* KeychainTokenStore.swift */,
@@ -302,6 +305,7 @@
 				864EAAB296DAE7896DF0C873 /* ImportExport.swift in Sources */,
 				560FCD929003FB3497021D44 /* KeychainTokenStore.swift in Sources */,
 				20C6A3639DA5AC9C0528CB1C /* MarketAssetCatalog.swift in Sources */,
+				A7A1C0A02710000000000002 /* MarketAssetLogoCache.swift in Sources */,
 				CBD5E17F777071A66A0817A9 /* Models.swift in Sources */,
 				E6A9A0FC7696BA66BEA46A2B /* NativeApp.swift in Sources */,
 				4313063ED2570356BA21FC81 /* NativeCompatibility.swift in Sources */,

@@ -1,7 +1,13 @@
 import CryptoKit
 import Foundation
 import QuickLookThumbnailing
+#if canImport(UIKit)
 import UIKit
+typealias MarketAssetLogoImage = UIImage
+#else
+import AppKit
+typealias MarketAssetLogoImage = NSImage
+#endif
 
 actor MarketAssetLogoDiskCache {
     static let shared = MarketAssetLogoDiskCache()
@@ -100,15 +106,15 @@ actor MarketAssetLogoDiskCache {
 
 @MainActor
 enum MarketAssetLogoImageLoader {
-    private static let memoryCache: NSCache<NSString, UIImage> = {
-        let cache = NSCache<NSString, UIImage>()
+    private static let memoryCache: NSCache<NSString, MarketAssetLogoImage> = {
+        let cache = NSCache<NSString, MarketAssetLogoImage>()
         cache.countLimit = 240
         cache.totalCostLimit = 24 * 1_024 * 1_024
         return cache
     }()
-    private static var inFlightTasks: [String: Task<UIImage?, Never>] = [:]
+    private static var inFlightTasks: [String: Task<MarketAssetLogoImage?, Never>] = [:]
 
-    static func image(for remoteURL: URL, pointSize: CGFloat) async -> UIImage? {
+    static func image(for remoteURL: URL, pointSize: CGFloat) async -> MarketAssetLogoImage? {
         let key = remoteURL.absoluteString as NSString
         if let cached = memoryCache.object(forKey: key) {
             return cached
@@ -117,22 +123,27 @@ enum MarketAssetLogoImageLoader {
             return await task.value
         }
 
-        let task = Task<UIImage?, Never> {
+        let task = Task<MarketAssetLogoImage?, Never> {
             await loadImage(for: remoteURL, pointSize: pointSize)
         }
         inFlightTasks[remoteURL.absoluteString] = task
         let image = await task.value
         inFlightTasks[remoteURL.absoluteString] = nil
         if let image {
+            #if canImport(UIKit)
             let pixelCost = Int(image.size.width * image.scale * image.size.height * image.scale * 4)
+            #else
+            let scale = NSScreen.main?.backingScaleFactor ?? 2
+            let pixelCost = Int(image.size.width * image.size.height * scale * scale * 4)
+            #endif
             memoryCache.setObject(image, forKey: key, cost: pixelCost)
         }
         return image
     }
 
-    private static func loadImage(for remoteURL: URL, pointSize: CGFloat) async -> UIImage? {
+    private static func loadImage(for remoteURL: URL, pointSize: CGFloat) async -> MarketAssetLogoImage? {
         if let renderedData = await MarketAssetLogoDiskCache.shared.renderedData(for: remoteURL),
-           let image = UIImage(data: renderedData) {
+           let image = MarketAssetLogoImage(data: renderedData) {
             return image
         }
 
@@ -140,14 +151,18 @@ enum MarketAssetLogoImageLoader {
             return nil
         }
         if let data = try? Data(contentsOf: sourceURL),
-           let image = UIImage(data: data) {
-            if let pngData = image.pngData() {
+           let image = MarketAssetLogoImage(data: data) {
+            if let pngData = pngData(for: image) {
                 await MarketAssetLogoDiskCache.shared.saveRenderedData(pngData, for: remoteURL)
             }
             return image
         }
 
+        #if canImport(UIKit)
         let scale = UIScreen.main.scale
+        #else
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        #endif
         let request = QLThumbnailGenerator.Request(
             fileAt: sourceURL,
             size: CGSize(width: max(40, pointSize), height: max(40, pointSize)),
@@ -157,10 +172,23 @@ enum MarketAssetLogoImageLoader {
         guard let representation = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request) else {
             return nil
         }
+        #if canImport(UIKit)
         let image = representation.uiImage
-        if let pngData = image.pngData() {
+        #else
+        let image = representation.nsImage
+        #endif
+        if let pngData = pngData(for: image) {
             await MarketAssetLogoDiskCache.shared.saveRenderedData(pngData, for: remoteURL)
         }
         return image
+    }
+
+    private static func pngData(for image: MarketAssetLogoImage) -> Data? {
+        #if canImport(UIKit)
+        image.pngData()
+        #else
+        guard let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
+        return bitmap.representation(using: .png, properties: [:])
+        #endif
     }
 }

@@ -97,6 +97,7 @@ struct NativeRootView: View {
     @StateObject private var quant = NativeQuantStore()
     @State private var page: NativePage = .home
     @State private var recordEditor = NativeRecordEditor()
+    @State private var requestedRecord: NativeRecordDestination?
     @State private var showsAccountChoice = false
     @State private var showsCloudSync = false
     @State private var applicationIsActive = NSApp.isActive
@@ -107,7 +108,6 @@ struct NativeRootView: View {
     private var reducedMotion: Bool {
         systemReducedMotion || (AppPreviewSession.isActive && ProcessInfo.processInfo.arguments.contains("-macHomeReduceMotion"))
     }
-    @Namespace private var sidebarSelection
 
     private var allowsCloudRefresh: Bool {
         !AppPreviewSession.isActive && applicationIsActive && scenePhase == .active
@@ -122,28 +122,38 @@ struct NativeRootView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-            Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7)
-            Group {
+        Group {
                     switch page {
-                    case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records }, openCloudSync: { showsCloudSync = true })
-                    case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor)
+                    case .home: NativeHomeView(history: history, cloud: cloud, openRecords: { page = .records }, openRecord: { id in
+                        requestedRecord = .snapshot(id)
+                        page = .records
+                    }, openCloudSync: { showsCloudSync = true })
+                    case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor, requestedDestination: $requestedRecord)
                     case .timeMachine: NativeTimeMachineView(history: history)
                     case .quant: NativeQuantView(store: quant)
                     case .settings: NativeSettingsView(history: history, cloud: cloud, openCloudSync: { showsCloudSync = true })
                     }
-            }
-            .disabled(cloud.isApplyingLocalData)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(NativePalette.canvas)
-            .transition(.opacity)
         }
-        .overlay(alignment: .bottom) {
-            if page != .settings { NativeHomeEdgeLight().frame(height: 65) }
+        .disabled(cloud.isApplyingLocalData)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(NativePalette.canvas)
+        .transition(.opacity)
+        .background {
+            NativeWindowToolbar(page: $page, cloudSymbol: cloud.indicatorState.cloudSymbolName,
+                cloudLabel: cloud.indicatorLabel, isEnabled: !cloud.isApplyingLocalData,
+                openCloud: { showsCloudSync = true }, newRecord: {
+                    requestedRecord = .today
+                    page = .records
+                }).frame(width: 0, height: 0)
+            ForEach(NativePage.allCases) { destination in
+                Button(destination.rawValue) { page = destination }
+                    .keyboardShortcut(KeyEquivalent(Character(String((NativePage.allCases.firstIndex(of: destination) ?? 0) + 1))), modifiers: .command)
+                    .disabled(cloud.isApplyingLocalData)
+                    .hidden().accessibilityHidden(true).frame(width: 0, height: 0)
+            }
         }
         .animation(NativeStyle.Motion.home(reducedMotion), value: page)
-        .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: 620)
+        .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: NativeStyle.Layout.windowMinHeight)
         .tint(NativePalette.accent)
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-openQuantTab") { page = .quant }
@@ -153,7 +163,9 @@ struct NativeRootView: View {
                 if ProcessInfo.processInfo.arguments.contains("-macHomeSmallWindow") {
                     Task { @MainActor in
                         try? await Task.sleep(for: .seconds(1))
-                        NSApp.windows.first(where: { $0.isVisible })?.setContentSize(NSSize(width: 900, height: 620))
+                        if let window = NSApp.windows.first(where: { $0.isVisible }) {
+                            window.setFrame(NSRect(origin: window.frame.origin, size: NSSize(width: NativeStyle.Layout.windowMinWidth, height: 620)), display: true)
+                        }
                     }
                 }
             }
@@ -292,7 +304,15 @@ struct NativeRootView: View {
         guard let window = NSApp.windows.first(where: { $0.title == "资产时光机 · 独立样例" })
                 ?? NSApp.windows.first(where: { $0.isVisible }) else { return }
         let small = ProcessInfo.processInfo.arguments.contains("-macHomeSmallWindow")
-        window.setContentSize(NSSize(width: small ? NativeStyle.Layout.windowMinWidth : 1040, height: small ? 620 : 688))
+        let args = ProcessInfo.processInfo.arguments
+        func dimension(_ key: String, fallback: CGFloat) -> CGFloat {
+            guard let i = args.firstIndex(of: key), args.indices.contains(i + 1),
+                  let value = Double(args[i + 1]), value.isFinite else { return fallback }
+            return max(key == "-macCaptureWidth" ? NativeStyle.Layout.windowMinWidth : 620, CGFloat(value))
+        }
+        window.setFrame(NSRect(origin: window.frame.origin,
+            size: NSSize(width: dimension("-macCaptureWidth", fallback: small ? NativeStyle.Layout.windowMinWidth : 820),
+                         height: dimension("-macCaptureHeight", fallback: small ? 620 : 660))), display: true)
         if ProcessInfo.processInfo.arguments.contains("-macCloudCapture") {
             let originalPage = page
             cloud.currentUser = AssetTimeMachineCloudUser(id: 42, userName: "示例账户", userEmail: nil)
@@ -302,6 +322,11 @@ struct NativeRootView: View {
                 AssetTimeMachineCloudBackup(id: 3 - index, fileName: nil, fileSize: 2_200_000,
                     storageURL: nil, uploadedAt: now.addingTimeInterval(Double(-index) * 3600),
                     lastDownloadedAt: nil, isLatest: index == 0 ? 1 : 0, note: nil)
+            }
+            // Presentation fixtures use an isolated store; they never submit credentials or backups.
+            if args.contains("-macCloudSyncingCapture") { cloud.isWorking = true }
+            if args.contains("-macCloudErrorCapture") {
+                cloud.errorMessage = URLError(.notConnectedToInternet).localizedDescription
             }
             showsCloudSync = true
             try? await Task.sleep(for: .seconds(1))
@@ -320,6 +345,9 @@ struct NativeRootView: View {
             return
         }
         if AppPreviewSession.isActive, ProcessInfo.processInfo.arguments.contains("-macLoginCapture") {
+            if args.contains("-macLoginErrorCapture") {
+                cloud.errorMessage = URLError(.cannotConnectToHost).localizedDescription
+            }
             page = .settings
             try? await Task.sleep(for: .seconds(1))
             if let view = window.attachedSheet?.contentView,
@@ -343,9 +371,7 @@ struct NativeRootView: View {
         for destination in [NativePage.records, .timeMachine, .quant, .settings, .home] {
             page = destination
             try? await Task.sleep(for: .milliseconds(850))
-            guard let view = window.contentView, let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { continue }
-            view.cacheDisplay(in: view.bounds, to: rep)
-            if let data = rep.representation(using: .png, properties: [:]) {
+            if let data = NativeWindowCapture.png(window) {
                 if stdoutCapture {
                     let record = ["page": destination.rawValue, "png": data.base64EncodedString()]
                     if let encoded = try? JSONSerialization.data(withJSONObject: record) {
@@ -384,66 +410,154 @@ struct NativeRootView: View {
         }
     }
 
-    private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: NativeStyle.Space.sm) {
-                Image("brand_logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 28, height: 28)
-                    .clipShape(RoundedRectangle(cornerRadius: NativeStyle.Radius.panel))
-                    .accessibilityHidden(true)
-                Text("资产时光机").font(NativeStyle.FontRole.captionStrong).lineLimit(1)
-            }.foregroundStyle(NativeHomeStyle.text).frame(maxWidth: .infinity).frame(height: NativeStyle.Layout.brandHeight)
-            VStack(spacing: NativeStyle.Space.xxs) {
-                ForEach(NativePage.allCases.filter { $0 != .settings }) { item in
-                    NativeSidebarButton(item: item, isSelected: page == item, selection: sidebarSelection) {
-                        page = item
-                    }
-                }
-            }
-            Spacer()
-            NativeSidebarButton(item: .settings, isSelected: page == .settings, selection: sidebarSelection) {
-                page = .settings
-            }
-            .padding(.bottom, NativeStyle.Space.md)
-        }
-        .frame(width: NativeStyle.Layout.sidebarWidth)
-        .background(NativeHomeStyle.sidebar)
-    }
 }
 
-private struct NativeSidebarButton: View {
-    let item: NativePage
-    let isSelected: Bool
-    let selection: Namespace.ID
-    let action: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var systemReducedMotion
-    private var reducedMotion: Bool { systemReducedMotion || NativeHomeStyle.previewReduced }
+/// AppKit owns the window chrome, so preview windows and restored application windows
+/// share the same real toolbar without adding a second header to every page.
+private struct NativeWindowToolbar: NSViewRepresentable {
+    @Binding var page: NativePage
+    let cloudSymbol: String
+    let cloudLabel: String
+    let isEnabled: Bool
+    let openCloud: () -> Void
+    let newRecord: () -> Void
 
-    var body: some View {
-        Button(action: action) {
-            Label(item.rawValue, systemImage: item.symbol)
-                .font(NativeStyle.FontRole.input)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, NativeStyle.Space.md)
-                .frame(height: NativeStyle.Layout.navigationHeight)
-                .background {
-                    if isSelected {
-                        if reducedMotion { highlight }
-                        else { highlight.matchedGeometryEffect(id: "sidebar", in: selection) }
-                    }
-                }
-                .foregroundStyle(isSelected ? NativeHomeStyle.accent : NativeHomeStyle.secondary)
-        }
-        .buttonStyle(NativeHomeButtonStyle())
-        .keyboardShortcut(KeyEquivalent(Character(String((NativePage.allCases.firstIndex(of: item) ?? 0) + 1))), modifiers: .command)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .padding(.horizontal, NativeStyle.Space.sm)
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeNSView(context: Context) -> Anchor {
+        let view = Anchor()
+        view.coordinator = context.coordinator
+        return view
     }
-    private var highlight: some View {
-        RoundedRectangle(cornerRadius: NativeStyle.Radius.control).fill(NativeHomeStyle.accent.opacity(0.105))
-            .overlay(alignment: .leading) { Capsule().fill(NativeHomeStyle.accent).frame(width: 2) }
+    func updateNSView(_ view: Anchor, context: Context) {
+        context.coordinator.owner = self
+        if let window = view.window { context.coordinator.attach(to: window) }
+        context.coordinator.update()
+    }
+    static func dismantleNSView(_ view: Anchor, coordinator: Coordinator) {
+        if coordinator.window?.toolbar === coordinator.toolbar { coordinator.window?.toolbar = nil }
+    }
+
+    final class Anchor: NSView {
+        weak var coordinator: Coordinator?
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let window { coordinator?.attach(to: window) }
+        }
+    }
+
+    final class Coordinator: NSObject, NSToolbarDelegate {
+        static let brand = NSToolbarItem.Identifier("native.workspace.brand")
+        static let navigation = NSToolbarItem.Identifier("native.workspace.navigation")
+        static let cloud = NSToolbarItem.Identifier("native.workspace.cloud")
+        static let add = NSToolbarItem.Identifier("native.workspace.add")
+        var owner: NativeWindowToolbar
+        weak var window: NSWindow?
+        let toolbar = NSToolbar(identifier: "native.workspace.toolbar")
+        private var navigation: NSSegmentedControl?
+        private var cloud: NSButton?
+        private var add: NSButton?
+
+        init(_ owner: NativeWindowToolbar) {
+            self.owner = owner
+            super.init()
+            toolbar.delegate = self
+            toolbar.displayMode = .iconOnly
+            toolbar.sizeMode = .regular
+            toolbar.allowsUserCustomization = false
+            toolbar.autosavesConfiguration = false
+        }
+        func attach(to window: NSWindow) {
+            guard self.window !== window || window.toolbar !== toolbar else { update(); return }
+            self.window = window
+            window.toolbarStyle = .unifiedCompact
+            window.titleVisibility = .hidden
+            window.titlebarSeparatorStyle = .line
+            window.toolbar = toolbar
+            update()
+        }
+        func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+            [Self.brand, .flexibleSpace, Self.navigation, .flexibleSpace, Self.cloud, Self.add]
+        }
+        func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+            toolbarDefaultItemIdentifiers(toolbar)
+        }
+        func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier,
+                     willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+            let item = NSToolbarItem(itemIdentifier: identifier)
+            item.isBordered = false
+            if #available(macOS 26.0, *) { item.style = .plain }
+            switch identifier {
+            case Self.brand:
+                let mark = NSImageView(image: NSImage(systemSymbolName: "hourglass", accessibilityDescription: nil)!)
+                mark.imageScaling = .scaleProportionallyDown
+                mark.translatesAutoresizingMaskIntoConstraints = false
+                mark.widthAnchor.constraint(equalToConstant: 16).isActive = true
+                mark.heightAnchor.constraint(equalToConstant: 16).isActive = true
+                let title = NSTextField(labelWithString: AppLocalization.string("资产时光机"))
+                title.font = .systemFont(ofSize: 13, weight: .medium)
+                let stack = NSStackView(views: [mark, title])
+                stack.spacing = 6; stack.alignment = .centerY
+                stack.frame = NSRect(x: 0, y: 0, width: 110, height: 28)
+                item.view = stack
+                item.visibilityPriority = .low
+            case Self.navigation:
+                let control = NSSegmentedControl(labels: NativePage.allCases.map { AppLocalization.string($0.rawValue) },
+                    trackingMode: .selectOne, target: self, action: #selector(selectPage(_:)))
+                control.segmentStyle = .rounded
+                control.font = .systemFont(ofSize: 13)
+                control.selectedSegmentBezelColor = NSColor(NativePalette.accent)
+                for index in NativePage.allCases.indices { control.setWidth(58, forSegment: index) }
+                control.frame = NSRect(x: 0, y: 0, width: 294, height: 28)
+                control.setAccessibilityIdentifier("native.workspace.navigation")
+                navigation = control; item.view = control
+                item.visibilityPriority = .high
+            case Self.cloud:
+                item.label = AppLocalization.string("云同步")
+                let button = NSButton(image: NSImage(systemSymbolName: owner.cloudSymbol, accessibilityDescription: AppLocalization.string("云同步"))!,
+                                      target: self, action: #selector(showCloud))
+                button.bezelStyle = .texturedRounded; button.isBordered = false
+                button.frame = NSRect(x: 0, y: 0, width: 28, height: 28)
+                cloud = button; item.view = button
+                item.visibilityPriority = .high
+            case Self.add:
+                let button = NSButton(title: AppLocalization.string("新增记录"), target: self, action: #selector(createRecord))
+                button.bezelStyle = .rounded; button.controlSize = .regular
+                button.font = .systemFont(ofSize: 13, weight: .medium)
+                button.bezelColor = NSColor(NativePalette.accent)
+                button.frame = NSRect(x: 0, y: 0, width: 86, height: 28)
+                add = button; item.view = button
+                item.visibilityPriority = .high
+                if #available(macOS 26.0, *) {
+                    item.style = .prominent
+                    item.backgroundTintColor = NSColor(NativePalette.accent)
+                }
+            default: return nil
+            }
+            update()
+            return item
+        }
+        func update() {
+            navigation?.selectedSegment = NativePage.allCases.firstIndex(of: owner.page) ?? 0
+            navigation?.isEnabled = owner.isEnabled
+            navigation?.selectedSegmentBezelColor = NSColor(NativePalette.accent)
+            cloud?.image = NSImage(systemSymbolName: owner.cloudSymbol, accessibilityDescription: AppLocalization.string("云同步"))
+            cloud?.toolTip = owner.cloudLabel
+            cloud?.setAccessibilityLabel(AppLocalization.string("云同步") + "，" + owner.cloudLabel)
+            cloud?.isEnabled = owner.isEnabled
+            add?.isEnabled = owner.isEnabled
+            add?.bezelColor = owner.page == .home ? NSColor(NativePalette.accent) : nil
+            if #available(macOS 26.0, *), let item = toolbar.items.first(where: { $0.itemIdentifier == Self.add }) {
+                item.style = owner.page == .home ? .prominent : .plain
+                item.backgroundTintColor = owner.page == .home ? NSColor(NativePalette.accent) : nil
+            }
+        }
+        @objc private func selectPage(_ sender: NSSegmentedControl) {
+            guard owner.isEnabled, NativePage.allCases.indices.contains(sender.selectedSegment) else { return }
+            owner.page = NativePage.allCases[sender.selectedSegment]
+        }
+        @objc private func showCloud() { if owner.isEnabled { owner.openCloud() } }
+        @objc private func createRecord() { if owner.isEnabled { owner.newRecord() } }
     }
 }
 
@@ -484,6 +598,8 @@ struct NativeTimeMachineView: View {
         let name: String
         let amount: Double
         let order: Int
+        let icon: String?
+        let group: AssetGroup?
     }
     @Environment(\.modelContext) private var context
     @ObservedObject var history: NativeHistoryModel
@@ -531,17 +647,14 @@ struct NativeTimeMachineView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("时光机").font(NativeStyle.FontRole.pageTitle)
-                            HStack(spacing: NativeStyle.Space.md) {
+                    HStack(spacing: 12) {
+                            HStack(spacing: NativeStyle.Space.sm) {
                                 Button { stepDate(-1) } label: { Image(systemName: "chevron.left") }
                                     .disabled((selectedIndex ?? 0) <= 0)
                                 Text(active.map { displayDate($0.date) } ?? "选择日期").font(NativeStyle.FontRole.body).monospacedDigit()
                                 Button { stepDate(1) } label: { Image(systemName: "chevron.right") }
                                     .disabled(summaries.isEmpty || (selectedIndex ?? 0) >= summaries.count - 1)
-                            }
-                        }
+                            }.controlSize(.small)
                         Spacer()
                         if history.loading || isExportingVideo { ProgressView().controlSize(.small) }
                         Picker("时间范围", selection: $visibleMonths) {
@@ -549,7 +662,7 @@ struct NativeTimeMachineView: View {
                         }.labelsHidden().frame(width: 120)
                         Button("导出视频", systemImage: "play.rectangle") { startVideoExport() }
                             .modifier(NativeWorkspacePrimary()).disabled(isExportingVideo || summaries.count < 2)
-                    }
+                    }.frame(height: NativeStyle.Control.height)
                     HStack(spacing: NativeStyle.Space.section) {
                         NativeWorkspaceMetric(title: "净资产", value: (active?.totalAssets ?? 0) - (active?.totalLiabilities ?? 0), primary: true)
                         NativeWorkspaceMetric(title: "总资产", value: active?.totalAssets ?? 0)
@@ -559,7 +672,7 @@ struct NativeTimeMachineView: View {
                     NativePanoramaTrend(summaries: chartData, revision: "\(chartRevision)", selection: chartSelectedIndex,
                         onHover: { local in hoveredIndex = local.map { $0 + chartStart } },
                         onSelect: { selectedIndex = $0 + chartStart; hoveredIndex = nil })
-                        .frame(height: max(130, geometry.size.height - 490))
+                        .frame(height: min(240, max(160, geometry.size.height * 0.3)))
                     HStack(spacing: NativeStyle.Space.xxs) {
                         ForEach(dateRailIndices, id: \.self) { index in
                             Button { selectedIndex = index; hoveredIndex = nil } label: {
@@ -577,36 +690,28 @@ struct NativeTimeMachineView: View {
                         }
                     }
                     Divider()
-                    HStack(alignment: .top, spacing: 26) {
-                        VStack(alignment: .leading, spacing: NativeStyle.Space.sm) {
-                            Text("当天资产明细").font(NativeStyle.FontRole.subheadingStrong)
-                            Divider()
-                            ScrollView {
-                                LazyVStack(spacing: 2) {
-                                if selectedSnapshot != nil {
-                                    ForEach(detailRows) { entry in
-                                        NativeHomeHoverRow {
-                                            HStack { Text(entry.name).lineLimit(1); Spacer(); Text(money(entry.amount)).monospacedDigit() }
-                                                .font(NativeStyle.FontRole.caption).frame(height: 18)
-                                        }
-                                        Divider()
-                                    }
-                                } else { Text(detailError ?? "选择日期查看明细").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary) }
+                    HStack {
+                        Text("当天资产明细").font(NativeStyle.FontRole.section)
+                        Spacer()
+                        Text("\(detailRows.count) 项").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                    }
+                    LazyVStack(spacing: 0) {
+                        if selectedSnapshot != nil {
+                            ForEach(detailRows) { entry in
+                                NativeHomeHoverRow {
+                                    HStack {
+                                        NativeAssetIcon(key: entry.icon, group: entry.group, title: entry.name)
+                                        Text(entry.name).lineLimit(2)
+                                        Spacer()
+                                        Text(money(entry.amount)).monospacedDigit()
+                                    }.font(NativeStyle.FontRole.body).frame(minHeight: NativeStyle.Layout.ledgerRowHeight)
                                 }
+                                Divider()
                             }
-                        }.frame(maxWidth: .infinity)
-                        Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7)
-                        VStack(alignment: .leading, spacing: NativeStyle.Space.md) {
-                            Text("当日概览").font(NativeStyle.FontRole.subheadingStrong)
-                            reportRow("净资产", money(selectedNet))
-                            if let index = selectedIndex, index > 0 {
-                                let previous = summaries[index - 1]
-                                reportRow("较上次", money(selectedNet - previous.totalAssets + previous.totalLiabilities))
-                            }
-                            reportRow("资产项目", "\(detailRows.count) 项")
-                            reportRow("记录时间", selectedSnapshot.map { displayDate($0.date) } ?? "—")
-                        }.frame(width: 250)
-                    }.frame(height: 190)
+                        } else {
+                            Text(detailError ?? "选择日期查看明细").foregroundStyle(NativePalette.secondary)
+                        }
+                    }
                     if let detailError { Text(detailError).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange) }
                     if let videoError { Text(videoError).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange) }
                 }.padding(NativeStyle.Layout.pageInset)
@@ -750,7 +855,8 @@ struct NativeTimeMachineView: View {
                     detailRows = selectedSnapshot.entries
                         .filter { abs($0.resolvedAmount) > 0.005 }
                         .map { DetailRow(id: $0.id, name: $0.item?.name ?? "未知资产",
-                                         amount: $0.resolvedAmount, order: $0.item?.sortOrder ?? 0) }
+                                         amount: $0.resolvedAmount, order: $0.item?.sortOrder ?? 0,
+                                         icon: $0.item.map { AssetItemService.resolvedIconKey(for: $0) }, group: $0.item?.category?.group) }
                         .sorted { $0.order < $1.order }
                 }
             }

@@ -2,24 +2,6 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-struct NativeHomeEdgeLight: View {
-    var body: some View {
-        // Decorative lighting stays static so an untouched window has no animation clock.
-        Canvas { graphics, size in
-            var curve = Path()
-            curve.move(to: CGPoint(x: 0, y: size.height - 3))
-            curve.addQuadCurve(to: CGPoint(x: size.width, y: size.height - 3),
-                               control: CGPoint(x: size.width * 0.5, y: size.height - 64))
-            var bloom = graphics
-            bloom.addFilter(.blur(radius: 13))
-            bloom.stroke(curve, with: .color(NativeHomeStyle.accent.opacity(0.18)), lineWidth: 12)
-            var edge = graphics
-            edge.addFilter(.blur(radius: 1))
-            edge.stroke(curve, with: .color(NativeHomeStyle.accent.opacity(0.27)), lineWidth: 1)
-        }.allowsHitTesting(false).accessibilityHidden(true)
-    }
-}
-
 private enum HomePreferences {
     // Parameter checks in the fixture app never write the user's production preferences.
     static let defaults: UserDefaults = AppPreviewSession.isActive
@@ -34,6 +16,7 @@ struct NativeHomeView: View {
     @ObservedObject var history: NativeHistoryModel
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     let openRecords: () -> Void
+    let openRecord: (UUID) -> Void
     let openCloudSync: () -> Void
     @AppStorage("dashboard.monthlyExpense", store: HomePreferences.defaults) private var monthlyExpense = 3000.0
     @AppStorage("dashboard.monthlySalary", store: HomePreferences.defaults) private var monthlySalary = 10000.0
@@ -43,7 +26,6 @@ struct NativeHomeView: View {
     @State private var latestSnapshotContext: ModelContext?
     @State private var range = 1
     @State private var parameters = false
-    @Namespace private var rangeSelection
     private let labels = ["7天", "30天", "365天", "全部"]
     private var latest: TimeMachineSnapshotProjection? { history.summaries.last }
     private var total: Double { latest?.totalAssets ?? 0 }
@@ -55,158 +37,153 @@ struct NativeHomeView: View {
     }
     var body: some View {
         GeometryReader { geometry in
-            ZStack(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 0) {
-                    header(width: geometry.size.width).frame(height: NativeStyle.Layout.homeHeaderHeight)
-                    rangeControl.frame(height: NativeStyle.Control.height)
-                    NativePanoramaTrend(summaries: visibleTrend, revision: "\(history.generation)-\(range)")
-                        .frame(height: min(NativeStyle.Layout.homeChartMaxHeight, max(150, geometry.size.height - 400))).padding(.top, NativeStyle.Space.xxs)
-                    rule.padding(.top, NativeStyle.Layout.sectionGap)
-                    bottom(width: geometry.size.width - NativeStyle.Layout.pageInset * 2).padding(.top, NativeStyle.Layout.sectionGap)
+            let contentWidth = max(1, geometry.size.width - NativeStyle.Layout.pageInset * 2)
+            let plotHeight = max(150, min(195, geometry.size.height - 420))
+            let compactRail = geometry.size.height < 600
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(alignment: .top, spacing: 20) {
+                        overview(plotHeight: plotHeight).frame(maxWidth: .infinity, alignment: .leading)
+                        Rectangle().fill(NativePalette.line).frame(width: 0.5)
+                        assetRail(compact: compactRail).frame(width: 220)
+                    }.fixedSize(horizontal: false, vertical: true)
+                    ledger(width: contentWidth)
                     if let error = history.error {
                         HStack {
-                            Text(error).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange)
+                            Text(error).foregroundStyle(AssetTheme.negative)
                             Button("重试") { Task { await history.load(from: context.container, force: true) } }
-                                .buttonStyle(NativeHomeButtonStyle())
-                        }.padding(.top, NativeStyle.Space.sm).transition(.opacity)
+                        }.font(NativeStyle.FontRole.caption)
                     }
-                    Spacer(minLength: 12)
                 }.padding(NativeStyle.Layout.pageInset)
-                    .allowsHitTesting(!parameters)
-                if parameters {
-                    NativeHomeStyle.ink.opacity(0.55).contentShape(Rectangle())
-                        .onTapGesture { parameters = false }.transition(.opacity)
-                    NativeHomeParameters(monthlyExpense: $monthlyExpense, monthlySalary: $monthlySalary,
-                                         annualReturnRate: $annualReturnRate, inflationRate: $inflationRate) {
-                        parameters = false
-                    }
-                    .padding(.leading, min(260, max(20, geometry.size.width - 390)))
-                    .padding(.bottom, 48)
-                    .transition(reduced ? .opacity : .offset(y: 14).combined(with: .opacity))
-                    .zIndex(1)
-                }
-            }.animation(NativeStyle.Motion.home(reduced), value: parameters)
+            }
         }
-        .foregroundStyle(NativeHomeStyle.text).background(NativeHomeStyle.ink)
+        .modifier(NativeWorkspaceSurface())
+        .sheet(isPresented: $parameters) {
+            NativeHomeParameters(monthlyExpense: $monthlyExpense, monthlySalary: $monthlySalary,
+                                 annualReturnRate: $annualReturnRate, inflationRate: $inflationRate) {
+                parameters = false
+            }
+        }
         .task(id: history.generation) { loadLatestSnapshot() }
         .onDisappear { latestSnapshot = nil; latestSnapshotContext = nil }
-        .onExitCommand { parameters = false }
         .animation(NativeStyle.Motion.home(reduced), value: history.generation)
-        .animation(NativeStyle.Motion.home(reduced), value: history.loading)
-        .animation(NativeStyle.Motion.home(reduced), value: history.error)
-
     }
-    private var rule: some View { Rectangle().fill(NativeHomeStyle.line).frame(height: 0.7) }
-    private func header(width: CGFloat) -> some View {
-        HStack(alignment: .top, spacing: width < 800 ? 12 : 20) {
-            VStack(alignment: .leading, spacing: 9) {
-                Text("净资产").font(NativeStyle.FontRole.section).foregroundStyle(NativeHomeStyle.secondary)
-                Text(NativeHomeStyle.amount(net)).font(NativeStyle.FontRole.display).monospacedDigit()
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .contentTransition(reduced ? .opacity : .numericText())
-            }.frame(width: width < 800 ? 205 : 235, alignment: .leading)
-            Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7, height: 44).padding(.top, 22)
-            metric("总资产", total).padding(.top, 22)
-            Rectangle().fill(NativeHomeStyle.line).frame(width: 0.7, height: 44).padding(.top, 22)
-            metric("负债", debt).padding(.top, 22)
-            Spacer(minLength: 0)
-            HStack(spacing: 13) {
-                Button(action: openCloudSync) {
-                    if width < 760 {
-                        Image(systemName: cloud.indicatorState.cloudSymbolName)
-                            .font(NativeStyle.FontRole.micro).foregroundStyle(NativeHomeStyle.secondary)
-                            .frame(width: NativeStyle.Control.height, height: NativeStyle.Control.height)
-                            .help(cloud.indicatorLabel)
-                    } else {
-                        Label(cloud.indicatorLabel, systemImage: cloud.indicatorState.cloudSymbolName)
-                            .font(NativeStyle.FontRole.micro).foregroundStyle(NativeHomeStyle.secondary)
-                            .padding(.vertical, NativeStyle.Space.sm).lineLimit(1)
+    private var rule: some View { Rectangle().fill(NativeHomeStyle.line).frame(height: 0.5) }
+    private func overview(plotHeight: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("净资产").font(NativeStyle.FontRole.bodyStrong)
+                    Text(NativeHomeStyle.amount(net)).font(NativeStyle.FontRole.display).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                        .contentTransition(reduced ? .opacity : .numericText())
+                    if let latest {
+                        Text(AppLocalization.format("截至 %@", latest.date.formatted(date: .numeric, time: .omitted)))
+                            .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                            .lineLimit(1)
                     }
-                }.buttonStyle(NativeHomeButtonStyle()).accessibilityLabel("云同步，" + cloud.indicatorLabel)
-                Button(action: openRecords) {
-                    Label("记录资产", systemImage: "plus").font(NativeStyle.FontRole.action).fixedSize()
-                        .foregroundStyle(NativePalette.onAccent).padding(.horizontal, 13).frame(height: NativeStyle.Control.fieldHeight)
-                        .background(NativePalette.accent, in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
-                }.buttonStyle(NativeHomeButtonStyle())
-            }.padding(.top, NativeStyle.Space.sm)
-        }.animation(NativeStyle.Motion.home(reduced), value: net)
-            .animation(NativeStyle.Motion.home(reduced), value: cloud.indicatorLabel)
+                }.frame(maxWidth: .infinity, alignment: .leading)
+                rangeControl
+            }.frame(height: 78, alignment: .top)
+            HStack(spacing: 16) {
+                if history.loading {
+                    ProgressView().controlSize(.mini).accessibilityLabel("加载资产记录")
+                }
+                Spacer(minLength: 0)
+                legend("净资产", color: NativePalette.accent)
+                legend("总资产", color: NativePalette.chartSecondary)
+            }.frame(height: 18)
+            NativePanoramaTrend(summaries: visibleTrend, revision: "\(history.generation)-\(range)", compact: true)
+                .frame(height: plotHeight + 25)
+        }
     }
-    private func metric(_ label: String, _ value: Double) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text(label).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
-            Text(NativeHomeStyle.amount(value)).font(NativeStyle.FontRole.subheading).monospacedDigit()
-                .lineLimit(1).minimumScaleFactor(0.75).contentTransition(reduced ? .opacity : .numericText())
-        }.frame(minWidth: 85, alignment: .leading)
+    private func legend(_ title: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Rectangle().fill(color).frame(width: 14, height: 2)
+            Text(AppLocalization.string(title))
+        }.font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
     }
     private var rangeControl: some View {
-        HStack {
-            Text("资产走势").font(NativeStyle.FontRole.section)
-            if history.loading { ProgressView().controlSize(.mini).accessibilityLabel("加载资产记录") }
-            Spacer()
-            HStack(spacing: 10) {
-                ForEach(0..<4) { i in
-                    Button { range = i } label: {
-                        Text(labels[i]).font(NativeStyle.FontRole.caption).foregroundStyle(range == i ? NativeHomeStyle.accent : NativeHomeStyle.secondary)
-                            .frame(width: 41, height: 31)
-                            .overlay(alignment: .bottom) {
-                                if range == i {
-                                    if reduced { Rectangle().fill(NativeHomeStyle.accent).frame(height: 1) }
-                                    else { Rectangle().fill(NativeHomeStyle.accent).frame(height: 1).matchedGeometryEffect(id: "range", in: rangeSelection) }
-                                }
-                            }
-                    }.buttonStyle(NativeHomeButtonStyle()).accessibilityAddTraits(range == i ? .isSelected : [])
-                }
+        Picker("时间范围", selection: $range) {
+            ForEach(labels.indices, id: \.self) { index in
+                Text(AppLocalization.string(labels[index])).tag(index)
             }
-        }.animation(NativeStyle.Motion.home(reduced), value: range)
+        }.labelsHidden().pickerStyle(.segmented).controlSize(.small).tint(NativePalette.accent).frame(width: 204)
     }
-    private func bottom(width: CGFloat) -> some View {
-        HStack(alignment: .top, spacing: NativeStyle.Space.xl) {
-            NativeHomeComposition(snapshot: latestSnapshot).frame(width: width * 0.25)
-            Rectangle().fill(NativeHomeStyle.line.opacity(0.5)).frame(width: 0.7, height: NativeStyle.Layout.homeDetailsHeight)
-            VStack(alignment: .leading, spacing: NativeStyle.Space.md) {
-                Text("财务自由").font(NativeStyle.FontRole.section)
-                Text("\(Int(min(freedom, 1) * 100))%").font(NativeStyle.FontRole.display).monospacedDigit()
+    private func assetRail(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            metric("总资产", total)
+            metric("负债", debt)
+            rule.padding(.top, 8)
+            NativeHomeComposition(snapshot: latestSnapshot, rowHeight: compact ? 24 : 26).padding(.top, 12)
+            rule.padding(.top, 12)
+            HStack(spacing: 8) {
+                Text("财务自由").font(NativeStyle.FontRole.bodyStrong)
+                Text("\(Int(min(freedom, 1) * 100))%").monospacedDigit()
                     .contentTransition(reduced ? .opacity : .numericText())
+                Spacer(minLength: 0)
                 Button { parameters = true } label: {
-                    Label("参数", systemImage: "slider.horizontal.3").font(NativeStyle.FontRole.body)
-                        .padding(.horizontal, 14).frame(height: NativeStyle.Control.fieldHeight)
-                        .background(NativeHomeStyle.text.opacity(0.035), in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
-                        .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(NativeHomeStyle.line, lineWidth: 0.7))
-                }.buttonStyle(NativeHomeButtonStyle())
-            }.frame(width: width * 0.155, alignment: .leading)
-                .animation(NativeStyle.Motion.home(reduced), value: freedom)
-            Rectangle().fill(NativeHomeStyle.line.opacity(0.5)).frame(width: 0.7, height: NativeStyle.Layout.homeDetailsHeight)
-            ledger.frame(maxWidth: .infinity)
-        }.frame(height: NativeStyle.Layout.homeDetailsHeight, alignment: .top)
+                    Image(systemName: "slider.horizontal.3").frame(width: 26, height: 28)
+                }.help(AppLocalization.string("参数")).accessibilityLabel("参数")
+            }.font(NativeStyle.FontRole.body).padding(.top, 8)
+        }
     }
-    private var ledger: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("最近记录").font(NativeStyle.FontRole.section).padding(.bottom, 5)
-            HStack { cell("日期", leading: true); cell("总资产"); cell("净资产"); cell("负债") }
-                .font(NativeStyle.FontRole.micro).foregroundStyle(NativeHomeStyle.secondary)
+    private func metric(_ label: String, _ value: Double) -> some View {
+        HStack(spacing: 12) {
+            Text(AppLocalization.string(label)).foregroundStyle(NativePalette.secondary)
+            Spacer(minLength: 0)
+            Text(NativeHomeStyle.amount(value)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.85)
+                .contentTransition(reduced ? .opacity : .numericText())
+        }.font(NativeStyle.FontRole.body).frame(height: 28)
+    }
+    private func ledger(width: CGFloat) -> some View {
+        let dateWidth = min(170, max(140, width * 0.19))
+        return VStack(alignment: .leading, spacing: 0) {
+            rule
+            HStack(spacing: 12) {
+                Text("最近记录").font(NativeStyle.FontRole.bodyStrong)
+                Text("单位：元").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+            }.frame(height: 36, alignment: .leading)
+            ledgerRow([AppLocalization.string("日期"), AppLocalization.string("总资产"),
+                       AppLocalization.string("净资产"), AppLocalization.string("负债")], dateWidth: dateWidth)
+                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                .frame(height: 26).background(NativePalette.sidebar.opacity(0.7))
             rule
             if history.summaries.isEmpty {
-                Text("暂无资产记录").font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary).padding(.top, 10)
+                Text("暂无资产记录").font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
+                    .frame(maxWidth: .infinity, minHeight: NativeStyle.Layout.emptyStateHeight)
             } else {
-                ForEach(history.summaries.suffix(5).reversed(), id: \.id) { record in
-                    NativeHomeHoverRow {
-                        HStack {
-                            cell(record.date.formatted(.dateTime.month().day().locale(Locale(identifier: "zh_CN"))), leading: true)
-                            cell(record.totalAssets.formatted(.number.precision(.fractionLength(2))))
-                            cell((record.totalAssets - record.totalLiabilities).formatted(.number.precision(.fractionLength(2))))
-                            cell(record.totalLiabilities.formatted(.number.precision(.fractionLength(2))))
-                        }.font(NativeStyle.FontRole.micro).monospacedDigit().frame(height: 18)
+                ForEach(Array(history.summaries.suffix(5).reversed().enumerated()), id: \.element.id) { index, record in
+                    Button { openRecord(record.id) } label: {
+                        ledgerRow([record.date.formatted(date: .numeric, time: .omitted),
+                                   record.totalAssets.formatted(.number.precision(.fractionLength(2))),
+                                   (record.totalAssets - record.totalLiabilities).formatted(.number.precision(.fractionLength(2))),
+                                   record.totalLiabilities.formatted(.number.precision(.fractionLength(2)))], dateWidth: dateWidth)
+                            .font(NativeStyle.FontRole.body).monospacedDigit()
+                            .frame(height: NativeStyle.Layout.ledgerRowHeight).contentShape(Rectangle())
+                            .background(NativePalette.text.opacity(index.isMultiple(of: 2) ? 0 : 0.025))
                             .contentTransition(reduced ? .opacity : .numericText())
-                    }
+                    }.buttonStyle(.plain).foregroundStyle(NativePalette.text)
+                        .help(AppLocalization.format("查看 %@ 的记录", record.date.formatted(date: .numeric, time: .omitted)))
                     rule
                 }
             }
         }
     }
-    private func cell(_ text: String, leading: Bool = false) -> some View {
-        Text(text).frame(maxWidth: .infinity, alignment: leading ? .leading : .trailing)
-            .lineLimit(1).minimumScaleFactor(0.75)
+    private func ledgerRow(_ values: [String], dateWidth: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            ForEach(values.indices, id: \.self) { index in
+                Text(values[index]).lineLimit(1).minimumScaleFactor(0.85)
+                    .padding(.horizontal, 10)
+                    .frame(maxWidth: index == 0 ? nil : .infinity, maxHeight: .infinity,
+                           alignment: index == 0 ? .leading : .trailing)
+                    .frame(width: index == 0 ? dateWidth : nil, alignment: .leading)
+                    .overlay(alignment: .trailing) {
+                        if index < values.count - 1 { Rectangle().fill(NativePalette.line.opacity(0.65)).frame(width: 0.5) }
+                    }
+            }
+        }
     }
     private func loadLatestSnapshot() {
         guard let id = latest?.id else { latestSnapshot = nil; latestSnapshotContext = nil; return }
@@ -226,7 +203,7 @@ struct NativeHomeHoverRow<Content: View>: View {
     @ViewBuilder let content: Content
     var body: some View {
         content.padding(.horizontal, 3)
-            .foregroundStyle(hovered ? NativeHomeStyle.text : NativeHomeStyle.secondary)
+            .foregroundStyle(NativeHomeStyle.text)
             .background(NativeHomeStyle.accent.opacity(hovered ? 0.075 : 0), in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
             .onHover { hovered = $0 }.animation(NativeStyle.Motion.home(reduced), value: hovered)
     }
@@ -234,33 +211,46 @@ struct NativeHomeHoverRow<Content: View>: View {
 
 private struct NativeHomeComposition: View {
     let snapshot: AssetSnapshot?
-    private var slices: [(name: String, amount: Double)] {
+    var rowHeight: CGFloat = 26
+    private var slices: [(name: String, amount: Double, icon: String?, group: AssetGroup?)] {
         guard let snapshot else { return [] }
         let grouped = Dictionary(grouping: snapshot.entries.filter {
             $0.item?.category?.group != .liability && $0.resolvedAmount > 0
         }, by: { $0.item?.name ?? "其他" })
-        let all = grouped.map { (name: $0.key, amount: $0.value.reduce(0) { $0 + $1.resolvedAmount }) }
-            .sorted { $0.amount > $1.amount }
+        let totals: [(name: String, amount: Double, icon: String?, group: AssetGroup?)] = grouped.map { group in
+            let item = group.value.first?.item
+            return (name: group.key, amount: group.value.reduce(0) { $0 + $1.resolvedAmount },
+                    icon: item.map { AssetItemService.resolvedIconKey(for: $0) }, group: item?.category?.group)
+        }
+        let all = totals.sorted { lhs, rhs in
+            if lhs.amount == rhs.amount { return lhs.name < rhs.name }
+            return lhs.amount > rhs.amount
+        }
         if all.count <= 5 { return all }
-        return Array(all.prefix(5)) + [(name: "其他", amount: all.dropFirst(5).reduce(0) { $0 + $1.amount })]
+        return Array(all.prefix(5)) + [(name: AppLocalization.string("其他"), amount: all.dropFirst(5).reduce(0) { $0 + $1.amount }, icon: "square.grid.2x2", group: nil)]
     }
     var body: some View {
         let values = slices
         let total = values.reduce(0) { $0 + $1.amount }
-        VStack(alignment: .leading, spacing: NativeStyle.Space.xs) {
-            Text("资产构成").font(NativeStyle.FontRole.section).padding(.bottom, NativeStyle.Space.xs)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("资产构成").font(NativeStyle.FontRole.bodyStrong).frame(height: 28, alignment: .leading)
             if total > 0 {
-                ForEach(values.indices, id: \.self) { i in
-                    NativeHomeHoverRow {
-                        HStack {
-                            Text(values[i].name).lineLimit(1)
-                            Spacer(minLength: 8)
-                            Text((values[i].amount / total).formatted(.percent.precision(.fractionLength(0)))).monospacedDigit()
-                        }.font(NativeStyle.FontRole.body).frame(height: 20)
-                    }
+                ForEach(values.indices, id: \.self) { index in
+                    HStack(spacing: 6) {
+                        NativeAssetIcon(key: values[index].icon, group: values[index].group, title: values[index].name, size: 16)
+                        Text(values[index].name).lineLimit(1).help(values[index].name)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(values[index].amount.formatted(.number.precision(.fractionLength(2))))
+                            .monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(width: 94, alignment: .trailing)
+                        Text((values[index].amount / total).formatted(.percent.precision(.fractionLength(0))))
+                            .monospacedDigit().frame(width: 32, alignment: .trailing)
+                    }.font(NativeStyle.FontRole.body).frame(height: rowHeight)
+                    Rectangle().fill(NativePalette.line.opacity(0.6)).frame(height: 0.5)
                 }
             } else {
-                Text("暂无资产分布").font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary).padding(.top, 10)
+                Text("暂无资产分布").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
             }
         }
     }
@@ -284,45 +274,29 @@ private struct NativeHomeParameters: View {
     @FocusState private var focus: Int?
     @State private var invalid = false
     var body: some View {
-        VStack(alignment: .leading, spacing: NativeStyle.Space.lg) {
-            HStack {
-                Text("财务自由参数").font(NativeStyle.FontRole.subheadingStrong)
-                Spacer()
-                Button(action: close) { Image(systemName: "xmark").frame(width: 24, height: 24) }
-                    .buttonStyle(NativeHomeButtonStyle()).accessibilityLabel("关闭参数").keyboardShortcut(.escape, modifiers: [])
+        NativeSheet(title: "财务自由参数", width: 400, cancel: close) {
+            VStack(spacing: 12) {
+                field("月开销", $draft[0], 0)
+                field("月薪", $draft[1], 1)
+                field("年化收益率", $draft[2], 2, percent: true)
+                field("通胀率", $draft[3], 3, percent: true)
+                if invalid {
+                    Text("请输入有效数值").font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.negative)
+                }
             }
-            field("月开销", $draft[0], 0)
-            field("月薪", $draft[1], 1)
-            field("年化收益率", $draft[2], 2, percent: true)
-            field("通胀率", $draft[3], 3, percent: true)
-            if invalid { Text("请输入有效数值").font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange).transition(.opacity) }
-            HStack {
-                Spacer()
-                Button("完成", action: finish).font(NativeStyle.FontRole.body).padding(.horizontal, 18).frame(height: NativeStyle.Control.height)
-                    .background(NativeHomeStyle.accent.opacity(0.16), in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
-                    .buttonStyle(NativeHomeButtonStyle()).keyboardShortcut(.return, modifiers: [])
-            }
-        }.padding(22).frame(width: 350)
-            .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 11))
-            .overlay(RoundedRectangle(cornerRadius: 11).stroke(NativeHomeStyle.text.opacity(0.18), lineWidth: 0.7))
-            .shadow(color: .black.opacity(0.45), radius: 24, y: 10)
-            .onAppear { focus = 0 }
-            .onExitCommand(perform: close)
-            .animation(NativeStyle.Motion.home(reduced), value: invalid)
+        } footer: {
+            NativeSheetActions(cancel: close, title: "保存", submit: finish)
+        }
+        .onAppear { focus = 0 }
+        .onExitCommand(perform: close)
     }
     private func field(_ label: String, _ binding: Binding<Double>, _ index: Int, percent: Bool = false) -> some View {
-        HStack {
-            Text(label).font(NativeStyle.FontRole.body).foregroundStyle(NativeHomeStyle.secondary)
-            Spacer()
+        NativeFormRow(title: label) {
             Group {
                 if percent { TextField(label, value: binding, format: .percent) }
                 else { TextField(label, value: binding, format: .number) }
-            }.textFieldStyle(.plain).font(NativeStyle.FontRole.input).monospacedDigit()
-                .multilineTextAlignment(.trailing).onSubmit(finish)
-                .padding(NativeStyle.Space.sm).frame(width: 115)
-                .background(NativeHomeStyle.text.opacity(focus == index ? 0.08 : 0.025), in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
-                .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(focus == index ? NativeHomeStyle.accent.opacity(0.75) : NativeHomeStyle.line, lineWidth: 0.8))
-                .focused($focus, equals: index).animation(NativeStyle.Motion.home(reduced), value: focus)
+            }.textFieldStyle(.roundedBorder).monospacedDigit()
+                .focused($focus, equals: index).onSubmit(finish)
         }
     }
     private func finish() {
@@ -345,12 +319,18 @@ private struct NativePanoramaVector: VectorArithmetic {
 }
 private struct NativePanoramaLine: Shape {
     var vector: NativePanoramaVector
+    var fillToBaseline = false
     var animatableData: NativePanoramaVector { get { vector } set { vector = newValue } }
     func path(in rect: CGRect) -> Path {
         var path = Path()
         for i in stride(from: 0, to: vector.values.count, by: 2) {
             let point = CGPoint(x: vector.values[i] * rect.width, y: vector.values[i + 1] * rect.height)
             if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        if fillToBaseline, vector.values.count >= 2 {
+            path.addLine(to: CGPoint(x: vector.values[vector.values.count - 2] * rect.width, y: rect.maxY))
+            path.addLine(to: CGPoint(x: vector.values[0] * rect.width, y: rect.maxY))
+            path.closeSubpath()
         }
         return path
     }
@@ -361,6 +341,7 @@ struct NativePanoramaTrend: View {
     private var reduced: Bool { systemReduced || NativeHomeStyle.previewReduced }
     @State private var hovered: Int?
     let revision: String
+    var compact = false
     var netOnly = false
     var selection: Int? = nil
     var onHover: ((Int?) -> Void)? = nil
@@ -378,10 +359,24 @@ struct NativePanoramaTrend: View {
         return CGPoint(x: x, y: 1 - (value - scale.low) / scale.span)
     }
     private func refreshPlot() {
-        let values = summaries.flatMap { netOnly ? [$0.totalAssets - $0.totalLiabilities] : [$0.totalAssets, $0.totalAssets - $0.totalLiabilities] }
+        let values = summaries.flatMap { netOnly ? [$0.totalAssets - $0.totalLiabilities] : [$0.totalAssets, $0.totalAssets - $0.totalLiabilities] }.filter(\.isFinite)
         let low = values.min() ?? 0, high = values.max() ?? 1
-        let span = max(high - low, max(abs(high) * 0.02, 1))
-        let scale = (low: low - span * 0.1, span: span * 1.27)
+        let span = max(high - low, max(max(abs(low), abs(high)) * 0.02, 1))
+        // Four readable ticks; positive balances never acquire a negative axis from padding.
+        let paddedLow = low >= 0 ? max(0, low - span * 0.08) : low - span * 0.08
+        let paddedHigh = high + span * 0.12
+        func roundedStep(_ value: Double) -> Double {
+            let magnitude = pow(10, floor(log10(value)))
+            let fraction = value / magnitude
+            return ([1.0, 2, 2.5, 5, 10].first { $0 >= fraction } ?? 10) * magnitude
+        }
+        var step = roundedStep((paddedHigh - paddedLow) / 3)
+        var lower = floor(paddedLow / step) * step
+        while lower + step * 3 < high {
+            step = roundedStep(step * 1.01)
+            lower = floor(paddedLow / step) * step
+        }
+        let scale = (low: lower, span: step * 3)
         let sampled = NativeStaticTrendCanvas.sample(summaries, limit: 600)
         func vector(net: Bool) -> NativePanoramaVector {
             var points = sampled.map { point($0.element, net: net, scale: scale) }
@@ -395,12 +390,24 @@ struct NativePanoramaTrend: View {
     }
     var body: some View {
         GeometryReader { geometry in
-            let width = max(1, geometry.size.width - 90)
+            let width = max(1, geometry.size.width - (compact ? 56 : 90))
             let height = max(1, geometry.size.height - 25)
             let total = totalVector, net = netVector
             ZStack(alignment: .topLeading) {
                 if let latest = summaries.last {
+                    if compact {
+                        ForEach(0..<4) { tick in
+                            Path { p in
+                                let y = height * CGFloat(tick) / 3
+                                p.move(to: CGPoint(x: 0, y: y)); p.addLine(to: CGPoint(x: width, y: y))
+                            }.stroke(NativePalette.line.opacity(0.55), lineWidth: 0.5)
+                        }
+                    }
                     Group {
+                        if compact {
+                            NativePanoramaLine(vector: net, fillToBaseline: true)
+                                .fill(NativePalette.accent.opacity(0.045))
+                        }
                         if !netOnly { NativePanoramaLine(vector: total).stroke(NativePalette.chartSecondary, lineWidth: 1.15) }
                         NativePanoramaLine(vector: net).stroke(NativeHomeStyle.accent, lineWidth: 1.15)
                     }.frame(width: width, height: height)
@@ -409,9 +416,11 @@ struct NativePanoramaTrend: View {
                     let totalPoint = point(latest, net: false), netPoint = point(latest, net: true)
                     Path { p in p.move(to: CGPoint(x: width, y: 0)); p.addLine(to: CGPoint(x: width, y: height)) }
                         .stroke(NativeHomeStyle.text.opacity(0.3), style: StrokeStyle(lineWidth: 0.7, dash: [4, 4]))
-                    if !netOnly { endpoint("总资产", latest.totalAssets, NativePalette.chartSecondary, point: totalPoint, width: width, height: height) }
-                    endpoint("净资产", latest.totalAssets - latest.totalLiabilities, NativeHomeStyle.accent, point: netPoint,
-                             width: width, height: height, labelOffset: !netOnly && abs(totalPoint.y - netPoint.y) * height < 42 ? 42 : 0)
+                    if !compact && !netOnly { endpoint("总资产", latest.totalAssets, NativePalette.chartSecondary, point: totalPoint, width: width, height: height) }
+                    if !compact {
+                        endpoint("净资产", latest.totalAssets - latest.totalLiabilities, NativeHomeStyle.accent, point: netPoint,
+                                 width: width, height: height, labelOffset: !netOnly && abs(totalPoint.y - netPoint.y) * height < 42 ? 42 : 0)
+                    }
                     if hovered == nil, let selection, summaries.indices.contains(selection) {
                         Rectangle().fill(NativeHomeStyle.accent.opacity(0.45)).frame(width: 0.7, height: height)
                             .offset(x: point(summaries[selection], net: true).x * width)
@@ -437,8 +446,14 @@ struct NativePanoramaTrend: View {
                             .offset(x: min(max(0, p.x * width + 10), max(0, width - 160)), y: 0)
                     }
                     HStack {
-                        Text(summaries.first!.date.formatted(.dateTime.month().day().locale(Locale(identifier: "zh_CN"))))
-                        Spacer(); Text(latest.date.formatted(.dateTime.month().day().locale(Locale(identifier: "zh_CN"))))
+                        Text(axisDate(summaries.first!.date))
+                        Spacer()
+                        if compact, summaries.count > 2 {
+                            let middle = summaries.first!.date.addingTimeInterval(latest.date.timeIntervalSince(summaries.first!.date) / 2)
+                            Text(axisDate(middle))
+                            Spacer()
+                        }
+                        Text(axisDate(latest.date))
                     }.font(NativeStyle.FontRole.micro).foregroundStyle(NativeHomeStyle.secondary)
                         .frame(width: width).offset(y: height + 11)
                 } else {
@@ -456,7 +471,18 @@ struct NativePanoramaTrend: View {
                         }
                     }
             }
-                    .onTapGesture { if let hovered { onSelect?(hovered) } }
+            .padding(.leading, compact ? 56 : 0)
+            .overlay(alignment: .topLeading) {
+                if compact && !summaries.isEmpty {
+                    ForEach(0..<4) { tick in
+                        Text((domain.low + domain.span * (1 - Double(tick) / 3)).formatted(.number.notation(.compactName).precision(.fractionLength(0...1)).locale(Locale(identifier: "zh_CN"))))
+                            .font(NativeStyle.FontRole.caption).monospacedDigit().foregroundStyle(NativePalette.secondary)
+                            .lineLimit(1).minimumScaleFactor(0.9).frame(width: 50, alignment: .trailing)
+                            .offset(y: height * CGFloat(tick) / 3 - 6)
+                    }
+                }
+            }
+            .onTapGesture { if let hovered { onSelect?(hovered) } }
         }.onAppear(perform: refreshPlot)
             .onChange(of: revision) { _, _ in refreshPlot() }
             .accessibilityElement(children: .ignore)
@@ -464,6 +490,12 @@ struct NativePanoramaTrend: View {
             .accessibilityValue(summaries.last.map {
                 "总资产 " + NativeHomeStyle.amount($0.totalAssets) + "，净资产 " + NativeHomeStyle.amount($0.totalAssets - $0.totalLiabilities)
             } ?? "暂无资产记录")
+    }
+    private func axisDate(_ date: Date) -> String {
+        if compact {
+            return date.formatted(.dateTime.month(.defaultDigits).day(.defaultDigits).locale(AppLocalization.currentLocale))
+        }
+        return date.formatted(.dateTime.month().day().locale(AppLocalization.currentLocale))
     }
     private func nearest(_ ratio: Double) -> Int? {
         guard let first = summaries.first, let last = summaries.last else { return nil }
