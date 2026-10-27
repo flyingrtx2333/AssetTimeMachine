@@ -1,0 +1,28 @@
+{
+  "version": "1.14",
+  "build": "220",
+  "source": "a388ed545312f151551f7e8bff1f2ba26c52bd70",
+  "releaseBranch": "codex/testflight-settings-219",
+  "deliveryUUID": "32265fc2-59ac-4e91-8fa7-961e8f755f7b",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "settings219Preserved": true,
+  "strategyCodeUnchangedFrom219": true,
+  "releaseGates": {
+    "localization": true,
+    "debugSimulatorBuild": true,
+    "signedArchiveExport": true,
+    "strictSignature": true,
+    "ipaAppAndWidgetVersion": true,
+    "applePackageValidation": true,
+    "upload": true,
+    "threeLocaleNotesReadback": true
+  },
+  "ipaSHA256": "8690ede706e1b90af86e5eff39e97e0056f2426b645020beea5d6cc7ff48c7fc",
+  "durableDirectory": "/Volumes/小姐姐新家/策略研究数据/AssetTimeMachine/releases/TestFlight-1.14-220",
+  "oneTimeJobsUnloaded": true,
+  "externalBetaReviewSubmitted": false,
+  "productionAssetDataChanged": false,
+  "physicalDeviceAcceptance": "pending"
+}

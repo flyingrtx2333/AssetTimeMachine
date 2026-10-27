@@ -1,0 +1,12 @@
+{
+  "label": "com.flyingrtx.atm.release-220",
+  "lastExitCode": 0,
+  "source": "a388ed545312f151551f7e8bff1f2ba26c52bd70",
+  "state": [
+    "state = not running",
+    "last exit code = 0",
+    "state = active",
+    "state = active"
+  ],
+  "oneTimeJobUnloaded": true
+}

@@ -1,0 +1,20 @@
+{
+  "version": "1.14",
+  "build": "220",
+  "source": "a388ed545312f151551f7e8bff1f2ba26c52bd70",
+  "releaseBranch": "codex/testflight-settings-219",
+  "previousReleaseHead": "6e4c00789cf89260a9fec0ceef2b7664e863d90c",
+  "syncRepair": "0d04c859ea725603ac8b4879372b4c0c00a98752",
+  "checks": {
+    "settingsExactlyMatches219": true,
+    "strategyCodeExactlyMatches219": true,
+    "sharedSyncExactlyMatchesVerifiedRepair": true,
+    "nativeSourceExactlyMatchesVerifiedRepair": true,
+    "localizationAuditPassed": true,
+    "isolatedTransportChecksPassed": true
+  },
+  "transportEvidence": "evidence/sync-conflict-recovery-20261027/transport-checks.json",
+  "transportScope": "Actual CloudStore and in-memory models with isolated transport; source-identical to repair commit",
+  "unrelatedStrategyRegressionRun": false,
+  "physicalDeviceAcceptance": "pending"
+}

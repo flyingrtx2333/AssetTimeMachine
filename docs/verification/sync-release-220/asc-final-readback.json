@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "220",
+  "buildID": "32265fc2-59ac-4e91-8fa7-961e8f755f7b",
+  "source": "a388ed545312f151551f7e8bff1f2ba26c52bd70",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Resolve historical sync differences by asset and date. Confirmed choices survive interruptions and restarts while preserving other records. Retains the settings layout improvements from build 219.",
+    "zh-Hans": "修复云同步历史记录冲突：按资产和日期核对本机与云端差异；确认后支持断网、重启续传，保留其他记录。保留 219 版设置布局优化。",
+    "zh-Hant": "修復雲端同步歷史記錄衝突：按資產和日期核對本機與雲端差異；確認後支援斷線、重新啟動後繼續同步，保留其他記錄。保留 219 版設定版面優化。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
