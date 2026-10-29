@@ -1,0 +1,12 @@
+{
+  "actualChartAndLegendSource" : true,
+  "clickEnableDisableEnablePassed" : true,
+  "fixtureOnly" : true,
+  "heightPoints" : 334,
+  "toggleStates" : [
+    true,
+    false,
+    true
+  ],
+  "widthPoints" : 752
+}

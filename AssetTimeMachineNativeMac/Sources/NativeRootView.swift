@@ -618,6 +618,7 @@ struct NativeTimeMachineView: View {
     @State private var chartData: [TimeMachineSnapshotProjection] = []
     @State private var chartStart = 0
     @State private var chartRevision = 0
+    @State private var showsGoldEquivalent = false
 
     private var summaries: [TimeMachineSnapshotProjection] { history.summaries }
     private var activeIndex: Int? { hoveredIndex ?? selectedIndex }
@@ -669,7 +670,23 @@ struct NativeTimeMachineView: View {
                         NativeWorkspaceMetric(title: "负债", value: active?.totalLiabilities ?? 0)
                         NativeWorkspaceMetric(title: "较上次", value: activeDifference)
                     }
-                    NativePanoramaTrend(summaries: chartData, revision: "\(chartRevision)", selection: chartSelectedIndex,
+                    HStack(spacing: 16) {
+                        Label { Text("总资产") } icon: { Circle().fill(NativePalette.chartSecondary).frame(width: 6, height: 6) }
+                        Label { Text("净资产") } icon: { Circle().fill(NativePalette.accent).frame(width: 6, height: 6) }
+                        Toggle(isOn: $showsGoldEquivalent) {
+                            HStack(spacing: 6) {
+                                Circle().fill(AssetTheme.positive).frame(width: 6, height: 6)
+                                Text(AppLocalization.string("等值黄金"))
+                                if showsGoldEquivalent {
+                                    Text(active.flatMap(NativeGoldEquivalentPlot.value)
+                                        .map { $0.formatted(.number.precision(.fractionLength(0...4))) + " g" } ?? "—")
+                                        .monospacedDigit()
+                                }
+                            }
+                        }.toggleStyle(.button).tint(NativePalette.accent).controlSize(.small)
+                    }.font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                    NativePanoramaTrend(summaries: chartData, revision: "\(chartRevision)",
+                        showsGoldEquivalent: showsGoldEquivalent, selection: chartSelectedIndex,
                         onHover: { local in hoveredIndex = local.map { $0 + chartStart } },
                         onSelect: { selectedIndex = $0 + chartStart; hoveredIndex = nil })
                         .frame(height: min(240, max(160, geometry.size.height * 0.3)))

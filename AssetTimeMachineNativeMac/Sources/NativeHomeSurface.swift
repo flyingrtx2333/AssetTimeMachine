@@ -335,6 +335,61 @@ private struct NativePanoramaLine: Shape {
         return path
     }
 }
+/// Gold uses the same total-assets / recorded CNY-per-gram price as iPhone.
+/// Missing quotes split the line; per-bucket extrema keep long histories bounded.
+struct NativeGoldEquivalentPlot {
+    let values: [Double?]
+    let low: Double
+    let span: Double
+    let path: Path
+    var hasValues: Bool { values.contains { $0 != nil } }
+
+    static func value(_ summary: TimeMachineSnapshotProjection) -> Double? {
+        guard let price = summary.goldAnchorPriceCNY, price.isFinite, price > 0,
+              summary.totalAssets.isFinite else { return nil }
+        let value = summary.totalAssets / price
+        return value.isFinite ? value : nil
+    }
+
+    init(_ summaries: [TimeMachineSnapshotProjection]) {
+        let values = summaries.map(Self.value)
+        self.values = values
+        let valid = values.compactMap { $0 }
+        let minimum = valid.min() ?? 0, maximum = valid.max() ?? 1
+        let range = max(maximum - minimum, max(abs(maximum) * 0.02, 0.01))
+        let low = minimum >= 0 ? max(0, minimum - range * 0.08) : minimum - range * 0.08
+        self.low = low
+        let span = max(maximum + range * 0.12 - low, 0.01)
+        self.span = span
+        let first = summaries.first?.date ?? .now
+        let duration = max(summaries.last?.date.timeIntervalSince(first) ?? 1, 1)
+        let bucketSize = max(1, Int(ceil(Double(summaries.count) / 150)))
+        var path = Path()
+        var segment: [Int] = []
+        func appendSegment() {
+            var startsLine = true
+            for start in stride(from: 0, to: segment.count, by: bucketSize) {
+                let bucket = Array(segment[start..<min(start + bucketSize, segment.count)])
+                let indices = Set([bucket.first!, bucket.last!,
+                    bucket.min { values[$0]! < values[$1]! }!, bucket.max { values[$0]! < values[$1]! }!]).sorted()
+                for index in indices {
+                    let x = summaries.count == 1 ? 1 : summaries[index].date.timeIntervalSince(first) / duration
+                    let point = CGPoint(x: x, y: 1 - (values[index]! - low) / span)
+                    if startsLine { path.move(to: point); startsLine = false }
+                    else { path.addLine(to: point) }
+                }
+            }
+            segment.removeAll(keepingCapacity: true)
+        }
+        for index in values.indices {
+            if values[index] != nil { segment.append(index) }
+            else { appendSegment() }
+        }
+        appendSegment()
+        self.path = path
+    }
+}
+
 struct NativePanoramaTrend: View {
     let summaries: [TimeMachineSnapshotProjection]
     @Environment(\.accessibilityReduceMotion) private var systemReduced
@@ -343,12 +398,16 @@ struct NativePanoramaTrend: View {
     let revision: String
     var compact = false
     var netOnly = false
+    var showsGoldEquivalent = false
     var selection: Int? = nil
     var onHover: ((Int?) -> Void)? = nil
     var onSelect: ((Int) -> Void)? = nil
     @State private var domain: (low: Double, span: Double) = (0, 1)
     @State private var totalVector = NativePanoramaVector.zero
     @State private var netVector = NativePanoramaVector.zero
+    @State private var goldPlot = NativeGoldEquivalentPlot([])
+    private let goldColor = AssetTheme.positive
+    private var goldAxisVisible: Bool { showsGoldEquivalent && !compact && goldPlot.hasValues }
     private func point(_ summary: TimeMachineSnapshotProjection, net: Bool,
                        scale: (low: Double, span: Double)? = nil) -> CGPoint {
         let scale = scale ?? domain
@@ -386,11 +445,12 @@ struct NativePanoramaTrend: View {
         domain = scale
         totalVector = vector(net: false)
         netVector = vector(net: true)
+        goldPlot = NativeGoldEquivalentPlot(compact ? [] : summaries)
         hovered = nil
     }
     var body: some View {
         GeometryReader { geometry in
-            let width = max(1, geometry.size.width - (compact ? 56 : 90))
+            let width = max(1, geometry.size.width - (goldAxisVisible ? 128 : (compact ? 56 : 90)))
             let height = max(1, geometry.size.height - 25)
             let total = totalVector, net = netVector
             ZStack(alignment: .topLeading) {
@@ -413,11 +473,28 @@ struct NativePanoramaTrend: View {
                     }.frame(width: width, height: height)
                         .animation(reduced ? nil : NativeStyle.Motion.home(false), value: total)
                         .animation(reduced ? nil : NativeStyle.Motion.home(false), value: net)
+                    if goldAxisVisible {
+                        Canvas { graphics, _ in
+                            graphics.stroke(goldPlot.path.applying(CGAffineTransform(scaleX: width, y: height)),
+                                with: .color(goldColor), style: StrokeStyle(lineWidth: 1.4, dash: [5, 3]))
+                        }.frame(width: width, height: height).allowsHitTesting(false)
+                        ForEach(0..<4) { tick in
+                            let value = goldPlot.low + goldPlot.span * (1 - Double(tick) / 3)
+                            Text(value.formatted(.number.precision(.significantDigits(1...4))) + " g")
+                                .font(NativeStyle.FontRole.caption).monospacedDigit().foregroundStyle(goldColor)
+                                .lineLimit(1).minimumScaleFactor(0.75).frame(width: 60, alignment: .leading)
+                                .offset(x: width + 8, y: height * CGFloat(tick) / 3 - 6)
+                        }
+                        if let value = goldPlot.values.last ?? nil {
+                            Circle().fill(goldColor).frame(width: 6, height: 6)
+                                .offset(x: width - 3, y: (1 - (value - goldPlot.low) / goldPlot.span) * height - 3)
+                        }
+                    }
                     let totalPoint = point(latest, net: false), netPoint = point(latest, net: true)
                     Path { p in p.move(to: CGPoint(x: width, y: 0)); p.addLine(to: CGPoint(x: width, y: height)) }
                         .stroke(NativeHomeStyle.text.opacity(0.3), style: StrokeStyle(lineWidth: 0.7, dash: [4, 4]))
-                    if !compact && !netOnly { endpoint("总资产", latest.totalAssets, NativePalette.chartSecondary, point: totalPoint, width: width, height: height) }
-                    if !compact {
+                    if !compact && !netOnly && !goldAxisVisible { endpoint("总资产", latest.totalAssets, NativePalette.chartSecondary, point: totalPoint, width: width, height: height) }
+                    if !compact && !goldAxisVisible {
                         endpoint("净资产", latest.totalAssets - latest.totalLiabilities, NativeHomeStyle.accent, point: netPoint,
                                  width: width, height: height, labelOffset: !netOnly && abs(totalPoint.y - netPoint.y) * height < 42 ? 42 : 0)
                     }
@@ -435,11 +512,20 @@ struct NativePanoramaTrend: View {
                             Circle().fill(i == 0 ? NativePalette.chartSecondary : NativeHomeStyle.accent).frame(width: 5, height: 5)
                                 .offset(x: v.x * width - 2.5, y: v.y * height - 2.5)
                         }
+                        if goldAxisVisible, let value = NativeGoldEquivalentPlot.value(summary) {
+                            Circle().fill(goldColor).frame(width: 5, height: 5)
+                                .offset(x: p.x * width - 2.5, y: (1 - (value - goldPlot.low) / goldPlot.span) * height - 2.5)
+                        }
                         VStack(alignment: .leading, spacing: 5) {
                             Text(summary.date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))))
                             if !netOnly { Text("总资产 " + NativeHomeStyle.amount(summary.totalAssets)) }
                             Text("净资产 " + NativeHomeStyle.amount(summary.totalAssets - summary.totalLiabilities))
                                 .foregroundStyle(NativeHomeStyle.accent)
+                            if showsGoldEquivalent {
+                                Text(AppLocalization.string("等值黄金") + " " + (NativeGoldEquivalentPlot.value(summary)
+                                    .map { $0.formatted(.number.precision(.fractionLength(0...4))) + " g" } ?? "—"))
+                                    .foregroundStyle(goldColor)
+                            }
                         }.font(NativeStyle.FontRole.micro).monospacedDigit().padding(9)
                             .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: NativeStyle.Radius.control))
                             .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).stroke(NativeHomeStyle.line, lineWidth: 0.7))
@@ -471,11 +557,11 @@ struct NativePanoramaTrend: View {
                         }
                     }
             }
-            .padding(.leading, compact ? 56 : 0)
+            .padding(.leading, compact || goldAxisVisible ? 56 : 0)
             .overlay(alignment: .topLeading) {
-                if compact && !summaries.isEmpty {
+                if (compact || goldAxisVisible) && !summaries.isEmpty {
                     ForEach(0..<4) { tick in
-                        Text((domain.low + domain.span * (1 - Double(tick) / 3)).formatted(.number.notation(.compactName).precision(.fractionLength(0...1)).locale(Locale(identifier: "zh_CN"))))
+                        Text((goldAxisVisible ? "¥" : "") + (domain.low + domain.span * (1 - Double(tick) / 3)).formatted(.number.notation(.compactName).precision(.fractionLength(0...1)).locale(Locale(identifier: "zh_CN"))))
                             .font(NativeStyle.FontRole.caption).monospacedDigit().foregroundStyle(NativePalette.secondary)
                             .lineLimit(1).minimumScaleFactor(0.9).frame(width: 50, alignment: .trailing)
                             .offset(y: height * CGFloat(tick) / 3 - 6)
@@ -489,6 +575,8 @@ struct NativePanoramaTrend: View {
             .accessibilityLabel("资产走势")
             .accessibilityValue(summaries.last.map {
                 "总资产 " + NativeHomeStyle.amount($0.totalAssets) + "，净资产 " + NativeHomeStyle.amount($0.totalAssets - $0.totalLiabilities)
+                    + (showsGoldEquivalent ? "，" + AppLocalization.string("等值黄金") + " "
+                        + (NativeGoldEquivalentPlot.value($0).map { $0.formatted(.number.precision(.fractionLength(0...4))) + " g" } ?? "—") : "")
             } ?? "暂无资产记录")
     }
     private func axisDate(_ date: Date) -> String {
