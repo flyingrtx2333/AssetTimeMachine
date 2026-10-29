@@ -1,5 +1,6 @@
 import AppKit
 import AuthenticationServices
+import CryptoKit
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -11,6 +12,97 @@ private func nativeCloudErrorText(_ message: String) -> String {
     if message.contains("-999") { return AppLocalization.string("操作已取消") }
     return AppLocalization.string("网络连接失败，请重试")
 }
+
+#if ATM_DIRECT_DISTRIBUTION
+@MainActor
+private final class NativeWebLogin: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
+    @Published var isWorking = false
+    private var session: ASWebAuthenticationSession?
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        NSApp.keyWindow ?? NSApp.windows.first ?? ASPresentationAnchor()
+    }
+
+    func login() async throws -> Data {
+        guard !isWorking else { throw URLError(.cancelled) }
+        isWorking = true
+        defer { isWorking = false; session = nil }
+        let privateKey = P256.KeyAgreement.PrivateKey()
+        let state = (UUID().uuidString + UUID().uuidString).replacingOccurrences(of: "-", with: "").lowercased()
+        var url = URLComponents(string: "https://www.flyingrtx.com/login")!
+        url.queryItems = [URLQueryItem(name: "mac_key", value: encode(privateKey.publicKey.x963Representation)),
+                          URLQueryItem(name: "mac_state", value: state)]
+        let callback: URL = try await withCheckedThrowingContinuation { continuation in
+            let session = ASWebAuthenticationSession(url: url.url!, callbackURLScheme: "flyingrtx-atm") { callback, error in
+                if let error { continuation.resume(throwing: error) }
+                else if let callback { continuation.resume(returning: callback) }
+                else { continuation.resume(throwing: URLError(.userAuthenticationRequired)) }
+            }
+            self.session = session
+            session.presentationContextProvider = self
+            session.prefersEphemeralWebBrowserSession = true
+            if !session.start() { continuation.resume(throwing: URLError(.cannotLoadFromNetwork)) }
+        }
+        guard callback.scheme == "flyingrtx-atm", callback.host == "login",
+              let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems,
+              items.count == 4 else { throw URLError(.badServerResponse) }
+        func value(_ name: String) throws -> String {
+            let matches = items.filter { $0.name == name }
+            guard matches.count == 1, let result = matches[0].value else { throw URLError(.badServerResponse) }
+            return result
+        }
+        guard try value("state") == state else { throw URLError(.userAuthenticationRequired) }
+        let publicKey = try P256.KeyAgreement.PublicKey(x963Representation: decode(value("key")))
+        let nonce = try AES.GCM.Nonce(data: decode(value("nonce")))
+        let ciphertext = try decode(value("data"))
+        guard ciphertext.count > 16 && ciphertext.count < 32768 else { throw URLError(.badServerResponse) }
+        let secret = try privateKey.sharedSecretFromKeyAgreement(with: publicKey)
+        let key = secret.hkdfDerivedSymmetricKey(using: SHA256.self, salt: Data(state.utf8),
+                                                  sharedInfo: Data("AssetTimeMachineWebLogin-v1".utf8), outputByteCount: 32)
+        let box = try AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext.dropLast(16), tag: ciphertext.suffix(16))
+        return try AES.GCM.open(box, using: key, authenticating: Data(state.utf8))
+    }
+
+    private func encode(_ data: Data) -> String {
+        data.base64EncodedString().replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+    }
+
+    private func decode(_ value: String) throws -> Data {
+        guard value.range(of: "^[A-Za-z0-9_-]+$", options: .regularExpression) != nil,
+              let data = Data(base64Encoded: value.replacingOccurrences(of: "-", with: "+")
+                .replacingOccurrences(of: "_", with: "/") + String(repeating: "=", count: (4 - value.count % 4) % 4))
+        else { throw URLError(.badServerResponse) }
+        return data
+    }
+}
+
+struct NativeWebLoginButton: View {
+    @Environment(\.modelContext) private var context
+    @ObservedObject var cloud: AssetTimeMachineCloudStore
+    var onSuccess: () async -> Void = {}
+    @StateObject private var login = NativeWebLogin()
+
+    var body: some View {
+        Button {
+            Task {
+                do {
+                    let tokens = try await login.login()
+                    await cloud.handleWebLogin(tokens, from: context)
+                    if cloud.currentUser != nil { await onSuccess() }
+                } catch {
+                    cloud.errorMessage = AppLocalization.string("Apple 登录失败，请重试")
+                }
+            }
+        } label: {
+            Label(AppLocalization.string("使用 Apple 登录"), systemImage: "apple.logo")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(login.isWorking || cloud.isWorking || AppPreviewSession.isActive)
+    }
+}
+#endif
 
 @MainActor
 final class NativeRecordEditor: ObservableObject {
@@ -1026,6 +1118,10 @@ struct NativeAccountChoice: View {
     var body: some View {
         NativeSheet(title: "登录资产时光机", width: width, cancel: done) {
             VStack(spacing: 8) {
+                #if ATM_DIRECT_DISTRIBUTION
+                NativeWebLoginButton(cloud: cloud) { done() }
+                    .frame(height: 32)
+                #else
                 SignInWithAppleButton(.signIn) { request in
                     request.requestedScopes = [.fullName, .email]
                 } onCompletion: { result in
@@ -1036,6 +1132,7 @@ struct NativeAccountChoice: View {
                 }
                 .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
                 .frame(height: 32).disabled(cloud.isWorking || AppPreviewSession.isActive)
+                #endif
                 Button {
                     isShowingPassword.toggle()
                     focusedField = isShowingPassword ? .username : nil

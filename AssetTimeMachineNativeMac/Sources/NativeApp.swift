@@ -140,6 +140,10 @@ private struct NativeCloudRecoveryView: View {
                 .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if !archived {
+                #if ATM_DIRECT_DISTRIBUTION
+                NativeWebLoginButton(cloud: cloud) { archived = await cloud.archiveRecovery() }
+                    .frame(height: 36)
+                #else
                 SignInWithAppleButton(.signIn) { request in
                     request.requestedScopes = [.fullName, .email]
                 } onCompletion: { result in
@@ -150,6 +154,7 @@ private struct NativeCloudRecoveryView: View {
                 }
                 .frame(height: 36)
                 .disabled(cloud.isWorking)
+                #endif
                 if cloud.hasToken {
                     Button("重新读取云端历史") {
                         Task { archived = await cloud.archiveRecovery() }
