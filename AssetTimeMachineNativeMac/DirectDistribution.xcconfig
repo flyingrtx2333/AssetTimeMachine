@@ -1,4 +1,7 @@
-CODE_SIGN_ENTITLEMENTS = $(SRCROOT)/../AssetTimeMachine/AssetTimeMachineMacDirect.entitlements
-INFOPLIST_FILE = $(SRCROOT)/Info-Direct.plist
-OTHER_SWIFT_FLAGS = $(inherited) -D ATM_DIRECT_DISTRIBUTION
+ATM_ENTITLEMENTS_AssetTimeMachineNativeMac = $(SRCROOT)/../AssetTimeMachine/AssetTimeMachineMacDirect.entitlements
+ATM_INFO_AssetTimeMachineNativeMac = $(SRCROOT)/Info-Direct.plist
+ATM_SWIFT_FLAGS_AssetTimeMachineNativeMac = -D ATM_DIRECT_DISTRIBUTION
+CODE_SIGN_ENTITLEMENTS = $(ATM_ENTITLEMENTS_$(TARGET_NAME))
+INFOPLIST_FILE = $(ATM_INFO_$(TARGET_NAME))
+OTHER_SWIFT_FLAGS = $(inherited) $(ATM_SWIFT_FLAGS_$(TARGET_NAME))
 ENABLE_HARDENED_RUNTIME = YES
