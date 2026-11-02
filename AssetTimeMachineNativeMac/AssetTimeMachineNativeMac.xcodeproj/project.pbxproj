@@ -43,6 +43,7 @@
 		CBD5E17F777071A66A0817A9 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 278AE097AF86FDF8B634D679 /* Models.swift */; };
 		D4039D7A185277D669C01A80 /* BacktestPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09793A1C6D886275C4CE8FD3 /* BacktestPresentation.swift */; };
 		DDB7B91F38C47A1CBAA3010C /* TimeMachineSnapshotProjectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C6EB45381D65B3D8173F17E /* TimeMachineSnapshotProjectionStore.swift */; };
+		ACDA11000000000000000001 /* AssetChangeCalendarData.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACDA11000000000000000002 /* AssetChangeCalendarData.swift */; };
 		E6A9A0FC7696BA66BEA46A2B /* NativeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25092AB680675B86EFB10D5C /* NativeApp.swift */; };
 		EA92D9D1AC4ABC3071448971 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13973F84A63B5D21627C867 /* CloudSync.swift */; };
 		ED50F758B9188301358ABD11 /* AssetIconRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A90C2E2342BCB7D00AEC18A /* AssetIconRegistry.swift */; };
@@ -56,6 +57,7 @@
 		058A5DE5DE282BDBF9E6B58B /* AssetTimeMachine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AssetTimeMachine; path = ..; sourceTree = SOURCE_ROOT; };
 		09793A1C6D886275C4CE8FD3 /* BacktestPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacktestPresentation.swift; sourceTree = "<group>"; };
 		0C6EB45381D65B3D8173F17E /* TimeMachineSnapshotProjectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeMachineSnapshotProjectionStore.swift; sourceTree = "<group>"; };
+		ACDA11000000000000000002 /* AssetChangeCalendarData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetChangeCalendarData.swift; sourceTree = "<group>"; };
 		0F627A0263BDF15F3CF6CB90 /* NativeQuantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeQuantView.swift; sourceTree = "<group>"; };
 		1B841BD3843DFB4898503497 /* StrategyAdviceProjectionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrategyAdviceProjectionStore.swift; sourceTree = "<group>"; };
 		1BB546E1AFA9B8F60741AE44 /* BacktestCoreAliases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BacktestCoreAliases.swift; sourceTree = "<group>"; };
@@ -179,6 +181,7 @@
 				7E9BB4219E30CF68C9521F54 /* PortfolioMetrics.swift */,
 				8AC52496B444202F8A158B38 /* SnapshotService.swift */,
 				0C6EB45381D65B3D8173F17E /* TimeMachineSnapshotProjectionStore.swift */,
+				ACDA11000000000000000002 /* AssetChangeCalendarData.swift */,
 			);
 			name = Services;
 			path = ../AssetTimeMachine/Services;
@@ -330,6 +333,7 @@
 				5F781E512BB8BD55E0400BA0 /* StrategyAdviceProjectionStore.swift in Sources */,
 				867A9F2C262BCFAE6265D2C1 /* StrategyAdviceService.swift in Sources */,
 				DDB7B91F38C47A1CBAA3010C /* TimeMachineSnapshotProjectionStore.swift in Sources */,
+				ACDA11000000000000000001 /* AssetChangeCalendarData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

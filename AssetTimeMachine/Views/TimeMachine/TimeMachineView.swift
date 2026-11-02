@@ -674,6 +674,10 @@ struct TimeMachineView: View {
     @MainActor
     private func openRecord(for date: Date) {
         guard let snapshotID = cachedSnapshotIDByDay[Calendar.current.startOfDay(for: date)] else { return }
+        openRecord(snapshotID: snapshotID)
+    }
+    @MainActor
+    private func openRecord(snapshotID: UUID) {
         var descriptor = FetchDescriptor<AssetSnapshot>(
             predicate: #Predicate<AssetSnapshot> { snapshot in
                 snapshot.id == snapshotID
@@ -790,6 +794,14 @@ struct TimeMachineView: View {
                                 LoadingStateCard(title: AppLocalization.string("时光机加载中"))
                             } else if !filteredTrendPoints.isEmpty {
                                 heroTrendSection
+                                TimeMachineSectionDivider()
+                                    .padding(.vertical, 16)
+                                TimeMachineChangeCalendar(
+                                    summaries: cachedSnapshotProjections,
+                                    revision: lastSnapshotProjectionCacheToken ?? -1,
+                                    amountsVisible: amountsVisible,
+                                    onOpenRecord: { openRecord(snapshotID: $0) }
+                                )
 
                                 if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
                                     TimeMachineSectionDivider()

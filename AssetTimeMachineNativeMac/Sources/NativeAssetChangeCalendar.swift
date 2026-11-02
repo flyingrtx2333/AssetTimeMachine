@@ -1,117 +1,19 @@
 import AppKit
 import SwiftUI
 
-// Preview sessions share an isolated suite, never the signed-in user's preferences.
-enum NativeAssetChangePreferences {
-    static let key = "nativeMac.assetChange.colorScheme"
-    static let defaults: UserDefaults = AppPreviewSession.isActive
-        ? UserDefaults(suiteName: "com.flyingrtx.AssetTimeMachine.change-preview." + UUID().uuidString)!
-        : .standard
-}
-
-enum NativeAssetChangeColors: String, CaseIterable, Identifiable {
-    case region, redRise, greenRise
-    var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .region: AppLocalization.string("跟随地区")
-        case .redRise: AppLocalization.string("红涨绿跌")
-        case .greenRise: AppLocalization.string("绿涨红跌")
-        }
-    }
-    func redIsUp(region: String? = Locale.current.region?.identifier) -> Bool {
-        switch self {
-        case .region: region == "CN"
-        case .redRise: true
-        case .greenRise: false
-        }
-    }
-    var up: Color { redIsUp() ? AssetTheme.negative : AssetTheme.positive }
-    var down: Color { redIsUp() ? AssetTheme.positive : AssetTheme.negative }
-    func color(_ change: Double) -> Color { change == 0 ? NativePalette.secondary : (change > 0 ? up : down) }
-}
-
-struct NativeAssetChangeDay: Identifiable {
-    let date: Date
-    let snapshotID: UUID?
-    let previousDate: Date?
-    let change: Double?
-    let isFuture: Bool
-    var id: Date { date }
-}
-
-struct NativeAssetChangeYear {
-    let year: Int
-    let days: [NativeAssetChangeDay]
-    let leadingDays: Int
-    let weeks: Int
-    let maximumChange: Double
-
-    init(year: Int, summaries: [TimeMachineSnapshotProjection], today: Date = .now, calendar: Calendar = .current) {
-        self.year = year
-        let start = calendar.date(from: DateComponents(year: year, month: 1, day: 1))!
-        let end = calendar.date(byAdding: .year, value: 1, to: start)!
-        let today = calendar.startOfDay(for: today)
-        // Multiple snapshots are closing observations of one day, never additive balances.
-        let ordered = summaries.sorted {
-            if $0.date != $1.date { return $0.date < $1.date }
-            if $0.updatedAt != $1.updatedAt { return $0.updatedAt < $1.updatedAt }
-            return $0.id.uuidString < $1.id.uuidString
-        }
-        var closing: [Date: TimeMachineSnapshotProjection] = [:]
-        for summary in ordered where summary.date < end {
-            let day = calendar.startOfDay(for: summary.date)
-            if day <= today { closing[day] = summary }
-        }
-        var observations: [Date: NativeAssetChangeDay] = [:]
-        var previous: (date: Date, net: Double)?
-        for date in closing.keys.sorted() {
-            let summary = closing[date]!
-            let net = summary.totalAssets - summary.totalLiabilities
-            let raw = previous.map { net - $0.net }
-            let change = raw.flatMap { value -> Double? in
-                guard value.isFinite else { return nil }
-                let rounded = (value * 100).rounded() / 100
-                return rounded.isFinite ? (rounded == 0 ? 0 : rounded) : nil
-            }
-            if date >= start {
-                observations[date] = .init(date: date, snapshotID: summary.id,
-                    previousDate: previous?.date, change: change, isFuture: false)
-            }
-            previous = net.isFinite ? (date, net) : nil
-        }
-        var result: [NativeAssetChangeDay] = []
-        var day = start
-        while day < end {
-            result.append(observations[day] ?? .init(date: day, snapshotID: nil,
-                previousDate: nil, change: nil, isFuture: day > today))
-            day = calendar.date(byAdding: .day, value: 1, to: day)!
-        }
-        days = result
-        leadingDays = (calendar.component(.weekday, from: start) + 5) % 7
-        weeks = (leadingDays + result.count + 6) / 7
-        maximumChange = result.compactMap(\.change).map(abs).max() ?? 0
-    }
-
-    func day(week: Int, weekday: Int) -> NativeAssetChangeDay? {
-        let index = week * 7 + weekday - leadingDays
-        return days.indices.contains(index) ? days[index] : nil
-    }
-}
-
 struct NativeAssetChangeCalendar: View {
     let summaries: [TimeMachineSnapshotProjection]
     let revision: Int
     let selectedID: UUID?
     let select: (UUID) -> Void
-    @AppStorage(NativeAssetChangePreferences.key, store: NativeAssetChangePreferences.defaults)
-    private var colorRaw = NativeAssetChangeColors.region.rawValue
+    @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
+    private var colorRaw = AssetChangeColorScheme.region.rawValue
     @State private var year = Calendar.current.component(.year, from: Date.now)
     @State private var years = [Calendar.current.component(.year, from: Date.now)]
-    @State private var data: NativeAssetChangeYear?
+    @State private var data: AssetChangeYear?
     @State private var hovered: Date?
-    private var colors: NativeAssetChangeColors { NativeAssetChangeColors(rawValue: colorRaw) ?? .region }
-    private var focused: NativeAssetChangeDay? {
+    private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
+    private var focused: AssetChangeDay? {
         guard let data else { return nil }
         if let hovered { return data.days.first { $0.date == hovered } }
         return data.days.first { $0.snapshotID != nil && $0.snapshotID == selectedID }
@@ -130,7 +32,7 @@ struct NativeAssetChangeCalendar: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in rebuild() }
     }
 
-    private func calendar(_ data: NativeAssetChangeYear) -> some View {
+    private func calendar(_ data: AssetChangeYear) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(AppLocalization.string("每日净资产变动")).font(NativeStyle.FontRole.section)
@@ -140,7 +42,7 @@ struct NativeAssetChangeCalendar: View {
                 }.labelsHidden().frame(width: 85)
                 Menu {
                     Picker(AppLocalization.string("涨跌配色"), selection: $colorRaw) {
-                        ForEach(NativeAssetChangeColors.allCases) { Text($0.title).tag($0.rawValue) }
+                        ForEach(AssetChangeColorScheme.allCases) { Text($0.title).tag($0.rawValue) }
                     }
                 } label: { Image(systemName: "paintpalette") }
                     .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
@@ -202,7 +104,7 @@ struct NativeAssetChangeCalendar: View {
         }
     }
 
-    private func cell(_ day: NativeAssetChangeDay, size: CGFloat) -> some View {
+    private func cell(_ day: AssetChangeDay, size: CGFloat) -> some View {
         let selected = day.snapshotID != nil && day.snapshotID == selectedID
         return Button { if let id = day.snapshotID { select(id) } } label: {
             RoundedRectangle(cornerRadius: 2).fill(fill(day))
@@ -215,7 +117,7 @@ struct NativeAssetChangeCalendar: View {
             .accessibilityValue(amount(day) + " " + comparison(day))
             .accessibilityAddTraits(selected ? .isSelected : [])
     }
-    private func fill(_ day: NativeAssetChangeDay) -> Color {
+    private func fill(_ day: AssetChangeDay) -> Color {
         guard let change = day.change, change != 0 else {
             return NativePalette.line.opacity(day.isFuture ? 0.15 : (day.snapshotID == nil ? 0.4 : 0.85))
         }
@@ -223,13 +125,13 @@ struct NativeAssetChangeCalendar: View {
         let level = min(3, Int(ratio * 4))
         return colors.color(change).opacity(0.3 + Double(level) * 0.2)
     }
-    private func amount(_ day: NativeAssetChangeDay) -> String {
+    private func amount(_ day: AssetChangeDay) -> String {
         guard day.snapshotID != nil else { return AppLocalization.string("无记录") }
         guard let change = day.change else { return AppLocalization.string("无对比记录") }
         if change == 0 { return change.formatted(.currency(code: "CNY").precision(.fractionLength(2))) }
         return change.formatted(.currency(code: "CNY").precision(.fractionLength(2)).sign(strategy: .always()))
     }
-    private func comparison(_ day: NativeAssetChangeDay) -> String {
+    private func comparison(_ day: AssetChangeDay) -> String {
         guard let previous = day.previousDate, day.change != nil else { return "" }
         return AppLocalization.format("较 %@", previous.formatted(date: .numeric, time: .omitted))
     }
@@ -241,7 +143,7 @@ struct NativeAssetChangeCalendar: View {
     private func rebuild() {
         let currentYear = Calendar.current.component(.year, from: Date.now)
         years = Array(Set(summaries.map { Calendar.current.component(.year, from: $0.date) }.filter { $0 <= currentYear } + [currentYear, year])).sorted(by: >)
-        data = NativeAssetChangeYear(year: year, summaries: summaries)
+        data = AssetChangeYear(year: year, summaries: summaries)
         hovered = nil
     }
 }

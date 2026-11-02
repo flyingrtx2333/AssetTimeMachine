@@ -835,8 +835,8 @@ struct NativeSettingsView: View {
     @State private var showsLogin = false
     @State private var error: String?
     @State private var message: String?
-    @AppStorage(NativeAssetChangePreferences.key, store: NativeAssetChangePreferences.defaults)
-    private var changeColorRaw = NativeAssetChangeColors.region.rawValue
+    @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
+    private var changeColorRaw = AssetChangeColorScheme.region.rawValue
 
     var body: some View {
         ScrollView {
@@ -865,7 +865,7 @@ struct NativeSettingsView: View {
                         Text(AppLocalization.string("涨跌配色"))
                         Spacer()
                         Picker(AppLocalization.string("涨跌配色"), selection: $changeColorRaw) {
-                            ForEach(NativeAssetChangeColors.allCases) { Text($0.title).tag($0.rawValue) }
+                            ForEach(AssetChangeColorScheme.allCases) { Text($0.title).tag($0.rawValue) }
                         }.labelsHidden().frame(width: 160)
                     }.padding(.horizontal, 14).frame(minHeight: 44)
                         .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))

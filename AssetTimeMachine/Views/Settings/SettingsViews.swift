@@ -6,6 +6,7 @@ import UserNotifications
 struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var appLanguageStore: AppLanguageStore
+    @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults) private var assetChangeColorRaw = AssetChangeColorScheme.region.rawValue
     @AppStorage(AppAppearanceMode.defaultsKey) private var appearanceModeRawValue: String = AppAppearanceMode.system.rawValue
     @AppStorage(MonthlyExpenseEstimateStorage.defaultsKey) private var storedMonthlyExpenseEstimate = ""
     @AppStorage("dashboard.monthlyExpense") private var dashboardMonthlyExpense: Double = 3000
@@ -317,6 +318,18 @@ struct SettingsView: View {
             .settingsSurfaceRow()
             #endif
 
+            HStack(spacing: 12) {
+                SettingsRowLabel(title: AppLocalization.string("涨跌配色"), systemImage: "paintpalette")
+                Spacer(minLength: 8)
+                Picker(AppLocalization.string("涨跌配色"), selection: $assetChangeColorRaw) {
+                    ForEach(AssetChangeColorScheme.allCases) { scheme in
+                        Text(scheme.title).tag(scheme.rawValue)
+                    }
+                }
+                .labelsHidden()
+                .tint(AssetTheme.textSecondary)
+            }
+            .settingsSurfaceRow()
             Button {
                 pendingAppLanguage = nil
                 showsLanguageSelection = true
