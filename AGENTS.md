@@ -204,6 +204,9 @@ xcrun simctl uninstall booted com.flyingrtx.AssetTimeMachine || true
 
 ## TestFlight Release Procedure
 
+- Multiple worktrees share one App Store build-number namespace. Serialize publishing with the maintained helper's host-wide lock, and check pending build uploads before selecting a build number.
+- Before attributing or distributing a build, run `scripts/verify_testflight_artifact.py` against the exact exported IPA. Apple `ASSET` file size and MD5 must equal the local IPA. A matching version number or `VALID` state alone does not establish which source was published.
+
 Bundle ID: `com.flyingrtx.AssetTimeMachine`
 
 App Store Connect credentials are expected in the local private env file:

@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Every checkout on this Mac shares the same App Store upload namespace.
+if [[ "${ATM_RELEASE_LOCK_HELD:-0}" != 1 ]]; then
+    exec python3 - "$0" "$@" <<'LOCK'
+import fcntl, os, pathlib, subprocess, sys
+folder = pathlib.Path.home() / 'Library/Caches/AssetTimeMachineRelease'
+folder.mkdir(parents=True, exist_ok=True)
+with (folder / 'publisher.lock').open('a+') as handle:
+    try:
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit('Another AssetTimeMachine release is active on this Mac. Wait for it to finish.')
+    os.environ['ATM_RELEASE_LOCK_HELD'] = '1'
+    result = subprocess.run(['/bin/bash', sys.argv[1], *sys.argv[2:]], pass_fds=(handle.fileno(),))
+    raise SystemExit(result.returncode)
+LOCK
+fi
+
 PROJECT="AssetTimeMachine.xcodeproj"
 SCHEME="AssetTimeMachine"
 TEAM_ID="8BPSC5L74V"
@@ -10,6 +27,7 @@ POLL_ATTEMPTS="${POLL_ATTEMPTS:-40}"
 POLL_SLEEP_SECONDS="${POLL_SLEEP_SECONDS:-30}"
 
 RUN_DEBUG_BUILD=1
+RUN_STANDALONE_VALIDATION=1
 BUMP_BUILD=1
 COMMIT_MESSAGE=""
 TARGET_MARKETING_VERSION=""
@@ -23,6 +41,7 @@ Options:
   --version "1.0.6"       Set MARKETING_VERSION before building.
   --commit-message "msg"  Commit tracked changes plus build bump before archiving.
   --skip-debug-build      Skip simulator Debug build preflight.
+  --validate-on-upload    Use Apple upload processing for validation instead of a separate validate request.
   --no-bump               Do not increment CURRENT_PROJECT_VERSION.
   -h, --help              Show this help.
 
@@ -54,6 +73,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-debug-build)
             RUN_DEBUG_BUILD=0
+            shift
+            ;;
+        --validate-on-upload)
+            RUN_STANDALONE_VALIDATION=0
             shift
             ;;
         --no-bump)
@@ -222,6 +245,8 @@ if [[ -n "$COMMIT_MESSAGE" ]]; then
     git commit -m "$COMMIT_MESSAGE"
 fi
 
+RELEASE_SOURCE_REVISION="$(git rev-parse HEAD)"
+
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR" "$EXPORT"
 
@@ -275,6 +300,7 @@ if [[ -z "${IPA:-}" || ! -f "$IPA" ]]; then
 fi
 ls -lh "$IPA"
 
+if [[ "$RUN_STANDALONE_VALIDATION" -eq 1 ]]; then
 log "Validating IPA with App Store Connect"
 xcrun altool --validate-app \
     --type ios \
@@ -287,6 +313,8 @@ if grep -Eq 'ERROR:|Validation failed' "$VALIDATE_LOG"; then
     exit 1
 fi
 tail -n 60 "$VALIDATE_LOG"
+
+fi
 
 log "Uploading to App Store Connect"
 xcrun altool --upload-app \
@@ -307,6 +335,11 @@ if [[ -z "$DELIVERY_ID" ]]; then
     exit 70
 fi
 echo "DELIVERY_ID=$DELIVERY_ID" > "$BUILD_DIR/delivery-id.txt"
+
+log "Matching the remote software asset to this signed IPA"
+python3 scripts/verify_testflight_artifact.py --ipa "$IPA" \
+    --app-id 6764277773 --source "$RELEASE_SOURCE_REVISION" \
+    --receipt "$BUILD_DIR/artifact-match.json"
 
 log "Polling App Store Connect build status"
 : > "$STATUS_LOG"

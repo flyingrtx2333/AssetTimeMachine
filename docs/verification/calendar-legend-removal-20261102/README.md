@@ -1,3 +1,5 @@
+> Correction, 2026-11-02: the source attribution below was not verified against the uploaded software asset. Apple actually received the settings-branch 224 IPA (17,777,342 bytes, MD5 `9f3201cd508f7fbc978c6d36bd3758d2`), not the footer-removal IPA (17,764,414 bytes, MD5 `acc82bcc983e3fe4ba33f0c326a8eb1c`). The local component captures and native installation remain valid; this record does not prove the iOS footer removal shipped in 224. See the build-225 incident receipt for the corrected package verification.
+
 # Calendar legend removal · 1.14 (224) · 2026-11-02
 
 Removed the bottom minus/plus color scales from both native Mac and iOS, including the iOS Follow Region caption. Palette controls, daily change amounts, comparison dates, record navigation and linked chart selection are retained. The unused iOS legend/swatch helpers were removed. No models or financial calculations changed.
