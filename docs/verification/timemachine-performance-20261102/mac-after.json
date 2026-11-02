@@ -1,9 +1,9 @@
 {
-  "amountFormats" : 498,
+  "amountFormats" : 299,
   "cellBodies" : 199,
-  "maximumMilliseconds" : 18.957583,
-  "medianMilliseconds" : 3.654833,
-  "p95Milliseconds" : 5.0441250000000002,
+  "maximumMilliseconds" : 11.761374999999999,
+  "medianMilliseconds" : 5.2563339999999998,
+  "p95Milliseconds" : 7.0656249999999998,
   "scope" : "Actual native calendar in AppKit window; synthetic values; 1ms run-loop plus layout\/display barrier; local machine only",
   "updates" : 100
 }

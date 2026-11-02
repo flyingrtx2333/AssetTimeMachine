@@ -13,8 +13,8 @@ Actual production SwiftUI components, optimized `swiftc -O` harnesses, synthetic
 | Metric | Before | After |
 | --- | ---: | ---: |
 | Mac calendar cell bodies | 36,500 | 199 |
-| Mac amount formatting calls | 73,100 | 498 |
-| Mac update p95, ms | 26.32 | 5.04 |
+| Mac amount formatting calls | 73,100 | 299 |
+| Mac update p95, ms | 26.32 | 7.07 |
 | iOS calendar cell bodies | 36,500 | 199 |
 | iOS amount formatting calls | 36,600 | 299 |
 | iOS full chart preparations | 100 | 0 |
@@ -29,7 +29,7 @@ A previous whole-app fixture tour did not produce its completion marker within i
 
 - Shared calendar regression: PASS; includes indexed date/snapshot lookup and financial/day invariants.
 - Linked selection regression: PASS; production observable selection, deduplication, older range expansion, cross-year following, exact unsampled probe, stable line sample and clearing.
-- Full iOS Release simulator build: PASS. Localization audit: PASS (1549 keys, 766 direct calls, 1080 Chinese source literals).
+- Full native Mac Release build and installed-app signature/identity verification: PASS. Local installed version 1.14 (223), source `f6a768b`; `desktop-install-223.json` records verification. Full iOS Release simulator build: PASS. Localization audit: PASS (1549 keys, 766 direct calls, 1080 Chinese source literals).
 - `ios-probe-calendar-after.png`: actual optimized views; probe, date ruler, calendar highlight and tooltip all show 2026-07-18 using synthetic figures.
 - `measure_mac_component.py`: run from the repository with a result label; writes temporary source/binary and JSON to `build/calendar-interaction-perf/`.
 - `measure_ios_component.py`: run from the repository on macmini; builds an isolated simulator harness under that same build folder. Install/launch it only in a dedicated disposable iOS simulator; results are written to that harness's own `Documents/result.json`. The saved script is the optimized observable-reference driver; the before run used the corresponding build-222 Binding driver.
