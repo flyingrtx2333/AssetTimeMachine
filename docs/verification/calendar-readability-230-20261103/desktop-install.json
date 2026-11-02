@@ -1,0 +1,19 @@
+{
+  "installedPath": "/Applications/资产时光机.app",
+  "version": "1.14",
+  "build": "230",
+  "source": "949bb4e",
+  "previousBuild": "228",
+  "previousSource": "fc2a63e",
+  "backupPath": "/Users/xjs/Allprojects/AssetTimeMachine/build/AssetTimeMachine-Native-Previous.app",
+  "signatureVerified": true,
+  "identityAndEntitlementsPreserved": true,
+  "running": [
+    {
+      "finishedLaunching": true,
+      "path": "/Applications/资产时光机.app",
+      "pid": 53015
+    }
+  ],
+  "installedExecutableMatchesBuild": true
+}

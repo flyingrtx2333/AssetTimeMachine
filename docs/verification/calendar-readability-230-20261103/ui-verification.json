@@ -1,0 +1,28 @@
+{
+  "appSource": "949bb4e824cebcf7038c52672650466c4d9e0ae1",
+  "focusedCalendarCheck": "PASS",
+  "preFixFailure": "Larger absolute changes must use deeper colors in both appearances",
+  "minimumCellTextContrast": 4.5,
+  "appearances": [
+    "light",
+    "dark"
+  ],
+  "hues": [
+    "red",
+    "green"
+  ],
+  "nativeSelection": {
+    "updates": 2,
+    "cellBodies": 4,
+    "fullAmountFormats": 6,
+    "scope": "Actual component with synthetic records; not an end-to-end gesture benchmark"
+  },
+  "nativeBuild": "Release passed",
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1552,
+    "directCalls": 764,
+    "chineseSourceLiterals": 1078
+  },
+  "physicalDeviceAcceptance": "pending"
+}

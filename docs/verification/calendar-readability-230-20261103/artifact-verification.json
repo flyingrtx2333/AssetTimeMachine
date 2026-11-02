@@ -1,0 +1,41 @@
+{
+  "appSource": "949bb4e824cebcf7038c52672650466c4d9e0ae1",
+  "uploadSucceeded": true,
+  "version": "1.14",
+  "build": "230",
+  "buildUploadID": "2e6a3ff4-db52-480f-8822-aed7083f7dc6",
+  "ipaBytes": 17758129,
+  "ipaMD5": "e42644dae6444128c599ac8c529d6a1d",
+  "ipaSHA256": "209ef566271161549eb42707a2594cc43dbed868037216c44b20c41ba2a26343",
+  "serverArtifactMatched": true,
+  "serverDeliveryComplete": true,
+  "bundles": [
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "230"
+    },
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "230"
+    }
+  ],
+  "physicalDeviceAcceptance": "pending",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notesReadbackVerified": true,
+  "cliBuildStatusValid": true,
+  "simulatorDebugBuildPassed": true,
+  "releaseArchivePassed": true,
+  "strictArchiveSignatureVerified": true,
+  "archiveAndIPAUUIDsMatch": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1552,
+    "directCalls": 764,
+    "chineseSourceLiterals": 1078
+  },
+  "visualAcceptance": "Actual shared calendar components, native light/dark and narrow iPhone Chinese light/dark and English amounts, synthetic data"
+}

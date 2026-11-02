@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "230",
+  "buildID": "2e6a3ff4-db52-480f-8822-aed7083f7dc6",
+  "source": "949bb4e824cebcf7038c52672650466c4d9e0ae1",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Clearer calendar amounts with standard numbers and compact large-value units. Larger daily changes now use deeper colors in light and dark mode. Calendar columns align to keep amounts fully visible.",
+    "zh-Hans": "简化每日变动金额，万以内直接显示数字；修正为变动越大颜色越深，并让矩阵方格整列对齐。",
+    "zh-Hant": "簡化每日變動金額，萬以內直接顯示數字；修正為變動越大顏色越深，並讓矩陣方格整列對齊。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
