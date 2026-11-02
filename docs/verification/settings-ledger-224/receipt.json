@@ -1,0 +1,30 @@
+{
+  "version": "1.14",
+  "build": "224",
+  "delivery_uuid": "0e15eb8d-1502-47b5-ac49-56c5ba7dbb8b",
+  "asc_build_id": "0e15eb8d-1502-47b5-ac49-56c5ba7dbb8b",
+  "signed_source_commit": "0c5530d086c1cd0f1937cefcfb9a2263cf7ccf63",
+  "baseline_release_source": "88ac3b4e0e8e0262b34d835010f8828fa115ae69",
+  "source_branch": "codex/settings-ledger-testflight-224",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internal_group": "flyingrtx",
+  "internal_group_membership_verified": true,
+  "localized_notes_readback_verified": true,
+  "formal_store_build_unchanged": true,
+  "ipa_sha256": "fe6b9272b6469bfcb090a9d16016b64ed26bfe988849bc4f4f4ed2393f1202d9",
+  "durable_artifact_directory": "/Volumes/江波龙/Allprojects/AssetTimeMachine/build/TestFlight-1.14-224",
+  "archive_package_signatures_verified": true,
+  "distribution_get_task_allow": false,
+  "app_and_widget_version_verified": true,
+  "native_checks": {
+    "settings_tests": 2,
+    "onboarding_tests": 1,
+    "failures": 0
+  },
+  "tested_runtime_hashes_match_signed_source": true,
+  "physical_device_acceptance": "not performed",
+  "external_beta_review_submitted": false,
+  "temporary_aqua_job": "unloaded after independent VALID and internal availability confirmation",
+  "workflow_skill": "/Users/xiangjunsheng/.codex/skills/testflight-upload/SKILL.md"
+}
