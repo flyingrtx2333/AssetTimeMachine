@@ -1,0 +1,20 @@
+{
+  "source": "04ce967f9c56284ccd1db103ad3e94b9a61c975c",
+  "sourceCleanAtArchiveReadback": true,
+  "archiveStrictSignatureVerified": true,
+  "ipaBundles": [
+    {
+      "identifier": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "221"
+    },
+    {
+      "identifier": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "221"
+    }
+  ],
+  "ipaSHA256": "fff3177ad5d5f914d75eddcd3ee48511e7d59e25991d303daeb6dc1d4612dafb",
+  "ipaBytes": 17749713,
+  "usesNonExemptEncryption": false
+}

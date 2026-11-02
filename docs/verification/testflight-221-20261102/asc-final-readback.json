@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "221",
+  "buildID": "a35e7aa3-6142-4a08-8129-59c3d545d408",
+  "source": "04ce967f9c56284ccd1db103ad3e94b9a61c975c",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Add a daily net-asset change calendar to Time Machine. Select a date to view the change and its record. Choose regional, red-up or green-up colors; amount hiding remains available.",
+    "zh-Hans": "时光机新增每日净资产变动日历，按日期查看增减金额和对应记录。支持跟随地区、红涨绿跌、绿涨红跌，并沿用金额隐藏设置。",
+    "zh-Hant": "時光機新增每日淨資產變動日曆，依日期查看增減金額與對應紀錄。支援跟隨地區、紅漲綠跌、綠漲紅跌，並沿用金額隱藏設定。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
