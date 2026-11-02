@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "222",
+  "buildID": "33dc4c26-c6a0-4969-8a12-80ad5011a1fa",
+  "source": "8c821e4bebb5934d7b63a8513f1b4f76deab6b96",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Link the Time Machine chart probe and daily calendar in both directions. Calendar selections keep the exact date, follow across years, and reveal older dates by expanding the chart range.",
+    "zh-Hans": "修复时光机曲线探针与每日变动日历的双向联动。拖动探针会选中对应日期；点选日历会移动探针，支持跨年及历史范围自动展开。",
+    "zh-Hant": "修復時光機曲線探針與每日變動日曆的雙向連動。拖動探針會選取對應日期；點選日曆會移動探針，支援跨年與歷史範圍自動展開。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
