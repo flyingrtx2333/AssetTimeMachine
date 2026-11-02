@@ -25,7 +25,7 @@ struct NativeAssetChangeCalendar: View {
     var body: some View {
         Group {
             if let data { calendar(data) }
-            else { Color.clear.frame(height: 196) }
+            else { Color.clear.frame(height: AssetChangeCellPresentation.gridHeight + 42) }
         }
         .onAppear(perform: rebuild)
         .onChange(of: revision) { _, _ in rebuild() }
@@ -84,42 +84,50 @@ private struct NativeAssetChangeGrid: View, Equatable {
             && lhs.colors == rhs.colors && lhs.localeIdentifier == rhs.localeIdentifier
     }
     var body: some View {
-            GeometryReader { geometry in
-                let gap: CGFloat = 3
-                let size = min(12, max(3, (geometry.size.width - 26 - gap * CGFloat(data.weeks - 1)) / CGFloat(data.weeks)))
-                VStack(alignment: .leading, spacing: 5) {
-                    ZStack(alignment: .topLeading) {
-                        ForEach(1...12, id: \.self) { month in
-                            let date = Calendar.current.date(from: DateComponents(year: data.year, month: month, day: 1))!
-                            let offset = Calendar.current.dateComponents([.day], from: data.days[0].date, to: date).day ?? 0
-                            Text(date.formatted(.dateTime.month(.abbreviated).locale(AppLocalization.currentLocale)))
-                                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                                .offset(x: 26 + CGFloat((offset + data.leadingDays) / 7) * (size + gap))
-                        }
-                    }.frame(height: 15)
-                    HStack(alignment: .top, spacing: 4) {
-                        VStack(spacing: gap) {
-                            ForEach(0..<7) { weekday in
-                                Text(weekdayLabel(weekday)).font(.system(size: 9)).foregroundStyle(NativePalette.secondary)
-                                    .frame(width: 22, height: size, alignment: .leading)
-                            }
-                        }
-                        HStack(spacing: gap) {
-                            ForEach(0..<data.weeks, id: \.self) { week in
-                                VStack(spacing: gap) {
-                                    ForEach(0..<7) { weekday in
-                                        if let day = data.day(week: week, weekday: weekday) {
-                                            NativeAssetChangeCell(day: day, maximumChange: data.maximumChange, colors: colors,
-                                                selected: day.snapshotID != nil && day.snapshotID == selectedID,
-                                                size: size, localeIdentifier: localeIdentifier, select: select, hover: hover).equatable()
-                                        } else { Color.clear.frame(width: size, height: size).accessibilityHidden(true) }
+        HStack(alignment: .top, spacing: 6) {
+            VStack(spacing: AssetChangeCellPresentation.gap) {
+                Color.clear.frame(height: 18)
+                ForEach(0..<7) { weekday in
+                    Text(weekdayLabel(weekday)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        .frame(width: 22, height: AssetChangeCellPresentation.height, alignment: .leading)
+                }
+            }.frame(width: 22).accessibilityHidden(true)
+            ScrollViewReader { reader in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(alignment: .top, spacing: AssetChangeCellPresentation.gap) {
+                        ForEach(0..<data.weeks, id: \.self) { week in
+                            VStack(spacing: AssetChangeCellPresentation.gap) {
+                                Text(monthLabel(week)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                    .frame(width: AssetChangeCellPresentation.width, height: 18, alignment: .leading)
+                                ForEach(0..<7) { weekday in
+                                    if let day = data.day(week: week, weekday: weekday) {
+                                        NativeAssetChangeCell(day: day, level: data.intensity(for: day.change), colors: colors,
+                                            selected: day.snapshotID != nil && day.snapshotID == selectedID,
+                                            localeIdentifier: localeIdentifier, select: select, hover: hover).equatable()
+                                    } else {
+                                        Color.clear.frame(width: AssetChangeCellPresentation.width, height: AssetChangeCellPresentation.height)
+                                            .accessibilityHidden(true)
                                     }
                                 }
-                            }
+                            }.id(week)
                         }
-                    }
+                    }.padding(.trailing, 12)
                 }
-            }.frame(height: 122)
+                .onAppear { reader.scrollTo(focusedWeek, anchor: .trailing) }
+                .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek, anchor: .trailing) }
+                .onChange(of: focusedWeek) { _, week in reader.scrollTo(week, anchor: .center) }
+            }
+        }.frame(height: AssetChangeCellPresentation.gridHeight)
+    }
+    private var focusedWeek: Int {
+        let day = selectedID.flatMap { data.day(snapshotID: $0) } ?? data.days.last { $0.snapshotID != nil }
+        let offset = Calendar.current.dateComponents([.day], from: data.days[0].date, to: day?.date ?? .now).day ?? 0
+        return max(0, min(data.weeks - 1, (offset + data.leadingDays) / 7))
+    }
+    private func monthLabel(_ week: Int) -> String {
+        (0..<7).compactMap { data.day(week: week, weekday: $0) }
+            .first { Calendar.current.component(.day, from: $0.date) == 1 }?
+            .date.formatted(.dateTime.month(.abbreviated).locale(AppLocalization.currentLocale)) ?? ""
     }
     private func weekdayLabel(_ index: Int) -> String {
         guard index.isMultiple(of: 2) else { return "" }
@@ -130,16 +138,16 @@ private struct NativeAssetChangeGrid: View, Equatable {
 
 private struct NativeAssetChangeCell: View, Equatable {
     let day: AssetChangeDay
-    let maximumChange: Double
+    let level: Int
     let colors: AssetChangeColorScheme
     let selected: Bool
-    let size: CGFloat
     let localeIdentifier: String
     let select: (UUID) -> Void
     let hover: (Date?) -> Void
+    @Environment(\.colorScheme) private var appearance
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.day == rhs.day && lhs.maximumChange == rhs.maximumChange && lhs.colors == rhs.colors
-            && lhs.selected == rhs.selected && lhs.size == rhs.size && lhs.localeIdentifier == rhs.localeIdentifier
+        lhs.day == rhs.day && lhs.level == rhs.level && lhs.colors == rhs.colors
+            && lhs.selected == rhs.selected && lhs.localeIdentifier == rhs.localeIdentifier
     }
     var body: some View {
         let dateText: String = day.date.formatted(date: .complete, time: .omitted)
@@ -156,16 +164,16 @@ private struct NativeAssetChangeCell: View, Equatable {
             .accessibilityAddTraits(selected ? .isSelected : [])
     }
     private var glyph: some View {
-        RoundedRectangle(cornerRadius: 2).fill(fill)
-            .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 1.5))
-            .frame(width: size, height: size)
-    }
-    private var fill: Color {
-        guard let change = day.change, change != 0 else {
-            return NativePalette.line.opacity(day.isFuture ? 0.15 : (day.snapshotID == nil ? 0.4 : 0.85))
-        }
-        let ratio = log1p(abs(change)) / max(log1p(maximumChange), 0.01)
-        return colors.color(change).opacity(0.3 + Double(min(3, Int(ratio * 4))) * 0.2)
+        let style = AssetChangeCellPresentation.colors(day: day, level: level, scheme: colors, appearance: appearance)
+        return RoundedRectangle(cornerRadius: 4).fill(style.background)
+            .overlay {
+                Text(day.change.map { AssetChangeCellPresentation.text($0, locale: Locale(identifier: localeIdentifier)) }
+                     ?? (day.snapshotID != nil ? "—" : ""))
+                    .font(.system(size: 11.5, weight: .semibold)).monospacedDigit()
+                    .foregroundStyle(style.foreground).lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, 4)
+            }
+            .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 2))
+            .frame(width: AssetChangeCellPresentation.width, height: AssetChangeCellPresentation.height)
     }
     private var amount: String {
         guard day.snapshotID != nil else { return AppLocalization.string("无记录") }
