@@ -65,21 +65,32 @@ def test_native_change_calendar():
     precondition(!restored.redIsUp(region:"CN"));defaults.removeObject(forKey:AssetChangePreferences.key)
     let zh = Locale(identifier:"zh-Hans"), en = Locale(identifier:"en-US")
     for locale in [zh,en] {
-        precondition(AssetChangeCellPresentation.text(23.45,locale:locale)=="+23.45")
+        precondition(AssetChangeCellPresentation.text(23.45,locale:locale)=="+23")
+        precondition(AssetChangeCellPresentation.text(94.91,locale:locale)=="+95")
         precondition(AssetChangeCellPresentation.text(-0.01,locale:locale)=="−0.01")
-        precondition(AssetChangeCellPresentation.text(-0.004,locale:locale)=="0.00")
+        precondition(AssetChangeCellPresentation.text(-0.004,locale:locale)=="0")
         precondition(AssetChangeCellPresentation.text(.infinity,locale:locale)=="—")
         precondition(AssetChangeCellPresentation.text(Double.greatestFiniteMagnitude,locale:locale).count<10)
     }
-    precondition(AssetChangeCellPresentation.text(120,locale:zh)=="+1.2百")
+    precondition(AssetChangeCellPresentation.text(120,locale:zh)=="+120")
     precondition(AssetChangeCellPresentation.text(120,locale:en)=="+120")
-    precondition(AssetChangeCellPresentation.text(-3400,locale:zh)=="−3.4千")
+    precondition(AssetChangeCellPresentation.text(-3400,locale:zh)=="−3,400")
     precondition(AssetChangeCellPresentation.text(-3400,locale:en)=="−3.4K")
     precondition(AssetChangeCellPresentation.text(12345,locale:zh)=="+1.2万")
     precondition(AssetChangeCellPresentation.text(12345,locale:en)=="+12K")
-    precondition(AssetChangeCellPresentation.text(999.99,locale:zh)=="+1千")
+    precondition(AssetChangeCellPresentation.text(999.99,locale:zh)=="+1,000")
+    precondition(AssetChangeCellPresentation.text(7600,locale:zh)=="+7,600")
+    precondition(AssetChangeCellPresentation.text(7600,locale:en)=="+7.6K")
+    precondition(AssetChangeCellPresentation.text(9999.99,locale:zh)=="+1万")
     precondition(AssetChangeCellPresentation.text(999500,locale:en)=="+1M")
     precondition(AssetChangeCellPresentation.text(99995000,locale:zh)=="+1亿")
+    for available in [CGFloat(260),315,380,744] {
+        let width=AssetChangeCellPresentation.cellWidth(for:available)
+        let columns=((available+AssetChangeCellPresentation.gap)/(width+AssetChangeCellPresentation.gap)).rounded()
+        precondition(width>=AssetChangeCellPresentation.width)
+        precondition(abs(columns*width+(columns-1)*AssetChangeCellPresentation.gap-available)<0.01,
+            "The viewport must show whole columns, preserving every amount's sign")
+    }
     let spread = [row(date(2026,1,1),1000,0),row(date(2026,1,2),1010,0),row(date(2026,1,3),1030,0),
                   row(date(2026,1,4),1060,0),row(date(2026,1,5),1100,0),row(date(2026,1,6),1150,0)]
     let ranked=AssetChangeYear(year:2026,summaries:spread,today:date(2026,1,8),calendar:calendar)
@@ -95,14 +106,17 @@ def test_native_change_calendar():
     let cell=AssetChangeDay(date:date(2026,1,1),snapshotID:UUID(),previousDate:date(2025,12,31),change:1,isFuture:false)
     for appearance in [ColorScheme.light,.dark] {
         for scheme in [AssetChangeColorScheme.redRise,.greenRise] {
+            var previousLuminance=Double.infinity
             for level in 1...5 {
                 let style=AssetChangeCellPresentation.colors(day:cell,level:level,scheme:scheme,appearance:appearance)
                 let a=luminance(style.background),b=luminance(style.foreground)
                 precondition((max(a,b)+0.05)/(min(a,b)+0.05)>=4.5,"Every amount must remain legible at every color level")
+                precondition(a<previousLuminance,"Larger absolute changes must use deeper colors in both appearances")
+                previousLuminance=a
             }
         }
     }
-    print("PASS: calendar invariants, signed Chinese/English cell amounts and unit boundaries, outlier-resistant levels, and all cell text contrast")
+    print("PASS: calendar invariants, readable signed amounts and unit boundaries, whole-column widths, outlier-resistant levels, deeper larger changes, and all cell text contrast")
     '''
     with tempfile.TemporaryDirectory(prefix='atm-change-calendar-') as directory:
         main = Path(directory) / 'main.swift'

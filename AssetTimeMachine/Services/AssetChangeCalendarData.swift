@@ -136,20 +136,24 @@ enum AssetChangeCellPresentation {
     static let gap: CGFloat = 4
     static let gridHeight: CGFloat = 18 + 7 * (height + gap)
 
+    static func cellWidth(for availableWidth: CGFloat) -> CGFloat {
+        let columns = max(1, floor((availableWidth + gap) / (width + gap)))
+        return max(1, (availableWidth - (columns - 1) * gap) / columns)
+    }
+
     static func text(_ change: Double, locale: Locale) -> String {
         guard change.isFinite else { return "—" }
         let magnitude = abs(change) < 1e14 ? (abs(change) * 100).rounded() / 100 : abs(change)
-        guard magnitude > 0 else { return 0.0.formatted(.number.locale(locale).precision(.fractionLength(2))) }
+        guard magnitude > 0 else { return 0.formatted(.number.locale(locale)) }
         let sign = change < 0 ? "−" : "+"
         if magnitude >= 1e16 {
             return sign + magnitude.formatted(.number.locale(locale).notation(.scientific).precision(.fractionLength(0)))
         }
-        if magnitude < 100 {
+        if magnitude < 1 {
             return sign + magnitude.formatted(.number.locale(locale).precision(.fractionLength(2)))
         }
         let units: [(Double, String)] = locale.language.languageCode?.identifier == "zh"
-            ? [(1, ""), (100, AppLocalization.string("百")), (1_000, AppLocalization.string("千")),
-               (10_000, AppLocalization.string("万")), (100_000_000, AppLocalization.string("亿")),
+            ? [(1, ""), (10_000, AppLocalization.string("万")), (100_000_000, AppLocalization.string("亿")),
                (1_000_000_000_000, AppLocalization.string("兆"))]
             : [(1, ""), (1_000, "K"), (1_000_000, "M"), (1_000_000_000, "B"), (1_000_000_000_000, "T")]
         var index = units.lastIndex { magnitude >= $0.0 } ?? 0
@@ -164,13 +168,14 @@ enum AssetChangeCellPresentation {
             scale = digits == 1 ? 10 : 1
             rounded = (value * scale).rounded() / scale
         }
-        return sign + rounded.formatted(.number.locale(locale).grouping(.never).precision(.fractionLength(0...digits))) + units[index].1
+        return sign + rounded.formatted(.number.locale(locale).grouping(index == 0 ? .automatic : .never)
+            .precision(.fractionLength(0...digits))) + units[index].1
     }
 
     private static let lightRed: [UInt32] = [0xFCE8E6, 0xF8C7C3, 0xEE9189, 0xC23F3B, 0x8F2429]
     private static let lightGreen: [UInt32] = [0xE6F4EA, 0xB7DFC4, 0x79C695, 0x2A7D46, 0x185C34]
-    private static let darkRed: [UInt32] = [0x431F25, 0x722D35, 0xAA3F45, 0xD96B6B, 0xF2A4A1]
-    private static let darkGreen: [UInt32] = [0x173627, 0x245F3E, 0x2D8550, 0x54AF76, 0x8DD9A7]
+    private static let darkRed: [UInt32] = [0xF2A4A1, 0xD96B6B, 0xAA3F45, 0x722D35, 0x431F25]
+    private static let darkGreen: [UInt32] = [0x8DD9A7, 0x54AF76, 0x2D8550, 0x245F3E, 0x173627]
 
     static func colors(day: AssetChangeDay, level: Int, scheme: AssetChangeColorScheme,
                        appearance: ColorScheme) -> (background: Color, foreground: Color) {
@@ -182,7 +187,7 @@ enum AssetChangeCellPresentation {
         let red = change > 0 ? scheme.redIsUp() : !scheme.redIsUp()
         let shades = dark ? (red ? darkRed : darkGreen) : (red ? lightRed : lightGreen)
         let index = max(0, min(4, level - 1))
-        let whiteText = dark ? index < 3 : index >= 3
+        let whiteText = dark ? index >= 2 : index >= 3
         return (color(shades[index]), whiteText ? .white : color(0x202124))
     }
 

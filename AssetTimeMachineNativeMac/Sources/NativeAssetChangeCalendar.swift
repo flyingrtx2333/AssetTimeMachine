@@ -84,38 +84,45 @@ private struct NativeAssetChangeGrid: View, Equatable {
             && lhs.colors == rhs.colors && lhs.localeIdentifier == rhs.localeIdentifier
     }
     var body: some View {
-        HStack(alignment: .top, spacing: 6) {
-            VStack(spacing: AssetChangeCellPresentation.gap) {
-                Color.clear.frame(height: 18)
-                ForEach(0..<7) { weekday in
-                    Text(weekdayLabel(weekday)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                        .frame(width: 22, height: AssetChangeCellPresentation.height, alignment: .leading)
-                }
-            }.frame(width: 22).accessibilityHidden(true)
-            ScrollViewReader { reader in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(alignment: .top, spacing: AssetChangeCellPresentation.gap) {
-                        ForEach(0..<data.weeks, id: \.self) { week in
-                            VStack(spacing: AssetChangeCellPresentation.gap) {
-                                Text(monthLabel(week)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                                    .frame(width: AssetChangeCellPresentation.width, height: 18, alignment: .leading)
-                                ForEach(0..<7) { weekday in
-                                    if let day = data.day(week: week, weekday: weekday) {
-                                        NativeAssetChangeCell(day: day, level: data.intensity(for: day.change), colors: colors,
-                                            selected: day.snapshotID != nil && day.snapshotID == selectedID,
-                                            localeIdentifier: localeIdentifier, select: select, hover: hover).equatable()
-                                    } else {
-                                        Color.clear.frame(width: AssetChangeCellPresentation.width, height: AssetChangeCellPresentation.height)
-                                            .accessibilityHidden(true)
+        GeometryReader { geometry in
+            let cellWidth = AssetChangeCellPresentation.cellWidth(for: geometry.size.width - 28)
+            HStack(alignment: .top, spacing: 6) {
+                VStack(spacing: AssetChangeCellPresentation.gap) {
+                    Color.clear.frame(height: 18)
+                    ForEach(0..<7) { weekday in
+                        Text(weekdayLabel(weekday)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                            .frame(width: 22, height: AssetChangeCellPresentation.height, alignment: .leading)
+                    }
+                }.frame(width: 22).accessibilityHidden(true)
+                ScrollViewReader { reader in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        // At most 54 weeks; exact offsets keep edge amounts complete.
+                        HStack(alignment: .top, spacing: AssetChangeCellPresentation.gap) {
+                            ForEach(0..<data.weeks, id: \.self) { week in
+                                VStack(spacing: AssetChangeCellPresentation.gap) {
+                                    Text(monthLabel(week)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                        .frame(width: cellWidth, height: 18, alignment: .leading)
+                                    ForEach(0..<7) { weekday in
+                                        if let day = data.day(week: week, weekday: weekday) {
+                                            NativeAssetChangeCell(day: day, level: data.intensity(for: day.change), width: cellWidth, colors: colors,
+                                                selected: day.snapshotID != nil && day.snapshotID == selectedID,
+                                                localeIdentifier: localeIdentifier, select: select, hover: hover).equatable()
+                                        } else {
+                                            Color.clear.frame(width: cellWidth, height: AssetChangeCellPresentation.height)
+                                                .accessibilityHidden(true)
+                                        }
                                     }
-                                }
-                            }.id(week)
-                        }
-                    }.padding(.trailing, 12)
+                                }.frame(width: cellWidth).id(week)
+                            }
+                        }.scrollTargetLayout()
+                    }
+                    .contentMargins(.horizontal, 0, for: .scrollContent)
+                    .scrollTargetBehavior(.viewAligned)
+                    .onAppear { reader.scrollTo(focusedWeek, anchor: .trailing) }
+                    .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek, anchor: .trailing) }
+                    .onChange(of: focusedWeek) { _, week in reader.scrollTo(week, anchor: .trailing) }
+                    .onChange(of: cellWidth) { _, _ in reader.scrollTo(focusedWeek, anchor: .trailing) }
                 }
-                .onAppear { reader.scrollTo(focusedWeek, anchor: .trailing) }
-                .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek, anchor: .trailing) }
-                .onChange(of: focusedWeek) { _, week in reader.scrollTo(week, anchor: .center) }
             }
         }.frame(height: AssetChangeCellPresentation.gridHeight)
     }
@@ -139,6 +146,7 @@ private struct NativeAssetChangeGrid: View, Equatable {
 private struct NativeAssetChangeCell: View, Equatable {
     let day: AssetChangeDay
     let level: Int
+    let width: CGFloat
     let colors: AssetChangeColorScheme
     let selected: Bool
     let localeIdentifier: String
@@ -146,7 +154,7 @@ private struct NativeAssetChangeCell: View, Equatable {
     let hover: (Date?) -> Void
     @Environment(\.colorScheme) private var appearance
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.day == rhs.day && lhs.level == rhs.level && lhs.colors == rhs.colors
+        lhs.day == rhs.day && lhs.level == rhs.level && lhs.width == rhs.width && lhs.colors == rhs.colors
             && lhs.selected == rhs.selected && lhs.localeIdentifier == rhs.localeIdentifier
     }
     var body: some View {
@@ -173,7 +181,7 @@ private struct NativeAssetChangeCell: View, Equatable {
                     .foregroundStyle(style.foreground).lineLimit(1).minimumScaleFactor(0.8).padding(.horizontal, 4)
             }
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 2))
-            .frame(width: AssetChangeCellPresentation.width, height: AssetChangeCellPresentation.height)
+            .frame(width: width, height: AssetChangeCellPresentation.height)
     }
     private var amount: String {
         guard day.snapshotID != nil else { return AppLocalization.string("无记录") }

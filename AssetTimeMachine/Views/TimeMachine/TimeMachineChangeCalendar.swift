@@ -18,7 +18,6 @@ struct TimeMachineChangeCalendar: View {
     @State private var data: AssetChangeYear?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let cellHeight = AssetChangeCellPresentation.height
-    private let cellWidth = AssetChangeCellPresentation.width
     private let gap = AssetChangeCellPresentation.gap
     private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
     private var year: Int {
@@ -47,38 +46,45 @@ struct TimeMachineChangeCalendar: View {
 
     private func grid(_ data: AssetChangeYear) -> some View {
         let focusedDate = selectedDate.map { Calendar.current.startOfDay(for: $0) }
-        return HStack(alignment: .top, spacing: 6) {
-            VStack(spacing: gap) {
-                Color.clear.frame(height: 18)
-                ForEach(0..<7) { weekday in
-                    Text(weekday.isMultiple(of: 2) ? weekdayLabel(weekday, data: data) : "")
-                        .font(.caption2).foregroundStyle(AssetTheme.textSecondary)
-                        .frame(width: 22, height: cellHeight)
+        return GeometryReader { geometry in
+            let cellWidth = AssetChangeCellPresentation.cellWidth(for: geometry.size.width - 28)
+            HStack(alignment: .top, spacing: 6) {
+                VStack(spacing: gap) {
+                    Color.clear.frame(height: 18)
+                    ForEach(0..<7) { weekday in
+                        Text(weekday.isMultiple(of: 2) ? weekdayLabel(weekday, data: data) : "")
+                            .font(.caption2).foregroundStyle(AssetTheme.textSecondary)
+                            .frame(width: 22, height: cellHeight)
+                    }
+                }.frame(width: 22).accessibilityHidden(true)
+                ScrollViewReader { reader in
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        // At most 54 weeks; exact offsets keep edge amounts complete.
+                        HStack(alignment: .top, spacing: gap) {
+                            ForEach(0..<data.weeks, id: \.self) { week in
+                                VStack(spacing: gap) {
+                                    TimeMachineChangeMonthLabel(data: data, week: week, localeIdentifier: AppLocalization.currentLocale.identifier).equatable()
+                                        .font(.caption2).foregroundStyle(AssetTheme.textSecondary)
+                                        .fixedSize().frame(width: cellWidth, height: 18, alignment: .leading)
+                                    ForEach(0..<7) { weekday in
+                                        if let day = data.day(week: week, weekday: weekday) { TimeMachineChangeDayCell(revision: data.id, day: day, level: data.intensity(for: day.change), width: cellWidth,
+                                                colors: colors, selected: focusedDate == day.date,
+                                                amountsVisible: amountsVisible, localeIdentifier: AppLocalization.currentLocale.identifier) { id in
+                                                selectedDate = summaries.first { $0.id == id }?.date
+                                            }.equatable() }
+                                        else { Color.clear.frame(width: cellWidth, height: cellHeight).accessibilityHidden(true) }
+                                    }
+                                }.frame(width: cellWidth).id(week)
+                            }
+                        }.scrollTargetLayout()
+                    }
+                    .contentMargins(.horizontal, 0, for: .scrollContent)
+                    .scrollTargetBehavior(.viewAligned)
+                    .onAppear { reader.scrollTo(focusedWeek(data), anchor: .trailing) }
+                    .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
+                    .onChange(of: focusedWeek(data)) { _, week in reader.scrollTo(week, anchor: .trailing) }
+                    .onChange(of: cellWidth) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
                 }
-            }.frame(width: 22).accessibilityHidden(true)
-            ScrollViewReader { reader in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(alignment: .top, spacing: gap) {
-                        ForEach(0..<data.weeks, id: \.self) { week in
-                            VStack(spacing: gap) {
-                                TimeMachineChangeMonthLabel(data: data, week: week, localeIdentifier: AppLocalization.currentLocale.identifier).equatable()
-                                    .font(.caption2).foregroundStyle(AssetTheme.textSecondary)
-                                    .fixedSize().frame(width: cellWidth, height: 18, alignment: .leading)
-                                ForEach(0..<7) { weekday in
-                                    if let day = data.day(week: week, weekday: weekday) { TimeMachineChangeDayCell(revision: data.id, day: day, level: data.intensity(for: day.change),
-                                            colors: colors, selected: focusedDate == day.date,
-                                            amountsVisible: amountsVisible, localeIdentifier: AppLocalization.currentLocale.identifier) { id in
-                                            selectedDate = summaries.first { $0.id == id }?.date
-                                        }.equatable() }
-                                    else { Color.clear.frame(width: cellWidth, height: cellHeight).accessibilityHidden(true) }
-                                }
-                            }.id(week)
-                        }
-                    }.padding(.trailing, 20)
-                }
-                .onAppear { reader.scrollTo(focusedWeek(data), anchor: .trailing) }
-                .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
-                .onChange(of: focusedWeek(data)) { _, week in reader.scrollTo(week, anchor: .center) }
             }
         }.frame(height: AssetChangeCellPresentation.gridHeight)
     }
@@ -136,6 +142,7 @@ private struct TimeMachineChangeDayCell: View, Equatable {
     let revision: UUID
     let day: AssetChangeDay
     let level: Int
+    let width: CGFloat
     let colors: AssetChangeColorScheme
     let selected: Bool
     let amountsVisible: Bool
@@ -143,7 +150,7 @@ private struct TimeMachineChangeDayCell: View, Equatable {
     let select: (UUID) -> Void
     @Environment(\.colorScheme) private var appearance
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.revision == rhs.revision && lhs.day == rhs.day && lhs.level == rhs.level && lhs.colors == rhs.colors
+        lhs.revision == rhs.revision && lhs.day == rhs.day && lhs.level == rhs.level && lhs.width == rhs.width && lhs.colors == rhs.colors
             && lhs.selected == rhs.selected && lhs.amountsVisible == rhs.amountsVisible
             && lhs.localeIdentifier == rhs.localeIdentifier
     }
@@ -157,7 +164,7 @@ private struct TimeMachineChangeDayCell: View, Equatable {
                         .padding(.horizontal, 4)
                 }
                 .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(selected ? AssetTheme.gold : .clear, lineWidth: 2))
-                .frame(width: AssetChangeCellPresentation.width, height: AssetChangeCellPresentation.height)
+                .frame(width: width, height: AssetChangeCellPresentation.height)
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).disabled(day.snapshotID == nil)
             .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
