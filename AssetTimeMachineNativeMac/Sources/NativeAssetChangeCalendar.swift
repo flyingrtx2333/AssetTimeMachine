@@ -63,12 +63,7 @@ struct NativeAssetChangeCalendar: View {
                     } else { Text(AppLocalization.string("无记录")).foregroundStyle(NativePalette.secondary) }
                 }.frame(height: 32, alignment: .topLeading).lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 0)
-                HStack(spacing: 4) {
-                    Text("−")
-                    ForEach(0..<4) { level in RoundedRectangle(cornerRadius: 2).fill(colors.down.opacity(0.3 + Double(level) * 0.2)).frame(width: 9, height: 9) }
-                    Text("+").padding(.leading, 5)
-                    ForEach(0..<4) { level in RoundedRectangle(cornerRadius: 2).fill(colors.up.opacity(0.3 + Double(level) * 0.2)).frame(width: 9, height: 9) }
-                }.foregroundStyle(NativePalette.secondary).accessibilityHidden(true)
+
             }.font(NativeStyle.FontRole.caption)
         }
     }
