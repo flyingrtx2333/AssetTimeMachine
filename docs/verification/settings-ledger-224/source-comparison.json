@@ -1,0 +1,30 @@
+{
+  "AssetTimeMachine/Views/Settings/SettingsViews.swift": {
+    "release": "e7c02b20609fff7c626ea22efcbb28a8145f720d00130af3440d3118155fb185",
+    "matches_prior_preview": false
+  },
+  "AssetTimeMachine/Views/Settings/SettingsLedgerComponents.swift": {
+    "release": "7dedaf83813938358a403e46096c5ebf0b16d190bed22b91d45231b1839041ff",
+    "matches_prior_preview": true
+  },
+  "AssetTimeMachine/Views/Shared/AppTypography.swift": {
+    "release": "3fc5346698c8ef38f1a97d12b5f09bbf2873af409fc5f2e82feb89732705ae59",
+    "matches_prior_preview": true
+  },
+  "AssetTimeMachine/Views/Snapshots/SnapshotViews.swift": {
+    "release": "2086a3d41208238af83588c0f525ad024095a5812bee1a197225c902102bdfeb",
+    "matches_prior_preview": false
+  },
+  "AssetTimeMachine/Services/AssetRecordingOnboarding.swift": {
+    "release": "3ea762d2c51795e69497d25dc01dd81ffba75e2ba1f4b47b8c5a2424727766a5",
+    "matches_prior_preview": true
+  },
+  "AssetTimeMachine/ContentView+Startup.swift": {
+    "release": "47dfdcd16694648bdefc4cedd017022c651f9ce3c1320e4ad45acb07fcbe8cfb",
+    "matches_prior_preview": true
+  },
+  "AssetTimeMachine/CloudSync.swift": {
+    "release": "ef2567e5ff4e8454aee7dfae9b0c53224b2b2bb4ef4f9832e8e0183ab6c8eb3c",
+    "matches_prior_preview": false
+  }
+}
