@@ -17,6 +17,7 @@ struct TimeMachineView: View {
     let marketStore: RemoteMarketStore
     let isActive: Bool
     @State private var selectedRange: TimeMachineRange = .sixMonths
+    @State private var selectedTimelineDate: Date?
     @State private var cachedTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedFilteredTrendPoints: [TimeMachineTrendPoint] = []
     @State private var cachedMonthlySurplusPoints: [TimeMachineMonthlySurplusPoint] = []
@@ -302,6 +303,19 @@ struct TimeMachineView: View {
 
         cachedTrendPoints = prepared.trendPoints
         cachedFilteredTrendPoints = prepared.filteredTrendPoints
+        if selectedTimelineDate == nil {
+            selectedTimelineDate = prepared.filteredTrendPoints.last?.date
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-timeMachineSelectChartPoint"),
+               !prepared.filteredTrendPoints.isEmpty {
+                selectedTimelineDate = prepared.filteredTrendPoints[prepared.filteredTrendPoints.count / 2].date
+            }
+            #endif
+        }
+        if let date = selectedTimelineDate,
+           let point = nearestChartPoint(prepared.filteredTrendPoints, to: date, date: \.date) {
+            selectedTimelineDate = point.date
+        }
         cachedMonthlySurplusPoints = prepared.monthlySurplusPoints
         cachedAnnualSurplusPoints = prepared.annualSurplusPoints
         cachedSnapshotIDByDay = prepared.snapshotIDByDay
@@ -758,6 +772,19 @@ struct TimeMachineView: View {
         )
     }
 
+    private var timelineSelection: Binding<Date?> {
+        Binding(get: { selectedTimelineDate }, set: { date in
+            selectedTimelineDate = date
+            guard let date,
+                  let first = cachedFilteredTrendPoints.first?.date,
+                  let last = cachedFilteredTrendPoints.last?.date else { return }
+            let day = Calendar.current.startOfDay(for: date)
+            if day < Calendar.current.startOfDay(for: first)
+                || day > Calendar.current.startOfDay(for: last) {
+                selectedRange = .all
+            }
+        })
+    }
     private var heroTrendSection: some View {
         Group {
             if let latestPoint, !filteredTrendPoints.isEmpty {
@@ -768,6 +795,7 @@ struct TimeMachineView: View {
                     marketSeries: unifiedMarketSeries,
                     visibleSeriesIDs: visibleTrendSeriesIDs,
                     selectedRange: $selectedRange,
+                    selectedDate: timelineSelection,
                     amountsVisible: amountsVisible,
                     onToggleSeries: toggleTrendSeries,
                     hasRecord: hasSnapshotRecord(on:),
@@ -799,6 +827,7 @@ struct TimeMachineView: View {
                                 TimeMachineChangeCalendar(
                                     summaries: cachedSnapshotProjections,
                                     revision: lastSnapshotProjectionCacheToken ?? -1,
+                                    selectedDate: timelineSelection,
                                     amountsVisible: amountsVisible,
                                     onOpenRecord: { openRecord(snapshotID: $0) }
                                 )

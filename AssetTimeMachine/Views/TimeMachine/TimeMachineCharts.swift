@@ -540,7 +540,7 @@ struct TimeMachineHeroTrendCard: View {
     let onToggleSeries: (String) -> Void
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
-    @State private var selectedDate: Date?
+    @Binding var selectedDate: Date?
     @State private var chartSelectionX: CGFloat?
     private let displayPoints: [TimeMachineTrendPoint]
     private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
@@ -560,6 +560,7 @@ struct TimeMachineHeroTrendCard: View {
         marketSeries: [TimeMachineMarketTrendSeries],
         visibleSeriesIDs: Set<String>,
         selectedRange: Binding<TimeMachineRange>,
+        selectedDate: Binding<Date?>,
         amountsVisible: Bool,
         onToggleSeries: @escaping (String) -> Void,
         hasRecord: ((Date) -> Bool)? = nil,
@@ -571,15 +572,23 @@ struct TimeMachineHeroTrendCard: View {
         self.marketSeries = marketSeries
         self.visibleSeriesIDs = visibleSeriesIDs
         self._selectedRange = selectedRange
+        self._selectedDate = selectedDate
         self.amountsVisible = amountsVisible
         self.onToggleSeries = onToggleSeries
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
-        let displayPoints = evenlySampledItems(
+        var displayPoints = evenlySampledItems(
             points.sorted { $0.date < $1.date },
             maxCount: 180
         )
+        // A day selected in the calendar must survive line downsampling.
+        if let date = selectedDate.wrappedValue,
+           let point = nearestChartPoint(points, to: date, date: \.date),
+           !displayPoints.contains(where: { $0.date == point.date }) {
+            displayPoints.append(point)
+            displayPoints.sort { $0.date < $1.date }
+        }
         self.displayPoints = displayPoints
 
         let visibleAssetSeries = TimeMachineAssetSeries.allCases.filter {
@@ -655,14 +664,7 @@ struct TimeMachineHeroTrendCard: View {
         self.valueDomain = valueDomain
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
-        self._selectedDate = State(initialValue: displayPoints.last?.date)
         self._chartSelectionX = State(initialValue: nil)
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-timeMachineSelectChartPoint"),
-           !displayPoints.isEmpty {
-            self._selectedDate = State(initialValue: displayPoints[displayPoints.count / 2].date)
-        }
-        #endif
     }
 
     private static func marketReturnPoints(_ rawPoints: [(date: Date, value: Double)]) -> [(date: Date, value: Double)] {

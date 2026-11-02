@@ -6,6 +6,7 @@ import Combine
 struct TimeMachineChangeCalendar: View {
     let summaries: [TimeMachineSnapshotProjection]
     let revision: Int
+    @Binding var selectedDate: Date?
     let amountsVisible: Bool
     let onOpenRecord: (UUID) -> Void
     @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
@@ -13,14 +14,13 @@ struct TimeMachineChangeCalendar: View {
     @State private var year = Calendar.current.component(.year, from: Date.now)
     @State private var years = [Calendar.current.component(.year, from: Date.now)]
     @State private var data: AssetChangeYear?
-    @State private var selectedDate: Date?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let cellSize: CGFloat = 18
     private let gap: CGFloat = 4
     private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
     private var focused: AssetChangeDay? {
         guard let data else { return nil }
-        return data.days.first { $0.date == selectedDate }
+        return data.days.first { day in selectedDate.map { Calendar.current.isDate($0, inSameDayAs: day.date) } ?? false }
             ?? data.days.last { $0.snapshotID != nil }
     }
 
@@ -43,7 +43,8 @@ struct TimeMachineChangeCalendar: View {
         .onAppear(perform: rebuild)
         .onChange(of: revision) { _, _ in rebuild() }
         .onChange(of: summaries.count) { _, _ in rebuild() }
-        .onChange(of: year) { _, _ in selectedDate = nil; rebuild() }
+        .onChange(of: year) { _, _ in rebuild() }
+        .onChange(of: selectedDate) { _, date in followSelection(date) }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in rebuild() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in rebuild() }
     }
@@ -69,7 +70,7 @@ struct TimeMachineChangeCalendar: View {
     }
 
     private func grid(_ data: AssetChangeYear) -> some View {
-        let focusedDate = focused?.date
+        let focusedDate = selectedDate.map { Calendar.current.startOfDay(for: $0) }
         return HStack(alignment: .top, spacing: 6) {
             VStack(spacing: gap) {
                 Color.clear.frame(height: 18)
@@ -97,18 +98,22 @@ struct TimeMachineChangeCalendar: View {
                 }
                 .onAppear { reader.scrollTo(focusedWeek(data), anchor: .trailing) }
                 .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
+                .onChange(of: selectedDate) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .center) }
             }
         }.frame(height: 176)
     }
 
     private func cell(_ day: AssetChangeDay, data: AssetChangeYear, selected: Bool) -> some View {
-        return Button { selectedDate = day.date } label: {
+        return Button {
+            // Keep the closing record's actual timestamp, not midnight or a sampled neighbour.
+            selectedDate = summaries.first { $0.id == day.snapshotID }?.date
+        } label: {
             RoundedRectangle(cornerRadius: 3)
                 .fill(fill(day, maximum: data.maximumChange))
                 .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(selected ? AssetTheme.gold : .clear, lineWidth: 2))
                 .frame(width: cellSize, height: cellSize)
                 .contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(day.isFuture)
+        }.buttonStyle(.plain).disabled(day.snapshotID == nil)
             .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
             .accessibilityValue(amount(day))
             .accessibilityAddTraits(selected ? .isSelected : [])
@@ -183,9 +188,17 @@ struct TimeMachineChangeCalendar: View {
         let offset = Calendar.current.dateComponents([.day], from: data.days[0].date, to: target).day ?? 0
         return max(0, min(data.weeks - 1, (offset + data.leadingDays) / 7))
     }
+    private func followSelection(_ date: Date?) {
+        guard let date else { return }
+        let selectedYear = Calendar.current.component(.year, from: date)
+        if selectedYear != year { year = selectedYear }
+    }
     private func rebuild() {
         let current = Calendar.current.component(.year, from: Date.now)
         years = Array(Set(summaries.map { Calendar.current.component(.year, from: $0.date) } + [current])).sorted(by: >)
+        if data == nil, let selectedDate {
+            year = Calendar.current.component(.year, from: selectedDate)
+        }
         data = AssetChangeYear(year: year, summaries: summaries)
     }
 }
