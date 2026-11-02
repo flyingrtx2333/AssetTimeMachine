@@ -1,0 +1,9 @@
+{
+  "amountFormats" : 36600,
+  "cellBodies" : 36500,
+  "chartPreparations" : 100,
+  "displayLinkP95Milliseconds" : 315.88487501721829,
+  "scope" : "Actual iOS Hero chart and daily calendar, synthetic snapshots, simulator; not a physical-device FPS claim",
+  "stepCadenceP95Milliseconds" : 152.56237506400794,
+  "updates" : 100
+}

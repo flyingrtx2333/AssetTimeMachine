@@ -1,4 +1,4 @@
-"""Focused date-binding and unsampled-day regression, executing production method bodies."""
+"""Focused selection invariants, executing the production state and probe methods."""
 from pathlib import Path
 import subprocess
 import tempfile
@@ -21,61 +21,61 @@ def test_linked_selection():
     chart = (root / 'AssetTimeMachine/Views/TimeMachine/TimeMachineCharts.swift').read_text()
     calendar = (root / 'AssetTimeMachine/Views/TimeMachine/TimeMachineChangeCalendar.swift').read_text()
     support = (root / 'AssetTimeMachine/Views/Shared/SharedUIComponents.swift').read_text()
-    assert page.count('selectedDate: timelineSelection,') == 2, 'Both surfaces must receive the same parent binding'
-    assert '@Binding var selectedDate: Date?' in chart[chart.index('struct TimeMachineHeroTrendCard:'):]
-    assert '@Binding var selectedDate: Date?' in calendar and '@State private var selectedDate:' not in calendar
-    assert '.onChange(of: selectedDate)' in calendar and 'selectedDate = nil; rebuild()' not in calendar
-    assert '.disabled(day.snapshotID == nil)' in calendar, 'Unrecorded dates cannot move a record probe'
-    selection = block(page, 'private var timelineSelection:').replace('private var', 'var', 1)
-    selection = selection.replace('Binding(get: {', 'Binding(get: { [self] in').replace('set: { date in', 'set: { [self] date in')
+    assert page.count('selection: timeline,') == 2, 'Both controls must receive the same observable selection'
+    assert '@State private var timeline = TimeMachineSelection()' in page
+    hero = chart[chart.index('struct TimeMachineHeroTrendCard:'):chart.index('private struct TimeMachineStaticHeroPlot:')]
+    assert 'selectedDate.wrappedValue' not in hero and 'selection.date' not in block(hero, '    init(')
+    assert '.onChange(of: focusedWeek(data))' in calendar, 'Do not scroll on every probe update'
+    assert '.disabled(day.snapshotID == nil)' in calendar
+    session = '@Observable\n' + block(chart, 'final class TimeMachineSelection {')
     follow = block(calendar, 'private func followSelection(').replace('private func', 'func', 1)
-    sampling = chart[chart.index('        var displayPoints = evenlySampledItems('):chart.index('        self.displayPoints = displayPoints')]
+    probe = block(hero, 'private var selectedPoint:').replace('private var', 'var', 1)
+    sampling = chart[chart.index('        let displayPoints = evenlySampledItems('):chart.index('        self.displayPoints = displayPoints')]
     nearest = block(chart, 'func nearestChartPoint<T>')
     sampled = block(support, 'func evenlySampledItems<T>')
     swift = '''import Foundation
 import SwiftUI
+import Observation
 struct TimeMachineTrendPoint { let date: Date }
-enum TimeMachineRange { case sixMonths, all }
-final class Host {
- var selectedTimelineDate: Date?
- var selectedRange: TimeMachineRange = .sixMonths
- var cachedFilteredTrendPoints: [TimeMachineTrendPoint] = []
-''' + selection + '''
-}
+''' + session + '''
 final class CalendarHost { var year = 2026
 ''' + follow + '''
 }
-func rendered(_ points: [TimeMachineTrendPoint], selection selectedDate: Binding<Date?>) -> [TimeMachineTrendPoint] {
+final class Probe {
+ var selectedDate:Date?
+ var points:[TimeMachineTrendPoint]=[]
+ var latestPoint:TimeMachineTrendPoint { points.last! }
+''' + probe + '''
+}
+func rendered(_ points:[TimeMachineTrendPoint]) -> [TimeMachineTrendPoint] {
 ''' + sampling + '''
  return displayPoints
 }
 ''' + nearest + '\n' + sampled + '''
-var c = Calendar.current
-let start = c.date(from: DateComponents(year:2024, month:1, day:1, hour:18, minute:30))!
+let c = Calendar.current
+let start = c.date(from: DateComponents(year:2024,month:1,day:1,hour:18,minute:30))!
 let points = (0..<800).map { TimeMachineTrendPoint(date:c.date(byAdding:.day,value:$0,to:start)!) }
-let host = Host(); host.cachedFilteredTrendPoints = Array(points.suffix(100))
-let chartInput = host.timelineSelection
-let calendarInput = host.timelineSelection
-// A chart probe change must be immediately readable by the calendar, with no copied state.
-chartInput.wrappedValue = points[750].date
-precondition(calendarInput.wrappedValue == points[750].date && host.selectedRange == .sixMonths)
-// A calendar selection outside the visible range retains its exact timestamp and expands the range.
-calendarInput.wrappedValue = points[15].date
-precondition(chartInput.wrappedValue == points[15].date && host.selectedRange == .all)
-let year = CalendarHost(); year.followSelection(chartInput.wrappedValue)
-precondition(year.year == 2024)
-chartInput.wrappedValue = points[750].date; year.followSelection(chartInput.wrappedValue)
-precondition(year.year == c.component(.year,from:points[750].date))
-// A selected real date omitted from the 180-point line sample must still be rendered exactly.
-let base = evenlySampledItems(points,maxCount:180)
-let omitted = points.first { p in !base.contains { $0.date == p.date } }!
-calendarInput.wrappedValue = omitted.date
-let result = rendered(points,selection:chartInput)
-precondition(result.count == 181 && result.contains { $0.date == omitted.date })
-precondition(result.map(\\.date) == result.map(\\.date).sorted())
-chartInput.wrappedValue = nil
-precondition(calendarInput.wrappedValue == nil)
-print("PASS: bidirectional shared date, visible/older dates, cross-year following, exact unsampled point, clearing")
+let selection = TimeMachineSelection()
+selection.visibleRange = points[700].date...points[799].date
+var reveals=0; selection.revealAll = { reveals += 1 }
+let chartInput=selection; let calendarInput=selection
+chartInput.select(points[750].date)
+precondition(calendarInput.date == points[750].date && reveals==0)
+calendarInput.select(points[15].date)
+precondition(chartInput.date == points[15].date && reveals==1)
+calendarInput.select(points[15].date)
+precondition(reveals==1, "Repeated probe events must be deduplicated")
+let year=CalendarHost();year.followSelection(chartInput.date);precondition(year.year==2024)
+chartInput.select(points[750].date);year.followSelection(chartInput.date)
+precondition(year.year==c.component(.year,from:points[750].date))
+let base=rendered(points)
+let omitted=points.first { p in !base.contains { $0.date==p.date } }!
+calendarInput.select(omitted.date)
+let probe=Probe();probe.points=points;probe.selectedDate=selection.date
+precondition(probe.selectedPoint.date==omitted.date, "The probe must retain an unsampled real date")
+precondition(base.count==180 && rendered(points).map(\\.date)==base.map(\\.date), "Selection must not rebuild the line sample")
+chartInput.select(nil);precondition(calendarInput.date==nil)
+print("PASS: shared observable date, deduplication, older range, cross-year following, exact unsampled probe with stable line, clearing")
 '''
     with tempfile.TemporaryDirectory(prefix='atm-linked-date-') as temp:
         source = Path(temp) / 'main.swift'

@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Charts
 import UIKit
+import Observation
 
 enum TimeMachineRange: String, CaseIterable, Identifiable, Sendable {
     case halfMonth
@@ -529,6 +530,25 @@ private struct TimeMachineChartSelectionGuideReporter: View {
     }
 }
 
+/// A probe move invalidates its readers, not the page or the prepared chart data.
+@Observable
+final class TimeMachineSelection {
+    var date: Date?
+    @ObservationIgnored var visibleRange: ClosedRange<Date>?
+    @ObservationIgnored var revealAll: (() -> Void)?
+
+    func select(_ date: Date?) {
+        guard self.date != date else { return }
+        self.date = date
+        guard let date, let visibleRange else { return }
+        let day = Calendar.current.startOfDay(for: date)
+        if day < Calendar.current.startOfDay(for: visibleRange.lowerBound)
+            || day > Calendar.current.startOfDay(for: visibleRange.upperBound) {
+            revealAll?()
+        }
+    }
+}
+
 struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
@@ -540,8 +560,16 @@ struct TimeMachineHeroTrendCard: View {
     let onToggleSeries: (String) -> Void
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
-    @Binding var selectedDate: Date?
+    let selection: TimeMachineSelection
+    private var selectedDate: Date? {
+        get { selection.date }
+        nonmutating set { selection.select(newValue) }
+    }
+    private var selectedDateBinding: Binding<Date?> {
+        Binding(get: { selection.date }, set: { selection.select($0) })
+    }
     @State private var chartSelectionX: CGFloat?
+    private let plotID = UUID()
     private let displayPoints: [TimeMachineTrendPoint]
     private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
     private let valueDomain: ClosedRange<Double>
@@ -560,7 +588,7 @@ struct TimeMachineHeroTrendCard: View {
         marketSeries: [TimeMachineMarketTrendSeries],
         visibleSeriesIDs: Set<String>,
         selectedRange: Binding<TimeMachineRange>,
-        selectedDate: Binding<Date?>,
+        selection: TimeMachineSelection,
         amountsVisible: Bool,
         onToggleSeries: @escaping (String) -> Void,
         hasRecord: ((Date) -> Bool)? = nil,
@@ -572,33 +600,26 @@ struct TimeMachineHeroTrendCard: View {
         self.marketSeries = marketSeries
         self.visibleSeriesIDs = visibleSeriesIDs
         self._selectedRange = selectedRange
-        self._selectedDate = selectedDate
+        self.selection = selection
         self.amountsVisible = amountsVisible
         self.onToggleSeries = onToggleSeries
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
-        var displayPoints = evenlySampledItems(
+        let displayPoints = evenlySampledItems(
             points.sorted { $0.date < $1.date },
             maxCount: 180
         )
-        // A day selected in the calendar must survive line downsampling.
-        if let date = selectedDate.wrappedValue,
-           let point = nearestChartPoint(points, to: date, date: \.date),
-           !displayPoints.contains(where: { $0.date == point.date }) {
-            displayPoints.append(point)
-            displayPoints.sort { $0.date < $1.date }
-        }
         self.displayPoints = displayPoints
 
         let visibleAssetSeries = TimeMachineAssetSeries.allCases.filter {
             $0 != .liabilities && visibleSeriesIDs.contains($0.id)
         }
         var assetValues = visibleAssetSeries.flatMap { series in
-            displayPoints.map { series.value(from: $0) }.filter(\.isFinite)
+            points.map { series.value(from: $0) }.filter(\.isFinite)
         }
         if visibleSeriesIDs.contains(TimeMachineAssetSeries.liabilities.id) {
-            assetValues += displayPoints.flatMap { [$0.netAssets, $0.mainAssets] }.filter(\.isFinite)
+            assetValues += points.flatMap { [$0.netAssets, $0.mainAssets] }.filter(\.isFinite)
         }
         let assetValueDomain = assetValues.isEmpty
             ? nil
@@ -708,7 +729,7 @@ struct TimeMachineHeroTrendCard: View {
 
     private var selectedPoint: TimeMachineTrendPoint {
         guard let selectedDate else { return latestPoint }
-        return nearestChartPoint(displayPoints, to: selectedDate, date: \.date) ?? latestPoint
+        return nearestChartPoint(points, to: selectedDate, date: \.date) ?? latestPoint
     }
 
     private var selectedSnapshotDate: Date {
@@ -733,11 +754,7 @@ struct TimeMachineHeroTrendCard: View {
         let assetSeriesIDs = Set(TimeMachineAssetSeries.allCases.map(\.id))
         var items: [TimeMachineUnifiedTrendSelectionItem] = activeSeries.compactMap { series in
             guard assetSeriesIDs.contains(series.id) else { return nil }
-            guard let point = nearestChartPoint(
-                series.points,
-                to: selectedPoint.date,
-                date: \.date
-            ) else { return nil }
+            guard let point = selectedPlotPoint(for: series) else { return nil }
             return TimeMachineUnifiedTrendSelectionItem(
                 id: series.id,
                 title: series.title,
@@ -793,143 +810,23 @@ struct TimeMachineHeroTrendCard: View {
             heroSummary
 
             ZStack {
-                Chart {
-                    if showsLiabilityBand {
-                        ForEach(displayPoints) { point in
-                            AreaMark(
-                                x: .value(dateAxisKey, point.date),
-                                yStart: .value(AppLocalization.string("净资产"), point.netAssets),
-                                yEnd: .value(AppLocalization.string("总资产"), point.mainAssets)
-                            )
-                            .interpolationMethod(.monotone)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [
-                                        AssetTheme.negative.opacity(0.06),
-                                        AssetTheme.negative.opacity(0.20)
-                                    ],
-                                    startPoint: .bottom,
-                                    endPoint: .top
-                                )
-                            )
-                            .accessibilityLabel(AppLocalization.string("负债"))
-                            .accessibilityValue(point.liabilities.currencyString(code: "CNY"))
-                        }
-                    }
-
-                    ForEach(activeSeries) { series in
-                        ForEach(series.points) { point in
-                            LineMark(
-                                x: .value(dateAxisKey, point.date),
-                                y: .value(series.title, point.plotValue)
-                            )
-                            .foregroundStyle(by: .value(seriesAxisKey, series.id))
-                            .lineStyle(series.strokeStyle)
-                            .interpolationMethod(.monotone)
-                            .accessibilityLabel(series.title)
-                            .accessibilityValue(accessibilityValue(for: point, scale: series.scale))
-                        }
-
-                        if let selectedSeriesPoint = nearestChartPoint(
-                            series.points,
-                            to: selectedPoint.date,
-                            date: \.date
-                        ) {
-                            PointMark(
-                                x: .value(dateAxisKey, selectedSeriesPoint.date),
-                                y: .value(series.title, selectedSeriesPoint.plotValue)
-                            )
-                            .foregroundStyle(series.color)
-                            .symbolSize(selectedDate == nil ? 28 : 50)
-                        }
-                    }
-
-                    if selectedDate != nil {
-                        RuleMark(x: .value(selectedDateAxisKey, selectedPoint.date))
-                            .foregroundStyle(AssetTheme.gold.opacity(0.72))
-                            .lineStyle(StrokeStyle(lineWidth: 1))
-                            .annotation(position: .overlay, alignment: selectedPopoverAlignment, spacing: 7) {
-                                selectedValuePopover
-                            }
-                    }
-                }
-                .chartForegroundStyleScale(
-                    domain: activeSeries.map(\.id),
-                    range: activeSeries.map(\.color)
-                )
-                .frame(height: 250)
-                .chartXScale(domain: dateDomain)
-                .chartYScale(domain: valueDomain)
-                .chartXAxis {
-                    AxisMarks(values: axisDates) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                            .foregroundStyle(AssetTheme.chartGrid.opacity(0.78))
-                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
-                            .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
-                        AxisValueLabel(anchor: .top, verticalSpacing: 7) {
-                            if let date = value.as(Date.self) {
-                                TimeMachineAxisDateLabel(date: date, position: ChartLayoutSupport.axisLabelPosition(for: date, in: axisDates))
-                            }
-                        }
-                    }
-                }
-                .chartYAxis {
-                    if hasAssetValueAxis {
-                        AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                                .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
-                            AxisValueLabel {
-                                if let amount = value.as(Double.self) {
-                                    Text(assetAxisLabel(amount))
-                                        .font(.system(size: 10, weight: .medium, design: .default))
-                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                                }
-                            }
-                        }
-                    }
-
-                    if hasMarketReturnAxis {
-                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
-                            if !hasAssetValueAxis {
-                                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
-                                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
-                            }
-                            AxisValueLabel {
-                                if let plotValue = value.as(Double.self),
-                                   let marketReturn = marketReturn(forPlotValue: plotValue) {
-                                    Text(marketReturn.percentString(maxFractionDigits: 0))
-                                        .font(.system(size: 9.5, weight: .medium, design: .default))
-                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
-                                }
-                            }
-                        }
-                    }
-                }
-                .chartLegend(.hidden)
+                TimeMachineStaticHeroPlot(identity: plotID, displayPoints: displayPoints,
+                    activeSeries: activeSeries, showsLiabilityBand: showsLiabilityBand,
+                    dateDomain: dateDomain, valueDomain: valueDomain, axisDates: axisDates,
+                    hasAssetValueAxis: hasAssetValueAxis, hasMarketReturnAxis: hasMarketReturnAxis,
+                    assetAxisLabel: assetAxisLabel, marketReturn: marketReturn(forPlotValue:),
+                    accessibilityValue: accessibilityValue(for:scale:)).equatable()
                 .chartOverlay { proxy in
                     ZStack {
-                        TimeMachineDragOverlay(
-                            proxy: proxy,
-                            selectableValues: displayPoints,
-                            selectionDate: \.date
-                        ) { date in
+                        probeOverlay(proxy).allowsHitTesting(false)
+                        TimeMachineDragOverlay(proxy: proxy, selectableValues: points, selectionDate: \.date) { date in
                             selectedDate = date
                         }
-                        .simultaneousGesture(
-                            TapGesture()
-                                .onEnded {
-                                    selectedDate = nil
-                                }
-                        )
-
-                        TimeMachineChartSelectionGuideReporter(
-                            proxy: proxy,
-                            date: selectedPoint.date,
-                            selectionX: $chartSelectionX
-                        )
+                        .simultaneousGesture(TapGesture().onEnded { selectedDate = nil })
+                        TimeMachineChartSelectionGuideReporter(proxy: proxy,
+                            date: selectedPoint.date, selectionX: $chartSelectionX)
                     }
                 }
-                .padding(.bottom, 4)
 
                 if activeSeries.isEmpty && !showsLiabilityBand {
                     VStack(spacing: 7) {
@@ -1041,8 +938,8 @@ struct TimeMachineHeroTrendCard: View {
             }
 
             TimeMachineDateRuler(
-                points: displayPoints,
-                selectedDate: $selectedDate
+                points: points,
+                selectedDate: selectedDateBinding
             )
         }
     }
@@ -1128,6 +1025,51 @@ struct TimeMachineHeroTrendCard: View {
             return amountsVisible ? point.displayValue.currencyString(code: "CNY") : "••••••"
         case .marketReturn:
             return point.displayValue.percentString(maxFractionDigits: 1)
+        }
+    }
+
+    private func selectedPlotPoint(for series: TimeMachineUnifiedTrendSeries) -> TimeMachineUnifiedTrendPoint? {
+        if let asset = TimeMachineAssetSeries.allCases.first(where: { $0.id == series.id }) {
+            let value = asset.value(from: selectedPoint)
+            guard value.isFinite else { return nil }
+            return .init(date: selectedPoint.date, plotValue: value, displayValue: value)
+        }
+        guard let source = marketSeries.first(where: { $0.symbol == series.id })?.points,
+              let base = source.first(where: { $0.value.isFinite && $0.value > 0.0001 }),
+              let point = nearestChartPoint(source, to: selectedPoint.date, date: \.date),
+              let marketReturnDomain else { return nil }
+        let value = point.value / base.value - 1
+        guard value.isFinite else { return nil }
+        return .init(date: point.date,
+            plotValue: Self.mapMarketReturn(value, marketDomain: marketReturnDomain, plotDomain: valueDomain),
+            displayValue: value)
+    }
+
+    private func probeOverlay(_ proxy: ChartProxy) -> some View {
+        GeometryReader { geometry in
+            if let plot = proxy.plotFrame {
+                let frame = geometry[plot]
+                let x = min(frame.maxX, max(frame.minX, frame.minX + (proxy.position(forX: selectedPoint.date) ?? 0)))
+                if selectedDate != nil {
+                    Path { path in
+                        path.move(to: CGPoint(x: x, y: frame.minY))
+                        path.addLine(to: CGPoint(x: x, y: frame.maxY))
+                    }.stroke(AssetTheme.gold.opacity(0.72), lineWidth: 1)
+                }
+                ForEach(activeSeries) { series in
+                    if let point = selectedPlotPoint(for: series),
+                       let px = proxy.position(forX: point.date), let py = proxy.position(forY: point.plotValue) {
+                        Circle().fill(series.color).frame(width: selectedDate == nil ? 6 : 8, height: selectedDate == nil ? 6 : 8)
+                            .position(x: frame.minX + px, y: frame.minY + py)
+                    }
+                }
+                if selectedDate != nil {
+                    let width: CGFloat = AppLocalization.currentLanguage == .english ? 198 : 174
+                    selectedValuePopover
+                        .offset(x: min(max(0, x > frame.midX ? x - width - 8 : x + 8), max(0, geometry.size.width - width)),
+                                y: frame.minY + 6)
+                }
+            }
         }
     }
 
@@ -1244,6 +1186,123 @@ struct TimeMachineHeroTrendCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+}
+
+private struct TimeMachineStaticHeroPlot: View, Equatable {
+    let identity: UUID
+    let displayPoints: [TimeMachineTrendPoint]
+    let activeSeries: [TimeMachineUnifiedTrendSeries]
+    let showsLiabilityBand: Bool
+    let dateDomain: ClosedRange<Date>
+    let valueDomain: ClosedRange<Double>
+    let axisDates: [Date]
+    let hasAssetValueAxis: Bool
+    let hasMarketReturnAxis: Bool
+    let assetAxisLabel: (Double) -> String
+    let marketReturn: (Double) -> Double?
+    let accessibilityValue: (TimeMachineUnifiedTrendPoint, TimeMachineUnifiedTrendScale) -> String
+    private var dateAxisKey: String { AppLocalization.string("日期") }
+    private var seriesAxisKey: String { AppLocalization.string("序列") }
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.identity == rhs.identity }
+    var body: some View {
+                Chart {
+                    if showsLiabilityBand {
+                        ForEach(displayPoints) { point in
+                            AreaMark(
+                                x: .value(dateAxisKey, point.date),
+                                yStart: .value(AppLocalization.string("净资产"), point.netAssets),
+                                yEnd: .value(AppLocalization.string("总资产"), point.mainAssets)
+                            )
+                            .interpolationMethod(.monotone)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        AssetTheme.negative.opacity(0.06),
+                                        AssetTheme.negative.opacity(0.20)
+                                    ],
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                            )
+                            .accessibilityLabel(AppLocalization.string("负债"))
+                            .accessibilityValue(point.liabilities.currencyString(code: "CNY"))
+                        }
+                    }
+
+                    ForEach(activeSeries) { series in
+                        ForEach(series.points) { point in
+                            LineMark(
+                                x: .value(dateAxisKey, point.date),
+                                y: .value(series.title, point.plotValue)
+                            )
+                            .foregroundStyle(by: .value(seriesAxisKey, series.id))
+                            .lineStyle(series.strokeStyle)
+                            .interpolationMethod(.monotone)
+                            .accessibilityLabel(series.title)
+                            .accessibilityValue(accessibilityValue(point, series.scale))
+                        }
+
+
+                    }
+
+
+                }
+                .chartForegroundStyleScale(
+                    domain: activeSeries.map(\.id),
+                    range: activeSeries.map(\.color)
+                )
+                .frame(height: 250)
+                .chartXScale(domain: dateDomain)
+                .chartYScale(domain: valueDomain)
+                .chartXAxis {
+                    AxisMarks(values: axisDates) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                            .foregroundStyle(AssetTheme.chartGrid.opacity(0.78))
+                        AxisTick(stroke: StrokeStyle(lineWidth: 0.8))
+                            .foregroundStyle(AssetTheme.chartTick.opacity(0.7))
+                        AxisValueLabel(anchor: .top, verticalSpacing: 7) {
+                            if let date = value.as(Date.self) {
+                                TimeMachineAxisDateLabel(date: date, position: ChartLayoutSupport.axisLabelPosition(for: date, in: axisDates))
+                            }
+                        }
+                    }
+                }
+                .chartYAxis {
+                    if hasAssetValueAxis {
+                        AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                                .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
+                            AxisValueLabel {
+                                if let amount = value.as(Double.self) {
+                                    Text(assetAxisLabel(amount))
+                                        .font(.system(size: 10, weight: .medium, design: .default))
+                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                                }
+                            }
+                        }
+                    }
+
+                    if hasMarketReturnAxis {
+                        AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
+                            if !hasAssetValueAxis {
+                                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
+                                    .foregroundStyle(AssetTheme.chartGrid.opacity(0.72))
+                            }
+                            AxisValueLabel {
+                                if let plotValue = value.as(Double.self),
+                                   let marketReturn = marketReturn(plotValue) {
+                                    Text(marketReturn.percentString(maxFractionDigits: 0))
+                                        .font(.system(size: 9.5, weight: .medium, design: .default))
+                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                                }
+                            }
+                        }
+                    }
+                }
+                .chartLegend(.hidden)
+
+                .padding(.bottom, 4)
+    }
 }
 
 private struct TimeMachineUnifiedLegendButton: View {

@@ -6,7 +6,11 @@ import Combine
 struct TimeMachineChangeCalendar: View {
     let summaries: [TimeMachineSnapshotProjection]
     let revision: Int
-    @Binding var selectedDate: Date?
+    let selection: TimeMachineSelection
+    private var selectedDate: Date? {
+        get { selection.date }
+        nonmutating set { selection.select(newValue) }
+    }
     let amountsVisible: Bool
     let onOpenRecord: (UUID) -> Void
     @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
@@ -20,7 +24,7 @@ struct TimeMachineChangeCalendar: View {
     private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
     private var focused: AssetChangeDay? {
         guard let data else { return nil }
-        return data.days.first { day in selectedDate.map { Calendar.current.isDate($0, inSameDayAs: day.date) } ?? false }
+        return selectedDate.flatMap { data.day(on: $0) }
             ?? data.days.last { $0.snapshotID != nil }
     }
 
@@ -85,11 +89,15 @@ struct TimeMachineChangeCalendar: View {
                     HStack(alignment: .top, spacing: gap) {
                         ForEach(0..<data.weeks, id: \.self) { week in
                             VStack(spacing: gap) {
-                                Text(monthLabel(week, data: data))
+                                TimeMachineChangeMonthLabel(data: data, week: week, localeIdentifier: AppLocalization.currentLocale.identifier).equatable()
                                     .font(.caption2).foregroundStyle(AssetTheme.textSecondary)
                                     .fixedSize().frame(width: cellSize, height: 18, alignment: .leading)
                                 ForEach(0..<7) { weekday in
-                                    if let day = data.day(week: week, weekday: weekday) { cell(day, data: data, selected: focusedDate == day.date) }
+                                    if let day = data.day(week: week, weekday: weekday) { TimeMachineChangeDayCell(revision: data.id, day: day, maximumChange: data.maximumChange,
+                                            colors: colors, selected: focusedDate == day.date,
+                                            amountsVisible: amountsVisible, localeIdentifier: AppLocalization.currentLocale.identifier) { id in
+                                            selectedDate = summaries.first { $0.id == id }?.date
+                                        }.equatable() }
                                     else { Color.clear.frame(width: cellSize, height: cellSize).accessibilityHidden(true) }
                                 }
                             }.id(week)
@@ -98,25 +106,9 @@ struct TimeMachineChangeCalendar: View {
                 }
                 .onAppear { reader.scrollTo(focusedWeek(data), anchor: .trailing) }
                 .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
-                .onChange(of: selectedDate) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .center) }
+                .onChange(of: focusedWeek(data)) { _, week in reader.scrollTo(week, anchor: .center) }
             }
         }.frame(height: 176)
-    }
-
-    private func cell(_ day: AssetChangeDay, data: AssetChangeYear, selected: Bool) -> some View {
-        return Button {
-            // Keep the closing record's actual timestamp, not midnight or a sampled neighbour.
-            selectedDate = summaries.first { $0.id == day.snapshotID }?.date
-        } label: {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(fill(day, maximum: data.maximumChange))
-                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(selected ? AssetTheme.gold : .clear, lineWidth: 2))
-                .frame(width: cellSize, height: cellSize)
-                .contentShape(Rectangle())
-        }.buttonStyle(.plain).disabled(day.snapshotID == nil)
-            .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
-            .accessibilityValue(amount(day))
-            .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var detail: some View {
@@ -158,13 +150,6 @@ struct TimeMachineChangeCalendar: View {
     private func swatch(_ color: Color, level: Int) -> some View {
         RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.3 + Double(level) * 0.2)).frame(width: 9, height: 9)
     }
-    private func fill(_ day: AssetChangeDay, maximum: Double) -> Color {
-        guard let change = day.change, change != 0 else {
-            return AssetTheme.textSecondary.opacity(day.isFuture ? 0.05 : (day.snapshotID == nil ? 0.12 : 0.3))
-        }
-        let level = min(3, Int(log1p(abs(change)) / max(log1p(maximum), 0.01) * 4))
-        return colors.color(change).opacity(0.3 + Double(level) * 0.2)
-    }
     private func amount(_ day: AssetChangeDay) -> String {
         guard amountsVisible else { return "••••" }
         guard day.snapshotID != nil else { return AppLocalization.string("无记录") }
@@ -176,12 +161,6 @@ struct TimeMachineChangeCalendar: View {
     private func weekdayLabel(_ weekday: Int, data: AssetChangeYear) -> String {
         Calendar.current.date(byAdding: .day, value: weekday - data.leadingDays, to: data.days[0].date)!
             .formatted(.dateTime.weekday(.narrow).locale(AppLocalization.currentLocale))
-    }
-    private func monthLabel(_ week: Int, data: AssetChangeYear) -> String {
-        let first = (0..<7).compactMap { data.day(week: week, weekday: $0) }.first {
-            Calendar.current.component(.day, from: $0.date) == 1
-        }
-        return first?.date.formatted(.dateTime.month(.abbreviated).locale(AppLocalization.currentLocale)) ?? ""
     }
     private func focusedWeek(_ data: AssetChangeYear) -> Int {
         let target = focused?.date ?? Calendar.current.startOfDay(for: .now)
@@ -200,5 +179,62 @@ struct TimeMachineChangeCalendar: View {
             year = Calendar.current.component(.year, from: selectedDate)
         }
         data = AssetChangeYear(year: year, summaries: summaries)
+    }
+}
+
+/// Only the previous and new selection rebuild their date/amount accessibility text.
+private struct TimeMachineChangeDayCell: View, Equatable {
+    let revision: UUID
+    let day: AssetChangeDay
+    let maximumChange: Double
+    let colors: AssetChangeColorScheme
+    let selected: Bool
+    let amountsVisible: Bool
+    let localeIdentifier: String
+    let select: (UUID) -> Void
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.revision == rhs.revision && lhs.day == rhs.day && lhs.maximumChange == rhs.maximumChange && lhs.colors == rhs.colors
+            && lhs.selected == rhs.selected && lhs.amountsVisible == rhs.amountsVisible
+            && lhs.localeIdentifier == rhs.localeIdentifier
+    }
+    var body: some View {
+        Button { if let id = day.snapshotID { select(id) } } label: {
+            RoundedRectangle(cornerRadius: 3).fill(fill(day, maximum: maximumChange))
+                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(selected ? AssetTheme.gold : .clear, lineWidth: 2))
+                .frame(width: 18, height: 18).contentShape(Rectangle())
+        }.buttonStyle(.plain).disabled(day.snapshotID == nil)
+            .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
+            .accessibilityValue(amount(day))
+            .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+    private func fill(_ day: AssetChangeDay, maximum: Double) -> Color {
+        guard let change = day.change, change != 0 else {
+            return AssetTheme.textSecondary.opacity(day.isFuture ? 0.05 : (day.snapshotID == nil ? 0.12 : 0.3))
+        }
+        let level = min(3, Int(log1p(abs(change)) / max(log1p(maximum), 0.01) * 4))
+        return colors.color(change).opacity(0.3 + Double(level) * 0.2)
+    }
+    private func amount(_ day: AssetChangeDay) -> String {
+        guard amountsVisible else { return "••••" }
+        guard day.snapshotID != nil else { return AppLocalization.string("无记录") }
+        guard let change = day.change else { return AppLocalization.string("无对比记录") }
+        return change == 0 ? change.formatted(.currency(code: "CNY").precision(.fractionLength(2)))
+            : change.formatted(.currency(code: "CNY").precision(.fractionLength(2)).sign(strategy: .always()))
+    }
+}
+
+private struct TimeMachineChangeMonthLabel: View, Equatable {
+    let data: AssetChangeYear
+    let week: Int
+    let localeIdentifier: String
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.data.id == rhs.data.id && lhs.week == rhs.week && lhs.localeIdentifier == rhs.localeIdentifier
+    }
+    var body: some View { Text(monthLabel(week, data: data)) }
+    private func monthLabel(_ week: Int, data: AssetChangeYear) -> String {
+        let first = (0..<7).compactMap { data.day(week: week, weekday: $0) }.first {
+            Calendar.current.component(.day, from: $0.date) == 1
+        }
+        return first?.date.formatted(.dateTime.month(.abbreviated).locale(AppLocalization.currentLocale)) ?? ""
     }
 }
