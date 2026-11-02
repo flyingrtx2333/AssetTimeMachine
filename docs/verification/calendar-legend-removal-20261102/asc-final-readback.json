@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "224",
+  "buildID": "0e15eb8d-1502-47b5-ac49-56c5ba7dbb8b",
+  "source": "a93ab1e73fe4f29093a362706997f634b51d275c",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Simplify the daily change calendar by removing the bottom color legend. Keep linked dates and configurable rise/fall colors.",
+    "zh-Hans": "简化每日变动日历，移除底部色阶图例，保留日期联动和涨跌配色设置。",
+    "zh-Hant": "簡化每日變動日曆，移除底部色階圖例，保留日期連動與漲跌配色設定。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
