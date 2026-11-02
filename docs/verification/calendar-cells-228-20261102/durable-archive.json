@@ -1,0 +1,14 @@
+{
+  "path": "/Users/xiangjunsheng/Library/Application Support/AssetTimeMachineReleases/TestFlight-1.14-228",
+  "ipaSHA256Verified": true,
+  "source": "fc2a63ee13d0c1b606f0dcb4195a50d833a53a27",
+  "remoteAssetMatched": true,
+  "buildUploadID": "e38c2e61-63b2-47d8-bf49-efd045bd503f",
+  "copyMethod": "buffered stream, fsync, every copied file SHA256 checked",
+  "verifiedFileCount": 59,
+  "verifiedBytes": 85043155,
+  "backupArchiveStrictSignatureVerified": true,
+  "externalVolumeCopyVerified": false,
+  "externalVolumeCopyPath": "/Volumes/小姐姐新家/策略研究数据/AssetTimeMachine/releases/TestFlight-1.14-228",
+  "externalCopyIssue": "Fast copy and buffered copy both produced a mismatched IPA; verified archive stored in persistent Mac mini Application Support instead"
+}

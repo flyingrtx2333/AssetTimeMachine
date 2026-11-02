@@ -1,0 +1,27 @@
+{
+  "build": "228",
+  "version": "1.14",
+  "source": "fc2a63ee13d0c1b606f0dcb4195a50d833a53a27",
+  "simulatorDebugBuildPassed": true,
+  "releaseArchivePassed": true,
+  "strictArchiveSignatureVerified": true,
+  "widgetBuild": "228",
+  "archiveMachOUUID": "53BA8E48-B558-3634-98FE-A340E61DEC47",
+  "ipaMachOUUID": "53BA8E48-B558-3634-98FE-A340E61DEC47",
+  "uploadSucceeded": true,
+  "deliveryID": "e38c2e61-63b2-47d8-bf49-efd045bd503f",
+  "remoteArtifactMatched": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "notesReadbackVerified": true,
+  "cliBuildStatusValid": true,
+  "sharedCalendarCheckPassed": true,
+  "allCellTextContrastAtLeast4_5": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1552,
+    "directCalls": 766,
+    "chineseSourceLiterals": 1080
+  },
+  "physicalDeviceAcceptance": "pending"
+}

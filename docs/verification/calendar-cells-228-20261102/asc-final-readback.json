@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "228",
+  "buildID": "e38c2e61-63b2-47d8-bf49-efd045bd503f",
+  "source": "fc2a63ee13d0c1b606f0dcb4195a50d833a53a27",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Larger daily-change cells now display signed amounts directly, with clearer five-level colors. English uses plain hundreds and K/M/B/T abbreviations. Exact values remain in the selected-day details.",
+    "zh-Hans": "每日变动矩阵放大格子，格内直接显示带正负号的金额，五档配色更清晰。中文支持百、千、万缩写，英文支持 K/M/B/T；选中后仍可查看精确金额。",
+    "zh-Hant": "每日變動矩陣放大格子，格內直接顯示帶正負號的金額，五檔配色更清晰。中文支援百、千、萬縮寫，英文支援 K/M/B/T；選取後仍可查看精確金額。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
