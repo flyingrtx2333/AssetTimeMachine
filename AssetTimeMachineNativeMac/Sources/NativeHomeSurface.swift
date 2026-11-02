@@ -73,15 +73,18 @@ struct NativeHomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("净资产").font(NativeStyle.FontRole.bodyStrong)
-                    Text(NativeHomeStyle.amount(net)).font(NativeStyle.FontRole.display).monospacedDigit()
+                    Text(AppLocalization.string("主资产")).font(NativeStyle.FontRole.bodyStrong)
+                    Text(NativeHomeStyle.amount(total)).font(NativeStyle.FontRole.display).monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.75)
                         .contentTransition(reduced ? .opacity : .numericText())
-                    if let latest {
-                        Text(AppLocalization.format("截至 %@", latest.date.formatted(date: .numeric, time: .omitted)))
-                            .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                            .lineLimit(1)
-                    }
+                    HStack(spacing: 6) {
+                        Text(AppLocalization.string("净资产") + " " + NativeHomeStyle.amount(net)).monospacedDigit()
+                        if let latest {
+                            Text("·")
+                            Text(AppLocalization.format("截至 %@", latest.date.formatted(date: .numeric, time: .omitted)))
+                        }
+                    }.font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        .lineLimit(1).minimumScaleFactor(0.85)
                 }.frame(maxWidth: .infinity, alignment: .leading)
                 rangeControl
             }.frame(height: 78, alignment: .top)
