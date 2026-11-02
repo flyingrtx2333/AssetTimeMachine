@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "225",
+  "buildID": "db171141-d39e-4541-81e9-9f4b2195fecc",
+  "source": "3a7c7cbe4f68fa5d7c2d85af1fb96be3cf44dca4",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Remove the daily-calendar color legend while retaining the settings redesign and linked chart dates. This build includes verified matching of the uploaded installation package.",
+    "zh-Hans": "移除每日变动日历底部色阶图例，保留新版设置界面和日期联动。已修正发布包混用问题并核对远端安装包。",
+    "zh-Hant": "移除每日變動日曆底部色階圖例，保留新版設定介面與日期連動。已修正發佈套件混用問題並核對遠端安裝套件。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}

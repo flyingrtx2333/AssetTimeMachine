@@ -1,0 +1,15 @@
+{
+  "build": "224",
+  "version": "1.14",
+  "bundleID": "com.flyingrtx.AssetTimeMachine",
+  "sourceRevisionProvidedByClient": "",
+  "buildUploadID": "0e15eb8d-1502-47b5-ac49-56c5ba7dbb8b",
+  "serverAssetID": "aa7e94f4-8f12-4968-87fb-e856b8965fe7",
+  "localIPABytes": 17764414,
+  "serverIPABytes": 17777342,
+  "localMD5": "acc82bcc983e3fe4ba33f0c326a8eb1c",
+  "serverMD5": "9f3201cd508f7fbc978c6d36bd3758d2",
+  "localSHA256": "b4deefc8f9da663efd276937b32ed3c0a44e2cfffe5919124bd7dcf3e489f372",
+  "serverArtifactMatched": false,
+  "checkedAt": "2026-11-02T10:40:25.779555+00:00"
+}

@@ -1,0 +1,18 @@
+{
+  "build": "225",
+  "source": "3a7c7cbe4f68fa5d7c2d85af1fb96be3cf44dca4",
+  "simulatorDebugBuildPassed": true,
+  "releaseArchivePassed": true,
+  "uploadSucceeded": true,
+  "deliveryID": "db171141-d39e-4541-81e9-9f4b2195fecc",
+  "remoteArtifactMatched": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1549,
+    "directCalls": 766,
+    "chineseSourceLiterals": 1080,
+    "execution": "local source 3a7c7cb"
+  },
+  "businessStrategyRegression": "not rerun; no business or strategy changes",
+  "nativeMacBuild": "reused source a93ab1e; native sources unchanged"
+}
