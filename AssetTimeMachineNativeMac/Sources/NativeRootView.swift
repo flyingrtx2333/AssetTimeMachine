@@ -156,6 +156,7 @@ struct NativeRootView: View {
         .frame(minWidth: NativeStyle.Layout.windowMinWidth, minHeight: NativeStyle.Layout.windowMinHeight)
         .tint(NativePalette.accent)
         .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-openRecordsTab") { page = .records }
             if ProcessInfo.processInfo.arguments.contains("-openQuantTab") { page = .quant }
             if ProcessInfo.processInfo.arguments.contains("-openCloudSync") { showsCloudSync = true }
             if AppPreviewSession.isActive {
@@ -208,6 +209,7 @@ struct NativeRootView: View {
                recordArguments.indices.contains(index + 1) {
                 let result = NativeRecordEditorProbe.run(container: context.container)
                 if let data = try? JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted]) {
+                    FileHandle.standardOutput.write(data); FileHandle.standardOutput.write(Data([10]))
                     try? data.write(to: URL(fileURLWithPath: recordArguments[index + 1]))
                 }
                 await history.load(from: context.container, force: true)

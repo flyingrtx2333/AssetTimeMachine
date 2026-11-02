@@ -1,0 +1,8 @@
+{
+  "actualDateControlSource" : true,
+  "calendarClosedAfterSelection" : true,
+  "calendarOpenedByClick" : true,
+  "fixtureOnly" : true,
+  "systemToday" : "2026年11月2日",
+  "todayActionClicked" : true
+}

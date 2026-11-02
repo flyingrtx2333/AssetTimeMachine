@@ -177,11 +177,68 @@ enum NativeRecordEditorProbe {
                 if row.id == gold.id { var d = row.draft; d.quantity = "200"; editor.update(row, draft: d) }
             }
             results["fixtureRestored"] = editor.save(container: container)
+            results.merge(try calendarChecks()) { _, value in value }
         } catch {
             NSLog("[NativeRecordEditorProbe] %@", error.localizedDescription)
             results["unexpectedError"] = false
         }
         return results
+    }
+
+    private static func calendarChecks() throws -> [String: Bool] {
+        let schema = Schema([AssetCategory.self, AssetItem.self, AssetSnapshot.self, AssetEntry.self,
+                             BacktestRecord.self, SyncDeletionTombstone.self])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+        let context = ModelContext(container); context.autosaveEnabled = false
+        let calendar = Calendar.current
+        let oldDay = calendar.date(from: DateComponents(year: 2026, month: 10, day: 31))!
+        let today = calendar.date(from: DateComponents(year: 2026, month: 11, day: 2))!
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: today)!
+        let category = AssetCategory(name: "Synthetic calendar", group: .financial)
+        let item = AssetItem(name: "Synthetic account", category: category)
+        let old = AssetSnapshot(date: oldDay)
+        let original = AssetEntry(amount: 100, snapshot: old, item: item)
+        context.insert(category); context.insert(item); context.insert(old); context.insert(original)
+        try context.save()
+        let editor = NativeRecordEditor()
+        var checks: [String: Bool] = [:]
+        let added = editor.openDay(today, container: container)
+        let todayID = editor.snapshotID
+        func snapshot(_ day: Date) throws -> AssetSnapshot? {
+            try SnapshotService.snapshot(on: day, in: ModelContext(container))
+        }
+        let initialCount = try context.fetchCount(FetchDescriptor<AssetSnapshot>())
+        checks["missingTodayCreatedWithoutFillingInterveningDays"] = added && editor.date == today
+            && initialCount == 2
+        let inherited = try snapshot(today)?.entries.first
+        checks["todayRetainsAmountAndInheritanceSource"] = inherited?.amount == 100
+            && inherited?.inheritedFromEntryID == original.id
+        let addedAgain = editor.openDay(today.addingTimeInterval(3600), container: container)
+        let repeatedCount = try context.fetchCount(FetchDescriptor<AssetSnapshot>())
+        checks["openingTodayAgainDoesNotDuplicate"] = !addedAgain && editor.snapshotID == todayID
+            && repeatedCount == 2
+        let row = editor.rows.first!
+        var draft = row.draft; draft.amount = "333"
+        editor.update(row, draft: draft)
+        _ = editor.openDay(nextDay, container: container)
+        let unexpected = try snapshot(nextDay)
+        checks["calendarChangePreservesUnsavedDraft"] = editor.date == today && editor.isDirty
+            && editor.drafts[row.id]?.amount == "333" && unexpected == nil
+        editor.discard()
+        checks["nextDayCanOpenAfterDraftFinishes"] = editor.openDay(nextDay, container: container)
+            && editor.date == nextDay && editor.rows.first?.amount == 100
+        let nextRow = editor.rows.first!
+        var changed = nextRow.draft; changed.amount = "999"
+        editor.update(nextRow, draft: changed)
+        guard editor.save(container: container) else { throw URLError(.cannotWriteToFile) }
+        let middleDay = calendar.date(byAdding: .day, value: -1, to: today)!
+        _ = editor.openDay(middleDay, container: container)
+        checks["historicalCalendarDayNeverInheritsFutureValues"] = editor.date == middleDay
+            && editor.rows.first?.amount == 100
+        let originalReadback = try snapshot(oldDay)
+        checks["calendarNavigationLeavesOriginalRecordUnchanged"] = originalReadback?.entries.first?.amount == 100
+        checks["calendarOpenReleasesMutationBarrier"] = !ModelContextMutationBarrier.shared.hasBlockingEditorDraft
+        return checks
     }
 }
 

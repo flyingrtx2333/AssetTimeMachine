@@ -98,6 +98,27 @@ final class NativeRecordEditor: ObservableObject {
         } catch { self.error = error.localizedDescription }
     }
 
+    /// Opens a calendar day without discarding a draft. Returns whether data was added.
+    @discardableResult
+    func openDay(_ day: Date, container: ModelContainer) -> Bool {
+        guard !isDirty else { return false }
+        guard !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+              let token = ModelContextMutationBarrier.shared.beginEditorDraft() else {
+            error = AppLocalization.string("数据正在更新，请稍后重试"); return false
+        }
+        defer { ModelContextMutationBarrier.shared.finishEditorDraft(token) }
+        do {
+            let context = ModelContext(container)
+            context.autosaveEnabled = false
+            let existing = try SnapshotService.snapshot(on: day, in: context)
+            let count = existing?.entries.count
+            let snapshot = try SnapshotService.createSnapshot(on: day, in: context)
+            load(id: snapshot.id, container: container)
+            return count == nil || count != snapshot.entries.count
+        } catch { self.error = error.localizedDescription; return false }
+    }
+
     func update(_ row: Row, draft proposed: Draft) {
         var draft = proposed
         // Market-derived prices belong to the dated snapshot, never to a manual draft.
@@ -189,7 +210,52 @@ final class NativeRecordEditor: ObservableObject {
 
 enum NativeRecordDestination: Equatable {
     case snapshot(UUID)
+    case day(Date)
     case today
+}
+
+struct NativeRecordDateControl: View {
+    let date: Date?
+    let recent: [TimeMachineSnapshotProjection]
+    let select: (NativeRecordDestination) -> Void
+    @State private var showsCalendar = false
+
+    var body: some View {
+        Button { showsCalendar.toggle() } label: {
+            HStack(spacing: 6) {
+                Label((date ?? .now).formatted(.dateTime.year().month().day().locale(AppLocalization.currentLocale)),
+                      systemImage: "calendar")
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold))
+            }.monospacedDigit().lineLimit(1)
+        }.buttonStyle(.bordered).controlSize(.regular).fixedSize()
+            .accessibilityLabel(AppLocalization.string("选择记录日期"))
+            .accessibilityValue((date ?? .now).formatted(date: .complete, time: .omitted))
+            .popover(isPresented: $showsCalendar, arrowEdge: .bottom) {
+                VStack(spacing: 10) {
+                    DatePicker(AppLocalization.string("日期"), selection: Binding(
+                        get: { date ?? .now },
+                        set: { choose(.day($0)) }
+                    ), in: ...Date.now, displayedComponents: .date)
+                        .datePickerStyle(.graphical).labelsHidden()
+                    HStack {
+                        Button(AppLocalization.string("今天")) { choose(.today) }
+                        Spacer()
+                        Menu(AppLocalization.string("最近记录")) {
+                            ForEach(Array(recent.suffix(90).reversed()), id: \.id) { snapshot in
+                                Button(snapshot.date.formatted(.dateTime.year().month().day().locale(AppLocalization.currentLocale))) {
+                                    choose(.snapshot(snapshot.id))
+                                }
+                            }
+                        }.disabled(recent.isEmpty).fixedSize()
+                    }
+                }.padding(12).frame(width: 300)
+            }
+    }
+
+    private func choose(_ destination: NativeRecordDestination) {
+        showsCalendar = false
+        select(destination)
+    }
 }
 
 private struct NativeLedgerColumns {
@@ -224,13 +290,13 @@ struct NativeRecordsView: View {
     private func total(_ group: AssetGroup) -> Double {
         editor.rows.filter { $0.group == group }.reduce(0) { $0 + editor.displayedAmount(for: $1) }
     }
-    private var selectedIndex: Int? { history.summaries.firstIndex { $0.id == editor.snapshotID } }
     private var ledgerColumns: NativeLedgerColumns { NativeLedgerColumns(width: ledgerWidth) }
 
     @State private var collapsedGroups: Set<AssetGroup> = []
     @State private var showsUnfilled = false
     @State private var expandedZeroGroups: Set<AssetGroup> = []
     @State private var pendingDestination: NativeRecordDestination?
+    @State private var followsToday = true
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
     private var reduced: Bool { reducedMotion || NativeHomeStyle.previewReduced }
     private var unfilled: [NativeRecordEditor.Row] { editor.rows.filter(\.isEmpty) }
@@ -298,13 +364,29 @@ struct NativeRecordsView: View {
         .animation(NativeStyle.Motion.records(reduced), value: editor.savedAt)
         .task {
             if requestedDestination != nil { openRequestedDestination() }
-            else if !editor.isDirty { editor.load(id: editor.snapshotID ?? history.summaries.last?.id, container: context.container) }
+            else if AppPreviewSession.isActive {
+                editor.load(id: editor.snapshotID ?? history.summaries.last?.id, container: context.container)
+            } else { followTodayIfNeeded() }
         }
         .onChange(of: requestedDestination) { _, destination in if destination != nil { openRequestedDestination() } }
         .onChange(of: history.generation) { _, _ in
-            let id = history.summaries.contains { $0.id == editor.snapshotID } ? editor.snapshotID : history.summaries.last?.id
-            editor.load(id: id, container: context.container)
+            if followsToday && !AppPreviewSession.isActive { followTodayIfNeeded() }
+            else {
+                let id = history.summaries.contains { $0.id == editor.snapshotID } ? editor.snapshotID : history.summaries.last?.id
+                editor.load(id: id, container: context.container)
+            }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            followTodayIfNeeded()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
+            followTodayIfNeeded()
+        }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification).receive(on: RunLoop.main)) { _ in
+            followTodayIfNeeded()
+        }
+        .onChange(of: editor.isDirty) { _, dirty in if !dirty { followTodayIfNeeded() } }
+        .onChange(of: cloud.isApplyingLocalData) { _, applying in if !applying { followTodayIfNeeded() } }
         .sheet(item: $addingGroup) { group in
             NativeAddItemSheet(categories: categories, initialGroup: group, onSaved: refresh)
         }
@@ -334,25 +416,12 @@ struct NativeRecordsView: View {
         HStack(spacing: 8) {
             Button { moveDate(-1) } label: { Image(systemName: "chevron.left") }
                 .buttonStyle(.borderless).frame(width: 22, height: 28)
-                .accessibilityLabel("上一条记录").disabled((selectedIndex ?? 0) == 0)
-            Menu {
-                Section("最近记录") {
-                    ForEach(Array(history.summaries.suffix(90).reversed()), id: \.id) { snapshot in
-                        Button(snapshot.date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN")))) {
-                            selectDestination(.snapshot(snapshot.id))
-                        }
-                    }
-                }
-            } label: {
-                Label(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录",
-                      systemImage: "calendar")
-                    .monospacedDigit().lineLimit(1)
-            }.menuStyle(.borderedButton).fixedSize()
-                .disabled(history.summaries.isEmpty).accessibilityLabel("选择记录日期")
-                .accessibilityValue(editor.date.map { $0.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))) } ?? "暂无记录")
+                .accessibilityLabel(AppLocalization.string("前一天")).disabled(editor.date == nil)
+            NativeRecordDateControl(date: editor.date, recent: history.summaries, select: selectDestination)
             Button { moveDate(1) } label: { Image(systemName: "chevron.right") }
                 .buttonStyle(.borderless).frame(width: 22, height: 28)
-                .accessibilityLabel("下一条记录").disabled((selectedIndex ?? 0) >= history.summaries.count - 1)
+                .accessibilityLabel(AppLocalization.string("后一天"))
+                .disabled(editor.date.map { Calendar.current.startOfDay(for: $0) >= Calendar.current.startOfDay(for: .now) } ?? true)
             Divider().frame(height: 18).padding(.horizontal, 4)
             Button { addingGroup = .financial } label: { Label("添加资产", systemImage: "plus") }
                 .buttonStyle(.bordered).controlSize(.regular).disabled(editor.isDirty)
@@ -480,8 +549,10 @@ struct NativeRecordsView: View {
     }
 
     private func moveDate(_ offset: Int) {
-        guard let index = selectedIndex, history.summaries.indices.contains(index + offset) else { return }
-        selectDestination(.snapshot(history.summaries[index + offset].id))
+        guard let current = editor.date,
+              let day = Calendar.current.date(byAdding: .day, value: offset, to: current),
+              Calendar.current.startOfDay(for: day) <= Calendar.current.startOfDay(for: .now) else { return }
+        selectDestination(.day(day))
     }
     private func openRequestedDestination() {
         guard let destination = requestedDestination else { return }
@@ -489,14 +560,31 @@ struct NativeRecordsView: View {
         selectDestination(destination)
     }
     private func selectDestination(_ destination: NativeRecordDestination) {
-        if case .snapshot(let id) = destination, id == editor.snapshotID { return }
+        if case .day(let day) = destination, let current = editor.date,
+           Calendar.current.isDate(day, inSameDayAs: current) {
+            followsToday = Calendar.current.isDateInToday(day); return
+        }
+        if case .today = destination, editor.date.map({ Calendar.current.isDateInToday($0) }) == true {
+            followsToday = true; return
+        }
+        if case .snapshot(let id) = destination, id == editor.snapshotID {
+            followsToday = editor.date.map { Calendar.current.isDateInToday($0) } ?? false
+            return
+        }
         if editor.isDirty { pendingDestination = destination; confirmsDiscard = true }
         else { withAnimation(NativeStyle.Motion.records(reduced)) { performDestination(destination) } }
     }
     private func performDestination(_ destination: NativeRecordDestination) {
         switch destination {
-        case .snapshot(let id): editor.load(id: id, container: context.container)
-        case .today: recordToday()
+        case .snapshot(let id):
+            editor.load(id: id, container: context.container)
+            followsToday = editor.date.map { Calendar.current.isDateInToday($0) } ?? false
+        case .day(let date):
+            followsToday = Calendar.current.isDateInToday(date)
+            record(on: date)
+        case .today:
+            followsToday = true
+            record(on: .now)
         }
     }
     private func refresh() {
@@ -506,16 +594,15 @@ struct NativeRecordsView: View {
             cloud.scheduleAutoSync(from: context)
         }
     }
-    private func recordToday() {
-        guard let token = ModelContextMutationBarrier.shared.beginEditorDraft() else {
-            editor.error = "数据正在更新，请稍后重试"; return
-        }
-        defer { ModelContextMutationBarrier.shared.finishEditorDraft(token) }
-        do {
-            let snapshot = try SnapshotService.createSnapshot(on: .now, in: context)
-            editor.load(id: snapshot.id, container: context.container)
-            refresh()
-        } catch { editor.error = error.localizedDescription }
+    private func followTodayIfNeeded() {
+        guard !AppPreviewSession.isActive, followsToday, !editor.isDirty,
+              !cloud.isApplyingLocalData, !context.hasChanges,
+              !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return }
+        record(on: .now)
+    }
+    private func record(on date: Date) {
+        if editor.openDay(date, container: context.container) { refresh() }
     }
     private func removeRecord() {
         guard let id = editor.snapshotID else { return }
@@ -532,6 +619,7 @@ struct NativeRecordsView: View {
                 edit.delete(snapshot)
                 try edit.save()
             }
+            followsToday = false
             editor.load(id: nil, container: context.container)
             Task {
                 await history.load(from: context.container, force: true)
