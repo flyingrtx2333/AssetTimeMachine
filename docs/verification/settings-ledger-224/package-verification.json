@@ -1,0 +1,64 @@
+{
+  "version": "1.14",
+  "build": "224",
+  "archive": [
+    {
+      "bundle_id": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "224",
+      "team": "8BPSC5L74V",
+      "get_task_allow": true,
+      "app_groups": [
+        "group.com.flyingrtx.AssetTimeMachine"
+      ],
+      "keychain_access_groups": [],
+      "strict_signature_verified": true,
+      "standalone_font_absent": true
+    },
+    {
+      "bundle_id": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "224",
+      "team": "8BPSC5L74V",
+      "get_task_allow": true,
+      "app_groups": [
+        "group.com.flyingrtx.AssetTimeMachine"
+      ],
+      "keychain_access_groups": [],
+      "strict_signature_verified": true,
+      "standalone_font_absent": true
+    }
+  ],
+  "distribution": [
+    {
+      "bundle_id": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "224",
+      "team": "8BPSC5L74V",
+      "get_task_allow": false,
+      "app_groups": [
+        "group.com.flyingrtx.AssetTimeMachine"
+      ],
+      "keychain_access_groups": [],
+      "strict_signature_verified": true,
+      "standalone_font_absent": true
+    },
+    {
+      "bundle_id": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "224",
+      "team": "8BPSC5L74V",
+      "get_task_allow": false,
+      "app_groups": [
+        "group.com.flyingrtx.AssetTimeMachine"
+      ],
+      "keychain_access_groups": [],
+      "strict_signature_verified": true,
+      "standalone_font_absent": true
+    }
+  ],
+  "ipa": "/Users/xiangjunsheng/.codex/worktrees/atm-settings-ledger-testflight-224/AssetTimeMachine/build/TestFlight-1.14-224/export/AssetTimeMachine.ipa",
+  "ipa_sha256": "fe6b9272b6469bfcb090a9d16016b64ed26bfe988849bc4f4f4ed2393f1202d9",
+  "source_commit": "0c5530d086c1cd0f1937cefcfb9a2263cf7ccf63",
+  "approved_before_upload": true
+}

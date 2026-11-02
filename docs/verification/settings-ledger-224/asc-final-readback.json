@@ -1,0 +1,19 @@
+{
+  "app_id": "6764277773",
+  "version": "1.14",
+  "build": "224",
+  "build_id": "0e15eb8d-1502-47b5-ac49-56c5ba7dbb8b",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "group": "flyingrtx",
+  "group_id": "d22a703d-595c-448c-b297-2c7661cfabe9",
+  "group_membership_verified": true,
+  "notes": {
+    "en-US": "Redesigned Settings with clearer grouping and dividers using the app’s shared typography and colors.\nPreview and switch appearance directly; gain/loss colors, expenses, reminders, cloud sync and onboarding remain available.",
+    "zh-Hans": "设置页采用更清晰的分组与细线布局，沿用全局字体和配色。\n可直接预览并切换外观；保留涨跌配色、月开支、提醒、云同步和新手引导入口。",
+    "zh-Hant": "設定頁採用更清晰的分組與細線布局，沿用全域字體和配色。\n可直接預覽並切換外觀；保留漲跌配色、每月開支、提醒、雲端同步和新手引導入口。"
+  },
+  "notes_readback_verified": true,
+  "store_version_relationships_unchanged": true,
+  "external_review_submitted": false
+}
