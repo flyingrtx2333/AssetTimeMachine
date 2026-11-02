@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "227",
+  "buildID": "1bdcae1f-3f4c-4523-a27d-2873e8311987",
+  "source": "c8aac333dd7128dd71666ca21586172d88da99d1",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Compact Time Machine controls into one row: smaller visibility and export icons on the left, with the date and period selector alongside. Video preview and export remain available.",
+    "zh-Hans": "时光机顶部改为单行工具栏：左侧缩小的金额显隐和导出图标，与日期、时间范围并排。保留走势视频预览与导出。",
+    "zh-Hant": "時光機頂部改為單行工具列：左側縮小的金額顯隱與匯出圖示，與日期、時間範圍並排。保留走勢影片預覽與匯出。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
