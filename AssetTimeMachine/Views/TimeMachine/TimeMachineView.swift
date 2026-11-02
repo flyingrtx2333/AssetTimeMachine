@@ -739,33 +739,6 @@ struct TimeMachineView: View {
         }
     }
 
-    private var pageHeader: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Spacer(minLength: 0)
-
-            Button {
-                amountsVisible.toggle()
-            } label: {
-                Image(systemName: amountsVisible ? "eye" : "eye.slash")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(AssetTheme.textSecondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(AppLocalization.string(amountsVisible ? "隐藏资产金额" : "显示资产金额"))
-
-            Button {
-                openTrendVideoPreview()
-            } label: {
-                Label(AppLocalization.string("生成走势视频"), systemImage: "play.rectangle")
-            }
-            .buttonStyle(ATMActionButtonStyle(prominence: .secondary, expands: false))
-            .disabled(trendVideoPreviewRequest != nil || filteredTrendPoints.count < 2)
-            .accessibilityLabel(AppLocalization.string("生成走势视频"))
-        }
-    }
-
     @MainActor
     private func openTrendVideoPreview() {
         let exportPoints = cachedFilteredTrendPoints
@@ -793,6 +766,9 @@ struct TimeMachineView: View {
                     selection: timeline,
                     amountsVisible: amountsVisible,
                     onToggleSeries: toggleTrendSeries,
+                    onToggleAmounts: { amountsVisible.toggle() },
+                    onGenerateVideo: openTrendVideoPreview,
+                    canGenerateVideo: trendVideoPreviewRequest == nil && filteredTrendPoints.count >= 2,
                     hasRecord: hasSnapshotRecord(on:),
                     onOpenRecord: openRecord(for:)
                 )
@@ -810,9 +786,6 @@ struct TimeMachineView: View {
 
                 ScrollView(showsIndicators: false) {
                         LazyVStack(alignment: .leading, spacing: 0) {
-                            pageHeader
-                                .padding(.bottom, 8)
-
                             if lastVisualizationCacheToken == nil {
                                 LoadingStateCard(title: AppLocalization.string("时光机加载中"))
                             } else if !filteredTrendPoints.isEmpty {

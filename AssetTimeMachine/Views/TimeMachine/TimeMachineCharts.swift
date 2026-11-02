@@ -558,6 +558,9 @@ struct TimeMachineHeroTrendCard: View {
     @Binding var selectedRange: TimeMachineRange
     let amountsVisible: Bool
     let onToggleSeries: (String) -> Void
+    let onToggleAmounts: () -> Void
+    let onGenerateVideo: () -> Void
+    let canGenerateVideo: Bool
     let hasRecord: ((Date) -> Bool)?
     let onOpenRecord: ((Date) -> Void)?
     let selection: TimeMachineSelection
@@ -591,6 +594,9 @@ struct TimeMachineHeroTrendCard: View {
         selection: TimeMachineSelection,
         amountsVisible: Bool,
         onToggleSeries: @escaping (String) -> Void,
+        onToggleAmounts: @escaping () -> Void,
+        onGenerateVideo: @escaping () -> Void,
+        canGenerateVideo: Bool,
         hasRecord: ((Date) -> Bool)? = nil,
         onOpenRecord: ((Date) -> Void)? = nil
     ) {
@@ -603,6 +609,9 @@ struct TimeMachineHeroTrendCard: View {
         self.selection = selection
         self.amountsVisible = amountsVisible
         self.onToggleSeries = onToggleSeries
+        self.onToggleAmounts = onToggleAmounts
+        self.onGenerateVideo = onGenerateVideo
+        self.canGenerateVideo = canGenerateVideo
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
@@ -920,21 +929,39 @@ struct TimeMachineHeroTrendCard: View {
 
     private var dateNavigator: some View {
         VStack(spacing: 8) {
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 5) {
-                    Text(selectedPoint.date.longDateString)
-                        .font(.system(size: 15.5, weight: .semibold, design: .default))
-                        .monospacedDigit()
-                        .foregroundStyle(AssetTheme.gold)
-
-                    Image(systemName: "triangle.fill")
-                        .font(.system(size: 8, weight: .bold))
-                        .rotationEffect(.degrees(180))
-                        .foregroundStyle(AssetTheme.gold)
+            HStack(spacing: 0) {
+                Button(action: onToggleAmounts) {
+                    Image(systemName: amountsVisible ? "eye" : "eye.slash")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
+                .accessibilityLabel(AppLocalization.string(amountsVisible ? "隐藏资产金额" : "显示资产金额"))
 
+                Button(action: onGenerateVideo) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AssetTheme.textSecondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!canGenerateVideo)
+                .accessibilityLabel(AppLocalization.string("导出视频"))
+
+                Spacer(minLength: 4)
+                Text(selectedPoint.date.formatted(.dateTime.year().month(.twoDigits).day(.twoDigits)
+                    .locale(AppLocalization.currentLocale)))
+                    .font(.system(size: 13, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(AssetTheme.gold)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .accessibilityLabel(selectedPoint.date.longDateString)
+                Spacer(minLength: 4)
                 TimeMachineRangeSelector(selectedRange: $selectedRange)
+                    .fixedSize()
             }
 
             TimeMachineDateRuler(
