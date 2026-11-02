@@ -667,11 +667,17 @@ struct NativeTimeMachineView: View {
                         Button("导出视频", systemImage: "play.rectangle") { startVideoExport() }
                             .modifier(NativeWorkspacePrimary()).disabled(isExportingVideo || summaries.count < 2)
                     }.frame(height: NativeStyle.Control.height)
-                    HStack(spacing: NativeStyle.Space.section) {
-                        NativeWorkspaceMetric(title: "净资产", value: (active?.totalAssets ?? 0) - (active?.totalLiabilities ?? 0), primary: true)
-                        NativeWorkspaceMetric(title: "总资产", value: active?.totalAssets ?? 0)
-                        NativeWorkspaceMetric(title: "负债", value: active?.totalLiabilities ?? 0)
-                        NativeWorkspaceMetric(title: "较上次", value: activeDifference)
+                    HStack(alignment: .top, spacing: NativeStyle.Space.section) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            NativeWorkspaceMetric(title: AppLocalization.string("主资产"), value: active?.totalAssets ?? 0, primary: true)
+                            Text(AppLocalization.string("净资产") + " "
+                                 + money((active?.totalAssets ?? 0) - (active?.totalLiabilities ?? 0))
+                                 + (active.map { " · " + displayDate($0.date) } ?? ""))
+                                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        NativeWorkspaceMetric(title: "负债", value: active?.totalLiabilities ?? 0).frame(maxWidth: 120)
+                        NativeWorkspaceMetric(title: "较上次", value: activeDifference).frame(maxWidth: 120)
                     }
                     HStack(spacing: 16) {
                         Label { Text("总资产") } icon: { Circle().fill(NativePalette.chartSecondary).frame(width: 6, height: 6) }
@@ -710,13 +716,12 @@ struct NativeTimeMachineView: View {
                         }
                     }.animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedIndex)
                     NativeAssetChangeCalendar(summaries: summaries, revision: history.generation,
-                        selectedID: active?.id) { id in
+                        selectedID: active?.id, selectedDate: active?.date) { id in
                         if let index = summaries.firstIndex(where: { $0.id == id }) {
                             selectedIndex = index; hoveredIndex = nil
                             if index < chartStart { visibleMonths = 1200 }
                         }
                     }
-                    Divider()
                     HStack {
                         Text("当天资产明细").font(NativeStyle.FontRole.section)
                         Spacer()

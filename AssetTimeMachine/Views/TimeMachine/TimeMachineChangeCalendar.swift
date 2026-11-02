@@ -15,13 +15,14 @@ struct TimeMachineChangeCalendar: View {
     let onOpenRecord: (UUID) -> Void
     @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
     private var colorRaw = AssetChangeColorScheme.region.rawValue
-    @State private var year = Calendar.current.component(.year, from: Date.now)
-    @State private var years = [Calendar.current.component(.year, from: Date.now)]
     @State private var data: AssetChangeYear?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let cellSize: CGFloat = 18
     private let gap: CGFloat = 4
     private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
+    private var year: Int {
+        Calendar.current.component(.year, from: selectedDate ?? summaries.last?.date ?? .now)
+    }
     private var focused: AssetChangeDay? {
         guard let data else { return nil }
         return selectedDate.flatMap { data.day(on: $0) }
@@ -30,14 +31,6 @@ struct TimeMachineChangeCalendar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ViewThatFits(in: .horizontal) {
-                HStack {
-                    heading
-                    Spacer(minLength: 8)
-                    controls
-                }
-                VStack(alignment: .leading, spacing: 8) { heading; controls }
-            }
             if let data {
                 grid(data).dynamicTypeSize(...DynamicTypeSize.large)
                 detail
@@ -47,29 +40,8 @@ struct TimeMachineChangeCalendar: View {
         .onChange(of: revision) { _, _ in rebuild() }
         .onChange(of: summaries.count) { _, _ in rebuild() }
         .onChange(of: year) { _, _ in rebuild() }
-        .onChange(of: selectedDate) { _, date in followSelection(date) }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in rebuild() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in rebuild() }
-    }
-
-    private var heading: some View {
-        Text(AppLocalization.string("每日净资产变动"))
-            .font(.headline).foregroundStyle(AssetTheme.textPrimary)
-    }
-    private var controls: some View {
-        HStack(spacing: 12) {
-            Picker(AppLocalization.string("年份"), selection: $year) {
-                ForEach(years, id: \.self) { Text(String($0)).tag($0) }
-            }.labelsHidden().pickerStyle(.menu).tint(AssetTheme.textPrimary)
-            Menu {
-                Picker(AppLocalization.string("涨跌配色"), selection: $colorRaw) {
-                    ForEach(AssetChangeColorScheme.allCases) { Text($0.title).tag($0.rawValue) }
-                }
-            } label: { Image(systemName: "paintpalette").frame(minWidth: 32, minHeight: 32) }
-                .tint(AssetTheme.textSecondary)
-                .accessibilityLabel(AppLocalization.string("涨跌配色"))
-                .accessibilityValue(colors.title)
-        }
     }
 
     private func grid(_ data: AssetChangeYear) -> some View {
@@ -153,17 +125,7 @@ struct TimeMachineChangeCalendar: View {
         let offset = Calendar.current.dateComponents([.day], from: data.days[0].date, to: target).day ?? 0
         return max(0, min(data.weeks - 1, (offset + data.leadingDays) / 7))
     }
-    private func followSelection(_ date: Date?) {
-        guard let date else { return }
-        let selectedYear = Calendar.current.component(.year, from: date)
-        if selectedYear != year { year = selectedYear }
-    }
     private func rebuild() {
-        let current = Calendar.current.component(.year, from: Date.now)
-        years = Array(Set(summaries.map { Calendar.current.component(.year, from: $0.date) } + [current])).sorted(by: >)
-        if data == nil, let selectedDate {
-            year = Calendar.current.component(.year, from: selectedDate)
-        }
         data = AssetChangeYear(year: year, summaries: summaries)
     }
 }

@@ -5,14 +5,16 @@ struct NativeAssetChangeCalendar: View {
     let summaries: [TimeMachineSnapshotProjection]
     let revision: Int
     let selectedID: UUID?
+    let selectedDate: Date?
     let select: (UUID) -> Void
     @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
     private var colorRaw = AssetChangeColorScheme.region.rawValue
-    @State private var year = Calendar.current.component(.year, from: Date.now)
-    @State private var years = [Calendar.current.component(.year, from: Date.now)]
     @State private var data: AssetChangeYear?
     @State private var hovered: Date?
     private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
+    private var year: Int {
+        Calendar.current.component(.year, from: selectedDate ?? summaries.last?.date ?? .now)
+    }
     private var focused: AssetChangeDay? {
         guard let data else { return nil }
         if let hovered { return data.day(on: hovered) }
@@ -34,21 +36,6 @@ struct NativeAssetChangeCalendar: View {
 
     private func calendar(_ data: AssetChangeYear) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(AppLocalization.string("每日净资产变动")).font(NativeStyle.FontRole.section)
-                Spacer()
-                Picker(AppLocalization.string("年份"), selection: $year) {
-                    ForEach(years, id: \.self) { Text(String($0)).tag($0) }
-                }.labelsHidden().frame(width: 85)
-                Menu {
-                    Picker(AppLocalization.string("涨跌配色"), selection: $colorRaw) {
-                        ForEach(AssetChangeColorScheme.allCases) { Text($0.title).tag($0.rawValue) }
-                    }
-                } label: { Image(systemName: "paintpalette") }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                    .accessibilityLabel(AppLocalization.string("涨跌配色"))
-                    .accessibilityValue(colors.title).help(AppLocalization.string("涨跌配色"))
-            }
             NativeAssetChangeGrid(data: data, selectedID: selectedID, colors: colors,
                 localeIdentifier: AppLocalization.currentLocale.identifier,
                 select: select, hover: { hovered = $0 }).equatable()
@@ -79,8 +66,6 @@ struct NativeAssetChangeCalendar: View {
         return AppLocalization.format("较 %@", previous.formatted(date: .numeric, time: .omitted))
     }
     private func rebuild() {
-        let currentYear = Calendar.current.component(.year, from: Date.now)
-        years = Array(Set(summaries.map { Calendar.current.component(.year, from: $0.date) }.filter { $0 <= currentYear } + [currentYear, year])).sorted(by: >)
         data = AssetChangeYear(year: year, summaries: summaries)
         hovered = nil
     }

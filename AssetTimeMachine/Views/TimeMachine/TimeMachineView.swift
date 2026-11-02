@@ -817,8 +817,6 @@ struct TimeMachineView: View {
                                 LoadingStateCard(title: AppLocalization.string("时光机加载中"))
                             } else if !filteredTrendPoints.isEmpty {
                                 heroTrendSection
-                                TimeMachineSectionDivider()
-                                    .padding(.vertical, 16)
                                 TimeMachineChangeCalendar(
                                     summaries: cachedSnapshotProjections,
                                     revision: lastSnapshotProjectionCacheToken ?? -1,
@@ -826,6 +824,7 @@ struct TimeMachineView: View {
                                     amountsVisible: amountsVisible,
                                     onOpenRecord: { openRecord(snapshotID: $0) }
                                 )
+                                .padding(.top, 16)
 
                                 if !monthlySurplusPoints.isEmpty || !annualSurplusPoints.isEmpty {
                                     TimeMachineSectionDivider()

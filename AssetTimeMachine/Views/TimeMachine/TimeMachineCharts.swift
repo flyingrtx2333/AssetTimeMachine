@@ -947,24 +947,28 @@ struct TimeMachineHeroTrendCard: View {
     private var heroSummary: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
-                Text(AppLocalization.string("当日净资产"))
+                Text(AppLocalization.string("主资产"))
                     .font(.system(size: 12, weight: .medium, design: .default))
                     .foregroundStyle(AssetTheme.textSecondary)
 
                 Spacer(minLength: 8)
             }
 
-            Text(amountsVisible ? selectedPoint.netAssets.currencyString(code: "CNY") : "••••••")
+            Text(amountsVisible ? selectedPoint.mainAssets.currencyString(code: "CNY") : "••••••")
                 .font(.system(size: 33, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.goldSoft)
                 .lineLimit(1)
                 .minimumScaleFactor(0.62)
 
-            Text(amountsVisible ? changeFromStartLabel : "••••••")
-                .font(.system(size: 11.5, weight: .semibold, design: .default))
+            Text(AppLocalization.string("净资产") + " "
+                 + (amountsVisible ? selectedPoint.netAssets.currencyString(code: "CNY") : "••••••")
+                 + " · " + selectedPoint.date.formatted(date: .numeric, time: .omitted))
+                .font(.system(size: 12, weight: .medium, design: .default))
                 .monospacedDigit()
-                .foregroundStyle(changeFromStartColor)
+                .foregroundStyle(AssetTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -972,33 +976,6 @@ struct TimeMachineHeroTrendCard: View {
             onOpenRecord?(selectedSnapshotDate)
         }
         .accessibilityHint(canOpenSelectedRecord ? AppLocalization.string("查看当日记录") : "")
-    }
-
-    private var changeFromStartLabel: String {
-        guard let firstPoint = displayPoints.first else { return "--" }
-        let change = selectedPoint.netAssets - firstPoint.netAssets
-        let rate = abs(firstPoint.netAssets) > 0.000_1 ? change / abs(firstPoint.netAssets) : 0
-        return AppLocalization.format(
-            "较期初 %@ · %@",
-            signedCurrency(change),
-            signedPercent(rate)
-        )
-    }
-
-    private var changeFromStartColor: Color {
-        guard let firstPoint = displayPoints.first else { return AssetTheme.textSecondary }
-        let change = selectedPoint.netAssets - firstPoint.netAssets
-        return change > 0 ? AssetTheme.positive : (change < 0 ? AssetTheme.negative : AssetTheme.textSecondary)
-    }
-
-    private func signedCurrency(_ value: Double) -> String {
-        let sign = value > 0 ? "+" : (value < 0 ? "−" : "")
-        return "\(sign)\(abs(value).currencyString(code: "CNY"))"
-    }
-
-    private func signedPercent(_ value: Double) -> String {
-        let sign = value > 0 ? "+" : ""
-        return sign + value.percentString(maxFractionDigits: 1)
     }
 
     private func assetAxisLabel(_ amount: Double) -> String {
