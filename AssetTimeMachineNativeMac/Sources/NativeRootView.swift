@@ -708,8 +708,8 @@ struct NativeTimeMachineView: View {
                             }.help(money(summaries[index].totalAssets - summaries[index].totalLiabilities))
                                 .accessibilityAddTraits(selectedIndex == index ? .isSelected : [])
                         }
-                    }
-                    NativeAssetChangeCalendar(summaries: summaries, revision: chartRevision,
+                    }.animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedIndex)
+                    NativeAssetChangeCalendar(summaries: summaries, revision: history.generation,
                         selectedID: active?.id) { id in
                         if let index = summaries.firstIndex(where: { $0.id == id }) {
                             selectedIndex = index; hoveredIndex = nil
@@ -744,7 +744,6 @@ struct NativeTimeMachineView: View {
                 }.padding(NativeStyle.Layout.pageInset)
             }
         }.modifier(NativeWorkspaceSurface())
-        .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedIndex)
         .animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: isExportingVideo)
         .overlay(alignment: .topLeading) {
             if AppPreviewSession.isActive,

@@ -15,8 +15,8 @@ struct NativeAssetChangeCalendar: View {
     private var colors: AssetChangeColorScheme { AssetChangeColorScheme(rawValue: colorRaw) ?? .region }
     private var focused: AssetChangeDay? {
         guard let data else { return nil }
-        if let hovered { return data.days.first { $0.date == hovered } }
-        return data.days.first { $0.snapshotID != nil && $0.snapshotID == selectedID }
+        if let hovered { return data.day(on: hovered) }
+        return selectedID.flatMap { data.day(snapshotID: $0) }
             ?? data.days.last { $0.snapshotID != nil }
     }
 
@@ -49,40 +49,9 @@ struct NativeAssetChangeCalendar: View {
                     .accessibilityLabel(AppLocalization.string("涨跌配色"))
                     .accessibilityValue(colors.title).help(AppLocalization.string("涨跌配色"))
             }
-            GeometryReader { geometry in
-                let gap: CGFloat = 3
-                let size = min(12, max(3, (geometry.size.width - 26 - gap * CGFloat(data.weeks - 1)) / CGFloat(data.weeks)))
-                VStack(alignment: .leading, spacing: 5) {
-                    ZStack(alignment: .topLeading) {
-                        ForEach(1...12, id: \.self) { month in
-                            let date = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1))!
-                            let offset = Calendar.current.dateComponents([.day], from: data.days[0].date, to: date).day ?? 0
-                            Text(date.formatted(.dateTime.month(.abbreviated).locale(AppLocalization.currentLocale)))
-                                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
-                                .offset(x: 26 + CGFloat((offset + data.leadingDays) / 7) * (size + gap))
-                        }
-                    }.frame(height: 15)
-                    HStack(alignment: .top, spacing: 4) {
-                        VStack(spacing: gap) {
-                            ForEach(0..<7) { weekday in
-                                Text(weekdayLabel(weekday)).font(.system(size: 9)).foregroundStyle(NativePalette.secondary)
-                                    .frame(width: 22, height: size, alignment: .leading)
-                            }
-                        }
-                        HStack(spacing: gap) {
-                            ForEach(0..<data.weeks, id: \.self) { week in
-                                VStack(spacing: gap) {
-                                    ForEach(0..<7) { weekday in
-                                        if let day = data.day(week: week, weekday: weekday) {
-                                            cell(day, size: size)
-                                        } else { Color.clear.frame(width: size, height: size).accessibilityHidden(true) }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }.frame(height: 122)
+            NativeAssetChangeGrid(data: data, selectedID: selectedID, colors: colors,
+                localeIdentifier: AppLocalization.currentLocale.identifier,
+                select: select, hover: { hovered = $0 }).equatable()
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     if let day = focused {
@@ -104,27 +73,6 @@ struct NativeAssetChangeCalendar: View {
         }
     }
 
-    private func cell(_ day: AssetChangeDay, size: CGFloat) -> some View {
-        let selected = day.snapshotID != nil && day.snapshotID == selectedID
-        return Button { if let id = day.snapshotID { select(id) } } label: {
-            RoundedRectangle(cornerRadius: 2).fill(fill(day))
-                .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 1.5))
-                .frame(width: size, height: size)
-        }.buttonStyle(.plain).disabled(day.snapshotID == nil)
-            .onHover { inside in hovered = inside ? day.date : nil }
-            .help(day.date.formatted(date: .complete, time: .omitted) + "\n" + amount(day) + "\n" + comparison(day))
-            .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
-            .accessibilityValue(amount(day) + " " + comparison(day))
-            .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-    private func fill(_ day: AssetChangeDay) -> Color {
-        guard let change = day.change, change != 0 else {
-            return NativePalette.line.opacity(day.isFuture ? 0.15 : (day.snapshotID == nil ? 0.4 : 0.85))
-        }
-        let ratio = log1p(abs(change)) / max(log1p(data?.maximumChange ?? 0), 0.01)
-        let level = min(3, Int(ratio * 4))
-        return colors.color(change).opacity(0.3 + Double(level) * 0.2)
-    }
     private func amount(_ day: AssetChangeDay) -> String {
         guard day.snapshotID != nil else { return AppLocalization.string("无记录") }
         guard let change = day.change else { return AppLocalization.string("无对比记录") }
@@ -135,15 +83,111 @@ struct NativeAssetChangeCalendar: View {
         guard let previous = day.previousDate, day.change != nil else { return "" }
         return AppLocalization.format("较 %@", previous.formatted(date: .numeric, time: .omitted))
     }
-    private func weekdayLabel(_ index: Int) -> String {
-        guard index.isMultiple(of: 2), let data else { return "" }
-        return Calendar.current.date(byAdding: .day, value: index - data.leadingDays, to: data.days[0].date)!
-            .formatted(.dateTime.weekday(.narrow).locale(AppLocalization.currentLocale))
-    }
     private func rebuild() {
         let currentYear = Calendar.current.component(.year, from: Date.now)
         years = Array(Set(summaries.map { Calendar.current.component(.year, from: $0.date) }.filter { $0 <= currentYear } + [currentYear, year])).sorted(by: >)
         data = AssetChangeYear(year: year, summaries: summaries)
         hovered = nil
+    }
+}
+
+/// Hover changes only the footer; a new selection updates just the two affected cells.
+private struct NativeAssetChangeGrid: View, Equatable {
+    let data: AssetChangeYear
+    let selectedID: UUID?
+    let colors: AssetChangeColorScheme
+    let localeIdentifier: String
+    let select: (UUID) -> Void
+    let hover: (Date?) -> Void
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.data.id == rhs.data.id && lhs.selectedID == rhs.selectedID
+            && lhs.colors == rhs.colors && lhs.localeIdentifier == rhs.localeIdentifier
+    }
+    var body: some View {
+            GeometryReader { geometry in
+                let gap: CGFloat = 3
+                let size = min(12, max(3, (geometry.size.width - 26 - gap * CGFloat(data.weeks - 1)) / CGFloat(data.weeks)))
+                VStack(alignment: .leading, spacing: 5) {
+                    ZStack(alignment: .topLeading) {
+                        ForEach(1...12, id: \.self) { month in
+                            let date = Calendar.current.date(from: DateComponents(year: data.year, month: month, day: 1))!
+                            let offset = Calendar.current.dateComponents([.day], from: data.days[0].date, to: date).day ?? 0
+                            Text(date.formatted(.dateTime.month(.abbreviated).locale(AppLocalization.currentLocale)))
+                                .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                                .offset(x: 26 + CGFloat((offset + data.leadingDays) / 7) * (size + gap))
+                        }
+                    }.frame(height: 15)
+                    HStack(alignment: .top, spacing: 4) {
+                        VStack(spacing: gap) {
+                            ForEach(0..<7) { weekday in
+                                Text(weekdayLabel(weekday)).font(.system(size: 9)).foregroundStyle(NativePalette.secondary)
+                                    .frame(width: 22, height: size, alignment: .leading)
+                            }
+                        }
+                        HStack(spacing: gap) {
+                            ForEach(0..<data.weeks, id: \.self) { week in
+                                VStack(spacing: gap) {
+                                    ForEach(0..<7) { weekday in
+                                        if let day = data.day(week: week, weekday: weekday) {
+                                            NativeAssetChangeCell(day: day, maximumChange: data.maximumChange, colors: colors,
+                                                selected: day.snapshotID != nil && day.snapshotID == selectedID,
+                                                size: size, localeIdentifier: localeIdentifier, select: select, hover: hover).equatable()
+                                        } else { Color.clear.frame(width: size, height: size).accessibilityHidden(true) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }.frame(height: 122)
+    }
+    private func weekdayLabel(_ index: Int) -> String {
+        guard index.isMultiple(of: 2) else { return "" }
+        return Calendar.current.date(byAdding: .day, value: index - data.leadingDays, to: data.days[0].date)!
+            .formatted(.dateTime.weekday(.narrow).locale(AppLocalization.currentLocale))
+    }
+}
+
+private struct NativeAssetChangeCell: View, Equatable {
+    let day: AssetChangeDay
+    let maximumChange: Double
+    let colors: AssetChangeColorScheme
+    let selected: Bool
+    let size: CGFloat
+    let localeIdentifier: String
+    let select: (UUID) -> Void
+    let hover: (Date?) -> Void
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.day == rhs.day && lhs.maximumChange == rhs.maximumChange && lhs.colors == rhs.colors
+            && lhs.selected == rhs.selected && lhs.size == rhs.size && lhs.localeIdentifier == rhs.localeIdentifier
+    }
+    var body: some View {
+        Button { if let id = day.snapshotID { select(id) } } label: {
+            RoundedRectangle(cornerRadius: 2).fill(fill)
+                .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 1.5))
+                .frame(width: size, height: size)
+        }.buttonStyle(.plain).disabled(day.snapshotID == nil)
+            .onHover { inside in hover(inside ? day.date : nil) }
+            .help(day.date.formatted(date: .complete, time: .omitted) + "\n" + amount + "\n" + comparison)
+            .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
+            .accessibilityValue(amount + " " + comparison)
+            .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+    private var fill: Color {
+        guard let change = day.change, change != 0 else {
+            return NativePalette.line.opacity(day.isFuture ? 0.15 : (day.snapshotID == nil ? 0.4 : 0.85))
+        }
+        let ratio = log1p(abs(change)) / max(log1p(maximumChange), 0.01)
+        return colors.color(change).opacity(0.3 + Double(min(3, Int(ratio * 4))) * 0.2)
+    }
+    private var amount: String {
+        guard day.snapshotID != nil else { return AppLocalization.string("无记录") }
+        guard let change = day.change else { return AppLocalization.string("无对比记录") }
+        return change == 0 ? change.formatted(.currency(code: "CNY").precision(.fractionLength(2)))
+            : change.formatted(.currency(code: "CNY").precision(.fractionLength(2)).sign(strategy: .always()))
+    }
+    private var comparison: String {
+        guard let previous = day.previousDate, day.change != nil else { return "" }
+        return AppLocalization.format("较 %@", previous.formatted(date: .numeric, time: .omitted))
     }
 }

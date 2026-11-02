@@ -31,7 +31,7 @@ enum AssetChangeColorScheme: String, CaseIterable, Identifiable {
     func color(_ change: Double) -> Color { change == 0 ? AssetTheme.textSecondary : (change > 0 ? up : down) }
 }
 
-struct AssetChangeDay: Identifiable {
+struct AssetChangeDay: Identifiable, Equatable {
     let date: Date
     let snapshotID: UUID?
     let previousDate: Date?
@@ -41,6 +41,8 @@ struct AssetChangeDay: Identifiable {
 }
 
 struct AssetChangeYear {
+    let id = UUID()
+    private let indicesBySnapshot: [UUID: Int]
     let year: Int
     let days: [AssetChangeDay]
     let leadingDays: Int
@@ -88,9 +90,23 @@ struct AssetChangeYear {
             day = calendar.date(byAdding: .day, value: 1, to: day)!
         }
         days = result
+        indicesBySnapshot = Dictionary(result.enumerated().compactMap { index, day in
+            day.snapshotID.map { ($0, index) }
+        }, uniquingKeysWith: { _, last in last })
         leadingDays = (calendar.component(.weekday, from: start) + 5) % 7
         weeks = (leadingDays + result.count + 6) / 7
         maximumChange = result.compactMap(\.change).map(abs).max() ?? 0
+    }
+
+    func day(snapshotID: UUID) -> AssetChangeDay? {
+        indicesBySnapshot[snapshotID].map { days[$0] }
+    }
+
+    func day(on date: Date, calendar: Calendar = .current) -> AssetChangeDay? {
+        guard calendar.component(.year, from: date) == year,
+              let ordinal = calendar.ordinality(of: .day, in: .year, for: date),
+              days.indices.contains(ordinal - 1) else { return nil }
+        return days[ordinal - 1]
     }
 
     func day(week: Int, weekday: Int) -> AssetChangeDay? {
