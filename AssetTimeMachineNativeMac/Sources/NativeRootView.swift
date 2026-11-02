@@ -157,6 +157,7 @@ struct NativeRootView: View {
         .tint(NativePalette.accent)
         .onAppear {
             if ProcessInfo.processInfo.arguments.contains("-openRecordsTab") { page = .records }
+            if ProcessInfo.processInfo.arguments.contains("-openTimeMachineTab") { page = .timeMachine }
             if ProcessInfo.processInfo.arguments.contains("-openQuantTab") { page = .quant }
             if ProcessInfo.processInfo.arguments.contains("-openCloudSync") { showsCloudSync = true }
             if AppPreviewSession.isActive {
@@ -706,6 +707,13 @@ struct NativeTimeMachineView: View {
                                     }
                             }.help(money(summaries[index].totalAssets - summaries[index].totalLiabilities))
                                 .accessibilityAddTraits(selectedIndex == index ? .isSelected : [])
+                        }
+                    }
+                    NativeAssetChangeCalendar(summaries: summaries, revision: chartRevision,
+                        selectedID: active?.id) { id in
+                        if let index = summaries.firstIndex(where: { $0.id == id }) {
+                            selectedIndex = index; hoveredIndex = nil
+                            if index < chartStart { visibleMonths = 1200 }
                         }
                     }
                     Divider()

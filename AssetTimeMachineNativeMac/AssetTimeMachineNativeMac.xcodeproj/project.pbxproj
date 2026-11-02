@@ -47,6 +47,7 @@
 		EA92D9D1AC4ABC3071448971 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13973F84A63B5D21627C867 /* CloudSync.swift */; };
 		ED50F758B9188301358ABD11 /* AssetIconRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A90C2E2342BCB7D00AEC18A /* AssetIconRegistry.swift */; };
 		F673D9F17E55BC6261BC1BDA /* NativeQuantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F627A0263BDF15F3CF6CB90 /* NativeQuantView.swift */; };
+		81795C1AEB9449819A84894E /* NativeAssetChangeCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA52BC78366B4606A01B235E /* NativeAssetChangeCalendar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -91,6 +92,7 @@
 		E315C3620652303A258541E2 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
 		EE0B5F66C6F4518D937775B7 /* NativeHomeSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeHomeSurface.swift; sourceTree = "<group>"; };
 		F201358FC51398ECD5A35C34 /* AssetTimeMachineNativeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AssetTimeMachineNativeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EA52BC78366B4606A01B235E /* NativeAssetChangeCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAssetChangeCalendar.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,6 +113,7 @@
 				25092AB680675B86EFB10D5C /* NativeApp.swift */,
 				A0F8552CDFEF2E9D23026890 /* NativeCompatibility.swift */,
 				DB5973AB306F4C43B262DC11 /* NativeStyle.swift */,
+				EA52BC78366B4606A01B235E /* NativeAssetChangeCalendar.swift */,
 				EE0B5F66C6F4518D937775B7 /* NativeHomeSurface.swift */,
 				53FFB314C3123870036863C9 /* NativeMutationProbe.swift */,
 				BDC4A9E7614724BEA01EB4C3 /* NativeQuantProbe.swift */,
@@ -310,6 +313,7 @@
 				E6A9A0FC7696BA66BEA46A2B /* NativeApp.swift in Sources */,
 				4313063ED2570356BA21FC81 /* NativeCompatibility.swift in Sources */,
 				DB5973AB306F4C43B262DC12 /* NativeStyle.swift in Sources */,
+				81795C1AEB9449819A84894E /* NativeAssetChangeCalendar.swift in Sources */,
 				855D9EF19D6560C40FE963A7 /* NativeHomeSurface.swift in Sources */,
 				1611AD379A4B15A0F5DFABFA /* NativeMutationProbe.swift in Sources */,
 				AA6C8FC7E6C69147394F5D93 /* NativeQuantProbe.swift in Sources */,

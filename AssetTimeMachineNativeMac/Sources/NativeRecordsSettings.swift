@@ -835,6 +835,8 @@ struct NativeSettingsView: View {
     @State private var showsLogin = false
     @State private var error: String?
     @State private var message: String?
+    @AppStorage(NativeAssetChangePreferences.key, store: NativeAssetChangePreferences.defaults)
+    private var changeColorRaw = NativeAssetChangeColors.region.rawValue
 
     var body: some View {
         ScrollView {
@@ -853,6 +855,19 @@ struct NativeSettingsView: View {
                         }.padding(.horizontal, 14).frame(minHeight: 44).contentShape(Rectangle())
                     }.buttonStyle(.plain).accessibilityLabel("云同步")
                         .accessibilityValue(cloud.indicatorLabel)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("外观")).font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
+                    HStack(spacing: 10) {
+                        Image(systemName: "paintpalette").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                        Text(AppLocalization.string("涨跌配色"))
+                        Spacer()
+                        Picker(AppLocalization.string("涨跌配色"), selection: $changeColorRaw) {
+                            ForEach(NativeAssetChangeColors.allCases) { Text($0.title).tag($0.rawValue) }
+                        }.labelsHidden().frame(width: 160)
+                    }.padding(.horizontal, 14).frame(minHeight: 44)
                         .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
                 }
