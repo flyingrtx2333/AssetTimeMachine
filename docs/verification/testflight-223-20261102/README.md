@@ -1,0 +1,9 @@
+# Time Machine performance delivery · TestFlight 1.14 (223) · 2026-11-02
+
+- iOS signed-release source: `88ac3b4e0e8e0262b34d835010f8828fa115ae69`. iOS performance implementation: `de3978e`; native calendar optimization: `13df64e`, with compiler-compatible/cached cell labels in `f6a768b`.
+- Native Mac 1.14 (223), source `f6a768b`, installed in `/Applications/资产时光机.app` and launched on Time Machine. Strict signature, unchanged identity/entitlements, executable match and installed-calendar accessibility read verified. One fixed previous-app backup retained. Installed receipt is `../timemachine-performance-20261102/desktop-install-223.json`.
+- iOS Simulator Release and native Mac Release builds passed; shared calendar/selection regressions and localization audit passed. No strategy calculations or financial-data schemas changed; no expanded strategy regression run.
+- Actual component performance counters and scoped before/after timings are in `../timemachine-performance-20261102/`. The iOS measurement is a simulator result, not a physical-device FPS claim. Financial figures used for performance and screenshot evidence are synthetic.
+- App Store Connect validation/upload succeeded; delivery/build ID: `80d8a180-ca95-432c-b966-99bd16d3c58c`. Main app and Widget are both 1.14 (223). Archive signature, team/bundle identity, encryption declaration and durable IPA checksum verified.
+- Official App Store Connect REST readback: `VALID`, internal group `flyingrtx`: `IN_BETA_TESTING`; three release-note localizations written and read back. The redundant command-line status poll was stopped after REST confirmed beta availability; its partial status log is retained without fabricating a CLI success marker.
+- No external beta review or App Store release submitted. Physical-device touch acceptance remains pending user acceptance. Archive, IPA, actual upload logs and final receipt preserved at the path in `durable-archive.json`.

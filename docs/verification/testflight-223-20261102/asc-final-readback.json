@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "223",
+  "buildID": "80d8a180-ca95-432c-b966-99bd16d3c58c",
+  "source": "88ac3b4e0e8e0262b34d835010f8828fa115ae69",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Improve Time Machine scrolling, chart-probe movement and daily-calendar response. Keep linked dates and configurable rise/fall colors while avoiding repeated chart and calendar preparation.",
+    "zh-Hans": "优化时光机滚动、曲线探针和每日变动日历的响应速度，减少重复刷新，保留双向日期联动及涨跌配色设置。",
+    "zh-Hant": "最佳化時光機捲動、曲線探針與每日變動日曆的回應速度，減少重複更新，保留雙向日期連動與漲跌配色設定。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
