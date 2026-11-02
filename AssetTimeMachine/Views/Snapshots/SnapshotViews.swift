@@ -361,7 +361,7 @@ struct SnapshotListView: View {
             if let item = presentedItem {
                 ZStack {
                     Rectangle()
-                        .fill(.black.opacity(0.42))
+                        .fill(Color.clear)
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -2957,7 +2957,7 @@ struct RecordValueEditorSheet: View {
             minHeight: quickEditorMinHeight,
             alignment: .top
         )
-        .background(panelShape.fill(.ultraThinMaterial))
+        .background(panelShape.fill(AssetTheme.surface))
         .overlay {
             panelShape
                 .stroke(
@@ -3713,7 +3713,7 @@ struct SnapshotDetailView: View {
                let item = entry.item {
                 ZStack {
                     Rectangle()
-                        .fill(.black.opacity(0.42))
+                        .fill(Color.clear)
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
                         .onTapGesture {
