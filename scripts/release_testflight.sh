@@ -323,7 +323,8 @@ xcrun altool --upload-app \
     --apiKey "$ASC_KEY_ID" \
     --apiIssuer "$ASC_ISSUER_ID" \
     > "$UPLOAD_LOG" 2>&1 || { tail -n 180 "$UPLOAD_LOG"; exit 1; }
-if grep -Eq 'ERROR:|Upload failed' "$UPLOAD_LOG"; then
+# altool can recover from transient API errors before reporting final success.
+if ! grep -q 'UPLOAD SUCCEEDED' "$UPLOAD_LOG"; then
     tail -n 180 "$UPLOAD_LOG"
     exit 1
 fi

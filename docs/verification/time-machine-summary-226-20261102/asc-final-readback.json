@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "226",
+  "buildID": "56495d66-6260-4154-a3c8-583e29313fe3",
+  "source": "d0d75c4cf61017e8dc020e296d7d847bad416b8b",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Time Machine now leads with main assets, with net assets and the selected date below. Remove the daily calendar heading, year and palette controls, and section separator. Calendar year follows the selected date.",
+    "zh-Hans": "时光机主金额改为主资产，副标题显示净资产与日期。移除每日变动日历标题、年份、配色入口及分隔线，日历年份随所选日期切换。",
+    "zh-Hant": "時光機主金額改為主資產，副標題顯示淨資產與日期。移除每日變動日曆標題、年份、配色入口及分隔線，日曆年份隨所選日期切換。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}

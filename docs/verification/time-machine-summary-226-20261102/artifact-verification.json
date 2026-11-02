@@ -1,0 +1,26 @@
+{
+  "build": "226",
+  "version": "1.14",
+  "source": "d0d75c4cf61017e8dc020e296d7d847bad416b8b",
+  "simulatorDebugBuildPassed": true,
+  "releaseArchivePassed": true,
+  "strictArchiveSignatureVerified": true,
+  "widgetBuild": "226",
+  "archiveMachOUUID": "DF290877-93A0-3B5C-913E-5E3387AE650D",
+  "ipaMachOUUID": "DF290877-93A0-3B5C-913E-5E3387AE650D",
+  "uploadSucceeded": true,
+  "deliveryID": "56495d66-6260-4154-a3c8-583e29313fe3",
+  "remoteArtifactMatched": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "notesReadbackVerified": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1549,
+    "directCalls": 764,
+    "chineseSourceLiterals": 1078
+  },
+  "helperStoppedOnRecoveredUploadErrors": true,
+  "verificationRecovery": "Exact remote asset verified directly; existing delivery reused without rebuilding or reuploading",
+  "physicalDeviceAcceptance": "pending"
+}
