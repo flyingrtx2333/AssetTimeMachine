@@ -41,7 +41,6 @@ struct TimeMachineChangeCalendar: View {
             if let data {
                 grid(data).dynamicTypeSize(...DynamicTypeSize.large)
                 detail
-                legend.dynamicTypeSize(...DynamicTypeSize.large)
             }
         }
         .onAppear(perform: rebuild)
@@ -136,19 +135,6 @@ struct TimeMachineChangeCalendar: View {
                 }.tint(AssetTheme.gold)
             }
         }.frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 110 : 80, alignment: .top)
-    }
-    private var legend: some View {
-        HStack(spacing: 5) {
-            Text("−")
-            ForEach(0..<4) { level in swatch(colors.down, level: level) }
-            Text("+").padding(.leading, 10)
-            ForEach(0..<4) { level in swatch(colors.up, level: level) }
-            Spacer()
-            Text(colors.title)
-        }.font(.caption2).foregroundStyle(AssetTheme.textSecondary).accessibilityHidden(true)
-    }
-    private func swatch(_ color: Color, level: Int) -> some View {
-        RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.3 + Double(level) * 0.2)).frame(width: 9, height: 9)
     }
     private func amount(_ day: AssetChangeDay) -> String {
         guard amountsVisible else { return "••••" }
