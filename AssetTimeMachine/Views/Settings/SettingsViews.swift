@@ -130,6 +130,7 @@ struct SettingsView: View {
             ZStack {
                 AssetTheme.background.ignoresSafeArea()
 
+                #if targetEnvironment(macCatalyst)
                 List {
                     pageOverviewSection
                     preferencesSection
@@ -145,6 +146,25 @@ struct SettingsView: View {
                 .contentMargins(.top, 0, for: .scrollContent)
                 .contentMargins(.bottom, settingsBottomMargin, for: .scrollContent)
                 .environment(\.defaultMinListRowHeight, settingsRowHeight)
+                #else
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        SettingsLedgerHeader()
+                        planningSection
+                        preferencesSection
+                        automationSection
+                        dataSection
+                        supportSection
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.top, 12)
+                    .padding(.bottom, 28)
+                    .frame(maxWidth: 640)
+                    .frame(maxWidth: .infinity)
+                }
+                .id(appLanguageStore.language.rawValue)
+                .clipped()
+                #endif
             }
             .toolbar(.hidden, for: .navigationBar)
             .task(id: isActive) {
@@ -293,27 +313,7 @@ struct SettingsView: View {
             .frame(minHeight: 46)
             .settingsSurfaceRow()
             #else
-            Menu {
-                ForEach(AppAppearanceMode.allCases) { mode in
-                    Button {
-                        appearanceModeRawValue = mode.rawValue
-                    } label: {
-                        HStack {
-                            Text(mode.title)
-                            if currentAppearanceMode == mode {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-            } label: {
-                SettingsNavigationRow(
-                    title: AppLocalization.string("外观"),
-                    systemImage: "circle.lefthalf.filled",
-                    value: currentAppearanceMode.title
-                )
-            }
-            .foregroundStyle(AssetTheme.textPrimary)
+            SettingsLedgerAppearancePicker(selection: $appearanceModeRawValue)
             .settingsSurfaceRow()
             #endif
 
@@ -327,7 +327,7 @@ struct SettingsView: View {
                     value: currentAppLanguage.title
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SettingsLedgerButtonStyle())
             .foregroundStyle(AssetTheme.textPrimary)
             .settingsSurfaceRow()
 
@@ -337,7 +337,7 @@ struct SettingsView: View {
                     systemImage: "book.closed"
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SettingsLedgerButtonStyle())
             .settingsSurfaceRow()
         } header: {
             SettingsSectionHeader(title: AppLocalization.string("偏好"))
@@ -408,7 +408,7 @@ struct SettingsView: View {
             } label: {
                 SettingsStrategySummaryRow(template: selectedStrategyTemplate)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SettingsLedgerButtonStyle())
             .disabled(StrategyRebalanceDefaults.eligibleTemplates.isEmpty)
             .accessibilityLabel(AppLocalization.string("调仓策略"))
             .accessibilityValue(selectedStrategyTemplate.map(StrategyRebalanceDefaults.pickerTitle)
@@ -426,7 +426,7 @@ struct SettingsView: View {
                         isLoading: isSendingStrategyTestNotification
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SettingsLedgerButtonStyle())
                 .disabled(isSendingStrategyTestNotification)
                 .settingsSurfaceRow()
             }
@@ -442,7 +442,7 @@ struct SettingsView: View {
                         trailingSystemImage: "arrow.up.right.square"
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SettingsLedgerButtonStyle())
                 .settingsSurfaceRow()
             }
 
@@ -460,6 +460,7 @@ struct SettingsView: View {
             Button {
                 showsMonthlyExpenseEstimator = true
             } label: {
+                #if targetEnvironment(macCatalyst)
                 SettingsNavigationRow(
                     title: AppLocalization.string("月开支估算"),
                     systemImage: "calculator",
@@ -468,8 +469,16 @@ struct SettingsView: View {
                         fallback: dashboardMonthlyExpense
                     ).currencyString()
                 )
+                #else
+                SettingsLedgerExpenseRow(
+                    value: MonthlyExpenseEstimateStorage.monthlyAverage(
+                        from: storedMonthlyExpenseEstimate,
+                        fallback: dashboardMonthlyExpense
+                    ).currencyString()
+                )
+                #endif
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SettingsLedgerButtonStyle())
             .settingsSurfaceRow()
         } header: {
             SettingsSectionHeader(title: AppLocalization.string("规划"))
@@ -488,7 +497,7 @@ struct SettingsView: View {
                     value: AppLocalization.string(cloudOverviewKey)
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SettingsLedgerButtonStyle())
             .settingsSurfaceRow()
 
             if canLogout {
@@ -523,7 +532,7 @@ struct SettingsView: View {
                     trailingSystemImage: "arrow.up.right.square"
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(SettingsLedgerButtonStyle())
             .settingsSurfaceRow()
 
             SettingsNavigationRow(
@@ -670,7 +679,7 @@ private struct SettingsOverviewRail: View {
                 accessorySystemImage: "chevron.right"
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SettingsLedgerButtonStyle())
     }
 
     private var notificationItem: some View {
@@ -748,6 +757,7 @@ private struct SettingsSectionHeader: View {
     let title: String
 
     var body: some View {
+        #if targetEnvironment(macCatalyst)
         Text(title)
             .font(.subheadline.weight(.medium))
             .foregroundStyle(AssetTheme.textSecondary)
@@ -756,6 +766,17 @@ private struct SettingsSectionHeader: View {
             .padding(.horizontal, 22)
             .padding(.bottom, 5)
             .listRowInsets(EdgeInsets())
+        #else
+        Text(title)
+            .font(AppTypography.meta)
+            .foregroundStyle(AssetTheme.goldSoft)
+            .textCase(nil)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 20)
+            .padding(.bottom, 8)
+            .overlay(alignment: .bottom) { SettingsLedgerRule() }
+            .accessibilityAddTraits(.isHeader)
+        #endif
     }
 }
 
@@ -811,7 +832,7 @@ private struct SettingsNavigationRow: View {
         #if targetEnvironment(macCatalyst)
         46
         #else
-        58
+        46
         #endif
     }
 }
@@ -821,15 +842,23 @@ private struct SettingsStrategySummaryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            #if targetEnvironment(macCatalyst)
             Image(systemName: "waveform.path.ecg")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .frame(width: 24)
+            #endif
 
             VStack(alignment: .leading, spacing: 3) {
+                #if targetEnvironment(macCatalyst)
                 Text(AppLocalization.string("当前策略"))
                     .font(.body.weight(.medium))
                     .foregroundStyle(AssetTheme.textPrimary)
+                #else
+                Text(AppLocalization.string("调仓策略"))
+                    .font(AppTypography.rowTitle)
+                    .foregroundStyle(AssetTheme.textPrimary)
+                #endif
 
                 HStack(spacing: 6) {
                     Text(template?.title ?? AppLocalization.string("暂无策略"))
@@ -862,14 +891,20 @@ struct SettingsRowLabel: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            #if targetEnvironment(macCatalyst)
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(tint)
                 .frame(width: 24)
+            #endif
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
+                    #if targetEnvironment(macCatalyst)
                     .font(.body.weight(.medium))
+                    #else
+                    .font(AppTypography.rowTitle)
+                    #endif
                     .foregroundStyle(tint)
                     .lineLimit(2)
 
@@ -930,10 +965,15 @@ private extension View {
     }
 
     func settingsSurfaceRow() -> some View {
+        #if targetEnvironment(macCatalyst)
         listRowInsets(EdgeInsets(top: 0, leading: 22, bottom: 0, trailing: 22))
             .listRowBackground(AssetTheme.surface.opacity(0.48))
             .listRowSeparatorTint(AssetTheme.border.opacity(0.82))
             .alignmentGuide(.listRowSeparatorLeading) { _ in 36 }
+        #else
+        frame(minHeight: 46)
+            .overlay(alignment: .bottom) { SettingsLedgerRule() }
+        #endif
     }
 }
 
@@ -962,7 +1002,7 @@ private struct AppLanguageSelectionSheet: View {
                     }
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SettingsLedgerButtonStyle())
                 .listRowBackground(AssetTheme.surface)
             }
             .scrollContentBackground(.hidden)
