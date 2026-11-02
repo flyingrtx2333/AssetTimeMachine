@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "229",
+  "buildID": "67780da9-53e3-4b53-9d4c-cd8388a31f96",
+  "source": "45b4fc00b301577c3546d2eca6d1dccbf9875c24",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Remove the heavy dimming behind amount editors and use opaque editor panels. Records and historical-detail editing keep the surrounding page at its normal brightness.",
+    "zh-Hans": "修复金额编辑时整页变暗的问题。记录页与历史记录详情保持原亮度，编辑面板使用不透底的实色背景。",
+    "zh-Hant": "修正金額編輯時整頁變暗的問題。記錄頁與歷史記錄詳情保持原亮度，編輯面板使用不透底的實色背景。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}

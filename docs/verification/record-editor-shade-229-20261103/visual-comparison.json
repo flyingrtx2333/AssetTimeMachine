@@ -1,0 +1,62 @@
+{
+  "pointsInUnscaledPNG": {
+    "page": [
+      20,
+      500
+    ],
+    "panel": [
+      660,
+      1380
+    ]
+  },
+  "colors": {
+    "before-light": {
+      "size": [
+        1320,
+        2868
+      ],
+      "pageRGB": [
+        147,
+        146,
+        143
+      ],
+      "panelRGB": [
+        181,
+        179,
+        177
+      ]
+    },
+    "after-light": {
+      "size": [
+        1320,
+        2868
+      ],
+      "pageRGB": [
+        254,
+        251,
+        246
+      ],
+      "panelRGB": [
+        254,
+        254,
+        254
+      ]
+    },
+    "after-dark": {
+      "size": [
+        1320,
+        2868
+      ],
+      "pageRGB": [
+        13,
+        14,
+        17
+      ],
+      "panelRGB": [
+        20,
+        21,
+        25
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "build": "229",
+  "version": "1.14",
+  "source": "45b4fc00b301577c3546d2eca6d1dccbf9875c24",
+  "simulatorDebugBuildPassed": true,
+  "releaseArchivePassed": true,
+  "strictArchiveSignatureVerified": true,
+  "widgetBuild": "229",
+  "archiveMachOUUID": "0562A151-34B8-3D0D-A38F-263F1FD8AEC6",
+  "ipaMachOUUID": "0562A151-34B8-3D0D-A38F-263F1FD8AEC6",
+  "uploadSucceeded": true,
+  "deliveryID": "67780da9-53e3-4b53-9d4c-cd8388a31f96",
+  "remoteArtifactMatched": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "notesReadbackVerified": true,
+  "cliBuildStatusValid": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1552,
+    "directCalls": 766,
+    "chineseSourceLiterals": 1080
+  },
+  "visualAcceptance": "actual Records screen and decimal keyboard, light/dark, synthetic data",
+  "closeSaveFlow": "unchanged callbacks; DEBUG forced-preview capture does not assert dismissal",
+  "physicalDeviceAcceptance": "pending"
+}
