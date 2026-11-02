@@ -162,16 +162,23 @@ private struct NativeAssetChangeCell: View, Equatable {
             && lhs.selected == rhs.selected && lhs.size == rhs.size && lhs.localeIdentifier == rhs.localeIdentifier
     }
     var body: some View {
-        Button { if let id = day.snapshotID { select(id) } } label: {
-            RoundedRectangle(cornerRadius: 2).fill(fill)
-                .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 1.5))
-                .frame(width: size, height: size)
-        }.buttonStyle(.plain).disabled(day.snapshotID == nil)
+        let dateText: String = day.date.formatted(date: .complete, time: .omitted)
+        let amountText: String = amount
+        let comparisonText: String = comparison
+        let detailText = amountText + " " + comparisonText
+        let tooltip = dateText + "\n" + amountText + "\n" + comparisonText
+        return Button { if let id = day.snapshotID { select(id) } } label: { glyph }
+            .buttonStyle(.plain).disabled(day.snapshotID == nil)
             .onHover { inside in hover(inside ? day.date : nil) }
-            .help(day.date.formatted(date: .complete, time: .omitted) + "\n" + amount + "\n" + comparison)
-            .accessibilityLabel(day.date.formatted(date: .complete, time: .omitted))
-            .accessibilityValue(amount + " " + comparison)
+            .help(Text(tooltip))
+            .accessibilityLabel(Text(dateText))
+            .accessibilityValue(Text(detailText))
             .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+    private var glyph: some View {
+        RoundedRectangle(cornerRadius: 2).fill(fill)
+            .overlay(RoundedRectangle(cornerRadius: 2).strokeBorder(selected ? NativePalette.accent : .clear, lineWidth: 1.5))
+            .frame(width: size, height: size)
     }
     private var fill: Color {
         guard let change = day.change, change != 0 else {
