@@ -444,13 +444,21 @@ private struct TimeMachineUnifiedTrendPoint: Identifiable {
     let date: Date
     let plotValue: Double
     let displayValue: Double
+    let segment: Int
+
+    init(date: Date, plotValue: Double, displayValue: Double, segment: Int = 0) {
+        self.date = date
+        self.plotValue = plotValue
+        self.displayValue = displayValue
+        self.segment = segment
+    }
 
     var id: Date { date }
 }
 
 private enum TimeMachineUnifiedTrendScale {
     case assetValue
-    case marketReturn
+    case goldQuantity
 }
 
 private struct TimeMachineUnifiedTrendSeries: Identifiable {
@@ -467,6 +475,38 @@ private struct TimeMachineUnifiedTrendSelectionItem: Identifiable {
     let title: String
     let value: String
     let color: Color
+}
+
+enum TimeMachineGoldTrend {
+    static let id = "gold_equivalent"
+    struct Observation: Identifiable {
+        let id: Int
+        let date: Date
+        let grams: Double
+        let segment: Int
+    }
+
+    static func grams(in point: TimeMachineTrendPoint) -> Double? {
+        guard let quote = point.goldAnchorPriceCNY, quote.isFinite, quote > 0,
+              let grams = point.goldEquivalent, grams.isFinite else { return nil }
+        return grams
+    }
+
+    // Date-ordered snapshots; missing quotes split the curve instead of becoming zero.
+    static func observations(in points: [TimeMachineTrendPoint]) -> [Observation] {
+        var segment = 0
+        let values = points.enumerated().compactMap { index, point -> Observation? in
+            guard let grams = Self.grams(in: point) else { segment += 1; return nil }
+            return Observation(id: index, date: point.date, grams: grams, segment: segment)
+        }
+        guard values.count > 180 else { return values }
+        var sampled = evenlySampledItems(values, maxCount: 178)
+        // Preserve gold-quantity extrema, which need not coincide with asset extrema.
+        for extreme in [values.min { $0.grams < $1.grams }!, values.max { $0.grams < $1.grams }!] {
+            if !sampled.contains(where: { $0.id == extreme.id }) { sampled.append(extreme) }
+        }
+        return sampled.sorted { $0.id < $1.id }
+    }
 }
 
 private enum TimeMachineSelectionGuideLayout {
@@ -552,8 +592,6 @@ final class TimeMachineSelection {
 struct TimeMachineHeroTrendCard: View {
     let points: [TimeMachineTrendPoint]
     let latestPoint: TimeMachineTrendPoint
-    let marketOptions: [TimeMachineDetailComparisonOption]
-    let marketSeries: [TimeMachineMarketTrendSeries]
     let visibleSeriesIDs: Set<String>
     @Binding var selectedRange: TimeMachineRange
     let amountsVisible: Bool
@@ -577,7 +615,7 @@ struct TimeMachineHeroTrendCard: View {
     private let unifiedSeries: [TimeMachineUnifiedTrendSeries]
     private let valueDomain: ClosedRange<Double>
     private let assetValueDomain: ClosedRange<Double>?
-    private let marketReturnDomain: ClosedRange<Double>?
+    private let goldQuantityDomain: ClosedRange<Double>?
     private let dateDomain: ClosedRange<Date>
     private let axisDates: [Date]
     private var dateAxisKey: String { AppLocalization.string("日期") }
@@ -587,8 +625,6 @@ struct TimeMachineHeroTrendCard: View {
     init(
         points: [TimeMachineTrendPoint],
         latestPoint: TimeMachineTrendPoint,
-        marketOptions: [TimeMachineDetailComparisonOption],
-        marketSeries: [TimeMachineMarketTrendSeries],
         visibleSeriesIDs: Set<String>,
         selectedRange: Binding<TimeMachineRange>,
         selection: TimeMachineSelection,
@@ -602,8 +638,6 @@ struct TimeMachineHeroTrendCard: View {
     ) {
         self.points = points
         self.latestPoint = latestPoint
-        self.marketOptions = marketOptions
-        self.marketSeries = marketSeries
         self.visibleSeriesIDs = visibleSeriesIDs
         self._selectedRange = selectedRange
         self.selection = selection
@@ -615,10 +649,8 @@ struct TimeMachineHeroTrendCard: View {
         self.hasRecord = hasRecord
         self.onOpenRecord = onOpenRecord
 
-        let displayPoints = evenlySampledItems(
-            points.sorted { $0.date < $1.date },
-            maxCount: 180
-        )
+        let orderedPoints = points.sorted { $0.date < $1.date }
+        let displayPoints = evenlySampledItems(orderedPoints, maxCount: 180)
         self.displayPoints = displayPoints
 
         let visibleAssetSeries = TimeMachineAssetSeries.allCases.filter {
@@ -634,19 +666,14 @@ struct TimeMachineHeroTrendCard: View {
             ? nil
             : ChartLayoutSupport.paddedValueDomain(values: assetValues)
 
-        let marketSeriesBySymbol = Dictionary(uniqueKeysWithValues: marketSeries.map { ($0.symbol, $0) })
-        let visibleMarketReturnsBySymbol = Dictionary(uniqueKeysWithValues: marketOptions.compactMap { option -> (String, [(date: Date, value: Double)])? in
-            guard visibleSeriesIDs.contains(option.symbol),
-                  let series = marketSeriesBySymbol[option.symbol] else { return nil }
-            let sampledPoints = evenlySampledItems(series.points.sorted { $0.date < $1.date }, maxCount: 180)
-            let returns = Self.marketReturnPoints(sampledPoints.map { ($0.date, $0.value) })
-            return returns.isEmpty ? nil : (option.symbol, returns)
-        })
-        let marketReturns = visibleMarketReturnsBySymbol.values.flatMap { $0.map(\.value) }
-        let marketReturnDomain = marketReturns.isEmpty
-            ? nil
-            : ChartLayoutSupport.paddedValueDomain(values: marketReturns)
-        let valueDomain = assetValueDomain ?? marketReturnDomain ?? (-0.1...0.1)
+        let goldObservations = visibleSeriesIDs.contains(TimeMachineGoldTrend.id)
+            ? TimeMachineGoldTrend.observations(in: orderedPoints) : []
+        let goldValues = goldObservations.map(\.grams)
+        let goldQuantityDomain: ClosedRange<Double>? = goldValues.isEmpty ? nil : {
+            let padded = ChartLayoutSupport.paddedValueDomain(values: goldValues)
+            return (goldValues.allSatisfy { $0 >= 0 } ? max(0, padded.lowerBound) : padded.lowerBound)...padded.upperBound
+        }()
+        let valueDomain = assetValueDomain ?? goldQuantityDomain ?? (-0.1...0.1)
 
         let assetSeries = visibleAssetSeries.map { series in
             TimeMachineUnifiedTrendSeries(
@@ -666,63 +693,51 @@ struct TimeMachineHeroTrendCard: View {
                 }
             )
         }
-        let indexedMarketSeries = marketOptions.compactMap { option -> TimeMachineUnifiedTrendSeries? in
-            guard let returnPoints = visibleMarketReturnsBySymbol[option.symbol],
-                  let marketReturnDomain else { return nil }
-            return TimeMachineUnifiedTrendSeries(
-                id: option.symbol,
-                title: option.title,
-                color: option.color,
+        let goldSeries = goldQuantityDomain.map { domain in
+            TimeMachineUnifiedTrendSeries(
+                id: TimeMachineGoldTrend.id,
+                title: AppLocalization.string("黄金"),
+                color: AssetTheme.positive,
                 strokeStyle: StrokeStyle(lineWidth: 2.1, lineCap: .round, dash: [7, 5]),
-                scale: .marketReturn,
-                points: returnPoints.map { point in
+                scale: .goldQuantity,
+                points: goldObservations.map { point in
                     TimeMachineUnifiedTrendPoint(
                         date: point.date,
-                        plotValue: Self.mapMarketReturn(
-                            point.value,
-                            marketDomain: marketReturnDomain,
-                            plotDomain: valueDomain
-                        ),
-                        displayValue: point.value
+                        plotValue: Self.mapGoldQuantity(point.grams, goldDomain: domain, plotDomain: valueDomain),
+                        displayValue: point.grams,
+                        segment: point.segment
                     )
                 }
             )
         }
-        self.unifiedSeries = assetSeries + indexedMarketSeries
+        self.unifiedSeries = assetSeries + (goldSeries.map { [$0] } ?? [])
         self.assetValueDomain = assetValueDomain
-        self.marketReturnDomain = marketReturnDomain
+        self.goldQuantityDomain = goldQuantityDomain
         self.valueDomain = valueDomain
         self.dateDomain = Self.makeDateDomain(from: displayPoints)
         self.axisDates = chartAxisDates(displayPoints.map(\.date))
         self._chartSelectionX = State(initialValue: nil)
     }
 
-    private static func marketReturnPoints(_ rawPoints: [(date: Date, value: Double)]) -> [(date: Date, value: Double)] {
-        guard let base = rawPoints.first(where: { $0.value.isFinite && $0.value > 0.0001 }) else { return [] }
-        return rawPoints.compactMap { point in
-            guard point.date >= base.date,
-                  point.value.isFinite else { return nil }
-            return (point.date, point.value / base.value - 1)
-        }
-    }
-
-    private static func mapMarketReturn(
+    private static func mapGoldQuantity(
         _ value: Double,
-        marketDomain: ClosedRange<Double>,
+        goldDomain: ClosedRange<Double>,
         plotDomain: ClosedRange<Double>
     ) -> Double {
-        let marketSpan = marketDomain.upperBound - marketDomain.lowerBound
-        guard marketSpan > 0.000_000_1 else { return plotDomain.lowerBound }
-        let progress = (value - marketDomain.lowerBound) / marketSpan
+        let goldSpan = goldDomain.upperBound - goldDomain.lowerBound
+        guard goldSpan > 0 else { return plotDomain.lowerBound }
+        let progress = (value - goldDomain.lowerBound) / goldSpan
         return plotDomain.lowerBound + progress * (plotDomain.upperBound - plotDomain.lowerBound)
     }
 
-    private func marketReturn(forPlotValue value: Double) -> Double? {
-        guard let marketReturnDomain else { return nil }
+    private func goldQuantityLabel(forPlotValue value: Double) -> String? {
+        guard let goldQuantityDomain else { return nil }
+        guard amountsVisible else { return "••" }
         let plotSpan = valueDomain.upperBound - valueDomain.lowerBound
-        guard plotSpan > 0.000_000_1 else { return marketReturnDomain.lowerBound }
+        guard plotSpan > 0 else { return nil }
         let progress = (value - valueDomain.lowerBound) / plotSpan
-        return marketReturnDomain.lowerBound + progress * (marketReturnDomain.upperBound - marketReturnDomain.lowerBound)
+        let grams = goldQuantityDomain.lowerBound + progress * (goldQuantityDomain.upperBound - goldQuantityDomain.lowerBound)
+        return grams.formatted(.number.locale(AppLocalization.currentLocale).precision(.fractionLength(0...2))) + " g"
     }
 
     private var activeSeries: [TimeMachineUnifiedTrendSeries] {
@@ -734,7 +749,7 @@ struct TimeMachineHeroTrendCard: View {
     }
 
     private var hasAssetValueAxis: Bool { assetValueDomain != nil }
-    private var hasMarketReturnAxis: Bool { marketReturnDomain != nil }
+    private var hasGoldQuantityAxis: Bool { goldQuantityDomain != nil }
 
     private var selectedPoint: TimeMachineTrendPoint {
         guard let selectedDate else { return latestPoint }
@@ -772,33 +787,22 @@ struct TimeMachineHeroTrendCard: View {
             )
         }
         if showsLiabilityBand {
-            let marketIDs = Set(marketOptions.map(\.symbol))
-            let insertionIndex = items.firstIndex { marketIDs.contains($0.id) } ?? items.endIndex
-            items.insert(
-                TimeMachineUnifiedTrendSelectionItem(
-                    id: TimeMachineAssetSeries.liabilities.id,
-                    title: AppLocalization.string("负债"),
-                    value: amountsVisible ? selectedPoint.liabilities.currencyString(code: "CNY") : "••••••",
-                    color: AssetTheme.negative
-                ),
-                at: insertionIndex
-            )
+            items.append(TimeMachineUnifiedTrendSelectionItem(
+                id: TimeMachineAssetSeries.liabilities.id,
+                title: AppLocalization.string("负债"),
+                value: amountsVisible ? selectedPoint.liabilities.currencyString(code: "CNY") : "••••••",
+                color: AssetTheme.negative
+            ))
         }
-        if visibleSeriesIDs.contains("gold_cny"),
-           let goldEquivalent = selectedPoint.goldEquivalent,
-           goldEquivalent.isFinite {
-            let marketIDs = Set(marketOptions.map(\.symbol))
-            let insertionIndex = items.firstIndex { marketIDs.contains($0.id) } ?? items.endIndex
-            items.insert(
-                TimeMachineUnifiedTrendSelectionItem(
-                    id: "gold_equivalent",
-                    title: AppLocalization.string("相当于黄金"),
-                    value: "\(goldEquivalent.plainNumberString()) g",
-                    color: AssetTheme.gold
-                ),
-                at: insertionIndex
-            )
+        if visibleSeriesIDs.contains(TimeMachineGoldTrend.id) {
+            let value = TimeMachineGoldTrend.grams(in: selectedPoint).map {
+                selectedValueText(for: .init(date: selectedPoint.date, plotValue: 0, displayValue: $0), scale: .goldQuantity)
+            } ?? "—"
+            items.append(TimeMachineUnifiedTrendSelectionItem(
+                id: TimeMachineGoldTrend.id, title: AppLocalization.string("黄金"), value: value, color: AssetTheme.positive
+            ))
         }
+
         return items
     }
 
@@ -822,8 +826,8 @@ struct TimeMachineHeroTrendCard: View {
                 TimeMachineStaticHeroPlot(identity: plotID, displayPoints: displayPoints,
                     activeSeries: activeSeries, showsLiabilityBand: showsLiabilityBand,
                     dateDomain: dateDomain, valueDomain: valueDomain, axisDates: axisDates,
-                    hasAssetValueAxis: hasAssetValueAxis, hasMarketReturnAxis: hasMarketReturnAxis,
-                    assetAxisLabel: assetAxisLabel, marketReturn: marketReturn(forPlotValue:),
+                    hasAssetValueAxis: hasAssetValueAxis, hasGoldQuantityAxis: hasGoldQuantityAxis,
+                    assetAxisLabel: assetAxisLabel, goldQuantityLabel: goldQuantityLabel(forPlotValue:),
                     accessibilityValue: accessibilityValue(for:scale:)).equatable()
                 .chartOverlay { proxy in
                     ZStack {
@@ -841,7 +845,8 @@ struct TimeMachineHeroTrendCard: View {
                     VStack(spacing: 7) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
                             .font(.system(size: 19, weight: .medium))
-                        Text(AppLocalization.string("选择图例显示走势"))
+                        Text(AppLocalization.string(visibleSeriesIDs.contains(TimeMachineGoldTrend.id)
+                            ? "暂无黄金折算数据" : "选择图例显示走势"))
                             .font(AppTypography.captionStrong)
                     }
                     .foregroundStyle(AssetTheme.textSecondary.opacity(0.7))
@@ -1027,8 +1032,10 @@ struct TimeMachineHeroTrendCard: View {
         switch scale {
         case .assetValue:
             return amountsVisible ? point.displayValue.currencyString(code: "CNY") : "••••••"
-        case .marketReturn:
-            return point.displayValue.percentString(maxFractionDigits: 1)
+        case .goldQuantity:
+            return amountsVisible
+                ? point.displayValue.formatted(.number.locale(AppLocalization.currentLocale).precision(.fractionLength(0...4))) + " g"
+                : "••••••"
         }
     }
 
@@ -1038,15 +1045,11 @@ struct TimeMachineHeroTrendCard: View {
             guard value.isFinite else { return nil }
             return .init(date: selectedPoint.date, plotValue: value, displayValue: value)
         }
-        guard let source = marketSeries.first(where: { $0.symbol == series.id })?.points,
-              let base = source.first(where: { $0.value.isFinite && $0.value > 0.0001 }),
-              let point = nearestChartPoint(source, to: selectedPoint.date, date: \.date),
-              let marketReturnDomain else { return nil }
-        let value = point.value / base.value - 1
-        guard value.isFinite else { return nil }
-        return .init(date: point.date,
-            plotValue: Self.mapMarketReturn(value, marketDomain: marketReturnDomain, plotDomain: valueDomain),
-            displayValue: value)
+        guard series.id == TimeMachineGoldTrend.id,
+              let grams = TimeMachineGoldTrend.grams(in: selectedPoint), let goldQuantityDomain else { return nil }
+        return .init(date: selectedPoint.date,
+            plotValue: Self.mapGoldQuantity(grams, goldDomain: goldQuantityDomain, plotDomain: valueDomain),
+            displayValue: grams)
     }
 
     private func probeOverlay(_ proxy: ChartProxy) -> some View {
@@ -1122,7 +1125,7 @@ struct TimeMachineHeroTrendCard: View {
     }
 
     private var seriesToggleRow: some View {
-        HStack(alignment: .center, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 13) {
                     ForEach(TimeMachineAssetSeries.allCases) { series in
@@ -1132,62 +1135,21 @@ struct TimeMachineHeroTrendCard: View {
                             isDashed: false,
                             isBand: series == .liabilities,
                             isVisible: visibleSeriesIDs.contains(series.id)
-                        ) {
-                            onToggleSeries(series.id)
-                        }
+                        ) { onToggleSeries(series.id) }
                     }
+                    TimeMachineUnifiedLegendButton(
+                        title: AppLocalization.string("黄金"), color: AssetTheme.positive,
+                        isDashed: true, isBand: false,
+                        isVisible: visibleSeriesIDs.contains(TimeMachineGoldTrend.id)
+                    ) { onToggleSeries(TimeMachineGoldTrend.id) }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 2) {
-                ForEach(marketOptions.prefix(2)) { option in
-                    Button {
-                        onToggleSeries(option.symbol)
-                    } label: {
-                        Text(option.title)
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(
-                                visibleSeriesIDs.contains(option.symbol)
-                                    ? option.color
-                                    : AssetTheme.textSecondary.opacity(0.72)
-                            )
-                            .padding(.horizontal, 6)
-                            .frame(height: 28)
-                            .background(
-                                visibleSeriesIDs.contains(option.symbol)
-                                    ? AssetTheme.overlayStrong
-                                    : Color.clear,
-                                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                if marketOptions.count > 2 {
-                    Menu {
-                        ForEach(marketOptions.dropFirst(2)) { option in
-                            Button {
-                                onToggleSeries(option.symbol)
-                            } label: {
-                                Label(
-                                    option.title,
-                                    systemImage: visibleSeriesIDs.contains(option.symbol) ? "checkmark" : "circle"
-                                )
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(AssetTheme.textSecondary)
-                            .frame(width: 26, height: 28)
-                    }
-                }
+            if visibleSeriesIDs.contains(TimeMachineGoldTrend.id), goldQuantityDomain == nil,
+               !activeSeries.isEmpty || showsLiabilityBand {
+                Text(AppLocalization.string("暂无黄金折算数据"))
+                    .font(.system(size: 10.5)).foregroundStyle(AssetTheme.textSecondary)
             }
-            .padding(2)
-            .background(AssetTheme.overlayFaint.opacity(0.8), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
 }
@@ -1201,9 +1163,9 @@ private struct TimeMachineStaticHeroPlot: View, Equatable {
     let valueDomain: ClosedRange<Double>
     let axisDates: [Date]
     let hasAssetValueAxis: Bool
-    let hasMarketReturnAxis: Bool
+    let hasGoldQuantityAxis: Bool
     let assetAxisLabel: (Double) -> String
-    let marketReturn: (Double) -> Double?
+    let goldQuantityLabel: (Double) -> String?
     let accessibilityValue: (TimeMachineUnifiedTrendPoint, TimeMachineUnifiedTrendScale) -> String
     private var dateAxisKey: String { AppLocalization.string("日期") }
     private var seriesAxisKey: String { AppLocalization.string("序列") }
@@ -1229,7 +1191,8 @@ private struct TimeMachineStaticHeroPlot: View, Equatable {
                                 )
                             )
                             .accessibilityLabel(AppLocalization.string("负债"))
-                            .accessibilityValue(point.liabilities.currencyString(code: "CNY"))
+                            .accessibilityValue(accessibilityValue(
+                                .init(date: point.date, plotValue: point.liabilities, displayValue: point.liabilities), .assetValue))
                         }
                     }
 
@@ -1237,7 +1200,8 @@ private struct TimeMachineStaticHeroPlot: View, Equatable {
                         ForEach(series.points) { point in
                             LineMark(
                                 x: .value(dateAxisKey, point.date),
-                                y: .value(series.title, point.plotValue)
+                                y: .value(series.title, point.plotValue),
+                                series: .value(seriesAxisKey + ".segment", series.id + "." + String(point.segment))
                             )
                             .foregroundStyle(by: .value(seriesAxisKey, series.id))
                             .lineStyle(series.strokeStyle)
@@ -1286,7 +1250,7 @@ private struct TimeMachineStaticHeroPlot: View, Equatable {
                         }
                     }
 
-                    if hasMarketReturnAxis {
+                    if hasGoldQuantityAxis {
                         AxisMarks(position: .trailing, values: .automatic(desiredCount: 4)) { value in
                             if !hasAssetValueAxis {
                                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.75, dash: [2, 5]))
@@ -1294,8 +1258,8 @@ private struct TimeMachineStaticHeroPlot: View, Equatable {
                             }
                             AxisValueLabel {
                                 if let plotValue = value.as(Double.self),
-                                   let marketReturn = marketReturn(plotValue) {
-                                    Text(marketReturn.percentString(maxFractionDigits: 0))
+                                   let label = goldQuantityLabel(plotValue) {
+                                    Text(label)
                                         .font(.system(size: 9.5, weight: .medium, design: .default))
                                         .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
                                 }

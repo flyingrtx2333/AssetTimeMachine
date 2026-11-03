@@ -35208,6 +35208,29 @@
         }
       }
     },
+    "暂无黄金折算数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No gold-equivalent data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无黄金折算数据"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暫無黃金折算資料"
+          }
+        }
+      }
+    },
     "等值黄金": {
       "extractionState": "manual",
       "localizations": {

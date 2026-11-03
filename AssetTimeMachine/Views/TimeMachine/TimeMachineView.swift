@@ -65,7 +65,7 @@ struct TimeMachineView: View {
         } else if arguments.contains("-timeMachineHideAllSeries") {
             initialVisibleSeries = []
         } else if arguments.contains("-timeMachineShowGoldSeries") {
-            initialVisibleSeries.insert("gold_cny")
+            initialVisibleSeries.insert(TimeMachineGoldTrend.id)
         }
         #endif
         _visibleTrendSeriesIDs = State(initialValue: initialVisibleSeries)
@@ -93,18 +93,6 @@ struct TimeMachineView: View {
 
     private var liveMarketAnchors: TimeMachineLiveMarketAnchors {
         TimeMachineLiveMarketAnchors.from(marketStore: marketStore)
-    }
-
-    private var unifiedMarketSeries: [TimeMachineMarketTrendSeries] {
-        Self.detailComparisonOptions.compactMap { option in
-            guard let points = cachedHistoryPointsBySymbol[option.symbol], points.count >= 2 else { return nil }
-            return TimeMachineMarketTrendSeries(
-                symbol: option.symbol,
-                title: option.title,
-                color: option.color,
-                points: points
-            )
-        }
     }
 
     private static var publicIndexConfigs: [(symbol: String, title: String, color: Color)] { [
@@ -759,8 +747,6 @@ struct TimeMachineView: View {
                 TimeMachineHeroTrendCard(
                     points: filteredTrendPoints,
                     latestPoint: latestPoint,
-                    marketOptions: Self.detailComparisonOptions,
-                    marketSeries: unifiedMarketSeries,
                     visibleSeriesIDs: visibleTrendSeriesIDs,
                     selectedRange: $selectedRange,
                     selection: timeline,
