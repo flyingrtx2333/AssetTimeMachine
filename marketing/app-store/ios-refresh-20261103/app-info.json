@@ -1,0 +1,18 @@
+[
+  {
+    "locale": "zh-Hans",
+    "previousName": "资产时光机",
+    "previousSubtitle": "记录你的人生财富曲线",
+    "name": "资产时光机",
+    "subtitle": "资产记录、净资产与每日变化",
+    "privacyURLPreserved": true
+  },
+  {
+    "locale": "en-US",
+    "previousName": "资产时光机",
+    "previousSubtitle": "记录你的人生财富曲线",
+    "name": "Asset Time Machine",
+    "subtitle": "Net worth, recorded over time",
+    "privacyURLPreserved": true
+  }
+]

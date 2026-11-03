@@ -1,0 +1,21 @@
+{
+  "version": "1.14",
+  "build": "233",
+  "buildID": "4c169b4d-c268-46be-9d58-729b2401dfd3",
+  "localizations": {
+    "zh-Hans": {
+      "subtitle": "资产记录、净资产与每日变化",
+      "description": "让资产变化，有迹可循。\n\n资产时光机是一款本地优先的个人资产记录工具。把现金、存款、基金、股票、黄金、房产及负债整理在一起，回看自己的财富变化。\n\n资产总览\n查看总资产、负债与净资产，通过资产构成了解资金分布。\n\n按日记录\n保存带日期的资产快照，编辑金额、数量与单价，也可以补记过去的记录。\n\n时光机\n在同一张图上查看总资产、净资产与负债差额。选择日期，回看当日金额和资产明细。每日变化日历以红绿方格呈现净资产增减，涨跌配色可设置。\n\n等值黄金\n把资产按对应日期的金价换算为黄金克数，开启或关闭黄金曲线，用另一种尺度回看资产。\n\n量化工具\n使用配置回测、定投回测和策略库比较历史表现与风险。回测结果不代表未来表现。\n\n记录由自己掌握\n本地记录可导出备份；按需登录账户使用云同步。支持金额隐藏、浅色与深色外观，以及简体中文、繁体中文和英语。",
+      "keywords": "资产记录,净资产,资产管理,财富曲线,资产快照,负债管理,资产日历,黄金,定投,配置回测,个人理财",
+      "promotionalText": "记录资产与负债，回看每一天的变化。新版时光机带来每日变化日历与等值黄金曲线，资产记录、历史走势和当日明细相互联动。",
+      "whatsNew": "新增每日净资产变化日历，格内直接显示增减金额，支持设置涨跌配色。\n\n曲线选点与日历日期联动，选中周居中显示。\n\n黄金图例支持开启或关闭等值黄金克数曲线。\n\n精简记录与时光机控件，改善金额编辑和图表交互流畅度，并优化云同步一致性。"
+    },
+    "en-US": {
+      "subtitle": "Net worth, recorded over time",
+      "description": "Give your wealth a history.\n\nAsset Time Machine is a local-first personal asset tracker. Organize cash, savings, funds, stocks, gold, property and liabilities, then see how your finances change over time.\n\nYOUR ASSETS AT A GLANCE\nReview total assets, liabilities and net worth, with an allocation chart showing where your money is held.\n\nDATED RECORDS\nSave asset snapshots by date. Edit balances, quantities and unit prices, or add records for an earlier day.\n\nTIME MACHINE\nTrack total assets, net worth and the liability gap on one chart. Select a date to review its balances and asset details. The daily-change calendar shows net-worth changes as colored cells with amounts inside. Choose the gain and loss colors you prefer.\n\nMEASURED IN GOLD\nConvert assets to equivalent grams of gold using the corresponding date's gold price. Toggle the gold curve to review your wealth on another scale.\n\nQUANT TOOLS\nExplore allocation backtests, recurring-investment backtests and a strategy library to compare historical performance and risk. Backtest results do not predict future performance.\n\nYOUR RECORDS, YOUR CONTROL\nExport local records for backup, or sign in to use cloud sync. Supports hidden amounts, light and dark appearance, and English, Simplified Chinese and Traditional Chinese.",
+      "keywords": "net worth,asset tracker,portfolio,wealth,liabilities,history,calendar,gold,backtest,savings,finance",
+      "promotionalText": "Record your assets and liabilities. Review every day's changes with a daily-change calendar, equivalent gold in grams, and linked charts and dated records.",
+      "whatsNew": "Added a daily net-worth change calendar with amounts inside each cell and configurable gain and loss colors.\n\nChart selections and calendar dates now stay in sync, with the selected week centered.\n\nToggle the gold legend to show equivalent grams of gold.\n\nRefined record editing and Time Machine controls, improved chart responsiveness, and strengthened cloud-sync consistency."
+    }
+  }
+}

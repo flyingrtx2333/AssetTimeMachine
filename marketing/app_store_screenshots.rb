@@ -11,7 +11,7 @@ require "uri"
 
 API = "https://api.appstoreconnect.apple.com"
 BUNDLE_ID = "com.flyingrtx.AssetTimeMachine"
-DISPLAY_TYPE = "APP_IPHONE_65" # 1242x2688 portrait
+DISPLAY_TYPE = ENV.fetch("SCREENSHOT_DISPLAY_TYPE", "APP_IPHONE_65")
 EDITABLE_STATES = %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED REJECTED METADATA_REJECTED].freeze
 
 def b64url(value)
@@ -66,7 +66,11 @@ def discover(create_version: false)
   app = data(:get, "/v1/apps?filter[bundleId]=#{BUNDLE_ID}&limit=1").first
   abort "App not found for #{BUNDLE_ID}" unless app
   versions = data(:get, "/v1/apps/#{app.fetch("id")}/appStoreVersions?filter[platform]=IOS&limit=50")
-  version = versions.find { |item| EDITABLE_STATES.include?(item.dig("attributes", "appStoreState")) }
+  desired = ENV["APP_STORE_VERSION"]
+  version = versions.find do |item|
+    EDITABLE_STATES.include?(item.dig("attributes", "appStoreState")) &&
+      (desired.nil? || item.dig("attributes", "versionString") == desired)
+  end
   if version.nil? && create_version
     desired = ENV.fetch("APP_STORE_VERSION", "1.12")
     version = data(:post, "/v1/appStoreVersions", body: {
@@ -148,6 +152,7 @@ def locale_directory(locale)
   mapping[locale]
 end
 
+if $PROGRAM_NAME == __FILE__
 command = ARGV.shift || "inspect"
 root = ARGV.shift || File.join(Dir.pwd, "marketing/app-store/2026-08-13-refresh/posters")
 app, version, localizations = discover(create_version: command == "upload")
@@ -211,4 +216,5 @@ targets.each do |localization, files|
   expected_count = kept.length + files.length
   abort "Final screenshot count mismatch for #{locale}: #{final.length}, expected #{expected_count}" unless final.length == expected_count
   puts "VERIFIED #{locale} #{final.length} screenshots COMPLETE"
+end
 end

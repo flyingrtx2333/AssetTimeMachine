@@ -1,0 +1,92 @@
+[
+  {
+    "file": "posters/en-US/01-wealth.png",
+    "bytes": 3298873,
+    "md5": "906a0ccd8c8cd860e202122751f14868",
+    "sha256": "b3acdb43af341558efe1a2c374500c5e9f7ab99789f10b9ee5656c1795e73c9a",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/en-US/02-records.png",
+    "bytes": 2314119,
+    "md5": "50dfe88a44c078935e43e0233e137702",
+    "sha256": "caa9c38b738201ef93e203b1fccf5894f8335f5b322ab12f2d792d9ab8761547",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/en-US/03-time-machine.png",
+    "bytes": 1796771,
+    "md5": "2b70eeebb527785b14a284c949825158",
+    "sha256": "39733490bd0bc144d33143ad40b942f3927220406c8c1afa12686bcfbe337ab0",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/en-US/04-daily-changes.png",
+    "bytes": 436695,
+    "md5": "b4e1519a31e3b077c0ac68ffcca2083d",
+    "sha256": "005e6805e0912f52e03901f0e31d0396b0234328b98355462a182ceae4b698fc",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/en-US/05-gold-equivalent.png",
+    "bytes": 1819964,
+    "md5": "f4a53638a0ed392f7874b5fe653a17f1",
+    "sha256": "eeb5d491de0c207001c9543d79cd7c3683e2fb9cd0c9b388ec4133714a89a76d",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/zh-Hans/01-wealth.png",
+    "bytes": 3274926,
+    "md5": "008f44016e016fabc2be8d31c0fbd7e3",
+    "sha256": "ce189321542124f1fb67d39fc76ae2b8c9294682f16af6cea5553213bd0da8bc",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/zh-Hans/02-records.png",
+    "bytes": 2263501,
+    "md5": "6f794a2955be1d731c8ad6f550097f30",
+    "sha256": "56e43a16f8eb6cc218cd12cc78399c349d93131dc587dd127d933bc83893f26e",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/zh-Hans/03-time-machine.png",
+    "bytes": 1760091,
+    "md5": "bd197264c4bc193a994e8decd1413286",
+    "sha256": "b567284402475047ceaf6851c1940e50b8448599c680547793f08de562344f46",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/zh-Hans/04-daily-changes.png",
+    "bytes": 416923,
+    "md5": "c4b699eb0e5ef3cdbeacadf5e8f0ae64",
+    "sha256": "99e40259d7421f7e6c69c6900873ae945e107e680309a370cf4a36beefe77008",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  },
+  {
+    "file": "posters/zh-Hans/05-gold-equivalent.png",
+    "bytes": 1806478,
+    "md5": "82a1e5e543eab941beca2fe6554bb5ac",
+    "sha256": "1399358c08534e63598f36d380b8fa4c21734b10a9b6d06311f1bd60d64f7130",
+    "width": 1320,
+    "height": 2868,
+    "alpha": false
+  }
+]

@@ -1,0 +1,586 @@
+{
+  "appId": "6753942256",
+  "versionId": "4ca2c31b-c641-4233-b5ec-b824d96de594",
+  "localizations": [
+    {
+      "localization": {
+        "type": "appStoreVersionLocalizations",
+        "id": "7065740e-333b-43b5-82e2-b416dfcdf40b",
+        "attributes": {
+          "description": "把注意力留给训练。\n\n健身计数器专注卧推、深蹲与硬拉：在 Apple Watch 上开始训练，在 iPhone 上回看每一组。\n\n整场训练\n一次开始，结束后查看动作、次数、重量与分组报告。支持切换动作、调整重量、暂停和继续，分别呈现已记录的动作时长与组间间隔。\n\n逐次回看\n在动作时间轴上查看每次完成点、分组边界与可用的传感器曲线。支持逐次选择、切换数据通道，以及在手机拆分或合并训练组。\n\n记录与趋势\n按日期整理训练，筛选动作与时间范围。通过累计概览、训练日历、连续训练天数、动作分布和重量统计，回看自己的训练节奏。\n\n补记与备份\n多组补记、编辑次数与重量、添加备注、保存草稿。支持训练记录文件备份、合并恢复与 CSV 导出，再次同步时保留手机上的修改。\n\n手表随时开始\n通过 Apple Watch 上的 Siri 开始训练，按需设置未训练提醒。授权后保存 Apple 健康训练，并在有数据时显示心率与活动能量。计数需要核对时，可修正实际次数并主动发送采样反馈。\n\n自动计数需要 Apple Watch；iPhone 可独立补记和管理记录。支持简体中文、英语，以及浅色与深色外观。",
+          "locale": "zh-Hans",
+          "keywords": "卧推,深蹲,硬拉,Apple Watch,力量训练,健身记录,训练日志,次数,分组,重量,训练日历,运动计数",
+          "marketingUrl": null,
+          "promotionalText": "从手表开始，到手机回看。整场训练、分组时间轴与训练日历，让每一次坚持都有记录。",
+          "supportUrl": "https://www.flyingrtx.com",
+          "whatsNew": "更新商店展示，精简海报文案。"
+        },
+        "relationships": {
+          "appScreenshotSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/relationships/appScreenshotSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/appScreenshotSets"
+            }
+          },
+          "appPreviewSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/relationships/appPreviewSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/appPreviewSets"
+            }
+          },
+          "searchKeywords": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/relationships/searchKeywords",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/searchKeywords"
+            }
+          },
+          "placements": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/relationships/placements",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b/placements"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/7065740e-333b-43b5-82e2-b416dfcdf40b"
+        }
+      },
+      "sets": [
+        {
+          "set": {
+            "type": "appScreenshotSets",
+            "id": "bd6d558a-ca37-4dbc-bf45-792afafcfedc",
+            "attributes": {
+              "screenshotDisplayType": "APP_IPHONE_67"
+            },
+            "relationships": {
+              "appScreenshots": {
+                "links": {
+                  "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/bd6d558a-ca37-4dbc-bf45-792afafcfedc/relationships/appScreenshots",
+                  "related": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/bd6d558a-ca37-4dbc-bf45-792afafcfedc/appScreenshots"
+                }
+              }
+            },
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/bd6d558a-ca37-4dbc-bf45-792afafcfedc"
+            }
+          },
+          "screenshots": [
+            {
+              "type": "appScreenshots",
+              "id": "4cc00019-290f-8af0-8038-af20c99845fb",
+              "attributes": {
+                "fileSize": 2877073,
+                "fileName": "v117-53-minimal-phone-zh-Hans-01-watch-count.png",
+                "sourceFileChecksum": "f0712e09713b3157b0c3189e973cdd04",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/ShvctAvMkzbj6FhOVXQ-RA/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource221/v4/e5/e4/ec/e5e4ec40-a233-15ff-673c-77821ba581d8/v117-53-minimal-phone-zh-Hans-01-watch-count.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/4cc00019-290f-8af0-8038-af20c99845fb"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "d5000019-290f-8af0-8008-8b7fbd7539e4",
+              "attributes": {
+                "fileSize": 1151106,
+                "fileName": "v117-53-minimal-phone-zh-Hans-02-session-report.png",
+                "sourceFileChecksum": "99fdf5f1fab1cc633f4c95fdd83bfb1b",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/tE4Vcu7ERYqo8eyq9Ie1ng/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource211/v4/da/cd/96/dacd96fc-6a98-0d67-706d-16ab94c7870e/v117-53-minimal-phone-zh-Hans-02-session-report.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/d5000019-290f-8af0-8008-8b7fbd7539e4"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "44800019-290f-8af0-8003-56b57a86538e",
+              "attributes": {
+                "fileSize": 326106,
+                "fileName": "v117-53-minimal-phone-zh-Hans-03-set-timeline.png",
+                "sourceFileChecksum": "3ee5b7464f1e9fc8f8c908ed944db022",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/xV3ou9Z5FFuZD2gh-EEDpQ/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource211/v4/5b/11/06/5b110650-28d6-8a20-ec30-5885f1503b35/v117-53-minimal-phone-zh-Hans-03-set-timeline.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/44800019-290f-8af0-8003-56b57a86538e"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "d2c00019-290f-8af0-8035-e22f5bff2697",
+              "attributes": {
+                "fileSize": 314834,
+                "fileName": "v117-53-minimal-phone-zh-Hans-04-training-trends.png",
+                "sourceFileChecksum": "e864746445ece1e1454ee5afc33411ad",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/A__w18-SB3k5-Y2ZgTfjXw/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource221/v4/28/33/61/28336193-89be-4d43-e4a7-9e39a4d8786d/v117-53-minimal-phone-zh-Hans-04-training-trends.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/d2c00019-290f-8af0-8035-e22f5bff2697"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "31800019-290f-8af0-8017-431018b5a955",
+              "attributes": {
+                "fileSize": 494819,
+                "fileName": "v117-53-minimal-phone-zh-Hans-05-workout-records.png",
+                "sourceFileChecksum": "1cf340e1e33a514554ce8559ad88fe5b",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/FWSEIemKbQG51vc5HTCT9Q/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource211/v4/bd/9a/57/bd9a57f9-5f81-5961-349e-7ef7cd3f39c2/v117-53-minimal-phone-zh-Hans-05-workout-records.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/31800019-290f-8af0-8017-431018b5a955"
+              }
+            }
+          ]
+        },
+        {
+          "set": {
+            "type": "appScreenshotSets",
+            "id": "cfba1575-9d08-47cc-8a9f-7230ca736618",
+            "attributes": {
+              "screenshotDisplayType": "APP_WATCH_SERIES_10"
+            },
+            "relationships": {
+              "appScreenshots": {
+                "links": {
+                  "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/cfba1575-9d08-47cc-8a9f-7230ca736618/relationships/appScreenshots",
+                  "related": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/cfba1575-9d08-47cc-8a9f-7230ca736618/appScreenshots"
+                }
+              }
+            },
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/cfba1575-9d08-47cc-8a9f-7230ca736618"
+            }
+          },
+          "screenshots": [
+            {
+              "type": "appScreenshots",
+              "id": "58782ba3-3b4f-4f19-b367-70d25ccae41f",
+              "attributes": {
+                "fileSize": 47513,
+                "fileName": "v116-52-watch-zh-Hans-01-home.png",
+                "sourceFileChecksum": "5d5c0462c3c92194a8d19f56e0c35634",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/mQ_1HrlhyMD_LiF7F3_tGA/{w}x{h}bb.{f}",
+                  "width": 416,
+                  "height": 496
+                },
+                "assetToken": "PurpleSource221/v4/27/4c/aa/274caa19-67f3-10de-e8bb-9ad7e3245736/v116-52-watch-zh-Hans-01-home.png",
+                "assetType": "SortedN217ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/58782ba3-3b4f-4f19-b367-70d25ccae41f"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "f8e0d036-3522-43fd-baba-242cce6ca055",
+              "attributes": {
+                "fileSize": 35684,
+                "fileName": "v116-52-watch-zh-Hans-02-report.png",
+                "sourceFileChecksum": "f745a08ce6a15a2ac0b7ca1e23b8ba97",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/ZFZxk36VnvgnqDhRCAHz4Q/{w}x{h}bb.{f}",
+                  "width": 416,
+                  "height": 496
+                },
+                "assetToken": "PurpleSource221/v4/03/85/41/0385418f-c537-bd43-8fe5-c6e8d0eee28c/v116-52-watch-zh-Hans-02-report.png",
+                "assetType": "SortedN217ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/f8e0d036-3522-43fd-baba-242cce6ca055"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "8664aa4c-99c2-4bd4-aed1-5a6f458833ec",
+              "attributes": {
+                "fileSize": 23147,
+                "fileName": "v116-52-watch-zh-Hans-03-weight.png",
+                "sourceFileChecksum": "1691a4734a255d5b907021e871c1a6fc",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/MivMkvjxRcjim5tm7FToVA/{w}x{h}bb.{f}",
+                  "width": 416,
+                  "height": 496
+                },
+                "assetToken": "PurpleSource221/v4/bd/57/05/bd57050c-da36-4b1a-6bab-22923b6fa29a/v116-52-watch-zh-Hans-03-weight.png",
+                "assetType": "SortedN217ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/8664aa4c-99c2-4bd4-aed1-5a6f458833ec"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "localization": {
+        "type": "appStoreVersionLocalizations",
+        "id": "eed75cbd-be6c-4585-980f-6bddacab5d22",
+        "attributes": {
+          "description": "Keep your focus on training.\n\nPowerReps is built for bench press, squat and deadlift. Start on Apple Watch, then review every set on iPhone.\n\nYOUR WHOLE WORKOUT\nStart once and finish with a report of exercises, reps, weights and sets. Change exercises or weight, pause and resume, and review recorded movement time separately from the time between sets.\n\nREVIEW EVERY REP\nExplore rep completion markers, set boundaries and available motion sensor curves on one timeline. Select individual reps, switch sensor channels, and split or merge sets on iPhone.\n\nRECORDS AND TRENDS\nBrowse workouts by date and filter by exercise or date range. Review totals, your training calendar, streaks, exercise distribution and weight history.\n\nLOG, EDIT AND BACK UP\nAdd multi-set workouts, adjust reps and weights, add notes and keep drafts. Export a workout backup, merge records from a backup or share CSV files. Phone edits are preserved when syncing again.\n\nSTART FROM YOUR WATCH\nStart a workout with Siri on Apple Watch and set reminders for days you have not trained. With permission, save workouts to Apple Health and view heart rate and active energy when available. When a count needs correction, confirm the actual reps and choose to send samples as feedback.\n\nAutomatic rep counting requires Apple Watch. iPhone works independently for manual logging and record management. Supports English and Simplified Chinese, with light and dark appearance.",
+          "locale": "en-US",
+          "keywords": "gym,workout,log,reps,sets,bench press,squat,deadlift,weight,Apple Watch,strength,training,calendar",
+          "marketingUrl": null,
+          "promotionalText": "Start on your watch. Review on your phone. Whole-workout reports, set timelines and a training calendar keep every session in view.",
+          "supportUrl": "https://www.flyingrtx.com",
+          "whatsNew": "Updated App Store visuals."
+        },
+        "relationships": {
+          "appScreenshotSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/relationships/appScreenshotSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/appScreenshotSets"
+            }
+          },
+          "appPreviewSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/relationships/appPreviewSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/appPreviewSets"
+            }
+          },
+          "searchKeywords": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/relationships/searchKeywords",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/searchKeywords"
+            }
+          },
+          "placements": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/relationships/placements",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22/placements"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/eed75cbd-be6c-4585-980f-6bddacab5d22"
+        }
+      },
+      "sets": [
+        {
+          "set": {
+            "type": "appScreenshotSets",
+            "id": "d90bae00-a549-4754-99b3-6c08ccbf0a70",
+            "attributes": {
+              "screenshotDisplayType": "APP_IPHONE_67"
+            },
+            "relationships": {
+              "appScreenshots": {
+                "links": {
+                  "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/d90bae00-a549-4754-99b3-6c08ccbf0a70/relationships/appScreenshots",
+                  "related": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/d90bae00-a549-4754-99b3-6c08ccbf0a70/appScreenshots"
+                }
+              }
+            },
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/d90bae00-a549-4754-99b3-6c08ccbf0a70"
+            }
+          },
+          "screenshots": [
+            {
+              "type": "appScreenshots",
+              "id": "84000019-290f-8af0-801f-0f62e8675591",
+              "attributes": {
+                "fileSize": 2875974,
+                "fileName": "v117-53-minimal-phone-en-US-01-watch-count.png",
+                "sourceFileChecksum": "27e6880c2ba1e1734d5dd6283b062c57",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/7T4MTl43o-IAXGKEgbINcQ/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource211/v4/bf/75/1b/bf751b55-c334-8f9c-f92a-154cd023cc55/v117-53-minimal-phone-en-US-01-watch-count.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/84000019-290f-8af0-801f-0f62e8675591"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "03400019-290f-8af0-8014-deb11b91eb10",
+              "attributes": {
+                "fileSize": 1166054,
+                "fileName": "v117-53-minimal-phone-en-US-02-session-report.png",
+                "sourceFileChecksum": "8ef7dab5d2266012e7adfb8e75d212e7",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/OygETwPqynYFGhXH96_hvw/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource221/v4/8d/28/e1/8d28e1ab-7165-f538-2a20-c7ca868e12ba/v117-53-minimal-phone-en-US-02-session-report.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/03400019-290f-8af0-8014-deb11b91eb10"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "15c00019-290f-8af0-8037-4dc9a5f4b073",
+              "attributes": {
+                "fileSize": 329718,
+                "fileName": "v117-53-minimal-phone-en-US-03-set-timeline.png",
+                "sourceFileChecksum": "80cd28dcb27742653400973e18d82253",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/59UTmA3GxcbE4qmZ6A7hmg/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource211/v4/ae/45/6a/ae456ac6-2784-c2e6-a824-f4a40b36ac48/v117-53-minimal-phone-en-US-03-set-timeline.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/15c00019-290f-8af0-8037-4dc9a5f4b073"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "f6400019-290f-8af0-800d-22ed72b3b211",
+              "attributes": {
+                "fileSize": 347526,
+                "fileName": "v117-53-minimal-phone-en-US-04-training-trends.png",
+                "sourceFileChecksum": "d746ec46c08561ba1a16d81d2b524cf4",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/zdjlbM251fCWjwB7EvoZqw/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource221/v4/4b/19/14/4b191497-3803-9d62-0349-55d89ed342fc/v117-53-minimal-phone-en-US-04-training-trends.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/f6400019-290f-8af0-800d-22ed72b3b211"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "4b400019-290f-8af0-802c-bd3467027cd6",
+              "attributes": {
+                "fileSize": 497469,
+                "fileName": "v117-53-minimal-phone-en-US-05-workout-records.png",
+                "sourceFileChecksum": "5673127ddd483cae262ed3438a4cbec5",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/IHikitMw9D_jtAOwGOXWwA/{w}x{h}bb.{f}",
+                  "width": 1320,
+                  "height": 2868
+                },
+                "assetToken": "PurpleSource211/v4/b3/41/05/b34105d7-7ce8-8d29-2bae-ea2d4b5b60d4/v117-53-minimal-phone-en-US-05-workout-records.png",
+                "assetType": "SortedD74ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/4b400019-290f-8af0-802c-bd3467027cd6"
+              }
+            }
+          ]
+        },
+        {
+          "set": {
+            "type": "appScreenshotSets",
+            "id": "f40a8329-2876-4b56-acf6-03f505450a95",
+            "attributes": {
+              "screenshotDisplayType": "APP_WATCH_SERIES_10"
+            },
+            "relationships": {
+              "appScreenshots": {
+                "links": {
+                  "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/f40a8329-2876-4b56-acf6-03f505450a95/relationships/appScreenshots",
+                  "related": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/f40a8329-2876-4b56-acf6-03f505450a95/appScreenshots"
+                }
+              }
+            },
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/f40a8329-2876-4b56-acf6-03f505450a95"
+            }
+          },
+          "screenshots": [
+            {
+              "type": "appScreenshots",
+              "id": "25d37265-872c-46b7-a55e-ad7ed4599109",
+              "attributes": {
+                "fileSize": 51986,
+                "fileName": "v116-52-watch-en-US-01-home.png",
+                "sourceFileChecksum": "b714ced55026c4e4c770864dfc9e826d",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/OzCQwdTuhZeOhHH__7SGiw/{w}x{h}bb.{f}",
+                  "width": 416,
+                  "height": 496
+                },
+                "assetToken": "PurpleSource221/v4/c7/09/06/c709061e-4032-e4a9-6d84-bb395ea082f0/v116-52-watch-en-US-01-home.png",
+                "assetType": "SortedN217ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/25d37265-872c-46b7-a55e-ad7ed4599109"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "24caefe6-d84a-463c-80bf-b8b9f4343c0a",
+              "attributes": {
+                "fileSize": 42768,
+                "fileName": "v116-52-watch-en-US-02-report.png",
+                "sourceFileChecksum": "d45b28973598333ab9752737295c80f2",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/1wjimrupEzqdIK557QVxnQ/{w}x{h}bb.{f}",
+                  "width": 416,
+                  "height": 496
+                },
+                "assetToken": "PurpleSource211/v4/72/f0/14/72f0145a-c6a9-7a5f-9919-015bf61cd191/v116-52-watch-en-US-02-report.png",
+                "assetType": "SortedN217ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/24caefe6-d84a-463c-80bf-b8b9f4343c0a"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "6ffd9c7e-59d5-4021-9480-705d82459ceb",
+              "attributes": {
+                "fileSize": 24106,
+                "fileName": "v116-52-watch-en-US-03-weight.png",
+                "sourceFileChecksum": "66841c520ba684aaf703b3f6937a0ef4",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/RrCviHSffUeL_jsCH2ITIQ/{w}x{h}bb.{f}",
+                  "width": 416,
+                  "height": 496
+                },
+                "assetToken": "PurpleSource221/v4/aa/64/11/aa64119d-46c8-0345-2819-5f81551e2136/v116-52-watch-en-US-03-weight.png",
+                "assetType": "SortedN217ScreenShot",
+                "uploadOperations": [],
+                "assetDeliveryState": {
+                  "errors": [],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/6ffd9c7e-59d5-4021-9480-705d82459ceb"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

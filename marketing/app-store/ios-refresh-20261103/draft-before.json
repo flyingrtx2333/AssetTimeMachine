@@ -1,0 +1,640 @@
+{
+  "version": {
+    "type": "appStoreVersions",
+    "id": "9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf",
+    "attributes": {
+      "platform": "IOS",
+      "versionString": "1.14",
+      "appStoreState": "PREPARE_FOR_SUBMISSION",
+      "appVersionState": "PREPARE_FOR_SUBMISSION",
+      "copyright": "2026 Xiang Junsheng",
+      "reviewType": "APP_STORE",
+      "releaseType": "AFTER_APPROVAL",
+      "earliestReleaseDate": null,
+      "usesIdfa": null,
+      "downloadable": true,
+      "createdDate": "2026-11-02T22:55:49.857722844-08:00"
+    },
+    "relationships": {
+      "appStoreVersionLocalizations": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appStoreVersionLocalizations",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appStoreVersionLocalizations"
+        }
+      },
+      "build": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/build",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/build"
+        }
+      },
+      "appStoreVersionPhasedRelease": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appStoreVersionPhasedRelease",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appStoreVersionPhasedRelease"
+        }
+      },
+      "gameCenterAppVersion": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/gameCenterAppVersion",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/gameCenterAppVersion"
+        }
+      },
+      "routingAppCoverage": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/routingAppCoverage",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/routingAppCoverage"
+        }
+      },
+      "appStoreReviewDetail": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appStoreReviewDetail",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appStoreReviewDetail"
+        }
+      },
+      "appStoreVersionSubmission": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appStoreVersionSubmission",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appStoreVersionSubmission"
+        }
+      },
+      "appClipDefaultExperience": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appClipDefaultExperience",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appClipDefaultExperience"
+        }
+      },
+      "appStoreVersionExperiments": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appStoreVersionExperiments",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appStoreVersionExperiments"
+        }
+      },
+      "appStoreVersionExperimentsV2": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/appStoreVersionExperimentsV2",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/appStoreVersionExperimentsV2"
+        }
+      },
+      "customerReviews": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/customerReviews",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/customerReviews"
+        }
+      },
+      "alternativeDistributionPackage": {
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/relationships/alternativeDistributionPackage",
+          "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf/alternativeDistributionPackage"
+        }
+      }
+    },
+    "links": {
+      "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersions/9ddf8836-eba8-4ad9-a23b-cc5b1524ebaf"
+    }
+  },
+  "localizations": [
+    {
+      "localization": {
+        "type": "appStoreVersionLocalizations",
+        "id": "5c385558-b26a-4c42-ad0f-9485b7dc2cf4",
+        "attributes": {
+          "description": "资产时光机是一款本地优先的个人资产记录工具，帮助用户持续记录现金、基金、股票、黄金、房产及负债等信息，并自动汇总总资产、总负债与净资产。应用支持按日期保存资产快照，回看历史趋势、资产结构变化，以及购买力与指数对比，并提供配置回测与定投回测功能，帮助用户更直观地理解长期财富变化。",
+          "locale": "zh-Hans",
+          "keywords": "资产记录,净资产,财富曲线,财富趋势,资产配置,配置回测,定投回测,负债管理,资产分析,个人理财",
+          "marketingUrl": null,
+          "promotionalText": null,
+          "supportUrl": "https://www.flyingrtx.com",
+          "whatsNew": null
+        },
+        "relationships": {
+          "appScreenshotSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/relationships/appScreenshotSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/appScreenshotSets"
+            }
+          },
+          "appPreviewSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/relationships/appPreviewSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/appPreviewSets"
+            }
+          },
+          "searchKeywords": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/relationships/searchKeywords",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/searchKeywords"
+            }
+          },
+          "placements": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/relationships/placements",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4/placements"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/5c385558-b26a-4c42-ad0f-9485b7dc2cf4"
+        }
+      },
+      "sets": [
+        {
+          "set": {
+            "type": "appScreenshotSets",
+            "id": "e804a2f7-a470-42c7-b96c-3497ef23d65b",
+            "attributes": {
+              "screenshotDisplayType": "APP_IPHONE_65"
+            },
+            "relationships": {
+              "appScreenshots": {
+                "links": {
+                  "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/e804a2f7-a470-42c7-b96c-3497ef23d65b/relationships/appScreenshots",
+                  "related": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/e804a2f7-a470-42c7-b96c-3497ef23d65b/appScreenshots"
+                }
+              }
+            },
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/e804a2f7-a470-42c7-b96c-3497ef23d65b"
+            }
+          },
+          "screenshots": [
+            {
+              "type": "appScreenshots",
+              "id": "59ec3630-5cfb-4120-921e-7c409b3311b4",
+              "attributes": {
+                "fileSize": 3307943,
+                "fileName": "01-cover-split.png",
+                "sourceFileChecksum": "b806e681cff3a7702ddf6063e7485f8b",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/zjSlFyQEik9IKwTQSQrNfw/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/d5/b2/47/d5b247ad-487d-1b30-ba79-218fc9401b25/01-cover-split.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/59ec3630-5cfb-4120-921e-7c409b3311b4"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "74f8c76c-3aa4-4ec0-893f-ff3323e53371",
+              "attributes": {
+                "fileSize": 3220976,
+                "fileName": "02-cover-split.png",
+                "sourceFileChecksum": "96b60551084ae0a1760b96919c190135",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/agk_oAOhPo-zQysERFNztA/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource211/v4/29/70/28/29702873-a158-429e-cfb9-68396efed6f1/02-cover-split.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/74f8c76c-3aa4-4ec0-893f-ff3323e53371"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "cab35d9c-98a4-4aa2-9cdb-2dc71d3ff8bc",
+              "attributes": {
+                "fileSize": 1495560,
+                "fileName": "03-wealth-freedom.png",
+                "sourceFileChecksum": "767d733916142f1c2bbb0168eb32b8da",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/prYoqIkrStOrsdaPTaoFIQ/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource211/v4/81/f1/ac/81f1ace8-3ed4-d392-bdc5-a05a95782c40/03-wealth-freedom.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/cab35d9c-98a4-4aa2-9cdb-2dc71d3ff8bc"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "58956639-9bc5-4d36-bc73-674517bf935c",
+              "attributes": {
+                "fileSize": 1523680,
+                "fileName": "04-asset-records.png",
+                "sourceFileChecksum": "ff41caf2ebc3629d13bac839f4c13ec2",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/j7j2u2sWQ882HSv_98L6wg/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/41/45/92/41459212-48c9-3ded-9f2c-af8bfd0158e6/04-asset-records.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/58956639-9bc5-4d36-bc73-674517bf935c"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "e75d9597-71f2-403c-b4ea-380b6b419414",
+              "attributes": {
+                "fileSize": 1482048,
+                "fileName": "05-history-trend.png",
+                "sourceFileChecksum": "7bd486f41501d5abcce5d8bd7960049b",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/wQhd1JTUmpWok0C0xpmhzw/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/51/48/0e/51480e7c-9699-8d91-6260-7945241ddbeb/05-history-trend.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/e75d9597-71f2-403c-b4ea-380b6b419414"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "e83eb078-9ec6-45d2-b9f2-0260286af521",
+              "attributes": {
+                "fileSize": 1408155,
+                "fileName": "06-quant-rebalance.png",
+                "sourceFileChecksum": "fb074a83176db425befbdc51eabca7cc",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/_tZIuJ9vIqUtXGan0LnbYA/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/10/71/9a/10719a89-2537-cd50-053b-fb43d6f9645c/06-quant-rebalance.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/e83eb078-9ec6-45d2-b9f2-0260286af521"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "5738a76b-6860-4cf6-bd52-f6098d900489",
+              "attributes": {
+                "fileSize": 1842421,
+                "fileName": "07-strategy-sharing.png",
+                "sourceFileChecksum": "9be10cfc9c988ee72cf7bd647c859b7b",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/pH6MhNv8_tuh3KtrT24kWg/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource211/v4/47/14/6e/47146e8d-5a10-ba34-7ac3-239eccae063e/07-strategy-sharing.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/5738a76b-6860-4cf6-bd52-f6098d900489"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "localization": {
+        "type": "appStoreVersionLocalizations",
+        "id": "a2a5de35-1cc0-450f-acbc-2e362193f080",
+        "attributes": {
+          "description": "Asset Time Machine is a local-first personal asset tracking app for recording cash, funds, stocks, gold, real estate, liabilities, and more. It automatically summarizes total assets, total liabilities, and net worth. Save dated asset snapshots, review historical trends and allocation changes, compare purchasing power and market indexes, and run allocation and recurring-investment backtests to better understand your long-term wealth trajectory.",
+          "locale": "en-US",
+          "keywords": "asset tracker,net worth,wealth chart,portfolio,backtest,liabilities,personal finance",
+          "marketingUrl": null,
+          "promotionalText": null,
+          "supportUrl": "https://www.flyingrtx.com",
+          "whatsNew": null
+        },
+        "relationships": {
+          "appScreenshotSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/relationships/appScreenshotSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/appScreenshotSets"
+            }
+          },
+          "appPreviewSets": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/relationships/appPreviewSets",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/appPreviewSets"
+            }
+          },
+          "searchKeywords": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/relationships/searchKeywords",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/searchKeywords"
+            }
+          },
+          "placements": {
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/relationships/placements",
+              "related": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080/placements"
+            }
+          }
+        },
+        "links": {
+          "self": "https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/a2a5de35-1cc0-450f-acbc-2e362193f080"
+        }
+      },
+      "sets": [
+        {
+          "set": {
+            "type": "appScreenshotSets",
+            "id": "9ab5ba27-c1f4-468b-850f-5f262193e4fb",
+            "attributes": {
+              "screenshotDisplayType": "APP_IPHONE_65"
+            },
+            "relationships": {
+              "appScreenshots": {
+                "links": {
+                  "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/9ab5ba27-c1f4-468b-850f-5f262193e4fb/relationships/appScreenshots",
+                  "related": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/9ab5ba27-c1f4-468b-850f-5f262193e4fb/appScreenshots"
+                }
+              }
+            },
+            "links": {
+              "self": "https://api.appstoreconnect.apple.com/v1/appScreenshotSets/9ab5ba27-c1f4-468b-850f-5f262193e4fb"
+            }
+          },
+          "screenshots": [
+            {
+              "type": "appScreenshots",
+              "id": "5860029b-7464-4ec1-9b50-b9cc0e11dec1",
+              "attributes": {
+                "fileSize": 3437133,
+                "fileName": "01-cover-split.png",
+                "sourceFileChecksum": "c64d49b89982e4e5ac3514bea60c56d7",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/zMHA6UPwhzMCUwFD_Txjhg/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/cb/10/ee/cb10ee9e-244d-796b-3dd8-90310f017c29/01-cover-split.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/5860029b-7464-4ec1-9b50-b9cc0e11dec1"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "9074b7d8-1d5f-4808-80bd-9f071f47fce1",
+              "attributes": {
+                "fileSize": 3391872,
+                "fileName": "02-cover-split.png",
+                "sourceFileChecksum": "77b4ec127a872443324262fee171b4ff",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/NTNuWrLrT6kh3BajIfDhnQ/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/3c/77/9f/3c779f5a-eb15-a696-198f-727d36598bbf/02-cover-split.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/9074b7d8-1d5f-4808-80bd-9f071f47fce1"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "e1fae563-e7e0-4ff5-826e-ac6a5f3e40df",
+              "attributes": {
+                "fileSize": 1866486,
+                "fileName": "03-wealth-freedom.png",
+                "sourceFileChecksum": "960e44cc1ca9f53dcd571695997c8a30",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/LxjQGD1qjQPbN1TVJHL1Zw/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource211/v4/8c/3e/3d/8c3e3d8c-f614-7b4a-f83e-ca2efd7041c1/03-wealth-freedom.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/e1fae563-e7e0-4ff5-826e-ac6a5f3e40df"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "fd506a7e-5e36-4bbc-8558-8b2ef0ee19c0",
+              "attributes": {
+                "fileSize": 1882404,
+                "fileName": "04-asset-records.png",
+                "sourceFileChecksum": "3235f1fb21e8553a968445685bb1e0c2",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/lpsAkh2gpzjzem8KHxFzaw/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/af/34/87/af34879d-91e8-a370-ff84-d008b61f342d/04-asset-records.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/fd506a7e-5e36-4bbc-8558-8b2ef0ee19c0"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "d4957a6e-0a23-4b73-ad1b-f5fe83e24ef0",
+              "attributes": {
+                "fileSize": 1772622,
+                "fileName": "05-history-trend.png",
+                "sourceFileChecksum": "944cab468bd9d917b04a27867ae620b7",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/75o0zOJ9jLnqMwzZ-P8WJw/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource211/v4/00/74/e3/0074e352-5944-07b0-1b1c-a53d0e3a78bd/05-history-trend.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/d4957a6e-0a23-4b73-ad1b-f5fe83e24ef0"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "ed09408e-11fd-4552-b759-a9fcd447f062",
+              "attributes": {
+                "fileSize": 1760595,
+                "fileName": "06-quant-rebalance.png",
+                "sourceFileChecksum": "8e0befad7fbd12e0a2402b82b2893a62",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/RLmBD-7a9Mz04Jw1Dv_mJQ/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource211/v4/26/8e/07/268e070b-4f1c-a130-f452-2a479564f77c/06-quant-rebalance.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/ed09408e-11fd-4552-b759-a9fcd447f062"
+              }
+            },
+            {
+              "type": "appScreenshots",
+              "id": "f7a932e2-bb88-4ad7-b4bf-ff94e004c758",
+              "attributes": {
+                "fileSize": 1297432,
+                "fileName": "07-strategy-sharing.png",
+                "sourceFileChecksum": "ec91e463cafb7482d09f3c0cceab3781",
+                "imageAsset": {
+                  "templateUrl": "https://is1-ssl.mzstatic.com/image/thumb/OM0Ysea9GFR8MM0jAlPvow/{w}x{h}bb.{f}",
+                  "width": 1242,
+                  "height": 2688
+                },
+                "assetToken": "PurpleSource221/v4/9f/38/23/9f3823e8-a6fa-606d-a4af-aa7cd2281539/07-strategy-sharing.png",
+                "assetType": "SortedD33ScreenShot",
+                "uploadOperations": [
+
+                ],
+                "assetDeliveryState": {
+                  "errors": [
+
+                  ],
+                  "warnings": null,
+                  "state": "COMPLETE"
+                }
+              },
+              "links": {
+                "self": "https://api.appstoreconnect.apple.com/v1/appScreenshots/f7a932e2-bb88-4ad7-b4bf-ff94e004c758"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
