@@ -1,0 +1,30 @@
+{
+  "releaseSource": "7793e7f7cc7d0dc5211b063e2a4421b6c1ce1091",
+  "deliveryUUID": "9c14f328-cd1a-4a08-9bb6-72072f6067a8",
+  "archiveCodesignStrictDeepVerified": true,
+  "bundles": [
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "235",
+      "machOUUIDs": [
+        "B0A0C78B-92CD-3C45-A3CB-5D6F3E324133"
+      ],
+      "distributionEntitlementVerified": true
+    },
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "235",
+      "machOUUIDs": [
+        "F80599F7-674A-3210-8AA1-FF147C284E73"
+      ],
+      "distributionEntitlementVerified": true
+    }
+  ],
+  "ipaSHA256": "fdaa8dd9d0ef283188e863b1bf505aeb6f9f313b8072876ac6e9eb15382e402b",
+  "ipaBytes": 17852035,
+  "serverAssetMatched": true,
+  "physicalDeviceUIAcceptance": "not performed; user cancelled recording and resubmission",
+  "appStoreResubmitted": false
+}

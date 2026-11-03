@@ -1,0 +1,18 @@
+{
+  "version": "1.14",
+  "build": "235",
+  "buildID": "9c14f328-cd1a-4a08-9bb6-72072f6067a8",
+  "source": "7793e7f7cc7d0dc5211b063e2a4421b6c1ce1091",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Adds existing-account password sign-in on iPhone. You can delete the Asset Time Machine account and cloud backups in Settings while keeping local records, website accounts and other-product data.",
+    "zh-Hans": "支持 iPhone 使用已有账号密码登录。可在设置中删除资产时光机账户及云端备份，保留本机记录、网站账户和其他产品的数据。",
+    "zh-Hant": "支援 iPhone 使用已有帳號密碼登入。可在設定中刪除資產時光機帳戶及雲端備份，保留本機記錄、網站帳戶和其他產品的資料。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "cancelled by user; no UI recording",
+  "appStoreReviewSubmitted": false
+}

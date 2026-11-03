@@ -1,0 +1,9 @@
+{
+  "appStoreVersion": "1.14",
+  "appStoreState": "REJECTED",
+  "selectedBuild": "233",
+  "submissionState": "UNRESOLVED_ISSUES",
+  "newBuildSubmittedToAppReview": false,
+  "reason": "User cancelled recording and App Store resubmission",
+  "testFlightBuild": "235"
+}

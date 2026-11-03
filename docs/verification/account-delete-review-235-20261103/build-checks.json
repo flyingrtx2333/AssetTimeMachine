@@ -1,0 +1,12 @@
+{
+  "source": "7793e7f7cc7d0dc5211b063e2a4421b6c1ce1091",
+  "sourceFiles": {
+    "AssetTimeMachine/CloudSync.swift": "e03f96f47b39a6107b05285df5a83a3dde8356f185504bb99968fb9897c59379",
+    "AssetTimeMachine/Views/Mac/MacAccountEntryView.swift": "46b17bacae568a20d6e1a25be28d1b6bde0dd8be0422b89e5407d4cf0ed73bff",
+    "AssetTimeMachine.xcodeproj/project.pbxproj": "d9eb14d741487dd1c9f07f9454ad6dc5caedbf25d715328ece29b8059b3407ca"
+  },
+  "iOSDeviceCompiler": "BUILD SUCCEEDED",
+  "localizationAudit": "passed 1564 keys; 774 direct calls; 1089 Chinese source literals",
+  "physicalDeviceAcceptance": "pending",
+  "qaIsolation": "separate bundle, keychain, app group; runtime deletion code unchanged"
+}

@@ -1,0 +1,20 @@
+{
+  "performedAt": "2026-11-03T14:43:14.370918+00:00",
+  "verification": "real public API only; physical UI and recording cancelled by user",
+  "independentTestUserID": 22,
+  "deletionStatus": 200,
+  "oldAccountAndHistoryAccess": 401,
+  "oldRefreshDenied": 401,
+  "backupsBeforeDeletion": 1,
+  "dailyAccountUsed": false,
+  "appStoreResubmitted": false,
+  "recordingCaptured": false,
+  "serverCleanup": {
+    "productBackupsRemaining": 0,
+    "productIdentitiesRemaining": 0,
+    "cosObjectsRemaining": 0,
+    "sharedWebsiteIdentityPreservedUntilFixtureCleanup": true,
+    "ownedDisposableFixtureRemoved": true,
+    "dailyAccountsTouched": false
+  }
+}
