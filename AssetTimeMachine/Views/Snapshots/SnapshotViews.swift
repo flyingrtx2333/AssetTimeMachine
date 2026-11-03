@@ -157,6 +157,7 @@ struct SnapshotListView: View {
     @State private var unitPriceInputs: [UUID: String] = [:]
     @State private var didPrepare = false
     @State private var isPreparingInitialSnapshot = false
+    @State private var showsSnapshotArchive = false
     @State private var showsAddAssetItemSheet = false
     @State private var editingAssetItem: AssetItem?
     @State private var pendingDeletionAssetItem: AssetItem?
@@ -277,6 +278,10 @@ struct SnapshotListView: View {
                                     showsZeroBalanceAssets.toggle()
                                 }
                             },
+                            onOpenHistory: {
+                                dismissKeyboard()
+                                showsSnapshotArchive = true
+                            },
                             onAddAsset: {
                                 dismissKeyboard()
                                 presentAddAssetItemEditor()
@@ -333,6 +338,9 @@ struct SnapshotListView: View {
                 .scrollDismissesKeyboard(.never)
             }
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(isPresented: $showsSnapshotArchive) {
+                SnapshotArchiveView()
+            }
         }
         .toolbar(editingRecordItem == nil ? .visible : .hidden, for: .tabBar)
         .sheet(isPresented: $showsAddAssetItemSheet, onDismiss: handleAddAssetEditorDismissed) {
@@ -943,6 +951,7 @@ struct RecordPageHero: View {
     var showsActionChips: Bool = true
     var showsZeroBalanceAssets: Bool = true
     var onToggleZeroBalanceAssets: () -> Void = {}
+    var onOpenHistory: () -> Void = {}
     let onAddAsset: () -> Void
 
     private var netAssetColor: Color {
@@ -988,9 +997,7 @@ struct RecordPageHero: View {
                             showsZeroBalanceAssets ? "隐藏零资产" : "显示零资产"
                         ))
 
-                        NavigationLink {
-                            SnapshotArchiveView()
-                        } label: {
+                        Button(action: onOpenHistory) {
                             Image(systemName: "clock.arrow.circlepath")
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(AssetTheme.goldSoft)
@@ -1010,6 +1017,7 @@ struct RecordPageHero: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel(AppLocalization.string("新增资产"))
                     }
+                    .fixedSize(horizontal: true, vertical: false)
                 }
             }
 
