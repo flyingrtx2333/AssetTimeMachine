@@ -2190,9 +2190,7 @@ struct AssetTimeMachineCloudPage: View {
     @State private var showRestoreConfirm = false
     @State private var showOwnershipConfirm = false
     @State private var showsEntryReview = false
-    #if targetEnvironment(macCatalyst)
-    @State private var showsMacPasswordLogin = false
-    #endif
+    @State private var showsPasswordLogin = false
 
     var body: some View {
         ZStack {
@@ -2232,24 +2230,27 @@ struct AssetTimeMachineCloudPage: View {
         .onChange(of: store.entryConflictReview?.id) { _, id in
             if id == nil { showsEntryReview = false }
         }
-        #if targetEnvironment(macCatalyst)
-        .sheet(isPresented: $showsMacPasswordLogin) {
+        .sheet(isPresented: $showsPasswordLogin) {
             VStack(alignment: .leading, spacing: 16) {
                 Text(AppLocalization.string("使用已有账号密码登录"))
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(AssetTheme.textPrimary)
-                MacPasswordLoginForm(cloudStore: store) {
-                    showsMacPasswordLogin = false
+                CloudPasswordLoginForm(cloudStore: store) {
+                    showsPasswordLogin = false
                 } onBack: {
-                    showsMacPasswordLogin = false
+                    showsPasswordLogin = false
                 }
             }
             .padding(20)
+            #if targetEnvironment(macCatalyst)
             .frame(width: 390, height: 205)
             .background(AssetTheme.background)
             .presentationSizing(.fitted)
+            #else
+            .presentationDetents([.height(280)])
+            .presentationDragIndicator(.visible)
+            #endif
         }
-        #endif
         .fileExporter(isPresented: $showsExport, document: exportDocument, contentType: .json,
                       defaultFilename: "AssetTimeMachine-Local") { result in
             if case let .failure(error) = result, (error as NSError).code != NSUserCancelledError {
@@ -2398,15 +2399,14 @@ struct AssetTimeMachineCloudPage: View {
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .disabled(store.isWorking || AppPreviewSession.isActive)
 
-            #if targetEnvironment(macCatalyst)
             Button(AppLocalization.string("使用已有账号密码登录")) {
-                showsMacPasswordLogin = true
+                store.errorMessage = nil
+                showsPasswordLogin = true
             }
             .font(.system(size: 12, weight: .medium))
             .foregroundStyle(AssetTheme.goldSoft)
             .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
-            #endif
         }
     }
 

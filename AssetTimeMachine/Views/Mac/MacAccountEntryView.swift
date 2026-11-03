@@ -1,8 +1,9 @@
-#if targetEnvironment(macCatalyst)
+#if os(iOS)
 import AuthenticationServices
 import SwiftData
 import SwiftUI
 
+#if targetEnvironment(macCatalyst)
 struct MacAccountEntryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
@@ -44,7 +45,7 @@ struct MacAccountEntryView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 42)
                 } else if showsPasswordLogin {
-                    MacPasswordLoginForm(cloudStore: cloudStore, onSignedIn: onSignedIn) {
+                    CloudPasswordLoginForm(cloudStore: cloudStore, onSignedIn: onSignedIn) {
                         cloudStore.errorMessage = nil
                         showsPasswordLogin = false
                     }
@@ -112,8 +113,9 @@ struct MacAccountEntryView: View {
         }
     }
 }
+#endif
 
-struct MacPasswordLoginForm: View {
+struct CloudPasswordLoginForm: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     let onSignedIn: () -> Void
@@ -126,6 +128,8 @@ struct MacPasswordLoginForm: View {
         VStack(alignment: .leading, spacing: 10) {
             TextField(AppLocalization.string("用户名"), text: $username)
                 .textContentType(.username)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
                 .textFieldStyle(.roundedBorder)
 
             SecureField(AppLocalization.string("密码"), text: $password)
@@ -161,7 +165,11 @@ struct MacPasswordLoginForm: View {
             }
             .font(.system(size: 12))
         }
+        #if targetEnvironment(macCatalyst)
         .controlSize(.small)
+        #else
+        .controlSize(.regular)
+        #endif
     }
 
     private func signIn() {
