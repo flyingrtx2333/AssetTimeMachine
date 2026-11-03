@@ -48,6 +48,8 @@ struct TimeMachineChangeCalendar: View {
         let focusedDate = selectedDate.map { Calendar.current.startOfDay(for: $0) }
         return GeometryReader { geometry in
             let cellWidth = AssetChangeCellPresentation.cellWidth(for: geometry.size.width - 28)
+            let leadingWeek = AssetChangeCellPresentation.leadingWeek(for: focusedWeek(data),
+                totalWeeks: data.weeks, availableWidth: geometry.size.width - 28)
             HStack(alignment: .top, spacing: 6) {
                 VStack(spacing: gap) {
                     Color.clear.frame(height: 18)
@@ -80,10 +82,10 @@ struct TimeMachineChangeCalendar: View {
                     }
                     .contentMargins(.horizontal, 0, for: .scrollContent)
                     .scrollTargetBehavior(.viewAligned)
-                    .onAppear { reader.scrollTo(focusedWeek(data), anchor: .trailing) }
-                    .onChange(of: data.year) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
-                    .onChange(of: focusedWeek(data)) { _, week in reader.scrollTo(week, anchor: .trailing) }
-                    .onChange(of: cellWidth) { _, _ in reader.scrollTo(focusedWeek(data), anchor: .trailing) }
+                    .onAppear { reader.scrollTo(leadingWeek, anchor: .leading) }
+                    .onChange(of: data.year) { _, _ in reader.scrollTo(leadingWeek, anchor: .leading) }
+                    .onChange(of: leadingWeek) { _, week in reader.scrollTo(week, anchor: .leading) }
+                    .onChange(of: cellWidth) { _, _ in reader.scrollTo(leadingWeek, anchor: .leading) }
                 }
             }
         }.frame(height: AssetChangeCellPresentation.gridHeight)

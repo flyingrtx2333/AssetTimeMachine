@@ -141,6 +141,12 @@ enum AssetChangeCellPresentation {
         return max(1, (availableWidth - (columns - 1) * gap) / columns)
     }
 
+    static func leadingWeek(for selectedWeek: Int, totalWeeks: Int, availableWidth: CGFloat) -> Int {
+        let columns = max(1, Int((max(0, availableWidth) + gap) / (width + gap)))
+        // Choose the nearest whole column to center; clamp only at the year's edges.
+        return min(max(0, selectedWeek - columns / 2), max(0, totalWeeks - columns))
+    }
+
     static func text(_ change: Double, locale: Locale) -> String {
         guard change.isFinite else { return "—" }
         let magnitude = abs(change) < 1e14 ? (abs(change) * 100).rounded() / 100 : abs(change)

@@ -91,6 +91,13 @@ def test_native_change_calendar():
         precondition(abs(columns*width+(columns-1)*AssetChangeCellPresentation.gap-available)<0.01,
             "The viewport must show whole columns, preserving every amount's sign")
     }
+    precondition(AssetChangeCellPresentation.leadingWeek(for:26,totalWeeks:53,availableWidth:315)==24,
+        "Five-column phone viewport centers the selected week")
+    precondition(AssetChangeCellPresentation.leadingWeek(for:26,totalWeeks:53,availableWidth:744)==20,
+        "An even-column Mac viewport uses the nearest complete center column")
+    precondition(AssetChangeCellPresentation.leadingWeek(for:0,totalWeeks:53,availableWidth:315)==0)
+    precondition(AssetChangeCellPresentation.leadingWeek(for:52,totalWeeks:53,availableWidth:315)==48)
+    precondition(AssetChangeCellPresentation.leadingWeek(for:3,totalWeeks:5,availableWidth:744)==0)
     let spread = [row(date(2026,1,1),1000,0),row(date(2026,1,2),1010,0),row(date(2026,1,3),1030,0),
                   row(date(2026,1,4),1060,0),row(date(2026,1,5),1100,0),row(date(2026,1,6),1150,0)]
     let ranked=AssetChangeYear(year:2026,summaries:spread,today:date(2026,1,8),calendar:calendar)
