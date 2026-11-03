@@ -1,0 +1,32 @@
+{
+  "appSource": "9e4148b299fe212d2a1f3eaf0ccc5bcb67b10528",
+  "goldBasis": "mainAssets / recorded CNY per gram anchor",
+  "priceReturnSeriesRemoved": true,
+  "legendOrder": [
+    "total assets",
+    "net assets",
+    "liability gap",
+    "gold equivalent"
+  ],
+  "rightAxisUnit": "g",
+  "goldCurveStyle": "blue dashed",
+  "goldToggleOffRemovesAxisAndCurve": true,
+  "privacyMasksGramsAndAxes": true,
+  "actualFullNativeIOSPage": true,
+  "appearances": [
+    "light",
+    "dark"
+  ],
+  "snapshotData": "synthetic; existing public-market anchor refresh retained",
+  "iPhoneDebugBuildPassed": true,
+  "focusedGoldCheckPassed": true,
+  "maxGoldRenderPoints": 180,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1553,
+    "directCalls": 763,
+    "chineseSourceLiterals": 1078
+  },
+  "nativeMacUIChanged": false,
+  "physicalDeviceAcceptance": "pending"
+}

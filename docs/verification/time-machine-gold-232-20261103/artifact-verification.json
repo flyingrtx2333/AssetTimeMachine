@@ -1,0 +1,42 @@
+{
+  "build": "232",
+  "version": "1.14",
+  "source": "9e4148b299fe212d2a1f3eaf0ccc5bcb67b10528",
+  "simulatorDebugBuildPassed": true,
+  "debugBuildReusedByReleaseHelper": true,
+  "releaseArchivePassed": true,
+  "strictArchiveSignatureVerified": true,
+  "archiveAndIPAUUIDsMatch": true,
+  "bundles": [
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "232"
+    },
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "232"
+    }
+  ],
+  "uploadSucceeded": true,
+  "buildUploadID": "259efe0c-d44c-4739-b9bc-5b2f8d75213b",
+  "ipaBytes": 17747451,
+  "ipaMD5": "bbc0077b8263fdc4fc711c90703e0995",
+  "ipaSHA256": "069abe4618721d1de747f05ce77eee63d54c9946e788ec4163afcf9135131871",
+  "remoteArtifactMatched": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notesReadbackVerified": true,
+  "cliBuildStatusValid": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1553,
+    "directCalls": 763,
+    "chineseSourceLiterals": 1078
+  },
+  "goldConversionAndSamplingCheckPassed": true,
+  "visualAcceptance": "Actual Time Machine page, synthetic balances, light/dark, gram axis, compact legend, enabled/disabled and privacy states",
+  "physicalDeviceAcceptance": "pending"
+}

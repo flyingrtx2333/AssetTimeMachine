@@ -1,0 +1,13 @@
+{
+  "path": "/Users/xiangjunsheng/Library/Application Support/AssetTimeMachineReleases/TestFlight-1.14-232",
+  "ipaSHA256Verified": true,
+  "source": "9e4148b299fe212d2a1f3eaf0ccc5bcb67b10528",
+  "remoteAssetMatched": true,
+  "buildUploadID": "259efe0c-d44c-4739-b9bc-5b2f8d75213b",
+  "copyMethod": "buffered stream, fsync and per-file SHA256 verification",
+  "verifiedFileCount": 68,
+  "verifiedBytes": 85087023,
+  "backupArchiveStrictSignatureVerified": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING"
+}

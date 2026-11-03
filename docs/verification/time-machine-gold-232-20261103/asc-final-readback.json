@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "232",
+  "buildID": "259efe0c-d44c-4739-b9bc-5b2f8d75213b",
+  "source": "9e4148b299fe212d2a1f3eaf0ccc5bcb67b10528",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Time Machine now shows main-asset gold-equivalent grams, with a g axis and a single Gold toggle beside the liability gap. Remove the gold-price and index comparison controls. Retain the compact Records actions.",
+    "zh-Hans": "时光机黄金改为主资产折合克数走势，图例与负债差额同行；移除黄金价格与指数对比区，保留记录页按钮靠右的调整。",
+    "zh-Hant": "時光機黃金改為主資產折合克數走勢，圖例與負債差額同行；移除黃金價格與指數對比區，保留記錄頁按鈕靠右的調整。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
