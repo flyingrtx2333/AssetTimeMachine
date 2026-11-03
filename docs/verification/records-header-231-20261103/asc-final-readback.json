@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "231",
+  "buildID": "68d891ba-0066-4cfb-87da-bfadac55fdf1",
+  "source": "5ad9631ffc0d800547cfddfeba891be6cf4dbb9a",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Align Records action buttons at the top right and remove the extra History arrow.",
+    "zh-Hans": "整理记录页右上角操作按钮，去掉历史记录旁多余的箭头。",
+    "zh-Hant": "整理記錄頁右上角操作按鈕，去掉歷史記錄旁多餘的箭頭。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}

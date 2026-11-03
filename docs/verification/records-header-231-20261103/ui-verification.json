@@ -1,0 +1,26 @@
+{
+  "appSource": "5ad9631ffc0d800547cfddfeba891be6cf4dbb9a",
+  "iPhoneDebugBuildPassed": true,
+  "visualAcceptance": {
+    "actualRecordsPage": true,
+    "appearances": [
+      "light",
+      "dark"
+    ],
+    "extraDisclosureArrowAbsent": true,
+    "rightAlignedActionOrder": [
+      "zero-balance visibility",
+      "history",
+      "add asset"
+    ],
+    "sameSyntheticStore": true,
+    "screenshotPixels": [
+      1320,
+      2868
+    ],
+    "warmupSeconds": 8
+  },
+  "navigationVerification": "Same destination and callback registration reviewed; physical tap/back test pending",
+  "nativeMacUIChanged": false,
+  "physicalDeviceAcceptance": "pending"
+}

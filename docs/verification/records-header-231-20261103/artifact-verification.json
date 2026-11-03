@@ -1,0 +1,42 @@
+{
+  "build": "231",
+  "version": "1.14",
+  "source": "5ad9631ffc0d800547cfddfeba891be6cf4dbb9a",
+  "simulatorDebugBuildPassed": true,
+  "debugBuildReusedByReleaseHelper": true,
+  "releaseArchivePassed": true,
+  "strictArchiveSignatureVerified": true,
+  "archiveAndIPAUUIDsMatch": true,
+  "bundles": [
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.14",
+      "build": "231"
+    },
+    {
+      "bundleID": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.14",
+      "build": "231"
+    }
+  ],
+  "uploadSucceeded": true,
+  "buildUploadID": "68d891ba-0066-4cfb-87da-bfadac55fdf1",
+  "ipaBytes": 17757703,
+  "ipaMD5": "38448cd3ca7752cb1c47f37bd9232aae",
+  "ipaSHA256": "8cb91bb9c063e3374b4af77893f36d7b60cc6295120d0b596e36ab6192fcc742",
+  "remoteArtifactMatched": true,
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notesReadbackVerified": true,
+  "cliBuildStatusValid": true,
+  "localizationAudit": {
+    "passed": true,
+    "keys": 1552,
+    "directCalls": 764,
+    "chineseSourceLiterals": 1078
+  },
+  "visualAcceptance": "Actual Records page, synthetic store, light/dark, no extra arrow and right-aligned actions",
+  "navigationVerification": "Same destination and registration reviewed in source; physical tap/back test pending",
+  "physicalDeviceAcceptance": "pending"
+}
