@@ -1,0 +1,18 @@
+{
+  "version": "1.14",
+  "build": "234",
+  "source": "cbc89927283cce355b4facfe882f0bd18892dba9",
+  "buildUploadID": "4a1f2f94-3c8a-4674-a92f-0a66c6e7d0ab",
+  "serverArtifactMatched": true,
+  "serverDeliveryComplete": true,
+  "strictArchiveSignatureVerified": true,
+  "archiveAndIPAExecutableUUIDsMatch": true,
+  "bundles": [
+    "com.flyingrtx.AssetTimeMachine",
+    "com.flyingrtx.AssetTimeMachine.Widgets"
+  ],
+  "ipaBytes": 17817570,
+  "ipaSHA256": "db6e8d789dacb5796949ab3b458be6fd53296f6b24214e17844a3d67579c4b89",
+  "physicalDeviceAcceptance": "pending",
+  "realAppleAuthorizationRevocation": "pending"
+}

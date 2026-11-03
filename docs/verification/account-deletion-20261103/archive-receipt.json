@@ -1,0 +1,222 @@
+{
+  "archivePath": "/Users/xiangjunsheng/Library/Application Support/AssetTimeMachineReleases/TestFlight-1.14-234",
+  "sourcePath": "/Users/xiangjunsheng/.codex/worktrees/atm-account-delete-app/build/TestFlight-1.14-234",
+  "copiedFilesVerified": 53,
+  "symlinksVerified": 0,
+  "sourceRetained": true,
+  "releaseSource": "cbc89927283cce355b4facfe882f0bd18892dba9",
+  "manifest": {
+    "AssetTimeMachine.xcarchive/Info.plist": {
+      "bytes": 955,
+      "sha256": "9aa0029c0e5775d27b613f6bc5e1527e3baa71a9819339aead19f35322c1fe39"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/510210.csv": {
+      "bytes": 158001,
+      "sha256": "635927a5735dc015412b394e8ba7f99482dcfd54b8890408787151c5751c55ef"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/510300.csv": {
+      "bytes": 149226,
+      "sha256": "fe8f06cbe6ffced2aa755c415223aee913b4972c2b802f456b662c3dd62e12bd"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/511990.csv": {
+      "bytes": 164413,
+      "sha256": "61f85895b2cefd6544c305787844bd7f8286ac5f93e26f3b9a3c102cfc315201"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AppIcon60x60@2x.png": {
+      "bytes": 22899,
+      "sha256": "9d3bc88d3f7732f689044cd45ba7df5b5e850d88e085999651df21ee968856bb"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AppIcon76x76@2x~ipad.png": {
+      "bytes": 35113,
+      "sha256": "1a29302d95cc2dfc3efce84813b3cdb9eef4b13e8524b3a670530dfad9dfafc5"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachine": {
+      "bytes": 10162176,
+      "sha256": "80eee6337a74cadd581ac73276e628536151208806eced3fb5798077f635051f"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/Info.plist": {
+      "bytes": 752,
+      "sha256": "b496a0894a12cd5e2fee154d897230056f22ef3fc39fe65cb1d52c9ddd6a5c7d"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/510210.csv": {
+      "bytes": 158001,
+      "sha256": "635927a5735dc015412b394e8ba7f99482dcfd54b8890408787151c5751c55ef"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/510300.csv": {
+      "bytes": 149226,
+      "sha256": "fe8f06cbe6ffced2aa755c415223aee913b4972c2b802f456b662c3dd62e12bd"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/511990.csv": {
+      "bytes": 164413,
+      "sha256": "61f85895b2cefd6544c305787844bd7f8286ac5f93e26f3b9a3c102cfc315201"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/ONEQ.csv": {
+      "bytes": 168232,
+      "sha256": "9a437d993ece817f2f014fd832ef140d179ad99452a8e34187751906b62dd6c5"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/SPY.csv": {
+      "bytes": 187480,
+      "sha256": "874d96294988f01799ada10d2b99ebd1f3f91e3d56c4c22d922f0ebe20426c82"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/gold-equity-targets.csv": {
+      "bytes": 67291,
+      "sha256": "7af635f5bce8f6b3eb0103d43a70eb3499ef8f097fd6ae6cfb8bbe3d36e2ea5b"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/pair-targets.csv": {
+      "bytes": 92069,
+      "sha256": "4c93495d2d58d88bb58f144f3d444c5c7dae5256fcdfa6367cc353058d3dcbe8"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/AssetTimeMachineBacktest_AssetTimeMachineBacktestCore.bundle/RecentWindow/volatility-targets.csv": {
+      "bytes": 437347,
+      "sha256": "03cb9b2b5f0cb009d1a0c16852c4895e95871d94d6d93c4f488937e10209c6e1"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/Assets.car": {
+      "bytes": 7316648,
+      "sha256": "c7d0e66108c3f90a15dd51be42fdd854085973c428f4f41d9476580eb5b67edc"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/Info.plist": {
+      "bytes": 1629,
+      "sha256": "39a01b961df00aec188cd1f0f0c43ad974bb79893017481ecfed658e8e46c617"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/ONEQ.csv": {
+      "bytes": 168232,
+      "sha256": "9a437d993ece817f2f014fd832ef140d179ad99452a8e34187751906b62dd6c5"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/PkgInfo": {
+      "bytes": 8,
+      "sha256": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/PlugIns/AssetTimeMachineWidgets.appex/AssetTimeMachineWidgets": {
+      "bytes": 245552,
+      "sha256": "705fab97d9ac4b11fa443d9f8da5178a5eb72cc355ed76efc91322c16184e165"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/PlugIns/AssetTimeMachineWidgets.appex/Info.plist": {
+      "bytes": 914,
+      "sha256": "8876c17d3571e30aef9d2f63b3f033439ad6af22e2cfca685c7a1f6dd4af374a"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/PlugIns/AssetTimeMachineWidgets.appex/_CodeSignature/CodeResources": {
+      "bytes": 2040,
+      "sha256": "2019bb6ec244110da5b3646323fc7ef75e510acfd629f8055bd928503f298334"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/PlugIns/AssetTimeMachineWidgets.appex/embedded.mobileprovision": {
+      "bytes": 18853,
+      "sha256": "681915ed2daf4206953c10a51fb17f67fa440212763164dd9982b0acaba95a57"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/SPY.csv": {
+      "bytes": 187480,
+      "sha256": "874d96294988f01799ada10d2b99ebd1f3f91e3d56c4c22d922f0ebe20426c82"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/_CodeSignature/CodeResources": {
+      "bytes": 11039,
+      "sha256": "e84f96a67de01f73920b21bfc689d573030edb3595f4d75fa24445cb70e414e3"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/embedded.mobileprovision": {
+      "bytes": 18961,
+      "sha256": "03be6666e0743879fbee3f3451feb276d4fd66a6f5291acadb56315ab94c67f2"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/en.lproj/InfoPlist.strings": {
+      "bytes": 125,
+      "sha256": "6b064d2223abe4b868553d645a88eb4487a58dde7245a543c5141d82366c40de"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/en.lproj/Localizable.strings": {
+      "bytes": 142606,
+      "sha256": "191f4eb9388e107bc594a1b9ede4c0abc2d6f8cea8c233e5794dddbe3aec8481"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/gold-equity-targets.csv": {
+      "bytes": 67291,
+      "sha256": "7af635f5bce8f6b3eb0103d43a70eb3499ef8f097fd6ae6cfb8bbe3d36e2ea5b"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/pair-targets.csv": {
+      "bytes": 92069,
+      "sha256": "4c93495d2d58d88bb58f144f3d444c5c7dae5256fcdfa6367cc353058d3dcbe8"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/volatility-targets.csv": {
+      "bytes": 437347,
+      "sha256": "03cb9b2b5f0cb009d1a0c16852c4895e95871d94d6d93c4f488937e10209c6e1"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/zh-Hans.lproj/InfoPlist.strings": {
+      "bytes": 115,
+      "sha256": "625191aa750b558570e4d14084f631f952478e79387bb9782cce07441e887749"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/zh-Hans.lproj/Localizable.strings": {
+      "bytes": 51052,
+      "sha256": "a2d67193924efad0be9d4be27de87bd0c11ad80498234ef338fe9663d1e57b27"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/zh-Hant.lproj/InfoPlist.strings": {
+      "bytes": 115,
+      "sha256": "1f6160a50d701eaffcc9d04a07588e8e76d72940f5bb72fbdc40c8670faf4f44"
+    },
+    "AssetTimeMachine.xcarchive/Products/Applications/AssetTimeMachine.app/zh-Hant.lproj/Localizable.strings": {
+      "bytes": 99064,
+      "sha256": "d5f4d0a291022bb25052a005a8b4146b0bc57652eaac6417d5ccb33c1a2d0906"
+    },
+    "AssetTimeMachine.xcarchive/dSYMs/AssetTimeMachine.app.dSYM/Contents/Info.plist": {
+      "bytes": 662,
+      "sha256": "09dfec4285d9b6ecd005f18f22bdea2b414a9c1accd3d93d2560b2dbcd7fb2cb"
+    },
+    "AssetTimeMachine.xcarchive/dSYMs/AssetTimeMachine.app.dSYM/Contents/Resources/DWARF/AssetTimeMachine": {
+      "bytes": 44407332,
+      "sha256": "a2e4dfa5d9aa0271bf70a79f6b89c0083f158cdc8e37cd6c969eda3e51535143"
+    },
+    "AssetTimeMachine.xcarchive/dSYMs/AssetTimeMachine.app.dSYM/Contents/Resources/Relocations/aarch64/AssetTimeMachine.yml": {
+      "bytes": 339,
+      "sha256": "5a4ad1bb3f23557288be6f26a319d55df75074ff9950638a3bb33d5157f07eee"
+    },
+    "AssetTimeMachine.xcarchive/dSYMs/AssetTimeMachineWidgets.appex.dSYM/Contents/Info.plist": {
+      "bytes": 670,
+      "sha256": "f11d9f0d99daebf5227d8c41d0bade4841517f233544e6c1ed7f81a5f039f934"
+    },
+    "AssetTimeMachine.xcarchive/dSYMs/AssetTimeMachineWidgets.appex.dSYM/Contents/Resources/DWARF/AssetTimeMachineWidgets": {
+      "bytes": 1720164,
+      "sha256": "de1e607b9395cc7bbaae9bdd5f4cda3d91959ff80dafa1b22f95d7ae4c5b40ea"
+    },
+    "AssetTimeMachine.xcarchive/dSYMs/AssetTimeMachineWidgets.appex.dSYM/Contents/Resources/Relocations/aarch64/AssetTimeMachineWidgets.yml": {
+      "bytes": 364,
+      "sha256": "452cf3257507fc16ec97fc86aa16c8e85d83d54f935cdb11e9fdc482831f826b"
+    },
+    "ExportOptions.plist": {
+      "bytes": 500,
+      "sha256": "7d7d477af188b4200c3851bfa22b740b9174c2e20a35ea1612d000604f8d470d"
+    },
+    "archive.log": {
+      "bytes": 438721,
+      "sha256": "0f23a9a91b747d44223ca5f0b8f165ed551ed0e5c800aa3aa344b4ee62673dfc"
+    },
+    "artifact-match.json": {
+      "bytes": 651,
+      "sha256": "cd57e872760330bf95f88dd3e82001bd10d207d1ca65319e25ac6b5dee10b8fb"
+    },
+    "build-status.log": {
+      "bytes": 1675,
+      "sha256": "69f439a118a342b02f5c9d9d9e8e308585090e2473f865895bc97f51c65db452"
+    },
+    "delivery-id.txt": {
+      "bytes": 49,
+      "sha256": "9f9131ea74314d8ac55b41bb7e0bc277f87f3b62d27bfa5a3d57bb3ad0b2e64e"
+    },
+    "export/AssetTimeMachine.ipa": {
+      "bytes": 17817570,
+      "sha256": "db6e8d789dacb5796949ab3b458be6fd53296f6b24214e17844a3d67579c4b89"
+    },
+    "export/DistributionSummary.plist": {
+      "bytes": 3363,
+      "sha256": "3e833da6dd630c250f9d1de2b59ea31148af438e44fbeb9b0d8eb020240bb09d"
+    },
+    "export/ExportOptions.plist": {
+      "bytes": 621,
+      "sha256": "cbae1c4b7ec64a5f88f921fe6c25a260383955cb6ec564e107eaff72aacbc7a3"
+    },
+    "export/Packaging.log": {
+      "bytes": 36544,
+      "sha256": "898c8a636219c8aeb2874d2ad2ffed86e3f2a236fe8c33f1fe5ce167bfe11dbd"
+    },
+    "export.log": {
+      "bytes": 411,
+      "sha256": "7aec6d63aa30c6c0b3de838f76367573b5fd7bdcf92d737cfe36dc354bdd25b0"
+    },
+    "upload.log": {
+      "bytes": 758,
+      "sha256": "481e847c3621186d5d1125643bf79cf13ac6343b5d74dde52e84fb24b934529b"
+    }
+  }
+}

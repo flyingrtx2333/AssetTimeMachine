@@ -1,0 +1,21 @@
+{
+  "realHTTPMySQLAndCOS": true,
+  "passed": [
+    "product_token_scope_enforced",
+    "explicit_confirmation_required_and_deletion_completed",
+    "all_old_product_and_legacy_sync_tokens_revoked_website_session_preserved",
+    "real_cos_object_deleted",
+    "product_profile_and_backups_removed_other_account_untouched",
+    "explicit_recreation_uses_new_identity_old_sessions_stay_revoked",
+    "concurrent_upload_and_deletion_cannot_resurrect_backup"
+  ],
+  "disposableAccountsRemoved": 2,
+  "appleAuthorizationRevocation": "PENDING_REAL_USER_REAUTH_AND_REVOCATION",
+  "deployedImage": "crpi-7nt5ez0gcw5ssn83.cn-chengdu.personal.cr.aliyuncs.com/flyingrtx/flyingrtxfast-backend:5c7d36fe6acf3dfeb51093a3d82b06ff53488cf5",
+  "verificationProbeSHA256": "682531e29b3d8738a4434950f141930d561060f0ef5ed6b349309e53cba67f3a",
+  "verificationEnvironment": "production API, actual MySQL and COS, disposable accounts only",
+  "probeReportedAppleAuthorizationRevocation": "PENDING_SIGN_IN_WITH_APPLE_KEY_AND_REAL_REAUTH",
+  "appleServiceKeyConfigured": true,
+  "privateDeploymentEnvironmentMode": "0o600",
+  "publicAccountEndpointUnauthenticatedStatus": 401
+}

@@ -1,0 +1,17 @@
+{
+  "version": "1.14",
+  "build": "234",
+  "buildID": "4a1f2f94-3c8a-4674-a92f-0a66c6e7d0ab",
+  "source": "cbc89927283cce355b4facfe882f0bd18892dba9",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "Adds in-app account deletion. Deletion removes the Asset Time Machine account and cloud backups, while keeping local records and website/other-product data. Apple sign-in accounts require identity confirmation. Deleted sessions cannot upload old backups.",
+    "zh-Hans": "新增账户删除入口：删除资产时光机账户和云端备份，保留本机记录、网站账户及其他产品数据。Apple 登录账户需确认身份；已删除账户的旧凭证无法继续同步。",
+    "zh-Hant": "新增帳戶刪除入口：刪除資產時光機帳戶與雲端備份，保留本機記錄、網站帳戶及其他產品資料。Apple 登入帳戶需確認身分；已刪除帳戶的舊憑證無法繼續同步。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceAcceptance": "pending"
+}
