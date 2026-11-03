@@ -697,7 +697,7 @@ struct TimeMachineHeroTrendCard: View {
             TimeMachineUnifiedTrendSeries(
                 id: TimeMachineGoldTrend.id,
                 title: AppLocalization.string("黄金"),
-                color: AssetTheme.positive,
+                color: AssetTheme.accentBlue,
                 strokeStyle: StrokeStyle(lineWidth: 2.1, lineCap: .round, dash: [7, 5]),
                 scale: .goldQuantity,
                 points: goldObservations.map { point in
@@ -799,7 +799,7 @@ struct TimeMachineHeroTrendCard: View {
                 selectedValueText(for: .init(date: selectedPoint.date, plotValue: 0, displayValue: $0), scale: .goldQuantity)
             } ?? "—"
             items.append(TimeMachineUnifiedTrendSelectionItem(
-                id: TimeMachineGoldTrend.id, title: AppLocalization.string("黄金"), value: value, color: AssetTheme.positive
+                id: TimeMachineGoldTrend.id, title: AppLocalization.string("黄金"), value: value, color: AssetTheme.accentBlue
             ))
         }
 
@@ -1015,7 +1015,7 @@ struct TimeMachineHeroTrendCard: View {
         if AppLocalization.currentLanguage == .english {
             return "CN¥\(amount.compactNumberString(maxFractionDigits: 1, currencyCode: "CNY"))"
         }
-        return amount.compactNumberString(maxFractionDigits: 0, currencyCode: "CNY")
+        return amount.compactNumberString(maxFractionDigits: 1, currencyCode: "CNY")
     }
 
     private func accessibilityValue(
@@ -1138,7 +1138,7 @@ struct TimeMachineHeroTrendCard: View {
                         ) { onToggleSeries(series.id) }
                     }
                     TimeMachineUnifiedLegendButton(
-                        title: AppLocalization.string("黄金"), color: AssetTheme.positive,
+                        title: AppLocalization.string("黄金"), color: AssetTheme.accentBlue,
                         isDashed: true, isBand: false,
                         isVisible: visibleSeriesIDs.contains(TimeMachineGoldTrend.id)
                     ) { onToggleSeries(TimeMachineGoldTrend.id) }
@@ -1261,7 +1261,7 @@ private struct TimeMachineStaticHeroPlot: View, Equatable {
                                    let label = goldQuantityLabel(plotValue) {
                                     Text(label)
                                         .font(.system(size: 9.5, weight: .medium, design: .default))
-                                        .foregroundStyle(AssetTheme.textSecondary.opacity(0.72))
+                                        .foregroundStyle(AssetTheme.accentBlue.opacity(0.85))
                                 }
                             }
                         }
