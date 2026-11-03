@@ -132,6 +132,30 @@ nonisolated private struct AssetTimeMachineCloudErrorResponse: Codable, Sendable
     let detail: String?
 }
 
+nonisolated struct CloudAccountDeletionInfo: Decodable, Sendable {
+    let requiresAppleAuthorization: Bool
+    let accountID: String
+    let hasDeletionHistory: Bool
+    enum CodingKeys: String, CodingKey {
+        case requiresAppleAuthorization = "requires_apple_authorization"
+        case accountID = "account_id"
+        case hasDeletionHistory = "has_deletion_history"
+    }
+}
+
+nonisolated private struct CloudAccountDeletionRequest: Encodable, Sendable {
+    let confirmation = "DELETE_ASSET_TIME_MACHINE_ACCOUNT"
+    let identityToken: String?
+    let authorizationCode: String?
+    enum CodingKeys: String, CodingKey {
+        case confirmation
+        case identityToken = "identity_token"
+        case authorizationCode = "authorization_code"
+    }
+}
+
+nonisolated struct CloudAccountDeletionResult: Decodable, Sendable { let deleted: Bool }
+
 enum AssetTimeMachineCloudAPI {
     nonisolated(unsafe) private static var isolatedSession: URLSession?
     static var hasIsolatedTransport: Bool { isolatedSession != nil }
@@ -153,7 +177,7 @@ enum AssetTimeMachineCloudAPI {
 
     fileprivate static func login(username: String, password: String) async throws -> AssetTimeMachineCloudToken {
         let response: AssetTimeMachineCloudToken = try await request(
-            path: "/api/v1/auth/login",
+            path: "/api/v1/asset-time-machine/account/login",
             method: "POST",
             body: AssetTimeMachineCloudLoginRequest(username: username, password: password)
         )
@@ -162,7 +186,7 @@ enum AssetTimeMachineCloudAPI {
 
     fileprivate static func loginWithApple(identityToken: String, authorizationCode: String?, userName: String?, userEmail: String?) async throws -> AssetTimeMachineCloudToken {
         let response: AssetTimeMachineCloudToken = try await request(
-            path: "/api/v1/auth/apple/login",
+            path: "/api/v1/asset-time-machine/account/apple/login",
             method: "POST",
             body: AssetTimeMachineAppleLoginRequest(
                 identityToken: identityToken,
@@ -184,6 +208,15 @@ enum AssetTimeMachineCloudAPI {
 
     static func fetchCurrentUser(token: String) async throws -> AssetTimeMachineCloudUser {
         try await request(path: "/api/v1/users/me", token: token)
+    }
+
+    static func accountInfo(token: String) async throws -> CloudAccountDeletionInfo {
+        try await request(path: "/api/v1/asset-time-machine/account", token: token)
+    }
+
+    static func deleteAccount(token: String, identityToken: String?, authorizationCode: String?) async throws -> CloudAccountDeletionResult {
+        try await request(path: "/api/v1/asset-time-machine/account", method: "DELETE", token: token,
+                          body: CloudAccountDeletionRequest(identityToken: identityToken, authorizationCode: authorizationCode))
     }
 
     static func fetchHistory(token: String, limit: Int = 10) async throws -> [AssetTimeMachineCloudBackup] {
@@ -471,6 +504,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
     private let defaults: UserDefaults
     private let localOwnerKey = "assettimemachine.cloud.localOwnerUserID"
+    private let localOwnerAccountKey = "assettimemachine.cloud.localOwnerAccountID"
+    private let accountResetRequiredKey = "assettimemachine.cloud.accountResetRequired"
+    private var currentAccountID: String?
     private let isolatedTest: Bool
     private let tokenStore: CloudTokenStore
     private var cachedAccessToken: String?
@@ -1168,6 +1204,60 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
+    func accountDeletionInfo() async throws -> CloudAccountDeletionInfo {
+        guard !AppPreviewSession.isActive || isolatedTest else { throw URLError(.userAuthenticationRequired) }
+        return try await withTokenRefresh { try await AssetTimeMachineCloudAPI.accountInfo(token: $0) }
+    }
+
+    func deleteAccount(identityToken: String? = nil, authorizationCode: String? = nil) async -> Bool {
+        guard !AppPreviewSession.isActive || isolatedTest, !isWorking else { return false }
+        autoSyncGeneration &+= 1
+        pendingAutoSyncCoordinatorTask?.cancel()
+        pendingAutoSyncCoordinatorTask = nil
+        autoSyncCoordinatorTaskID = nil
+        hasPendingSync = false
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false }
+        do {
+            let result = try await withTokenRefresh { token in
+                try await AssetTimeMachineCloudAPI.deleteAccount(token: token, identityToken: identityToken,
+                                                                 authorizationCode: authorizationCode)
+            }
+            guard result.deleted else { throw URLError(.badServerResponse) }
+            // Keep offline records, but never reuse the deleted account's baseline/outbox.
+            defaults.set(true, forKey: accountResetRequiredKey)
+            try? resetAccountSyncMetadata()
+            clearTokens()
+            currentUser = nil
+            currentAccountID = nil
+            backups = []
+            lastSyncAt = nil
+            requiresLocalOwnershipConfirmation = false
+            entryConflictReview = nil
+            statusMessage = AppLocalization.string("资产时光机账户已删除")
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    private func resetAccountSyncMetadata() throws {
+        defaults.set(true, forKey: accountResetRequiredKey)
+        if let userID = currentUser?.id {
+            for file in [try baselineURL(userID: userID), try pendingUploadURL(userID: userID)] {
+                if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
+            }
+        }
+        defaults.removeObject(forKey: localOwnerKey)
+        defaults.removeObject(forKey: localOwnerAccountKey)
+        defaults.removeObject(forKey: lastUploadedSignatureKey)
+        defaults.removeObject(forKey: lastSyncAtKey)
+        defaults.removeObject(forKey: accountResetRequiredKey)
+        lastSyncAt = nil
+    }
+
     func logout() {
         guard !AppPreviewSession.isActive || isolatedTest else { return }
         guard !isWorking else { return }
@@ -1182,6 +1272,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         defaults.removeObject(forKey: lastUploadedSignatureKey)
         defaults.removeObject(forKey: lastSyncAtKey)
         currentUser = nil
+        currentAccountID = nil
         backups = []
         lastSyncAt = nil
         statusMessage = AppLocalization.string("已退出云同步")
@@ -1212,6 +1303,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func clearTokens() {
+        currentAccountID = nil
         lastVerifiedBackupID = nil
         try? tokenStore.clear()
         cachedAccessToken = nil
@@ -1247,6 +1339,20 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         currentUser = try await withTokenRefresh { token in
             try await AssetTimeMachineCloudAPI.fetchCurrentUser(token: token)
         }
+        let account = try await accountDeletionInfo()
+        let owner = defaults.object(forKey: localOwnerKey) as? Int
+        let knownAccount = defaults.string(forKey: localOwnerAccountKey)
+        let accountChanged = knownAccount.map { $0 != account.accountID } ?? account.hasDeletionHistory
+        if defaults.bool(forKey: accountResetRequiredKey), let owner, owner != currentUser?.id {
+            throw NSError(domain: "CloudSyncOwner", code: 409,
+                          userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请重新登录后确认本机记录")])
+        }
+        if defaults.bool(forKey: accountResetRequiredKey)
+            || (owner != nil && owner == currentUser?.id
+                && accountChanged) {
+            try resetAccountSyncMetadata()
+        }
+        currentAccountID = account.accountID
         if defaults.object(forKey: localOwnerKey) as? Int != currentUser?.id { lastSyncAt = nil }
         try await loadHistory()
     }
@@ -1311,6 +1417,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func validateLocalOwner(local: ExportPayload, remote: ExportPayload?) throws {
+        guard currentAccountID != nil, !defaults.bool(forKey: accountResetRequiredKey) else {
+            throw NSError(domain: "CloudSyncOwner", code: 409,
+                          userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请重新登录后确认本机记录")])
+        }
         requiresLocalOwnershipConfirmation = false
         guard let userID = currentUser?.id else { throw URLError(.userAuthenticationRequired) }
         if let owner = defaults.object(forKey: localOwnerKey) as? Int {
@@ -1607,6 +1717,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
         }
         defaults.set(userID, forKey: localOwnerKey)
+        if let currentAccountID { defaults.set(currentAccountID, forKey: localOwnerAccountKey) }
     }
 
     private func rememberSync(signature: String, at date: Date, payload: ExportPayload) async throws {
@@ -1907,6 +2018,132 @@ struct CloudSyncEntryReviewView: View {
         }
         let string = value as? String ?? ""
         return string.isEmpty ? AppLocalization.string("未填写") : string
+    }
+}
+
+struct CloudAccountDeletionView: View {
+    @ObservedObject var store: AssetTimeMachineCloudStore
+    let close: () -> Void
+    @State private var requirements: CloudAccountDeletionInfo?
+    @State private var errorMessage: String?
+    @State private var confirmsDeletion = false
+    @State private var isDeleting = false
+    @State private var identityToken: String?
+    @State private var authorizationCode: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            header
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text(AppLocalization.string("账户和云端备份将永久删除。本机记录、网站账户及其他产品数据保留。"))
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(AssetTheme.textSecondary)
+                    if let error = errorMessage ?? store.errorMessage, !error.isEmpty {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .font(.callout)
+                            .foregroundStyle(AssetTheme.negative)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    controls
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(24)
+        .foregroundStyle(AssetTheme.textPrimary)
+        #if os(macOS)
+        .background(NativePalette.canvas)
+        #else
+        .background(AssetTheme.background)
+        #endif
+        .interactiveDismissDisabled(isDeleting)
+        .task { await loadRequirements() }
+        .alert(AppLocalization.string("永久删除资产时光机账户？"), isPresented: $confirmsDeletion) {
+            Button(AppLocalization.string("取消"), role: .cancel) { clearAuthorization() }
+            Button(AppLocalization.string("永久删除"), role: .destructive) { Task { await delete() } }
+        } message: {
+            Text(AppLocalization.string("此操作不可撤销。"))
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            Text(AppLocalization.string("删除资产时光机账户")).font(.title2.weight(.semibold))
+            Spacer()
+            Button(AppLocalization.string("取消"), action: close).disabled(isDeleting)
+        }
+    }
+
+    @ViewBuilder private var controls: some View {
+        if isDeleting {
+            ProgressView(AppLocalization.string("正在删除账户")).frame(maxWidth: .infinity)
+        } else if let requirements {
+            if requirements.requiresAppleAuthorization {
+                Text(AppLocalization.string("使用 Apple ID 确认身份后删除")).font(.callout)
+                appleConfirmationButton
+            } else {
+                Button(AppLocalization.string("删除账户"), role: .destructive) { confirmsDeletion = true }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(AssetTheme.negative)
+                    .disabled(store.isWorking)
+            }
+        } else if errorMessage != nil {
+            Button(AppLocalization.string("重试")) { Task { await loadRequirements() } }
+        } else {
+            ProgressView().frame(maxWidth: .infinity)
+        }
+    }
+
+    private var appleConfirmationButton: some View {
+        SignInWithAppleButton(.continue) { request in
+            request.requestedScopes = []
+        } onCompletion: { result in
+            handleAppleAuthorization(result)
+        }
+        .frame(height: 44)
+        .disabled(store.isWorking)
+    }
+
+    private func handleAppleAuthorization(_ result: Result<ASAuthorization, any Error>) {
+        switch result {
+        case let .success(authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let token = credential.identityToken,
+                  let code = credential.authorizationCode,
+                  let tokenString = String(data: token, encoding: .utf8),
+                  let codeString = String(data: code, encoding: .utf8) else {
+                errorMessage = AppLocalization.string("未获取到 Apple 登录凭证")
+                return
+            }
+            identityToken = tokenString
+            authorizationCode = codeString
+            errorMessage = nil
+            confirmsDeletion = true
+        case let .failure(error):
+            if (error as? ASAuthorizationError)?.code != .canceled { errorMessage = error.localizedDescription }
+        }
+    }
+
+    private func delete() async {
+        isDeleting = true
+        defer { isDeleting = false }
+        let deleted = await store.deleteAccount(identityToken: identityToken, authorizationCode: authorizationCode)
+        clearAuthorization()
+        if deleted { close() }
+    }
+
+    private func clearAuthorization() {
+        identityToken = nil
+        authorizationCode = nil
+    }
+
+    private func loadRequirements() async {
+        errorMessage = nil
+        store.errorMessage = nil
+        do { requirements = try await store.accountDeletionInfo() }
+        catch { errorMessage = error.localizedDescription }
     }
 }
 

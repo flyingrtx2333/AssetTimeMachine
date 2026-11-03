@@ -23,6 +23,7 @@ struct SettingsView: View {
     @State private var notificationStatus: UNAuthorizationStatus = .notDetermined
     @State private var showsLogoutConfirmation = false
     @State private var showsCloudSyncModal = false
+    @State private var showsAccountDeletion = false
     @State private var isSendingStrategyTestNotification = false
     @State private var strategyTestNotificationMessage: String?
     @State private var showsLanguageSelection = false
@@ -207,6 +208,11 @@ struct SettingsView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 #endif
+            }
+            .sheet(isPresented: $showsAccountDeletion) {
+                CloudAccountDeletionView(store: cloudStore) { showsAccountDeletion = false }
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showsStrategyLibrary) {
                 AdvancedStrategyLibrarySheet(
@@ -525,6 +531,18 @@ struct SettingsView: View {
                     )
                 }
                 .foregroundStyle(AssetTheme.negative)
+                .disabled(cloudStore.isWorking)
+                .settingsSurfaceRow()
+                Button(role: .destructive) {
+                    showsAccountDeletion = true
+                } label: {
+                    SettingsNavigationRow(
+                        title: AppLocalization.string("删除账户"),
+                        systemImage: "person.crop.circle.badge.minus",
+                        tint: AssetTheme.negative
+                    )
+                }
+                .buttonStyle(SettingsLedgerButtonStyle())
                 .disabled(cloudStore.isWorking)
                 .settingsSurfaceRow()
             }

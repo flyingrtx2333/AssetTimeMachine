@@ -1,0 +1,17 @@
+{
+  "realHTTPMySQLAndCOS": true,
+  "passed": [
+    "product_token_scope_enforced",
+    "explicit_confirmation_required_and_deletion_completed",
+    "all_old_product_and_legacy_sync_tokens_revoked_website_session_preserved",
+    "real_cos_object_deleted",
+    "product_profile_and_backups_removed_other_account_untouched",
+    "explicit_recreation_uses_new_identity_old_sessions_stay_revoked",
+    "concurrent_upload_and_deletion_cannot_resurrect_backup"
+  ],
+  "disposableAccountsRemoved": 2,
+  "appleAuthorizationRevocation": "PENDING_SIGN_IN_WITH_APPLE_KEY_AND_REAL_REAUTH",
+  "baseImage": "crpi-7nt5ez0gcw5ssn83.cn-chengdu.personal.cr.aliyuncs.com/flyingrtx/flyingrtxfast-backend:22cdd476e7f0125e12a4d123a835bcbd628c944e",
+  "overlaySHA256": "5c51b452d8ca2b0b547613ee673d2093aa6845e8b615d423cfdd332657869a45",
+  "productionAPIUnchanged": true
+}

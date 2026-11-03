@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-03T10:40:00.042729+00:00",
+  "baseCommit": "61226ee1f63bf3124786b3e400d31e864ad6b074",
+  "sourceFiles": {
+    "AssetTimeMachine/CloudSync.swift": "d41a20a596516dc1bb9362e95f371aa09688e2fcf954289ec6d566b11ab4fb72",
+    "AssetTimeMachine/Localizable.xcstrings": "8db8df02d7a10c5ee157bc6c09e779b7dabe11d60b52957aa1b1a62a3692acfa",
+    "AssetTimeMachine/Views/Settings/SettingsViews.swift": "a71789432f1d28c360147e0b4d69b9315287e0caa0fd80ac87e9e5bd2b787c7b",
+    "AssetTimeMachineNativeMac/Sources/NativeRecordsSettings.swift": "ee00d4d573953e849fd66862283bfcbfa49ff77483b00f491378fde25025e2cd"
+  },
+  "compilerChecks": {
+    "native": {
+      "result": "BUILD SUCCEEDED",
+      "configuration": "Debug",
+      "architecture": "arm64",
+      "logSHA256": "3b8db2f98d5589be47b985fb00c8b144bcdd91350f7ca638516c90115aaaa787",
+      "retainedLog": "/Users/xiangjunsheng/Library/Caches/ATMAccountDelete20261103/evidence/native-build.log"
+    },
+    "ios": {
+      "result": "BUILD SUCCEEDED",
+      "configuration": "Debug",
+      "architecture": "arm64",
+      "logSHA256": "9e967cc871612c4331bb526b0dad61e8354f7f6e2c29b65a96bdaa0a1179830d",
+      "retainedLog": "/Users/xiangjunsheng/Library/Caches/ATMAccountDelete20261103/evidence/ios-build.log"
+    }
+  },
+  "localization": "Localization audit passed: 1564 keys, 774 direct calls, 1089 Chinese source literals.",
+  "physicalDeviceAcceptance": "PENDING",
+  "appleReauthenticationAndRevocation": "PENDING_SERVICE_KEY",
+  "newUploadOrResubmission": false
+}

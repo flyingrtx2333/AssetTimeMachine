@@ -942,6 +942,7 @@ struct NativeCloudSyncView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     @State private var showsLogin = false
+    @State private var showsAccountDeletion = false
     @State private var confirmsRestore = false
     @State private var confirmsOwnership = false
     @State private var isExporting = false
@@ -953,7 +954,7 @@ struct NativeCloudSyncView: View {
         if showsEntryReview { return 440 }
         let errorHeight: CGFloat = cloud.errorMessage?.isEmpty == false ? 40 : 0
         guard cloud.currentUser != nil else { return 176 + errorHeight }
-        return min(472, 280 + CGFloat(min(cloud.backups.count, 3)) * 38 + errorHeight
+        return min(500, 308 + CGFloat(min(cloud.backups.count, 3)) * 38 + errorHeight
                    + (cloud.requiresLocalOwnershipConfirmation ? 34 : 0))
     }
     private var title: String {
@@ -967,7 +968,12 @@ struct NativeCloudSyncView: View {
 
     var body: some View {
         Group {
-            if showsLogin {
+            if showsAccountDeletion {
+                CloudAccountDeletionView(store: cloud) {
+                    showsAccountDeletion = false
+                    if cloud.currentUser == nil { dismiss() }
+                }
+            } else if showsLogin {
                 NativeAccountChoice(cloud: cloud, allowsOffline: false, width: 448) { showsLogin = false }
                     .environment(\.modelContext, context)
             } else if showsEntryReview, let review = cloud.entryConflictReview {
@@ -1071,13 +1077,20 @@ struct NativeCloudSyncView: View {
                                     Button(AppLocalization.string("退出登录")) { cloud.logout() }
                                         .buttonStyle(.borderless).controlSize(.small).disabled(busy)
                                 }.padding(.top, 4)
+                                Button(AppLocalization.string("删除账户"), role: .destructive) {
+                                    showsAccountDeletion = true
+                                }
+                                .buttonStyle(.borderless)
+                                .controlSize(.small)
+                                .foregroundStyle(AssetTheme.negative)
+                                .disabled(busy)
                             }
                         }
                     }
                 }
             }
         }
-        .frame(width: 448, height: showsLogin ? nil : sheetHeight)
+        .frame(width: 448, height: showsAccountDeletion ? 340 : (showsLogin ? nil : sheetHeight))
         .fixedSize(horizontal: false, vertical: true)
         .modifier(NativeWorkspaceSurface())
         .task { await refresh() }
