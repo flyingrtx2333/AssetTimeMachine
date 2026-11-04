@@ -1,0 +1,30 @@
+{
+  "version": "1.14",
+  "build": "236",
+  "ipaBytes": 16843320,
+  "ipaSHA256": "1e7b366a3b8680fc200626cbe632f2f0d8dc484c1aee1254aa6bff872722b131",
+  "strictDeepCodeSignature": "passed",
+  "distributionEntitlements": "passed",
+  "archiveAndDSYMUUIDsMatched": [
+    {
+      "bundle": "AssetTimeMachine.app",
+      "uuids": [
+        [
+          "B0A0C78B-92CD-3C45-A3CB-5D6F3E324133",
+          "arm64"
+        ]
+      ]
+    },
+    {
+      "bundle": "AssetTimeMachineWidgets.appex",
+      "uuids": [
+        [
+          "F80599F7-674A-3210-8AA1-FF147C284E73",
+          "arm64"
+        ]
+      ]
+    }
+  ],
+  "packagedIconMatchesWhiteGoldSource": true,
+  "iconMasterSHA256": "06829ac243ffb3da0e4e6f8b04389b30bb15b1e033c392c1e80cb9d2b7d2845d"
+}

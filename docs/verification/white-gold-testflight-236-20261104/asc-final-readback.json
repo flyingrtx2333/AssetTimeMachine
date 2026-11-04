@@ -1,0 +1,20 @@
+{
+  "version": "1.14",
+  "build": "236",
+  "buildID": "705e1cdf-77a6-4735-9512-d8b689a9a261",
+  "source": "85e50874abe44e0a60eae10df29b287a10c4216b",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "notes": {
+    "en-US": "New warm-white and champagne-gold app icon. Account deletion and existing features are unchanged.",
+    "zh-Hans": "更新暖白与香槟金风格应用图标。账户删除与现有功能保持不变。",
+    "zh-Hant": "更新暖白與香檳金風格應用圖示。帳戶刪除與現有功能維持不變。"
+  },
+  "notesReadbackVerified": true,
+  "externalBetaReviewSubmitted": false,
+  "physicalDeviceInstallationPerformed": false,
+  "appStoreReviewBuildChanged": false,
+  "appStoreReviewState": "WAITING_FOR_REVIEW",
+  "appStoreReviewBuild": "235"
+}
