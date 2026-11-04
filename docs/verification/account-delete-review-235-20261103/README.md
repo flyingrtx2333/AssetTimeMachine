@@ -1,4 +1,12 @@
-# TestFlight 1.14 (235) — App Review paused
+# TestFlight 1.14 (235) — release and review history
+
+## Update — 2026-11-04
+
+The user subsequently authorized App Store resubmission. Version 1.14 with build 235 was submitted on 2026-11-04 at 11:46 Asia/Shanghai, with the privacy-redacted physical-device account-deletion recording and review information. Submission ID: `494c7eb3-9378-45e0-b153-16dd1fbbbb11`. The later [TestFlight 236 readback](../white-gold-testflight-236-20261104/asc-final-readback.json) records build 235 still selected for App Store review with state `WAITING_FOR_REVIEW`; uploading the new icon as build 236 did not replace it.
+
+The pause, rejection state and unsubmitted receipt below describe the earlier 2026-11-03 snapshot. They are preserved as historical evidence and do not represent the later submission. Review materials and the durable release archive remain outside Git. Duplicate working build directories were removed after every file matched the retained archive; personal backups were preserved.
+
+## Historical snapshot — 2026-11-03
 
 Signed release source: `7793e7f7cc7d0dc5211b063e2a4421b6c1ce1091`. iPhone now exposes the existing-account password login form already used on Mac, allowing a separate demo account without using a daily Apple account. The same product-specific login and deletion service is reused. Device compilation and the three-language localization audit passed. No change was made to the production account-deletion backend revision.
 
