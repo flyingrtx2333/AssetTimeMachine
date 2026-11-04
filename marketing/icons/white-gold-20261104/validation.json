@@ -1,0 +1,109 @@
+{
+  "icons": [
+    {
+      "file": "app-icon-ios-1024.png",
+      "size": 1024,
+      "opaque": true,
+      "sha256": "9035e168fc9cc399d18223c27c59f7364d177bbb2f5c90340ce7e8a51a6a9f2e"
+    },
+    {
+      "file": "app-icon-ios-dark-1024.png",
+      "size": 1024,
+      "opaque": true,
+      "sha256": "9035e168fc9cc399d18223c27c59f7364d177bbb2f5c90340ce7e8a51a6a9f2e"
+    },
+    {
+      "file": "app-icon-ios-tinted-1024.png",
+      "size": 1024,
+      "opaque": true,
+      "sha256": "9035e168fc9cc399d18223c27c59f7364d177bbb2f5c90340ce7e8a51a6a9f2e"
+    },
+    {
+      "file": "app-icon-mac-16.png",
+      "size": 16,
+      "opaque": true,
+      "sha256": "57974bb5d18b0b92c2b7ffcac6228b10c7790d4f1ae206e81b4a4963b3bc708f"
+    },
+    {
+      "file": "app-icon-mac-16@2x.png",
+      "size": 32,
+      "opaque": true,
+      "sha256": "b10fbab39f04cdbd3d0f7e476fa7fc716617383b1346e9add3e18e00131c0ee9"
+    },
+    {
+      "file": "app-icon-mac-32.png",
+      "size": 32,
+      "opaque": true,
+      "sha256": "b10fbab39f04cdbd3d0f7e476fa7fc716617383b1346e9add3e18e00131c0ee9"
+    },
+    {
+      "file": "app-icon-mac-32@2x.png",
+      "size": 64,
+      "opaque": true,
+      "sha256": "c39f53925941bbc03be22ef13b877f3f886b941d15a21fe31400469dcd8c7e74"
+    },
+    {
+      "file": "app-icon-mac-128.png",
+      "size": 128,
+      "opaque": true,
+      "sha256": "28cc90cd2436f9c49fd59f1c308bdce83c42f6333d1a7b435910017481dc2fe3"
+    },
+    {
+      "file": "app-icon-mac-128@2x.png",
+      "size": 256,
+      "opaque": true,
+      "sha256": "0d8e4460bee4430eb2ea18c39327843521b1ecec6256b98e30dfea3c0cf5b684"
+    },
+    {
+      "file": "app-icon-mac-256.png",
+      "size": 256,
+      "opaque": true,
+      "sha256": "0d8e4460bee4430eb2ea18c39327843521b1ecec6256b98e30dfea3c0cf5b684"
+    },
+    {
+      "file": "app-icon-mac-256@2x.png",
+      "size": 512,
+      "opaque": true,
+      "sha256": "9ae039f07fc5dbd0840d030d5e024489678914acbbb7d808dede1270659a0fdb"
+    },
+    {
+      "file": "app-icon-mac-512.png",
+      "size": 512,
+      "opaque": true,
+      "sha256": "9ae039f07fc5dbd0840d030d5e024489678914acbbb7d808dede1270659a0fdb"
+    },
+    {
+      "file": "app-icon-mac-512@2x.png",
+      "size": 1024,
+      "opaque": true,
+      "sha256": "9035e168fc9cc399d18223c27c59f7364d177bbb2f5c90340ce7e8a51a6a9f2e"
+    }
+  ],
+  "asset_compilation": [
+    {
+      "platform": "iphoneos",
+      "exit_code": 0,
+      "diagnostics": [],
+      "output_files": [
+        "AppIcon60x60@2x.png",
+        "partial.plist",
+        "compile.log",
+        "Assets.car",
+        "AppIcon76x76@2x~ipad.png"
+      ]
+    },
+    {
+      "platform": "macosx",
+      "exit_code": 0,
+      "diagnostics": [],
+      "output_files": [
+        "AppIcon.icns",
+        "partial.plist",
+        "compile.log",
+        "Assets.car"
+      ]
+    }
+  ],
+  "validation_scope": "iOS and macOS asset-catalog compilation only; no app installation or release performed",
+  "submitted_build_235": "unchanged"
+}
