@@ -622,6 +622,22 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
+    #if os(macOS) && ATM_DIRECT_DISTRIBUTION
+    func handleWebLogin(_ data: Data, from context: ModelContext) async {
+        guard !AppPreviewSession.isActive || isolatedTest else { return }
+        await perform { [self] in
+            let token = try JSONDecoder().decode(AssetTimeMachineCloudToken.self, from: data)
+            guard !token.accessToken.isEmpty else { throw URLError(.userAuthenticationRequired) }
+            try self.saveTokens(token)
+            try await self.loadSessionData()
+            self.statusMessage = AppLocalization.string("登录成功，正在准备云同步")
+        }
+        if currentUser != nil {
+            scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0)
+        }
+    }
+    #endif
+
     func handleAppleSignIn(_ result: Result<ASAuthorization, any Error>, from context: ModelContext) async {
         guard !AppPreviewSession.isActive || isolatedTest else { return }
         switch result {
@@ -2387,6 +2403,10 @@ struct AssetTimeMachineCloudPage: View {
 
     private var appleLoginSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            #if os(macOS) && ATM_DIRECT_DISTRIBUTION
+            NativeWebLoginButton(cloud: store)
+                .frame(height: cloudLoginButtonHeight)
+            #else
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
@@ -2398,6 +2418,7 @@ struct AssetTimeMachineCloudPage: View {
             .frame(height: cloudLoginButtonHeight)
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .disabled(store.isWorking || AppPreviewSession.isActive)
+            #endif
 
             Button(AppLocalization.string("使用已有账号密码登录")) {
                 store.errorMessage = nil

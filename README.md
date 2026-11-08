@@ -26,6 +26,8 @@
 - 原生 Mac 默认窗口为 1050 × 700，最小 820 × 560；Catalyst 完整版的默认窗口为 920 × 640
 - 当前 Mac 为本地开发版本，尚未进行 Mac App Store 发布验证
 
+网站直装版使用 `AssetTimeMachineNativeMac/DirectDistribution.xcconfig` 构建，保留应用组与云同步，并通过网站授权登录。构建时从主工程传入 `MARKETING_VERSION` 和 `CURRENT_PROJECT_VERSION`；分发前须使用 Developer ID 签名、Apple 公证并验证实际安装和登录。此配置不改变 App Store 或本地开发版的签名方式。
+
 ### 运行 Mac 开发版
 
 日常浏览推荐打开根目录的 `AssetTimeMachine.xcworkspace`，选择 `AssetTimeMachineNativeMac` scheme；也可执行 `scripts/run_native_mac.sh` 构建并启动原生 Release 应用。脚本会复用当前开发签名和 Mac 应用权限；如果缺少描述文件，只能构建不具备真实账户数据访问及 Apple 登录的预览版。原生版首次接管旧数据库前会备份并核对路径、记录数和金额，失败时停止启动和同步。完整策略回测仍由同仓库的 Catalyst 版按需运行。
