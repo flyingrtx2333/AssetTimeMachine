@@ -220,6 +220,7 @@ struct NativeRootView: View {
         .transition(.opacity)
         .background {
             NativeWindowToolbar(page: $page, cloudSymbol: cloud.indicatorState.cloudSymbolName,
+                cloudColor: cloud.indicatorState.symbolColor,
                 cloudLabel: cloud.indicatorLabel, isEnabled: !cloud.isApplyingLocalData,
                 openCloud: { showsCloudSync = true }, newRecord: {
                     requestedRecord = .today
@@ -537,6 +538,7 @@ struct NativeRootView: View {
 private struct NativeWindowToolbar: NSViewRepresentable {
     @Binding var page: NativePage
     let cloudSymbol: String
+    let cloudColor: Color
     let cloudLabel: String
     let isEnabled: Bool
     let openCloud: () -> Void
@@ -675,6 +677,7 @@ private struct NativeWindowToolbar: NSViewRepresentable {
             navigation?.isEnabled = owner.isEnabled
             navigation?.selectedSegmentBezelColor = NSColor(NativePalette.accent)
             cloud?.image = NSImage(systemSymbolName: owner.cloudSymbol, accessibilityDescription: AppLocalization.string("云同步"))
+            cloud?.contentTintColor = NSColor(owner.cloudColor)
             cloud?.toolTip = owner.cloudLabel
             cloud?.setAccessibilityLabel(AppLocalization.string("云同步") + "，" + owner.cloudLabel)
             cloud?.isEnabled = owner.isEnabled
