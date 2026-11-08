@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B6DC2DBD91C451CF14A84999 /* AssetNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83669EBE8521698567080972 /* AssetNotificationService.swift */; };
 		A7A1C0A02710000000000002 /* MarketAssetLogoCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */; };
 		DB5973AB306F4C43B262DC12 /* NativeStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5973AB306F4C43B262DC11 /* NativeStyle.swift */; };
 		0112DD0C9E9B668C44D600F2 /* BacktestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608DA2E8E3697651630754D4 /* BacktestModels.swift */; };
@@ -52,6 +53,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		83669EBE8521698567080972 /* AssetNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetNotificationService.swift; sourceTree = "<group>"; };
 		A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketAssetLogoCache.swift; sourceTree = "<group>"; };
 		DB5973AB306F4C43B262DC11 /* NativeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStyle.swift; sourceTree = "<group>"; };
 		058A5DE5DE282BDBF9E6B58B /* AssetTimeMachine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AssetTimeMachine; path = ..; sourceTree = SOURCE_ROOT; };
@@ -175,6 +177,7 @@
 			children = (
 				A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */,
 				B935C543B527518FF4DB5B51 /* AssetItemService.swift */,
+				83669EBE8521698567080972 /* AssetNotificationService.swift */,
 				72467AEC65E6DA3FFD12FDB7 /* BackgroundTaskWork.swift */,
 				AC313663E0C6957783660BB3 /* KeychainTokenStore.swift */,
 				98DB607CD16D2BC93B1CC958 /* PortfolioCalculator.swift */,
@@ -301,6 +304,7 @@
 				BC4DE08D7C50917A7076384C /* AppPreviewSession.swift in Sources */,
 				ED50F758B9188301358ABD11 /* AssetIconRegistry.swift in Sources */,
 				9DBFFE9C614F51EB77D94BA4 /* AssetItemService.swift in Sources */,
+				B6DC2DBD91C451CF14A84999 /* AssetNotificationService.swift in Sources */,
 				40F199CCF9E0D3068EF65CC5 /* BackgroundTaskWork.swift in Sources */,
 				A56C3E641BBD68CAD34DE961 /* BacktestCoreAliases.swift in Sources */,
 				51EC29F1E09BD64D26C18FA8 /* BacktestEngine.swift in Sources */,

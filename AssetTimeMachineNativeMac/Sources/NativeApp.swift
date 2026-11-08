@@ -6,6 +6,8 @@ import AuthenticationServices
 struct AssetTimeMachineNativeApp: App {
     @State private var store = NativeStoreBootstrap()
     @State private var startsOffline = false
+    @AppStorage("app.appearanceMode") private var appearanceMode = "system"
+    @StateObject private var languageStore = AppLanguageStore()
     @MainActor private static var workspaceFixtureWindow: NSWindow?
 
     init() {
@@ -28,7 +30,9 @@ struct AssetTimeMachineNativeApp: App {
                 let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 620),
                     styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
                 window.title = "资产时光机 · 独立样例"
-                window.contentView = NSHostingView(rootView: NativeRootView(startsOffline: true, isWorkspaceFixtureHost: true).modelContainer(container))
+                let fixtureLanguage = AppLanguageStore()
+                window.contentView = NSHostingView(rootView: NativeRootView(startsOffline: true, isWorkspaceFixtureHost: true)
+                    .modelContainer(container).environmentObject(fixtureLanguage).environment(\.locale, fixtureLanguage.language.locale))
                 window.contentMinSize = NSSize(width: NativeStyle.Layout.windowMinWidth, height: NativeStyle.Layout.windowMinHeight)
                 window.center(); window.makeKeyAndOrderFront(nil)
                 Self.workspaceFixtureWindow = window
@@ -54,6 +58,7 @@ struct AssetTimeMachineNativeApp: App {
 
     var body: some Scene {
         WindowGroup {
+            Group {
             if ProcessInfo.processInfo.arguments.contains("-macCloudRecovery") {
                 if let container = store.container {
                     NativeCloudRecoveryView().modelContainer(container)
@@ -95,8 +100,22 @@ struct AssetTimeMachineNativeApp: App {
                 ContentUnavailableView("本机数据无法打开", systemImage: "externaldrive.badge.exclamationmark", description: Text(store.error ?? "未知错误"))
                     .frame(width: 820, height: 560)
             }
+            }
+            .environmentObject(languageStore)
+            .environment(\.locale, languageStore.language.locale)
+            .onAppear { applyAppearance() }
+            .onChange(of: appearanceMode) { _, _ in applyAppearance() }
         }
         .defaultSize(width: 820, height: 620)
+    }
+
+    private func applyAppearance() {
+        guard !AppPreviewSession.isActive else { return }
+        switch appearanceMode {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: NSApp.appearance = nil
+        }
     }
 }
 

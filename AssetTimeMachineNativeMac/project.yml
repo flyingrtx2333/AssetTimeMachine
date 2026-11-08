@@ -39,6 +39,7 @@ targets:
       - path: ../AssetTimeMachine/MarketAssetCatalog.swift
       - path: ../AssetTimeMachine/Views/Shared/AppFormatters.swift
       - path: ../AssetTimeMachine/Services/AssetItemService.swift
+      - path: ../AssetTimeMachine/Services/AssetNotificationService.swift
       - path: ../AssetTimeMachine/AssetIconRegistry.swift
       - path: ../AssetTimeMachine/Backtest/BacktestCoreAliases.swift
       - path: ../AssetTimeMachine/Backtest/BacktestModels.swift

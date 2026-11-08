@@ -443,7 +443,7 @@ struct NativeRecordsView: View {
     }
     private func metric(_ title: String, value: Double, emphasized: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: NativeStyle.Space.sm) {
-            Text(title).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
+            Text(AppLocalization.string(title)).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
             Text(money(value)).font(emphasized ? NativeStyle.FontRole.bodyStrong : NativeStyle.FontRole.body).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.75)
                 .contentTransition(reduced ? .opacity : .numericText())
@@ -829,12 +829,26 @@ private struct NativeAddItemSheet: View {
 
 struct NativeSettingsView: View {
     @Environment(\.modelContext) private var context
+    @EnvironmentObject private var languageStore: AppLanguageStore
     @ObservedObject var history: NativeHistoryModel
     @ObservedObject var cloud: AssetTimeMachineCloudStore
+    @ObservedObject var notifications: NativeNotificationCoordinator
     let openCloudSync: () -> Void
+    let openOnboarding: () -> Void
     @State private var showsLogin = false
     @State private var error: String?
     @State private var message: String?
+    @State private var showsExpenses = false
+    @State private var showsStrategyLibrary = false
+    @State private var testMessage: String?
+    @State private var isSendingTest = false
+    @AppStorage("app.notifications.enabled") private var assetNotificationEnabled = false
+    @AppStorage("app.notifications.intervalHours") private var notificationInterval = 1.0
+    @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
+    @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour = 9
+    @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyRebalanceDefaults.defaultTemplateID
+    @AppStorage("app.appearanceMode") private var appearanceMode = "system"
+    @AppStorage("dashboard.monthlyExpense", store: HomePreferences.defaults) private var monthlyExpense = 3000.0
     @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults)
     private var changeColorRaw = AssetChangeColorScheme.region.rawValue
 
@@ -861,6 +875,18 @@ struct NativeSettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(AppLocalization.string("外观")).font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
                     HStack(spacing: 10) {
+                        Image(systemName: "circle.lefthalf.filled").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                        Text(AppLocalization.string("外观"))
+                        Spacer()
+                        Picker(AppLocalization.string("外观"), selection: $appearanceMode) {
+                            Text(AppLocalization.string("跟随系统")).tag("system")
+                            Text(AppLocalization.string("日间白金")).tag("light")
+                            Text(AppLocalization.string("深色金")).tag("dark")
+                        }.labelsHidden().frame(width: 160)
+                    }.padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    HStack(spacing: 10) {
                         Image(systemName: "paintpalette").foregroundStyle(NativePalette.secondary).frame(width: 22)
                         Text(AppLocalization.string("涨跌配色"))
                         Spacer()
@@ -870,12 +896,97 @@ struct NativeSettingsView: View {
                     }.padding(.horizontal, 14).frame(minHeight: 44)
                         .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    HStack(spacing: 10) {
+                        Image(systemName: "globe").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                        Text(AppLocalization.string("语言"))
+                        Spacer()
+                        Picker(AppLocalization.string("语言"), selection: Binding(
+                            get: { languageStore.language }, set: { languageStore.select($0) })) {
+                            ForEach(AppLanguage.allCases) { Text($0.title).tag($0) }
+                        }.labelsHidden().frame(width: 160)
+                    }.padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    Button(action: openOnboarding) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "book.closed").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                            Text(AppLocalization.string("新手引导"))
+                            Spacer()
+                            Image(systemName: "chevron.right").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        }.padding(.horizontal, 14).frame(minHeight: 44).contentShape(Rectangle())
+                    }.buttonStyle(.plain)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("自动化")).font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
+                    HStack(spacing: 10) {
+                        Image(systemName: "megaphone").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                        Text(AppLocalization.string("资产播报"))
+                        Spacer()
+                        Picker(AppLocalization.string("播报频率"), selection: $notificationInterval) {
+                            ForEach(AssetNotificationService.intervalOptions, id: \.self) { hours in
+                                Text(hours == 24 ? AppLocalization.string("每天一次") : hours == 1 ? AppLocalization.string("每小时") : AppLocalization.format("每 %d 小时", Int(hours))).tag(hours)
+                            }
+                        }.labelsHidden().frame(width: 120).disabled(!assetNotificationEnabled)
+                        Toggle(AppLocalization.string("资产播报"), isOn: $assetNotificationEnabled).labelsHidden()
+                    }.padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    HStack(spacing: 10) {
+                        Image(systemName: "clock").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                        Text(AppLocalization.string("每日调仓提醒"))
+                        Spacer()
+                        Picker(AppLocalization.string("提醒时间"), selection: $strategyNotificationHour) {
+                            ForEach(AssetNotificationService.strategyHourOptions, id: \.self) { hour in
+                                Text(String(format: "%02d:00", hour)).tag(hour)
+                            }
+                        }.labelsHidden().frame(width: 120).disabled(!strategyNotificationEnabled)
+                        Toggle(AppLocalization.string("每日调仓提醒"), isOn: $strategyNotificationEnabled).labelsHidden()
+                    }.padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    HStack(spacing: 10) {
+                        Image(systemName: "chart.line.uptrend.xyaxis").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                        Text(AppLocalization.string("调仓策略"))
+                        Spacer()
+                        Button(StrategyRebalanceDefaults.template(for: strategyTemplateID)?.title ?? AppLocalization.string("选择策略")) {
+                            showsStrategyLibrary = true
+                        }
+                        Button(AppLocalization.string("发送测试提醒")) { sendTestNotification() }.disabled(isSendingTest)
+                    }.padding(.horizontal, 14).frame(minHeight: 44)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
+                    if let text = testMessage ?? notifications.error {
+                        Text(text).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                    }
+                    if notifications.authorizationDenied {
+                        Button(AppLocalization.string("打开系统通知设置")) {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(AppLocalization.string("规划")).font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
+                    Button { showsExpenses = true } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "calculator").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                            Text(AppLocalization.string("月开支估算"))
+                            Spacer()
+                            Text(monthlyExpense.formatted(.currency(code: "CNY"))).foregroundStyle(NativePalette.secondary)
+                            Image(systemName: "chevron.right").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        }.padding(.horizontal, 14).frame(minHeight: 44).contentShape(Rectangle())
+                    }.buttonStyle(.plain)
+                        .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("本机数据").font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
                     HStack(spacing: 10) {
                         Image(systemName: "clock.arrow.circlepath").foregroundStyle(NativePalette.secondary).frame(width: 22)
-                        Text("\(history.summaries.count) 条历史记录")
+                        Text(AppLocalization.format("%d 条历史记录", history.summaries.count))
                         Spacer(minLength: 12)
                         Button("导入记录", action: importJSON).buttonStyle(.bordered).controlSize(.regular)
                         Button("导出记录", action: exportJSON).buttonStyle(.bordered).controlSize(.regular)
@@ -887,6 +998,15 @@ struct NativeSettingsView: View {
                         if let error { Text(error).foregroundStyle(AssetTheme.negative) }
                     }.font(NativeStyle.FontRole.caption).textSelection(.enabled)
                 }
+                HStack(spacing: 10) {
+                    Image(systemName: "info.circle").foregroundStyle(NativePalette.secondary).frame(width: 22)
+                    Text(AppLocalization.string("版本"))
+                    Spacer()
+                    Text("\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"))")
+                        .foregroundStyle(NativePalette.secondary)
+                }.padding(.horizontal, 14).frame(minHeight: 44)
+                    .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
             }
             .font(NativeStyle.FontRole.body)
             .frame(maxWidth: 680)
@@ -900,6 +1020,28 @@ struct NativeSettingsView: View {
         .sheet(isPresented: $showsLogin) {
             NativeAccountChoice(cloud: cloud, allowsOffline: false) { showsLogin = false }
                 .environment(\.modelContext, context)
+        }
+        .sheet(isPresented: $showsExpenses) {
+            NativeExpenseEstimator(monthlyExpense: $monthlyExpense)
+        }
+        .sheet(isPresented: $showsStrategyLibrary) {
+            NativeQuantStrategyLibrary(selectedID: strategyTemplateID) { template in
+                strategyTemplateID = template.id
+                showsStrategyLibrary = false
+            }
+        }
+    }
+    private func sendTestNotification() {
+        isSendingTest = true
+        Task {
+            let title = StrategyRebalanceDefaults.template(for: strategyTemplateID)?.title ?? AppLocalization.string("策略提醒")
+            switch await AssetNotificationService.sendStrategyTestNotification(strategyTitle: title, body: nil) {
+            case .sent: testMessage = AppLocalization.string("测试提醒已发送")
+            case .denied: testMessage = AppLocalization.string("通知权限已关闭")
+            case .failed(let message): testMessage = message
+            }
+            await notifications.updateAuthorization()
+            isSendingTest = false
         }
     }
     private func exportJSON() {
@@ -934,6 +1076,135 @@ struct NativeSettingsView: View {
                 message = "已导入 \(url.lastPathComponent)"
             } catch { self.error = error.localizedDescription }
         }
+    }
+}
+
+private struct NativeExpenseLine: Codable, Identifiable {
+    var id = UUID()
+    var name = ""
+    var amountText = ""
+    var frequency = "monthly"
+
+    init(id: UUID = UUID(), name: String = "", amountText: String = "", frequency: String = "monthly") {
+        self.id = id; self.name = name; self.amountText = amountText; self.frequency = frequency
+    }
+    private enum CodingKeys: String, CodingKey { case id, name, amountText, frequency }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+        amountText = try container.decodeIfPresent(String.self, forKey: .amountText) ?? ""
+        frequency = try container.decodeIfPresent(String.self, forKey: .frequency) ?? "monthly"
+    }
+
+    var amount: Double? {
+        let value = amountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return 0 }
+        let formatter = NumberFormatter()
+        formatter.locale = .current
+        formatter.numberStyle = .decimal
+        guard let number = formatter.number(from: value)?.doubleValue ?? Double(value.replacingOccurrences(of: ",", with: "")),
+              number.isFinite, number >= 0 else { return nil }
+        return number
+    }
+}
+
+private struct NativeExpenseEstimate: Codable {
+    var items: [NativeExpenseLine]
+    private enum CodingKeys: String, CodingKey { case items, monthlyItems, annualItems }
+    init(items: [NativeExpenseLine]) { self.items = items }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let items = try container.decodeIfPresent([NativeExpenseLine].self, forKey: .items) {
+            self.items = items
+        } else {
+            guard container.contains(.monthlyItems) || container.contains(.annualItems) else {
+                throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Missing expense items"))
+            }
+            let monthly = try container.decodeIfPresent([NativeExpenseLine].self, forKey: .monthlyItems) ?? []
+            let annual = try container.decodeIfPresent([NativeExpenseLine].self, forKey: .annualItems) ?? []
+            items = monthly.map { var line = $0; line.frequency = "monthly"; return line }
+                + annual.map { var line = $0; line.frequency = "annual"; return line }
+        }
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(items, forKey: .items)
+    }
+}
+
+private struct NativeExpenseEstimator: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var monthlyExpense: Double
+    @State private var items: [NativeExpenseLine] = []
+    @State private var error: String?
+    @State private var loadFailed = false
+    private let storageKey = "settings.monthlyExpenseEstimate.v1"
+
+    private var monthlyTotal: Double {
+        items.reduce(0) { $0 + ($1.amount ?? 0) / ($1.frequency == "annual" ? 12 : 1) }
+    }
+
+    var body: some View {
+        NativeSheet("月开支估算", width: 560, height: 440, close: { dismiss() }) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(AppLocalization.string("月开支估算")).font(NativeStyle.FontRole.bodyStrong)
+                    Spacer()
+                    Text(monthlyTotal.formatted(.currency(code: "CNY"))).monospacedDigit()
+                }
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach($items) { $item in
+                            HStack(spacing: 8) {
+                                TextField(AppLocalization.string("名称"), text: $item.name)
+                                TextField(AppLocalization.string("金额"), text: $item.amountText).frame(width: 120)
+                                Picker(AppLocalization.string("频率"), selection: $item.frequency) {
+                                    Text(AppLocalization.string("每月")).tag("monthly")
+                                    Text(AppLocalization.string("每年")).tag("annual")
+                                }.labelsHidden().frame(width: 90)
+                                Button { items.removeAll { $0.id == item.id } } label: {
+                                    Image(systemName: "trash")
+                                }.buttonStyle(.borderless).accessibilityLabel(AppLocalization.string("删除"))
+                            }
+                        }
+                    }
+                }
+                Button { items.append(NativeExpenseLine()) } label: {
+                    Label(AppLocalization.string("添加"), systemImage: "plus")
+                }
+                if let error { Text(error).foregroundStyle(AssetTheme.negative) }
+                HStack {
+                    Spacer()
+                    Button(AppLocalization.string("取消")) { dismiss() }
+                    Button(AppLocalization.string("保存")) { save() }.buttonStyle(.borderedProminent).disabled(loadFailed)
+                }
+            }
+        }.onAppear(perform: load)
+    }
+
+    private func load() {
+        let raw = HomePreferences.defaults.string(forKey: storageKey) ?? ""
+        if let data = raw.data(using: .utf8), let estimate = try? JSONDecoder().decode(NativeExpenseEstimate.self, from: data) {
+            items = estimate.items
+        } else if !raw.isEmpty {
+            error = AppLocalization.string("数据读取失败")
+            loadFailed = true
+        } else if monthlyExpense > 0 {
+            items = [NativeExpenseLine(name: AppLocalization.string("月开支"), amountText: String(monthlyExpense))]
+        }
+    }
+
+    private func save() {
+        guard items.allSatisfy({ $0.amount != nil }) else {
+            error = AppLocalization.string("请输入有效金额")
+            return
+        }
+        guard let data = try? JSONEncoder().encode(NativeExpenseEstimate(items: items)),
+              let raw = String(data: data, encoding: .utf8) else { return }
+        HomePreferences.defaults.set(raw, forKey: storageKey)
+        monthlyExpense = monthlyTotal
+        dismiss()
     }
 }
 

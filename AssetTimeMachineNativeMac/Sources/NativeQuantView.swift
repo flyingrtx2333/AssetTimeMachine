@@ -61,7 +61,7 @@ struct NativeQuantView: View {
             if store.route != "overview" {
                 Button { store.route = "overview" } label: { Image(systemName: "chevron.left") }
                     .accessibilityLabel("返回量化")
-                Text(title).font(NativeStyle.FontRole.section).lineLimit(1).help(title)
+                Text(AppLocalization.string(title)).font(NativeStyle.FontRole.section).lineLimit(1).help(AppLocalization.string(title))
             } else {
                 ForEach(BacktestRecordKind.allCases, id: \.rawValue) { kind in entry(kind) }
             }
@@ -338,7 +338,7 @@ private struct NativeQuantConfigurationView: View {
     }
     private func ruleInput(_ label: String, direction: Binding<AdvancedBacktestSignalDirection>, days: Binding<Int>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
+            Text(AppLocalization.string(label)).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
             Picker(label, selection: direction) {
                 ForEach(AdvancedBacktestSignalDirection.allCases) { Text($0.localizedTitle).tag($0) }
             }.labelsHidden()
@@ -348,7 +348,7 @@ private struct NativeQuantConfigurationView: View {
     private func percentInput(_ title: String, value: Binding<Double>) -> some View { numberInput(title, value: value, suffix: "%") }
     private func numberInput(_ title: String, value: Binding<Double>, suffix: String) -> some View {
         HStack(spacing: 8) {
-            Text(title).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+            Text(AppLocalization.string(title)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                 .frame(width: 66, alignment: .leading)
             HStack(spacing: NativeStyle.Space.sm) {
                 TextField(title, value: value, format: .number.precision(.fractionLength(0...4))).textFieldStyle(.roundedBorder)
@@ -358,7 +358,7 @@ private struct NativeQuantConfigurationView: View {
     }
 }
 
-private struct NativeQuantStrategyLibrary: View {
+struct NativeQuantStrategyLibrary: View {
     @Environment(\.dismiss) private var dismiss
     let selectedID: String
     let select: (AdvancedBacktestStrategyTemplate) -> Void

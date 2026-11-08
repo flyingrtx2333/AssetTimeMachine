@@ -4,6 +4,76 @@ import Charts
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+import UserNotifications
+
+@MainActor
+final class NativeNotificationCoordinator: ObservableObject {
+    @Published var error: String?
+    @Published var authorizationDenied = false
+    private var generation = 0
+    private var worker: Task<Void, Never>?
+    private let presentation = NativeNotificationPresentation()
+
+    init() {
+        if !AppPreviewSession.isActive { UNUserNotificationCenter.current().delegate = presentation }
+    }
+
+    func updateAuthorization() async {
+        authorizationDenied = await AssetNotificationService.authorizationStatus() == .denied
+    }
+
+    func refresh(context: ModelContext) {
+        guard !AppPreviewSession.isActive else { return }
+        generation += 1
+        guard worker == nil else { return }
+        worker = Task {
+            repeat {
+                let current = generation
+                let defaults = UserDefaults.standard
+                let enabled = defaults.bool(forKey: "app.notifications.enabled")
+                let hours = defaults.object(forKey: "app.notifications.intervalHours") as? Double ?? 1
+                let strategy = defaults.bool(forKey: "app.strategyNotifications.enabled")
+                let selectedHour = defaults.object(forKey: "app.strategyNotifications.hour") as? Int ?? 9
+                let selectedID = defaults.string(forKey: "app.strategyNotifications.templateID") ?? StrategyRebalanceDefaults.defaultTemplateID
+                do {
+                    var descriptor = FetchDescriptor<AssetSnapshot>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+                    descriptor.fetchLimit = 1
+                    let snapshot = enabled ? try context.fetch(descriptor).first : nil
+                    var financial = 0.0, physical = 0.0, liabilities = 0.0
+                    for entry in snapshot?.entries ?? [] {
+                        switch entry.item?.category?.group ?? .financial {
+                        case .financial: financial += entry.resolvedAmount
+                        case .physical: physical += entry.resolvedAmount
+                        case .liability: liabilities += entry.resolvedAmount
+                        }
+                    }
+                    let value = snapshot.map { _ in AssetNotificationSnapshot(totalAssets: financial + physical,
+                        totalLiabilities: liabilities, financialAssets: financial, physicalAssets: physical) }
+                    let granted = try await AssetNotificationService.refreshSchedule(isEnabled: enabled && value != nil,
+                        intervalHours: hours, snapshot: value)
+                    if enabled && !granted && current == generation { defaults.set(false, forKey: "app.notifications.enabled") }
+                    error = enabled && value == nil ? AppLocalization.string("暂无记录") : nil
+                } catch { self.error = error.localizedDescription }
+                do {
+                    let title = StrategyRebalanceDefaults.template(for: selectedID)?.title ?? AppLocalization.string("策略提醒")
+                    let strategyGranted = try await AssetNotificationService.refreshStrategySchedule(isEnabled: strategy,
+                        hour: selectedHour, strategyTitle: title, body: nil)
+                    if strategy && !strategyGranted && current == generation { defaults.set(false, forKey: "app.strategyNotifications.enabled") }
+                    await updateAuthorization()
+                } catch { self.error = error.localizedDescription }
+                if current == generation { break }
+            } while !Task.isCancelled
+            worker = nil
+        }
+    }
+}
+
+private final class NativeNotificationPresentation: NSObject, UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+}
 
 private enum NativePage: String, CaseIterable, Identifiable {
     case home = "首页", records = "记录", timeMachine = "时光机", quant = "量化", settings = "设置"
@@ -95,11 +165,20 @@ struct NativeRootView: View {
     @StateObject private var cloud = NativeRootView.makeCloudStore()
     @StateObject private var history = NativeHistoryModel()
     @StateObject private var quant = NativeQuantStore()
+    @StateObject private var notifications = NativeNotificationCoordinator()
+    @EnvironmentObject private var languageStore: AppLanguageStore
+    @AppStorage("app.notifications.enabled") private var assetNotificationEnabled = false
+    @AppStorage("app.notifications.intervalHours") private var notificationInterval = 1.0
+    @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
+    @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour = 9
+    @AppStorage("app.strategyNotifications.templateID") private var strategyTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     @State private var page: NativePage = .home
     @State private var recordEditor = NativeRecordEditor()
     @State private var requestedRecord: NativeRecordDestination?
     @State private var showsAccountChoice = false
     @State private var showsCloudSync = false
+    @State private var showsOnboarding = false
+    @AppStorage("nativeMac.onboarding.completed") private var completedOnboarding = false
     @State private var applicationIsActive = NSApp.isActive
     @State private var hasMadeAccountChoice = UserDefaults.standard.bool(forKey: "nativeMac.hasMadeAccountChoice")
     @Environment(\.scenePhase) private var scenePhase
@@ -131,7 +210,8 @@ struct NativeRootView: View {
                     case .records: NativeRecordsView(history: history, cloud: cloud, editor: recordEditor, requestedDestination: $requestedRecord)
                     case .timeMachine: NativeTimeMachineView(history: history)
                     case .quant: NativeQuantView(store: quant)
-                    case .settings: NativeSettingsView(history: history, cloud: cloud, openCloudSync: { showsCloudSync = true })
+                    case .settings: NativeSettingsView(history: history, cloud: cloud, notifications: notifications,
+                        openCloudSync: { showsCloudSync = true }, openOnboarding: { showsOnboarding = true })
                     }
         }
         .disabled(cloud.isApplyingLocalData)
@@ -146,7 +226,7 @@ struct NativeRootView: View {
                     page = .records
                 }).frame(width: 0, height: 0)
             ForEach(NativePage.allCases) { destination in
-                Button(destination.rawValue) { page = destination }
+                Button(AppLocalization.string(destination.rawValue)) { page = destination }
                     .keyboardShortcut(KeyEquivalent(Character(String((NativePage.allCases.firstIndex(of: destination) ?? 0) + 1))), modifiers: .command)
                     .disabled(cloud.isApplyingLocalData)
                     .hidden().accessibilityHidden(true).frame(width: 0, height: 0)
@@ -221,6 +301,7 @@ struct NativeRootView: View {
             if !AppPreviewSession.isActive && !startsOffline {
                 if !hasMadeAccountChoice && !cloud.hasToken { showsAccountChoice = true }
             }
+            presentFirstRunIfNeeded()
             if ProcessInfo.processInfo.arguments.contains("-macPerfAutoBrowse"), !performanceTourStarted {
                 performanceTourStarted = true
                 Task { await runPerformanceTour() }
@@ -254,9 +335,17 @@ struct NativeRootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             applicationIsActive = true
+            if !AppPreviewSession.isActive { Task { await notifications.updateAuthorization() } }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             applicationIsActive = false
+        }
+        .task(id: "\(assetNotificationEnabled)|\(notificationInterval)|\(strategyNotificationEnabled)|\(strategyNotificationHour)|\(strategyTemplateID)|\(history.generation)|\(languageStore.language.rawValue)") {
+            notifications.refresh(context: context)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { notification in
+            guard notification.object is ModelContext, !cloud.isApplyingLocalData else { return }
+            notifications.refresh(context: context)
         }
         .onChange(of: allowsCloudRefresh, initial: true) { _, active in
             if !AppPreviewSession.isActive { cloud.setAutomaticSyncActive(active) }
@@ -274,6 +363,7 @@ struct NativeRootView: View {
         .onChange(of: cloud.localDataRevision) { _, _ in
             Task {
                 await history.load(from: context.container, force: true)
+                presentFirstRunIfNeeded()
                 NSLog("[NativeMac] cloud records refreshed count=%ld latest=%@", history.summaries.count,
                       history.summaries.last?.date.ISO8601Format() ?? "none")
             }
@@ -282,7 +372,7 @@ struct NativeRootView: View {
             guard let date else { return }
             NSLog("[NativeMac] cloud backup applied uploaded=%@", date.ISO8601Format())
         }
-        .sheet(isPresented: $showsAccountChoice) {
+        .sheet(isPresented: $showsAccountChoice, onDismiss: presentFirstRunIfNeeded) {
             NativeAccountChoice(cloud: cloud) {
                 hasMadeAccountChoice = true
                 UserDefaults.standard.set(true, forKey: "nativeMac.hasMadeAccountChoice")
@@ -294,6 +384,33 @@ struct NativeRootView: View {
             NativeCloudSyncView(cloud: cloud)
                 .environment(\.modelContext, context)
         }
+        .sheet(isPresented: $showsOnboarding) {
+            NativeSheet("新手引导", width: 420, height: 240, close: { completedOnboarding = true; showsOnboarding = false }) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(AppLocalization.string("先录入一项资产")).font(NativeStyle.FontRole.sectionStrong)
+                    Text(AppLocalization.string("选择一项资产，记录金额，即可开始查看资产变化。"))
+                        .foregroundStyle(NativePalette.secondary)
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(AppLocalization.string("取消")) { completedOnboarding = true; showsOnboarding = false }
+                        Button(AppLocalization.string("开始记录")) {
+                            completedOnboarding = true
+                            showsOnboarding = false
+                            requestedRecord = .today
+                            page = .records
+                        }.buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+        }
+    }
+
+    private func presentFirstRunIfNeeded() {
+        guard !AppPreviewSession.isActive, !completedOnboarding, !showsAccountChoice,
+              !cloud.hasToken || cloud.hasCompletedInitialSync else { return }
+        if history.summaries.isEmpty { showsOnboarding = true }
+        else { completedOnboarding = true }
     }
 
     // Isolated fixture-only native capture: never operates an authenticated account.
@@ -460,6 +577,7 @@ private struct NativeWindowToolbar: NSViewRepresentable {
         private var navigation: NSSegmentedControl?
         private var cloud: NSButton?
         private var add: NSButton?
+        private weak var brandTitle: NSTextField?
 
         init(_ owner: NativeWindowToolbar) {
             self.owner = owner
@@ -498,6 +616,7 @@ private struct NativeWindowToolbar: NSViewRepresentable {
                 mark.widthAnchor.constraint(equalToConstant: 16).isActive = true
                 mark.heightAnchor.constraint(equalToConstant: 16).isActive = true
                 let title = NSTextField(labelWithString: AppLocalization.string("资产时光机"))
+                brandTitle = title
                 title.font = .systemFont(ofSize: 13, weight: .medium)
                 let stack = NSStackView(views: [mark, title])
                 stack.spacing = 6; stack.alignment = .centerY
@@ -541,6 +660,17 @@ private struct NativeWindowToolbar: NSViewRepresentable {
             return item
         }
         func update() {
+            brandTitle?.stringValue = AppLocalization.string("资产时光机")
+            let english = AppLocalization.currentLocale.language.languageCode?.identifier == "en"
+            if let navigation {
+                let width: CGFloat = english ? 105 : 58
+                for index in NativePage.allCases.indices { navigation.setWidth(width, forSegment: index) }
+                navigation.setFrameSize(NSSize(width: width * CGFloat(NativePage.allCases.count) + 4, height: 28))
+            }
+            for (index, page) in NativePage.allCases.enumerated() {
+                navigation?.setLabel(AppLocalization.string(page.rawValue), forSegment: index)
+            }
+            add?.title = AppLocalization.string("新增记录")
             navigation?.selectedSegment = NativePage.allCases.firstIndex(of: owner.page) ?? 0
             navigation?.isEnabled = owner.isEnabled
             navigation?.selectedSegmentBezelColor = NSColor(NativePalette.accent)
@@ -569,7 +699,7 @@ struct NativePageHeader: View {
     let subtitle: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(NativeStyle.FontRole.pageTitle)
+            Text(AppLocalization.string(title)).font(NativeStyle.FontRole.pageTitle)
             if let subtitle { Text(subtitle).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -845,7 +975,7 @@ struct NativeTimeMachineView: View {
     }
     private func reportRow(_ title: String, _ value: String) -> some View {
         HStack {
-            Text(title).foregroundStyle(NativePalette.secondary)
+            Text(AppLocalization.string(title)).foregroundStyle(NativePalette.secondary)
             Spacer()
             Text(value).monospacedDigit()
         }

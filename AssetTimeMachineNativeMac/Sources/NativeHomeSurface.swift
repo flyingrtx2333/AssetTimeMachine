@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-private enum HomePreferences {
+enum HomePreferences {
     // Parameter checks in the fixture app never write the user's production preferences.
     static let defaults: UserDefaults = AppPreviewSession.isActive
         ? UserDefaults(suiteName: "com.flyingrtx.AssetTimeMachine.home-preview.\(UUID().uuidString)")!
@@ -622,7 +622,7 @@ struct NativeWorkspaceMetric: View {
     @Environment(\.accessibilityReduceMotion) private var reduced
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text(title).font(NativeStyle.FontRole.body).foregroundStyle(NativeHomeStyle.secondary)
+            Text(AppLocalization.string(title)).font(NativeStyle.FontRole.body).foregroundStyle(NativeHomeStyle.secondary)
             Text(primary ? NativeHomeStyle.amount(value) : value.formatted(.number.precision(.fractionLength(2))))
                 .font(primary ? NativeStyle.FontRole.display : NativeStyle.FontRole.metric).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.7)
