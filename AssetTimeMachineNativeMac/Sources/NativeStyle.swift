@@ -149,6 +149,11 @@ enum NativePalette {
     static let allocationMedium = adaptive(light: 0xE0DDD5, dark: 0x3B3932)
     static let allocationDark = adaptive(light: 0xD6D1C5, dark: 0x484337)
     static let chartSecondary = adaptive(light: 0x9BA1AA, dark: 0xA8AFBA)
+    // The welcome illustration has a warmer canvas; account/workspace roles remain unchanged.
+    static let welcomeCanvas = adaptive(light: 0xF5F2EB, dark: 0x202527)
+    static let welcomeGold = adaptive(light: 0x99773C, dark: 0xD0B272)
+    static let welcomeAction = adaptive(light: 0x937339, dark: 0xD1B373)
+    static let welcomeActionText = adaptive(light: 0xFFFFFF, dark: 0x171B1C)
 }
 
 enum AssetTheme {

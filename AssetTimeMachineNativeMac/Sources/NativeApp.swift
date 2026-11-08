@@ -119,32 +119,6 @@ struct AssetTimeMachineNativeApp: App {
     }
 }
 
-private struct NativeFreshStartView: View {
-    let start: (Bool) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Image(systemName: "clock.arrow.circlepath")
-                .font(NativeStyle.FontRole.brandSymbol)
-                .foregroundStyle(AssetTheme.gold)
-            Text("欢迎使用资产时光机")
-                .font(NativeStyle.FontRole.dialogTitle)
-            Text("选择开始方式。已有手机数据可以登录同步；也可以先在本机记录，之后随时登录。")
-                .font(NativeStyle.FontRole.input)
-                .foregroundStyle(NativePalette.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("登录并同步手机数据") { start(false) }
-                .buttonStyle(.borderedProminent)
-                .tint(AssetTheme.gold)
-            Button("不登录，先在本机使用") { start(true) }
-                .buttonStyle(.bordered)
-        }
-        .padding(30)
-        .frame(width: 410)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}
-
 private struct NativeCloudRecoveryView: View {
     @Environment(\.modelContext) private var context
     @StateObject private var cloud = AssetTimeMachineCloudStore()

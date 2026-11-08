@@ -2,6 +2,10 @@
 
 ## Current local workspace
 
+The shared integration branch is `main` on GitHub and on both development Macs. Fetch before comparing versions; a cached remote-tracking branch is not proof of the latest remote state. Create feature branches from current `origin/main`, then integrate completed changes back into `main`. Historical release/research worktrees remain separate and must not be treated as the current application checkout.
+
+Git synchronization does not update an installed Mac app. Rebuild with `scripts/run_native_mac.sh` after source/resource updates, then replace the installed app and verify its `ATMSourceRevision`, build number, and bundled icon.
+
 The research workspace is in the sibling FlyingrtxFast repository at `research/asset-time-machine/workspace/`. Resolve it relative to this checkout or use `ASSET_TIME_MACHINE_RESEARCH_WORKSPACE`; verify the sibling checkout before use. Do not alter immutable artifact paths inside historical results.
 
 For new research, the user's later fee instruction and the research workspace `AGENTS.md` apply: 0.025% per fill, zero base slippage unless the specific study freezes another scenario. Historical 1% results and current App product defaults remain unchanged.

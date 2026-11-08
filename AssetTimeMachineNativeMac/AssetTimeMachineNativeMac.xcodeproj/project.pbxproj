@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B6DC2DBD91C451CF14A84999 /* AssetNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83669EBE8521698567080972 /* AssetNotificationService.swift */; };
+		A7A1C0A02910000000000002 /* NativeWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A1C0A02910000000000001 /* NativeWelcomeView.swift */; };
 		A7A1C0A02710000000000002 /* MarketAssetLogoCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */; };
 		DB5973AB306F4C43B262DC12 /* NativeStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5973AB306F4C43B262DC11 /* NativeStyle.swift */; };
 		0112DD0C9E9B668C44D600F2 /* BacktestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 608DA2E8E3697651630754D4 /* BacktestModels.swift */; };
@@ -54,6 +55,7 @@
 
 /* Begin PBXFileReference section */
 		83669EBE8521698567080972 /* AssetNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetNotificationService.swift; sourceTree = "<group>"; };
+		A7A1C0A02910000000000001 /* NativeWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeWelcomeView.swift; sourceTree = "<group>"; };
 		A7A1C0A02710000000000001 /* MarketAssetLogoCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketAssetLogoCache.swift; sourceTree = "<group>"; };
 		DB5973AB306F4C43B262DC11 /* NativeStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeStyle.swift; sourceTree = "<group>"; };
 		058A5DE5DE282BDBF9E6B58B /* AssetTimeMachine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AssetTimeMachine; path = ..; sourceTree = SOURCE_ROOT; };
@@ -115,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				25092AB680675B86EFB10D5C /* NativeApp.swift */,
+				A7A1C0A02910000000000001 /* NativeWelcomeView.swift */,
 				A0F8552CDFEF2E9D23026890 /* NativeCompatibility.swift */,
 				DB5973AB306F4C43B262DC11 /* NativeStyle.swift */,
 				EA52BC78366B4606A01B235E /* NativeAssetChangeCalendar.swift */,
@@ -318,6 +321,7 @@
 				A7A1C0A02710000000000002 /* MarketAssetLogoCache.swift in Sources */,
 				CBD5E17F777071A66A0817A9 /* Models.swift in Sources */,
 				E6A9A0FC7696BA66BEA46A2B /* NativeApp.swift in Sources */,
+				A7A1C0A02910000000000002 /* NativeWelcomeView.swift in Sources */,
 				4313063ED2570356BA21FC81 /* NativeCompatibility.swift in Sources */,
 				DB5973AB306F4C43B262DC12 /* NativeStyle.swift in Sources */,
 				81795C1AEB9449819A84894E /* NativeAssetChangeCalendar.swift in Sources */,
