@@ -58,6 +58,10 @@ enum SnapshotService {
                     item: previousEntry.item
                 )
                 entry.inheritedFromEntryID = previousEntry.id
+                entry.amountEditedAt = previousEntry.amountEditedAt
+                entry.quantityEditedAt = previousEntry.quantityEditedAt
+                entry.unitPriceEditedAt = previousEntry.unitPriceEditedAt
+                entry.noteEditedAt = previousEntry.noteEditedAt
                 context.insert(entry)
             }
         }
@@ -121,6 +125,7 @@ enum SnapshotService {
             }
         }
 
+        let userEditTime = Date.now.timeIntervalSince1970
         if let existing = snapshot.entries.first(where: { $0.item?.id == item.id }) {
             let didChange = valuesDiffer(existing.amount, amount)
                 || valuesDiffer(existing.quantity, quantity)
@@ -130,6 +135,13 @@ enum SnapshotService {
             // Saving an inherited value confirms it even when the number is unchanged.
             guard didChange || existing.inheritedFromEntryID != nil else { return }
 
+            let confirmingCopy = existing.inheritedFromEntryID != nil && !didChange
+            if valuesDiffer(existing.amount, amount) || (confirmingCopy && amount != nil) { existing.amountEditedAt = userEditTime }
+            if valuesDiffer(existing.quantity, quantity) || (confirmingCopy && quantity != nil) { existing.quantityEditedAt = userEditTime }
+            if item.marketAssetSymbol == nil && valuesDiffer(existing.unitPrice, unitPrice) {
+                existing.unitPriceEditedAt = userEditTime
+            }
+            if existing.note != note { existing.noteEditedAt = userEditTime }
             existing.amount = amount
             existing.quantity = quantity
             existing.unitPrice = unitPrice
@@ -147,7 +159,11 @@ enum SnapshotService {
                 unitPrice: unitPrice,
                 note: note,
                 snapshot: snapshot,
-                item: item
+                item: item,
+                amountEditedAt: amount == nil ? nil : userEditTime,
+                quantityEditedAt: quantity == nil ? nil : userEditTime,
+                unitPriceEditedAt: unitPrice == nil || item.marketAssetSymbol != nil ? nil : userEditTime,
+                noteEditedAt: note.isEmpty ? nil : userEditTime
             )
             context.insert(entry)
         }

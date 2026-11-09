@@ -311,6 +311,10 @@ final class AssetEntry {
     var createdAt: Date
     var updatedAt: Date
     var inheritedFromEntryID: UUID?
+    var amountEditedAt: TimeInterval?
+    var quantityEditedAt: TimeInterval?
+    var unitPriceEditedAt: TimeInterval?
+    var noteEditedAt: TimeInterval?
 
     var snapshot: AssetSnapshot?
     var item: AssetItem?
@@ -325,7 +329,11 @@ final class AssetEntry {
         updatedAt: Date = .now,
         snapshot: AssetSnapshot? = nil,
         item: AssetItem? = nil,
-        inheritedFromEntryID: UUID? = nil
+        inheritedFromEntryID: UUID? = nil,
+        amountEditedAt: TimeInterval? = nil,
+        quantityEditedAt: TimeInterval? = nil,
+        unitPriceEditedAt: TimeInterval? = nil,
+        noteEditedAt: TimeInterval? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -337,6 +345,10 @@ final class AssetEntry {
         self.snapshot = snapshot
         self.item = item
         self.inheritedFromEntryID = inheritedFromEntryID
+        self.amountEditedAt = amountEditedAt
+        self.quantityEditedAt = quantityEditedAt
+        self.unitPriceEditedAt = unitPriceEditedAt
+        self.noteEditedAt = noteEditedAt
     }
 
     var resolvedAmount: Double {

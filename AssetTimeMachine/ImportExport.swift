@@ -65,6 +65,10 @@ nonisolated struct ExportPayload: Codable, Sendable {
         let updatedAt: Date
         let itemID: UUID?
         var inheritedFromEntryID: UUID? = nil
+        var amountEditedAt: TimeInterval? = nil
+        var quantityEditedAt: TimeInterval? = nil
+        var unitPriceEditedAt: TimeInterval? = nil
+        var noteEditedAt: TimeInterval? = nil
     }
 
     nonisolated struct DeletionPayload: Codable, Sendable {
@@ -176,7 +180,11 @@ private actor CloudExportProjectionStore {
                             createdAt: entry.createdAt,
                             updatedAt: entry.updatedAt,
                             itemID: entry.item?.id,
-                            inheritedFromEntryID: entry.inheritedFromEntryID
+                            inheritedFromEntryID: entry.inheritedFromEntryID,
+                            amountEditedAt: entry.amountEditedAt,
+                            quantityEditedAt: entry.quantityEditedAt,
+                            unitPriceEditedAt: entry.unitPriceEditedAt,
+                            noteEditedAt: entry.noteEditedAt
                         ))
                     })
                 }
@@ -401,7 +409,11 @@ enum ImportExportService {
                             createdAt: $0.createdAt,
                             updatedAt: $0.updatedAt,
                             itemID: $0.item?.id,
-                            inheritedFromEntryID: $0.inheritedFromEntryID
+                            inheritedFromEntryID: $0.inheritedFromEntryID,
+                            amountEditedAt: $0.amountEditedAt,
+                            quantityEditedAt: $0.quantityEditedAt,
+                            unitPriceEditedAt: $0.unitPriceEditedAt,
+                            noteEditedAt: $0.noteEditedAt
                         )
                     }
                 )
@@ -807,6 +819,10 @@ enum ImportExportService {
                         if entry.inheritedFromEntryID != entryPayload.inheritedFromEntryID {
                             entry.inheritedFromEntryID = entryPayload.inheritedFromEntryID
                         }
+                        if entry.amountEditedAt != entryPayload.amountEditedAt { entry.amountEditedAt = entryPayload.amountEditedAt }
+                        if entry.quantityEditedAt != entryPayload.quantityEditedAt { entry.quantityEditedAt = entryPayload.quantityEditedAt }
+                        if entry.unitPriceEditedAt != entryPayload.unitPriceEditedAt { entry.unitPriceEditedAt = entryPayload.unitPriceEditedAt }
+                        if entry.noteEditedAt != entryPayload.noteEditedAt { entry.noteEditedAt = entryPayload.noteEditedAt }
                         if entry.createdAt != entryPayload.createdAt {
                             entry.createdAt = entryPayload.createdAt
                         }
@@ -833,7 +849,11 @@ enum ImportExportService {
                             updatedAt: entryPayload.updatedAt,
                             snapshot: snapshot,
                             item: item,
-                            inheritedFromEntryID: entryPayload.inheritedFromEntryID
+                            inheritedFromEntryID: entryPayload.inheritedFromEntryID,
+                            amountEditedAt: entryPayload.amountEditedAt,
+                            quantityEditedAt: entryPayload.quantityEditedAt,
+                            unitPriceEditedAt: entryPayload.unitPriceEditedAt,
+                            noteEditedAt: entryPayload.noteEditedAt
                         )
                         context.insert(entry)
                         entryMap[entry.id] = entry
@@ -1154,6 +1174,34 @@ nonisolated enum SyncMergeService {
         }
     }
 
+    /// Equal records on both replicas are evidence of shared history even when
+    /// an older client has lost its local baseline. Never infer an edited value.
+    static func sharedHistoryBaseline(local: ExportPayload, remote: ExportPayload) -> ExportPayload? {
+        func common<T: Encodable, ID: Hashable>(_ left: [T], _ right: [T], id: KeyPath<T, ID>) -> [T] {
+            let others = keyedByID(right, id: id)
+            return left.filter { value in
+                others[value[keyPath: id]].map { sameSemanticContent(value, $0) } == true
+            }
+        }
+        let empty = ExportPayload(exportedAt: .now, categories: [], items: [], snapshots: [], deletions: [])
+        let automaticItems = automaticPriceItemIDs(local: local, remote: remote, baseline: empty)
+        let remoteSnapshots = keyedByID(remote.snapshots, id: \.id)
+        let snapshots = local.snapshots.filter { snapshot in
+            remoteSnapshots[snapshot.id].map { sameUserSnapshot(snapshot, $0, automaticItems: automaticItems) } == true
+        }
+        guard snapshots.contains(where: { !$0.entries.isEmpty }) else { return nil }
+        let deletions = local.deletionRecords.filter { left in
+            remote.deletionRecords.contains { right in
+                left.entityID == right.entityID && left.entityKind == right.entityKind
+                    && sameSemanticContent(left, right)
+            }
+        }
+        return .init(exportedAt: .now,
+            categories: common(local.categories, remote.categories, id: \.id),
+            items: common(local.items, remote.items, id: \.id),
+            snapshots: snapshots, deletions: deletions)
+    }
+
     static func reviewedPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload,
         choices: [String: EntryChoice] = [:]) throws -> EntryReviewResult {
         let review = EntryReviewContext(choices: choices)
@@ -1319,7 +1367,9 @@ nonisolated enum SyncMergeService {
     private static func sameUserEntry(_ l: ExportPayload.EntryPayload, _ r: ExportPayload.EntryPayload,
         automaticItems: Set<UUID>) -> Bool {
         let derivedPrice = l.itemID == r.itemID && l.itemID.map { automaticItems.contains($0) } == true
-        return sameSemanticContent(l, r, excluding: derivedPrice ? ["unitPrice", "inheritedFromEntryID"] : ["inheritedFromEntryID"])
+        var excluded: Set<String> = ["inheritedFromEntryID", "amountEditedAt", "quantityEditedAt", "unitPriceEditedAt", "noteEditedAt"]
+        if derivedPrice { excluded.insert("unitPrice") }
+        return sameSemanticContent(l, r, excluding: excluded)
     }
 
     private static func sameUserSnapshot(_ l: ExportPayload.SnapshotPayload, _ r: ExportPayload.SnapshotPayload,
@@ -1348,14 +1398,32 @@ nonisolated enum SyncMergeService {
             for entry in snapshot.entries {
                 guard let sourceID = entry.inheritedFromEntryID, let (day, source) = sources[sourceID],
                       day < snapshot.date, entry.itemID == source.itemID else { continue }
-                var excluded: Set<String> = ["id", "inheritedFromEntryID"]
+                var excluded: Set<String> = ["id", "inheritedFromEntryID", "amountEditedAt", "quantityEditedAt", "unitPriceEditedAt", "noteEditedAt"]
                 if entry.itemID.map({ automaticItems.contains($0) }) == true { excluded.insert("unitPrice") }
                 if sameSemanticContent(entry, source, excluding: excluded) {
                     inherited[entry.id] = .init(date: day, entryID: sourceID)
                 }
             }
         }
-        return inherited
+        // Compare the last confirmed ancestor, not the day an automatic copy was
+        // made. Two copies made today can originate from different user edits.
+        var originDates: [UUID: Date] = [:]
+        for id in inherited.keys {
+            var cursor = id
+            var path: [UUID] = []
+            var origin = Date.distantPast
+            while let source = inherited[cursor] {
+                if let cached = originDates[cursor] { origin = cached; break }
+                path.append(cursor)
+                origin = source.date
+                cursor = source.entryID
+            }
+            for entryID in path { originDates[entryID] = origin }
+        }
+        return inherited.reduce(into: [:]) { result, pair in
+            result[pair.key] = InheritedEntrySource(date: originDates[pair.key] ?? pair.value.date,
+                entryID: pair.value.entryID)
+        }
     }
 
     private static func inheritedBaselineEntry(
@@ -1389,11 +1457,29 @@ nonisolated enum SyncMergeService {
         baselineEntries: [UUID: ExportPayload.EntryPayload], entryReview: EntryReviewContext?) throws -> ExportPayload.SnapshotPayload {
         let lSnapshotDate = l.date
         let entries = try reconcileRecords(l.entries, r.entries, b?.entries ?? [], id: \.id) { left, right, prior in
-            func value<T: Equatable & Encodable>(_ field: EntryField, _ l: T, _ r: T, _ base: T?) throws -> T {
-                if let entryReview {
-                    return try entryReview.value(l, r, base, entry: left, date: lSnapshotDate, field: field)
+            func editClock(_ entry: ExportPayload.EntryPayload, _ field: EntryField) -> TimeInterval? {
+                switch field {
+                case .amount: return entry.amountEditedAt
+                case .quantity: return entry.quantityEditedAt
+                case .unitPrice: return entry.unitPriceEditedAt
+                case .note: return entry.noteEditedAt
                 }
-                return try mergeValue(l, r, base)
+            }
+            func value<T: Equatable & Encodable>(_ field: EntryField, _ l: T, _ r: T, _ base: T?, preferred: T? = nil) throws -> T {
+                let leftEdit = editClock(left, field), rightEdit = editClock(right, field)
+                let leftTracksEdits = [left.amountEditedAt, left.quantityEditedAt, left.unitPriceEditedAt, left.noteEditedAt].contains { $0 != nil }
+                let rightTracksEdits = [right.amountEditedAt, right.quantityEditedAt, right.unitPriceEditedAt, right.noteEditedAt].contains { $0 != nil }
+                if let leftEdit, let rightEdit, leftEdit != rightEdit { return leftEdit > rightEdit ? l : r }
+                if leftEdit != nil && rightEdit == nil && rightTracksEdits { return l }
+                if rightEdit != nil && leftEdit == nil && leftTracksEdits { return r }
+                do { return try mergeValue(l, r, base) }
+                catch Conflict.divergentEdits {
+                    if let preferred { return preferred }
+                    if let entryReview {
+                        return try entryReview.value(l, r, base, entry: left, date: lSnapshotDate, field: field)
+                    }
+                    throw Conflict.divergentEdits
+                }
             }
             let automatic = left.itemID == right.itemID && left.itemID.map { automaticItems.contains($0) } == true
             let leftSource = localInheritance[left.id], rightSource = remoteInheritance[right.id]
@@ -1413,17 +1499,28 @@ nonisolated enum SyncMergeService {
                 else if let prior, right.unitPrice == prior.unitPrice { price = left.unitPrice ?? right.unitPrice }
                 else { price = isStrictlyNewer(left.updatedAt, than: right.updatedAt)
                     ? (left.unitPrice ?? right.unitPrice) : (right.unitPrice ?? left.unitPrice) }
-            } else if let userValues { price = userValues.unitPrice }
-            else { price = try value(.unitPrice, left.unitPrice, right.unitPrice, userBase.map { $0.unitPrice }) }
+            } else { price = try value(.unitPrice, left.unitPrice, right.unitPrice,
+                userBase.map { $0.unitPrice }, preferred: userValues.map { $0.unitPrice }) }
             let inheritedSource = userValues?.inheritedFromEntryID
                 ?? (leftSource != nil && rightSource != nil ? left.inheritedFromEntryID : nil)
-            return ExportPayload.EntryPayload(id: left.id,
-                amount: try userValues.map { $0.amount } ?? value(.amount, left.amount, right.amount, userBase.map { $0.amount }),
-                quantity: try userValues.map { $0.quantity } ?? value(.quantity, left.quantity, right.quantity, userBase.map { $0.quantity }),
-                unitPrice: price, note: try userValues?.note ?? value(.note, left.note, right.note, userBase.map { $0.note }),
+            var mergedEntry = ExportPayload.EntryPayload(id: left.id,
+                amount: try value(.amount, left.amount, right.amount, userBase.map { $0.amount }, preferred: userValues.map { $0.amount }),
+                quantity: try value(.quantity, left.quantity, right.quantity, userBase.map { $0.quantity }, preferred: userValues.map { $0.quantity }),
+                unitPrice: price, note: try value(.note, left.note, right.note, userBase.map { $0.note }, preferred: userValues.map { $0.note }),
                 createdAt: min(left.createdAt, right.createdAt), updatedAt: max(left.updatedAt, right.updatedAt),
                 itemID: try mergeValue(left.itemID, right.itemID, prior.map { $0.itemID }),
                 inheritedFromEntryID: inheritedSource)
+            // Preserve only clocks belonging to the value actually selected for
+            // each field. Quotes and note edits cannot advance a quantity's clock.
+            func clock<T: Equatable>(_ field: EntryField, _ result: T, _ l: T, _ r: T) -> TimeInterval? {
+                [result == l ? editClock(left, field) : nil, result == r ? editClock(right, field) : nil]
+                    .compactMap { $0 }.max()
+            }
+            mergedEntry.amountEditedAt = clock(.amount, mergedEntry.amount, left.amount, right.amount)
+            mergedEntry.quantityEditedAt = clock(.quantity, mergedEntry.quantity, left.quantity, right.quantity)
+            mergedEntry.unitPriceEditedAt = automatic ? nil : clock(.unitPrice, mergedEntry.unitPrice, left.unitPrice, right.unitPrice)
+            mergedEntry.noteEditedAt = clock(.note, mergedEntry.note, left.note, right.note)
+            return mergedEntry
         }
         // Keep each quote and its date together. Prefer source-date freshness, then
         // refresh time; a partial cache must not erase a populated anchor.
@@ -1541,7 +1638,11 @@ nonisolated enum SyncMergeService {
                     entries: s.entries.map { e in
                         .init(id: entryAliases[e.id] ?? e.id, amount: e.amount, quantity: e.quantity,
                               unitPrice: e.unitPrice, note: e.note, createdAt: e.createdAt, updatedAt: e.updatedAt, itemID: e.itemID,
-                              inheritedFromEntryID: e.inheritedFromEntryID.map { entryAliases[$0] ?? $0 })
+                              inheritedFromEntryID: e.inheritedFromEntryID.map { entryAliases[$0] ?? $0 },
+                              amountEditedAt: e.amountEditedAt,
+                              quantityEditedAt: e.quantityEditedAt,
+                              unitPriceEditedAt: e.unitPriceEditedAt,
+                              noteEditedAt: e.noteEditedAt)
                     })
             }
             let deletions = payload.deletionRecords.map { d in

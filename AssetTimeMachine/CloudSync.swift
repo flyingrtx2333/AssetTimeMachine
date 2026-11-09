@@ -157,6 +157,12 @@ nonisolated private struct CloudAccountDeletionRequest: Encodable, Sendable {
 nonisolated struct CloudAccountDeletionResult: Decodable, Sendable { let deleted: Bool }
 
 enum AssetTimeMachineCloudAPI {
+    private static let productionSession: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 30
+        configuration.timeoutIntervalForResource = 90
+        return URLSession(configuration: configuration)
+    }()
     nonisolated(unsafe) private static var isolatedSession: URLSession?
     static var hasIsolatedTransport: Bool { isolatedSession != nil }
     static func installIsolatedTransport(_ protocolClass: URLProtocol.Type) {
@@ -171,7 +177,7 @@ enum AssetTimeMachineCloudAPI {
         isolatedSession?.invalidateAndCancel()
         isolatedSession = nil
     }
-    private static var requestSession: URLSession { isolatedSession ?? .shared }
+    private static var requestSession: URLSession { isolatedSession ?? productionSession }
 
     static let baseURL = RemoteMarketClient.baseURL
 
@@ -943,6 +949,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
                 var latestBackup = try await self.fetchLatestBackupIfAvailable()
                 let baseBackupID = latestBackup?.id
+                try await self.recoverSharedHistoryIfNeeded(local: localPayload, latest: latestBackup)
                 try self.validateLocalOwner(local: localPayload, remote: latestBackup?.payload)
                 try await self.recoverPendingUpload(latest: latestBackup)
                 let baseline = try await self.loadSyncBaseline()
@@ -1215,6 +1222,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try await self.rememberSync(signature: fingerprint.signature, at: latest.uploadedAt, payload: latest.payload)
             self.lastVerifiedBackupID = latest.id
             try self.clearPendingUpload()
+            self.requiresLocalOwnershipConfirmation = false
+            self.entryConflictReview = nil
             try await self.loadHistoryAfterSync()
             self.statusMessage = AppLocalization.string("最近一次云端备份已恢复")
         }
@@ -1285,7 +1294,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         requiresLocalOwnershipConfirmation = false
         entryConflictReview = nil
         clearTokens()
-        defaults.removeObject(forKey: lastUploadedSignatureKey)
+        // Keep the acknowledged fingerprint so a legacy install can recover its
+        // baseline from this account's authenticated history after signing in again.
+        // Account deletion clears it through resetAccountSyncMetadata().
         defaults.removeObject(forKey: lastSyncAtKey)
         currentUser = nil
         currentAccountID = nil
@@ -1432,6 +1443,28 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
+    private func recoverSharedHistoryIfNeeded(local: ExportPayload, latest: AssetTimeMachineCloudLatestBackup?) async throws {
+        let owner = defaults.object(forKey: localOwnerKey) as? Int
+        guard let userID = currentUser?.id, owner.map({ $0 == userID }) ?? true,
+              let accountID = currentAccountID, !defaults.bool(forKey: accountResetRequiredKey),
+              defaults.string(forKey: localOwnerAccountKey).map({ $0 == accountID }) ?? true,
+              let latest else { return }
+        if owner != nil, FileManager.default.fileExists(atPath: try baselineURL(userID: userID).path) { return }
+        let recovered = try await recoverLegacySyncBaseline(latest: latest, includeLocalBaseline: false)
+        let remote = latest.payload
+        let baseline = try await SyncPayloadWork.detached {
+            guard let base = recovered ?? SyncMergeService.sharedHistoryBaseline(local: local, remote: remote) else { return nil as ExportPayload? }
+            // Prove that the recovered ancestor permits a safe merge before binding
+            // ownership. An unrelated account or a genuine unproven edit still stops.
+            _ = try SyncMergeService.reconciledPayload(local: local, remote: remote, baseline: base)
+            return base
+        }
+        guard let baseline else { return }
+        try await saveLocalSafetyBackup(local)
+        try await persistSyncBaseline(baseline)
+        requiresLocalOwnershipConfirmation = false
+    }
+
     private func validateLocalOwner(local: ExportPayload, remote: ExportPayload?) throws {
         guard currentAccountID != nil, !defaults.bool(forKey: accountResetRequiredKey) else {
             throw NSError(domain: "CloudSyncOwner", code: 409,
@@ -1489,15 +1522,17 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         if result == .completed { scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0) }
     }
 
-    private func recoverLegacySyncBaseline(latest: AssetTimeMachineCloudLatestBackup?) async throws -> ExportPayload? {
-        if let existing = try await loadSyncBaseline() { return existing }
+    private func recoverLegacySyncBaseline(latest: AssetTimeMachineCloudLatestBackup?, includeLocalBaseline: Bool = true) async throws -> ExportPayload? {
+        if includeLocalBaseline, let existing = try await loadSyncBaseline() { return existing }
         guard let signature = defaults.string(forKey: lastUploadedSignatureKey), signature.count == 64,
               signature.allSatisfy({ $0.isHexDigit }) else { return nil }
         if let latest, try await Self.payloadFingerprint(for: latest.payload).signature == signature { return latest.payload }
         let history = try await withTokenRefresh { token in
             try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 20)
         }
+        let deadline = Date.now.addingTimeInterval(45)
         for backup in history where backup.id != latest?.id {
+            guard Date.now < deadline else { break }
             guard let url = backup.storageURL else { continue }
             do {
                 let payload = try await AssetTimeMachineCloudAPI.downloadBackupPayload(at: url)
@@ -1676,6 +1711,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     /// Available only to the isolated preview harness; tokens and defaults are supplied by the test.
     func runIsolatedSync(from context: ModelContext) async -> Bool {
         precondition(isolatedTest && AppPreviewSession.isActive)
+        if currentAccountID == nil, currentUser != nil {
+            do { currentAccountID = try await accountDeletionInfo().accountID }
+            catch { errorMessage = error.localizedDescription; return true }
+        }
         return await autoSyncIfNeeded(from: context, quietly: false)
     }
 

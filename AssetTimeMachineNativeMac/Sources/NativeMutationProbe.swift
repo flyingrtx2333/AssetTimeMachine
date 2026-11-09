@@ -280,7 +280,11 @@ private final class NativeCloudMockServer: @unchecked Sendable {
                     ExportPayload.EntryPayload(id: entry.id, amount: entry.itemID == itemID ? amount : entry.amount,
                         quantity: entry.quantity, unitPrice: entry.unitPrice, note: entry.note,
                         createdAt: entry.createdAt, updatedAt: entry.itemID == itemID ? .now : entry.updatedAt,
-                        itemID: entry.itemID, inheritedFromEntryID: entry.inheritedFromEntryID)
+                        itemID: entry.itemID, inheritedFromEntryID: entry.inheritedFromEntryID,
+                        amountEditedAt: entry.itemID == itemID ? Date.now.timeIntervalSince1970 : entry.amountEditedAt,
+                        quantityEditedAt: entry.quantityEditedAt,
+                        unitPriceEditedAt: entry.unitPriceEditedAt,
+                        noteEditedAt: entry.noteEditedAt)
                 })
         }
         payload = ExportPayload(exportedAt: .now, categories: payload.categories, items: payload.items,
@@ -353,6 +357,8 @@ private final class NativeCloudMockServer: @unchecked Sendable {
                     throw URLError(.networkConnectionLost)
                 }
             }
+        } else if path.hasSuffix("/asset-time-machine/account") {
+            object = ["account_id": "synthetic-account", "has_deletion_history": false, "requires_apple_authorization": false]
         } else if path.hasSuffix("/users/me") { object = ["id": 11, "user_name": "Synthetic A"] }
         else { throw URLError(.unsupportedURL) }
         return (status, try JSONSerialization.data(withJSONObject: object))
@@ -461,7 +467,7 @@ enum NativeCloudSyncProbe {
             server.change(aID, to: 99)
             let conflictsUploads = server.uploads
             _ = await cloud.runIsolatedSync(from: context)
-            checks["sameEntryConflictPreservesBothAndDoesNotUpload"] = amount(try await local(), aID) == 13 && amount(server.payload, aID) == 99 && server.uploads == conflictsUploads && cloud.errorMessage != nil
+            checks["latestConfirmedEditWinsAutomatically"] = amount(try await local(), aID) == 99 && amount(server.payload, aID) == 99 && server.uploads == conflictsUploads && cloud.errorMessage == nil
             await cloud.restoreLatestBackup(into: context)
             let afterRestore = try await local()
             checks["explicitRestoreCreatesSafetyBackup"] = defaults.string(forKey: "assettimemachine.cloud.lastLocalSafetyBackup").map { FileManager.default.fileExists(atPath: $0) } == true && SyncMergeService.isSameContent(afterRestore, server.payload)
@@ -478,13 +484,15 @@ enum NativeCloudSyncProbe {
             try FileManager.default.removeItem(at: baselineFile)
             _ = await cloud.runIsolatedSync(from: context)
             let afterMissing = try await local()
-            checks["missingBaselineStopsDivergentMerge"] = cloud.errorMessage != nil && server.uploads == protectedUploads && SyncMergeService.isSameContent(afterMissing, protectedPayload)
+            checks["missingBaselineRecoversAutomatically"] = cloud.errorMessage == nil
+                && server.uploads == protectedUploads + 1 && amount(afterMissing, aID) == 14 && amount(server.payload, aID) == 14
             try baselineData.write(to: baselineFile, options: .atomic)
+            try edit(aID, 15)
             server.alwaysConflict = true
             let maxBefore = server.uploads
             _ = await cloud.runIsolatedSync(from: context)
             let afterLimit = try await local()
-            checks["repeated409StopsAfterThreeAttempts"] = server.uploads == maxBefore + 3 && cloud.errorMessage != nil && amount(afterLimit, aID) == 14
+            checks["repeated409StopsAfterThreeAttempts"] = server.uploads == maxBefore + 3 && cloud.errorMessage != nil && amount(afterLimit, aID) == 15
             server.alwaysConflict = false
             _ = await cloud.runIsolatedSync(from: context)
             let expired = NativeCloudProbeTokens("synthetic-expired")
@@ -498,8 +506,17 @@ enum NativeCloudSyncProbe {
             let afterSwitch = try await local()
             checks["accountSwitchBlocksImportAndUpload"] = server.uploads == accountUploads && SyncMergeService.isSameContent(afterSwitch, accountPayload) && refreshed.errorMessage != nil
             refreshed.currentUser = cloud.currentUser
+            let acknowledgedSignature = defaults.string(forKey: "assettimemachine.cloud.lastUploadedSignature")
             refreshed.logout()
             checks["logoutClearsSyncStatusButRetainsDataOwner"] = defaults.object(forKey: "assettimemachine.cloud.lastSyncAt") == nil && defaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && refreshed.currentUser == nil
+            checks["logoutRetainsAcknowledgedFingerprint"] = acknowledgedSignature != nil && defaults.string(forKey: "assettimemachine.cloud.lastUploadedSignature") == acknowledgedSignature
+            let reloginUploads = server.uploads
+            let signedBack = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+            signedBack.currentUser = cloud.currentUser
+            _ = await signedBack.runIsolatedSync(from: context)
+            checks["sameAccountReloginAutomaticallySyncs"] = signedBack.errorMessage == nil
+                && !signedBack.requiresLocalOwnershipConfirmation && signedBack.lastSyncAt != nil
+                && defaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && server.uploads == reloginUploads
             server.rejectRefresh = true
             let rejected = NativeCloudProbeTokens("synthetic-expired")
             let invalid = AssetTimeMachineCloudStore(tokenStore: rejected, defaults: defaults, isolatedTest: true)
@@ -559,17 +576,22 @@ enum NativeCloudSyncProbe {
             context.insert(newDay)
             context.insert(AssetEntry(amount: 55, snapshot: newDay, item: currentA))
             try context.save()
-            let legacyLocal = try await local(), legacyUploads = server.uploads
+            let legacyUploads = server.uploads
             let legacy = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: legacyDefaults, isolatedTest: true)
             legacy.currentUser = cloud.currentUser
             _ = await legacy.runIsolatedSync(from: context)
-            let afterLegacyBlocked = try await local()
-            checks["legacyDivergenceOffersAssociationWithoutUpload"] = legacy.requiresLocalOwnershipConfirmation && server.uploads == legacyUploads && SyncMergeService.isSameContent(afterLegacyBlocked, legacyLocal)
+            let afterLegacyRecovery = try await local()
+            checks["legacySharedHistoryAutomaticallyAssociates"] = !legacy.requiresLocalOwnershipConfirmation
+                && legacy.errorMessage == nil && legacyDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11
+                && Set(afterLegacyRecovery.snapshots.map(\.id)).contains(newDayID)
+                && SyncMergeService.isSameContent(afterLegacyRecovery, server.payload)
             server.change(aID, to: 999)
             let conflictingRemote = server.payload
-            await legacy.authorizeLocalDataForCurrentAccount(from: context)
-            let afterLegacyConflict = try await local()
-            checks["legacyConflictPreservesBothCopiesAndOwner"] = legacy.errorMessage != nil && legacy.requiresLocalOwnershipConfirmation && legacyDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil && server.uploads == legacyUploads && SyncMergeService.isSameContent(afterLegacyConflict, legacyLocal) && SyncMergeService.isSameContent(server.payload, conflictingRemote)
+            _ = await legacy.runIsolatedSync(from: context)
+            let afterLegacyEdit = try await local()
+            checks["legacyClientAutomaticallyPullsConfirmedEdit"] = legacy.errorMessage == nil
+                && !legacy.requiresLocalOwnershipConfirmation
+                && SyncMergeService.isSameContent(afterLegacyEdit, conflictingRemote)
             server.payload = legacyRemote
             // Add a cloud-only day as well; successful association must preserve both.
             let cloudDay = ExportPayload.SnapshotPayload(id: UUID(), date: Calendar.current.date(byAdding: .day, value: 2, to: legacyDate)!, note: "", createdAt: .now, updatedAt: .now,
@@ -577,7 +599,8 @@ enum NativeCloudSyncProbe {
                 nasdaqAnchorPriceUSD: nil, nasdaqAnchorPriceDate: nil, usdPerCNY: nil, usdPerCNYDate: nil,
                 marketAnchorsUpdatedAt: nil, entries: [.init(id: UUID(), amount: 77, quantity: nil, unitPrice: nil, note: "", createdAt: .now, updatedAt: .now, itemID: bID)])
             server.payload = ExportPayload(exportedAt: .now, categories: legacyRemote.categories, items: legacyRemote.items, snapshots: legacyRemote.snapshots + [cloudDay], deletions: legacyRemote.deletions)
-            await legacy.authorizeLocalDataForCurrentAccount(from: context)
+            server.head += 1
+            _ = await legacy.runIsolatedSync(from: context)
             for _ in 0..<100 {
                 if server.uploads > legacyUploads && !legacy.isWorking { break }
                 try await Task.sleep(nanoseconds: 50_000_000)
@@ -628,7 +651,15 @@ enum NativeCloudSyncProbe {
             conflictDefaults.set(signature, forKey: "assettimemachine.cloud.lastUploadedSignature")
             let conflict = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: conflictDefaults, isolatedTest: true)
             conflict.currentUser = cloud.currentUser
-            try edit(aID, 17); server.change(aID, to: 18)
+            try edit(aID, 17)
+            // Simulate a pre-clock client: its true conflicting edit remains
+            // unproven, rather than being mislabeled as a new-format edit.
+            let oldClientEntry = try context.fetch(FetchDescriptor<AssetEntry>()).first {
+                $0.snapshot?.id == snapshotID && $0.item?.id == aID
+            }!
+            oldClientEntry.amountEditedAt = nil
+            try context.save()
+            server.change(aID, to: 18)
             _ = await conflict.runIsolatedSync(from: context)
             let conflictUploads = server.uploads, conflictLocal = try await local(), conflictRemote = server.payload
             await conflict.authorizeLocalDataForCurrentAccount(from: context)
@@ -637,9 +668,17 @@ enum NativeCloudSyncProbe {
             conflictDefaults.set(String(repeating: "0", count: 64), forKey: "assettimemachine.cloud.lastUploadedSignature")
             await conflict.authorizeLocalDataForCurrentAccount(from: context)
             checks["unmatchedHistoricalFingerprintCannotBindOrUpload"] = conflict.errorMessage != nil && server.uploads == conflictUploads && conflictDefaults.object(forKey: "assettimemachine.cloud.localOwnerUserID") == nil
-            checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
-            checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }
-            checks.merge(try await conflictReviewChecks(schema: schema)) { _, latest in latest }
+            await conflict.restoreLatestBackup(into: context)
+            let restoredCloud = try await local()
+            checks["explicitRestoreClearsOwnershipPromptWithoutUpload"] = conflict.errorMessage == nil
+                && !conflict.requiresLocalOwnershipConfirmation && conflict.entryConflictReview == nil
+                && conflictDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11
+                && SyncMergeService.isSameContent(restoredCloud, conflictRemote) && server.uploads == conflictUploads
+            if !ProcessInfo.processInfo.arguments.contains("-macCloudCoreProbeOnly") {
+                checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
+                checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }
+                checks.merge(try await conflictReviewChecks(schema: schema)) { _, latest in latest }
+            }
             return ["checks": checks, "allPassed": checks.values.allSatisfy { $0 }, "count": checks.count,
                     "latestReads": server.latestReads, "uploads": server.uploads, "acceptedUploads": server.acceptedUploads]
         } catch { return ["checks": checks, "allPassed": false, "error": error.localizedDescription] }
