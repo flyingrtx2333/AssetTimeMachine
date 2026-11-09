@@ -1,0 +1,20 @@
+{
+  "version": "1.15",
+  "build": "238",
+  "buildID": "7d48db86-f8e3-4ec8-a4b0-5bcb39a87dd8",
+  "source": "cc843fd697ae44cbca382241150dbaecc8eb467f",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "groupMembershipVerified": true,
+  "notes": {
+    "en-US": "Speed up large cloud backup decoding and avoid full backup transfers for quote-only refreshes when the cloud version is unchanged. Manual edits continue to sync automatically.",
+    "zh-Hans": "加快大份云备份的读取；仅行情变化且云端版本未变时，避免重复传输完整备份。人工修改继续自动同步。",
+    "zh-Hant": "加快大型雲端備份的讀取；只有行情變化且雲端版本未變時，避免重複傳輸完整備份。手動修改繼續自動同步。"
+  },
+  "notesReadbackVerified": true,
+  "serverArtifactMatched": true,
+  "externalBetaReviewSubmitted": false,
+  "appStoreReviewBuildChanged": false,
+  "physicalDeviceInstallationPerformed": false
+}

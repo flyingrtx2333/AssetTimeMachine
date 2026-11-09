@@ -1,0 +1,29 @@
+{
+  "source": "cc843fd697ae44cbca382241150dbaecc8eb467f",
+  "build": "238",
+  "bundles": [
+    {
+      "id": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.15",
+      "build": "238",
+      "signatureValid": true,
+      "distributionEntitlements": true,
+      "executableDSYMUUIDsMatch": true,
+      "uuids": {
+        "arm64": "855FFFE0-1605-3B5C-B3C1-90B9B9DFF507"
+      }
+    },
+    {
+      "id": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.15",
+      "build": "238",
+      "signatureValid": true,
+      "distributionEntitlements": true,
+      "executableDSYMUUIDsMatch": true,
+      "uuids": {
+        "arm64": "24FB090E-D3CF-3228-A528-009BB55BCB10"
+      }
+    }
+  ],
+  "declaredExemptEncryption": true
+}

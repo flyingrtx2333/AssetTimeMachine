@@ -1,0 +1,10 @@
+{
+  "phase": "complete",
+  "version": "1.15",
+  "build": "238",
+  "source": "cc843fd",
+  "binarySHA256": "f555a288159942d05130592843536c7b7092198755e4c5d910c33d3073eb60db",
+  "signatureValid": true,
+  "deviceIncludedInProfile": true,
+  "opened": true
+}
