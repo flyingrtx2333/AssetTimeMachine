@@ -612,7 +612,9 @@ private struct NativeWindowToolbar: NSViewRepresentable {
             if #available(macOS 26.0, *) { item.style = .plain }
             switch identifier {
             case Self.brand:
-                let mark = NSImageView(image: NSImage(systemSymbolName: "hourglass", accessibilityDescription: nil)!)
+                let mark = NSImageView(image: NSImage(named: "brand_logo")
+                    ?? NSImage(systemSymbolName: "hourglass", accessibilityDescription: nil)!)
+                mark.image?.isTemplate = false
                 mark.imageScaling = .scaleProportionallyDown
                 mark.translatesAutoresizingMaskIntoConstraints = false
                 mark.widthAnchor.constraint(equalToConstant: 16).isActive = true

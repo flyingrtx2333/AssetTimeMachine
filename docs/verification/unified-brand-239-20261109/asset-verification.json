@@ -1,0 +1,17 @@
+{
+  "sharedBrandSHA256": "0d8e4460bee4430eb2ea18c39327843521b1ecec6256b98e30dfea3c0cf5b684",
+  "approved256pxAppIconSHA256": "0d8e4460bee4430eb2ea18c39327843521b1ecec6256b98e30dfea3c0cf5b684",
+  "sourceBrandMatchesApprovedFile": true,
+  "compiledNativeBrandDecoded": true,
+  "compiledNativeBrandSize": [
+    256,
+    256
+  ],
+  "compiledNativeBrandIsTemplate": false,
+  "compiledNativeBrandVisuallyVerified": "white and champagne gold",
+  "nativeReleaseBuildPassed": true,
+  "iosSimulatorReleaseBuildPassed": true,
+  "localizationAuditPassed": true,
+  "reusedCloudCacheChecks": 42,
+  "coreSourceUnchangedFrom": "d2176dc"
+}
