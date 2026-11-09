@@ -1,0 +1,24 @@
+{
+  "beforeSource": "cc843fd",
+  "afterSource": "d2176dc",
+  "automaticPollIntervalSeconds": 60,
+  "beforePeriodicCPUSeconds": 2.05,
+  "afterPeriodicCPUSeconds": 0.24,
+  "reductionPercent": 88.3,
+  "beforeSteadyWindowSeconds": 66.74,
+  "afterSteadyWindowSeconds": 80.331,
+  "allForegroundSamples": true,
+  "afterFullDatabaseExportStackFrames": 0,
+  "activityMonitorEnergyImpactObserved": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "reported1111PeakReproduced": false,
+  "notes": "Same installed app data; startup excluded. One periodic cloud check in each steady window. CPU-time resolution 0.01s. Energy Impact is a relative UI score, not CPU percent or watts."
+}

@@ -6,4 +6,6 @@ The shared cooperative exporter now retains one validated value snapshot, keyed 
 
 Native Mac Release, iOS simulator Release and localization passed. Focused cloud checks passed 42/42, including other-context save invalidation, dirty drafts, distinct containers, cancellation and a fresh export date. Verification ran only against isolated synthetic stores. Raw live stack samples and private record benchmarks remain outside Git.
 
-Installation and repeat live measurements are pending.
+Both installed native Mac apps were updated to source `d2176dc` (native version 1.15 / build 238); see install receipts. TestFlight 1.15 (238) remains the previously verified `cc843fd` iOS artifact; this follow-up does not claim a new phone release.
+
+The repeat foreground stationary measurement, after initial sync, used 0.24 CPU seconds across an 80.3-second window containing one periodic poll, versus about 2.05 CPU seconds for the prior poll (88.3% lower). Every foreground-state sample remained active. The new stack sample contained no CloudExportProjectionStore.exportPayload frames; authenticated head checks still ran. Activity Monitor Energy Impact read 0.0 throughout sampled steady intervals. These observations do not establish the cause of the original 1111.7 peak, which remains unreproduced. See `performance.json`. No user financial records or raw stack samples were committed. The Mac mini one-time updater was unloaded after completion.
