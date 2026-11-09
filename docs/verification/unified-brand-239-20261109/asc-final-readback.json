@@ -1,0 +1,20 @@
+{
+  "version": "1.15",
+  "build": "239",
+  "buildID": "97b4dffb-a16e-488c-b221-2d162e510679",
+  "source": "2b370d6747a941ed3cce489536b20c5c00e826c6",
+  "processingState": "VALID",
+  "internalBuildState": "IN_BETA_TESTING",
+  "internalGroup": "flyingrtx",
+  "groupMembershipVerified": true,
+  "notes": {
+    "en-US": "Unify the in-app logo with the current white-and-gold app icon on welcome and sharing screens. Reduce repeated full-history reads during idle cloud checks.",
+    "zh-Hans": "统一欢迎页、分享图中的白金品牌标识；减少静置云同步时重复读取历史记录。",
+    "zh-Hant": "統一歡迎頁與分享圖中的白金品牌標誌；減少閒置雲端同步時重複讀取歷史紀錄。"
+  },
+  "notesReadbackVerified": true,
+  "serverArtifactMatched": true,
+  "externalBetaReviewSubmitted": false,
+  "appStoreReviewBuildChanged": false,
+  "physicalDeviceInstallationPerformed": false
+}

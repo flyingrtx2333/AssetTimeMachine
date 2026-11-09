@@ -1,0 +1,15 @@
+{
+  "phase": "complete",
+  "version": "1.15",
+  "build": "239",
+  "source": "2b370d6",
+  "binarySHA256": "d6983061e85b94d4e1335fb4ed676713015947d926e4b8dbf2b3a32830d9c39d",
+  "signatureValid": true,
+  "opened": true,
+  "compiledBrandResourcePresent": true,
+  "compiledBrandDimensions": [
+    256,
+    256
+  ],
+  "installedBrandVisuallyVerified": "white and gold"
+}

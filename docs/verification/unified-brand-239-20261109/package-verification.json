@@ -1,0 +1,34 @@
+{
+  "source": "2b370d6747a941ed3cce489536b20c5c00e826c6",
+  "build": "239",
+  "bundles": [
+    {
+      "id": "com.flyingrtx.AssetTimeMachine",
+      "version": "1.15",
+      "build": "239",
+      "signatureValid": true,
+      "distributionEntitlements": true,
+      "executableDSYMUUIDsMatch": true,
+      "uuids": {
+        "arm64": "E8F592DE-B1D7-37A8-AFF5-12BAAB1378AA"
+      }
+    },
+    {
+      "id": "com.flyingrtx.AssetTimeMachine.Widgets",
+      "version": "1.15",
+      "build": "239",
+      "signatureValid": true,
+      "distributionEntitlements": true,
+      "executableDSYMUUIDsMatch": true,
+      "uuids": {
+        "arm64": "24FB090E-D3CF-3228-A528-009BB55BCB10"
+      }
+    }
+  ],
+  "declaredExemptEncryption": true,
+  "compiledBrandResourcePresent": true,
+  "compiledBrandDimensions": [
+    256,
+    256
+  ]
+}
