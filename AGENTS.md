@@ -4,7 +4,7 @@
 
 The shared integration branch is `main` on GitHub and on both development Macs. Fetch before comparing versions; a cached remote-tracking branch is not proof of the latest remote state. Create feature branches from current `origin/main`, then integrate completed changes back into `main`. Historical release/research worktrees remain separate and must not be treated as the current application checkout.
 
-Git synchronization does not update an installed Mac app. Rebuild with `scripts/run_native_mac.sh` after source/resource updates, then replace the installed app and verify its `ATMSourceRevision`, build number, and bundled icon.
+Git synchronization does not update an installed Mac app. Rebuild with `scripts/run_native_mac.sh` after source/resource updates, then replace the installed app and verify its `ATMSourceRevision`, build number, and bundled icon. For icon changes, also inspect the actual Dock tile: system/running-app icon lookups can already be current while a Dock recent-app tile remains stale. If necessary, refresh the affected app registration and recent tile while preserving other Dock entries.
 
 The research workspace is in the sibling FlyingrtxFast repository at `research/asset-time-machine/workspace/`. Resolve it relative to this checkout or use `ASSET_TIME_MACHINE_RESEARCH_WORKSPACE`; verify the sibling checkout before use. Do not alter immutable artifact paths inside historical results.
 

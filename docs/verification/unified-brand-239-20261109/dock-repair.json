@@ -1,0 +1,19 @@
+{
+  "appVersion": "1.15",
+  "build": "239",
+  "source": "2b370d6",
+  "dockBookmarkResolvedToInstalledApp": true,
+  "sourceAndCompiledSmallIconsWhiteGold": true,
+  "systemAndRunningApplicationIconsWhiteGold": true,
+  "dockStillDisplayedOldIconAfterSimpleRestart": true,
+  "repair": [
+    "refresh affected app registration",
+    "rebuild only the affected recent-app tile",
+    "reload Dock"
+  ],
+  "pinnedDockEntriesPreserved": true,
+  "actualDockScreenshotAfterRepair": "dock-after.png",
+  "actualDockWhiteGoldVisuallyVerified": true,
+  "applicationCodeChanged": false,
+  "newTestFlightUploadRequired": false
+}
