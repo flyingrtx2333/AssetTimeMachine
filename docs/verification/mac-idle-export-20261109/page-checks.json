@@ -1,0 +1,34 @@
+{
+  "source": "d2176dc",
+  "sameInstalledUserStore": true,
+  "startupExcluded": true,
+  "automaticPollIntervalSeconds": 60,
+  "timemachine": {
+    "foregroundSamples": 38,
+    "allSamplesForeground": true,
+    "steadyWindowSeconds": 80.565,
+    "cpuSeconds": 0.33,
+    "fullDatabaseExportStackFrames": 0,
+    "editorReloadStackFrames": 0,
+    "editorOpenDayStackFrames": 0,
+    "periodicBaselineReadObserved": true,
+    "steadyEnergyImpactAfter20Seconds": 0.0
+  },
+  "records": {
+    "foregroundSamples": 38,
+    "allSamplesForeground": true,
+    "steadyWindowSeconds": 87.068,
+    "cpuSeconds": 0.38,
+    "fullDatabaseExportStackFrames": 0,
+    "editorReloadStackFrames": 0,
+    "editorOpenDayStackFrames": 0,
+    "periodicBaselineReadObserved": true,
+    "energyImpactMeasured": false
+  },
+  "reported1111EnergyPeakReproduced": false,
+  "notes": [
+    "Only complete foreground runs are reported; interrupted lock-screen/background runs were excluded.",
+    "The records CPU run was performed while Activity Monitor showed Memory. Memory values were not interpreted as Energy Impact.",
+    "No source changes or new phone release were required for this follow-up."
+  ]
+}
