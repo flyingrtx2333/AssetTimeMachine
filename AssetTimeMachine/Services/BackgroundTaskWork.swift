@@ -64,6 +64,7 @@ nonisolated final class FlexibleAPIDateParser: @unchecked Sendable {
     private let fractionalISO8601 = ISO8601DateFormatter()
     private let iso8601 = ISO8601DateFormatter()
     private let localDate = DateFormatter()
+    private var parsedDates: [String: Date] = [:]
 
     init() {
         fractionalISO8601.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -75,9 +76,14 @@ nonisolated final class FlexibleAPIDateParser: @unchecked Sendable {
     }
 
     func date(from value: String) -> Date? {
-        fractionalISO8601.date(from: value)
+        if let cached = parsedDates[value] { return cached }
+        let date = fractionalISO8601.date(from: value)
             ?? iso8601.date(from: value)
             ?? localDate.date(from: value)
+        // Repeated timestamps dominate large backups. Keep this decoder-local and
+        // bounded so market history responses cannot grow a process-wide cache.
+        if let date, parsedDates.count < 8192 { parsedDates[value] = date }
+        return date
     }
 }
 

@@ -922,27 +922,38 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     wasSupersededByLocalSave = true
                     throw CancellationError()
                 }
-                // Poll a lightweight authenticated head receipt when both local content
-                // and its durable baseline are unchanged. Do not download 2 MB each minute.
+                // Quotes can advance locally without changing user intent. Check the
+                // authenticated head before downloading or uploading another full backup.
                 if let headID = self.lastVerifiedBackupID,
-                   localSignature == self.defaults.string(forKey: self.lastUploadedSignatureKey),
+                   let acknowledgedSignature = self.defaults.string(forKey: self.lastUploadedSignatureKey),
                    let userID = self.currentUser?.id,
                    !FileManager.default.fileExists(atPath: try self.pendingUploadURL(userID: userID).path),
                    let baseline = try await self.loadSyncBaseline(),
-                   try await Self.payloadFingerprint(for: baseline).signature == localSignature {
-                    let heads = try await self.withTokenRefresh { token in
-                        try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 1)
+                   try await Self.payloadFingerprint(for: baseline).signature == acknowledgedSignature {
+                    let unchangedUserContent: Bool
+                    if localSignature == acknowledgedSignature {
+                        unchangedUserContent = true
+                    } else {
+                        let localUserSignature = try await Self.userSignature(for: localPayload)
+                        unchangedUserContent = localUserSignature == (try await Self.userSignature(for: baseline))
                     }
-                    if let head = heads.first, head.isLatest == 1, head.id == headID {
-                        try self.validateLocalOwner(local: localPayload, remote: baseline)
-                        guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
-                              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
-                              ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
-                            wasSupersededByLocalSave = true
-                            throw CancellationError()
+                    if unchangedUserContent {
+                        let heads = try await self.withTokenRefresh { token in
+                            try await AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 1)
                         }
-                        completedLocalSignature = localSignature
-                        return
+                        if let head = heads.first, head.isLatest == 1, head.id == headID {
+                            try self.validateLocalOwner(local: localPayload, remote: baseline)
+                            guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+                                  !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                                  ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
+                                wasSupersededByLocalSave = true
+                                throw CancellationError()
+                            }
+                            // Leave the acknowledged signature/baseline untouched:
+                            // the newer derived quotes have not been uploaded.
+                            completedLocalSignature = localSignature
+                            return
+                        }
                     }
                 }
                 // A different head still requires the full payload and three-way merge.

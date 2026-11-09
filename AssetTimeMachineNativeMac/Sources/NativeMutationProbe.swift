@@ -674,6 +674,26 @@ enum NativeCloudSyncProbe {
                 && !conflict.requiresLocalOwnershipConfirmation && conflict.entryConflictReview == nil
                 && conflictDefaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11
                 && SyncMergeService.isSameContent(restoredCloud, conflictRemote) && server.uploads == conflictUploads
+            let quoteItem = AssetItem(name: "Synthetic quote", valuationMethod: .quantityAndUnitPrice,
+                autoPricedAssetKind: .gold, category: try context.fetch(FetchDescriptor<AssetCategory>()).first)
+            let quoteDay = try context.fetch(FetchDescriptor<AssetSnapshot>()).first!
+            let quoteEntry = AssetEntry(quantity: 2, unitPrice: 100, snapshot: quoteDay, item: quoteItem)
+            context.insert(quoteItem); context.insert(quoteEntry); try context.save()
+            _ = await conflict.runIsolatedSync(from: context)
+            let quoteReads = server.latestReads, quoteUploads = server.uploads
+            let quoteAcknowledgedSignature = conflictDefaults.string(forKey: "assettimemachine.cloud.lastUploadedSignature")
+            quoteEntry.unitPrice = 300; quoteEntry.updatedAt = Date().addingTimeInterval(1000)
+            try context.save()
+            _ = await conflict.runIsolatedSync(from: context)
+            checks["quoteOnlyRefreshAvoidsFullTransfer"] = conflict.errorMessage == nil
+                && server.latestReads == quoteReads && server.uploads == quoteUploads && quoteEntry.unitPrice == 300
+            checks["unsentQuotesDoNotAdvanceAcknowledgedBaseline"] = quoteAcknowledgedSignature != nil
+                && conflictDefaults.string(forKey: "assettimemachine.cloud.lastUploadedSignature") == quoteAcknowledgedSignature
+            try SnapshotService.upsertEntry(snapshot: quoteDay, item: quoteItem, amount: nil,
+                quantity: 3, unitPrice: 300, in: context)
+            _ = await conflict.runIsolatedSync(from: context)
+            checks["manualEditAfterQuoteStillUploads"] = conflict.errorMessage == nil && server.uploads == quoteUploads + 1
+                && server.payload.snapshots.flatMap(\.entries).first { $0.itemID == quoteItem.id }?.quantity == 3
             if !ProcessInfo.processInfo.arguments.contains("-macCloudCoreProbeOnly") {
                 checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
                 checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }

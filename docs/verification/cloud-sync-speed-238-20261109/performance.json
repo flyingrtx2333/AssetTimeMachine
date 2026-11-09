@@ -1,0 +1,10 @@
+{
+  "measurement": "local optimized Swift build; one real cloud backup decoded read-only",
+  "backupDateStrings": 27265,
+  "uniqueDateStrings": 1599,
+  "beforeDecodeSeconds": 2.86605703830719,
+  "afterDecodeSeconds": 0.2266160249710083,
+  "decodedPayloadBytesIdentical": true,
+  "cacheLimitPerDecoder": 8192,
+  "deviceEndToEndSyncMeasured": false
+}
