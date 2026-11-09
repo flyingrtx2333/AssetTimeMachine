@@ -694,6 +694,28 @@ enum NativeCloudSyncProbe {
             _ = await conflict.runIsolatedSync(from: context)
             checks["manualEditAfterQuoteStillUploads"] = conflict.errorMessage == nil && server.uploads == quoteUploads + 1
                 && server.payload.snapshots.flatMap(\.entries).first { $0.itemID == quoteItem.id }?.quantity == 3
+            let firstExport = try await local(), repeatedExport = try await local()
+            checks["cachedExportKeepsFreshExportDate"] = SyncMergeService.isSameContent(firstExport, repeatedExport)
+                && repeatedExport.exportedAt >= firstExport.exportedAt
+            let writer = ModelContext(container); writer.autosaveEnabled = false
+            let savedQuote = try writer.fetch(FetchDescriptor<AssetEntry>()).first { $0.item?.id == quoteItem.id }!
+            savedQuote.quantity = 4; try writer.save()
+            checks["otherContextSaveInvalidatesCachedExport"] = try await local().snapshots.flatMap(\.entries)
+                .first { $0.itemID == quoteItem.id }?.quantity == 4
+            quoteEntry.note = "Unsaved synthetic draft"
+            do { _ = try await local(); checks["cachedExportRejectsUnsavedDraft"] = false }
+            catch ImportExportConsistencyError.storeChanged { checks["cachedExportRejectsUnsavedDraft"] = true }
+            context.rollback()
+            _ = try await local()
+            let otherExport = try await ImportExportService.exportPayloadCooperatively(from: freshContext).payload
+            checks["cachedExportDoesNotCrossContainers"] = otherExport.items.contains { $0.id == freshItem.id }
+                && !otherExport.items.contains { $0.id == quoteItem.id }
+            let cancelledExport = Task { @MainActor in
+                try await ImportExportService.exportPayloadCooperatively(from: freshContext)
+            }
+            cancelledExport.cancel()
+            do { _ = try await cancelledExport.value; checks["cachedExportHonorsCancellation"] = false }
+            catch is CancellationError { checks["cachedExportHonorsCancellation"] = true }
             if !ProcessInfo.processInfo.arguments.contains("-macCloudCoreProbeOnly") {
                 checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
                 checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }

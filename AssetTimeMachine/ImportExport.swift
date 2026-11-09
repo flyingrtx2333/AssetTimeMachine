@@ -350,6 +350,9 @@ nonisolated private enum ImportPayloadPreparer {
 }
 
 enum ImportExportService {
+    @MainActor private static weak var cachedExportContainer: ModelContainer?
+    @MainActor private static var cachedExport: VersionedExportPayload?
+
     @MainActor
     static func exportPayload(from context: ModelContext) throws -> ExportPayload {
         let categories = try context.fetch(FetchDescriptor<AssetCategory>())
@@ -436,6 +439,18 @@ enum ImportExportService {
     static func exportPayloadCooperatively(from context: ModelContext) async throws -> VersionedExportPayload {
         let container = context.container
         let revisionClock = ModelStoreRevisionClock.shared
+        try Task.checkCancellation()
+        guard !context.hasChanges else { throw ImportExportConsistencyError.storeChanged }
+        // Keep one value snapshot. Every context's save advances the synchronous
+        // revision clock, so idle polling avoids rebuilding the entire SwiftData graph.
+        if cachedExportContainer === container, let cachedExport,
+           cachedExport.storeRevision == revisionClock.currentRevision() {
+            let payload = cachedExport.payload
+            return VersionedExportPayload(payload: ExportPayload(exportedAt: .now,
+                categories: payload.categories, items: payload.items,
+                snapshots: payload.snapshots, deletions: payload.deletions),
+                storeRevision: cachedExport.storeRevision)
+        }
 
         for attempt in 0..<4 {
             try Task.checkCancellation()
@@ -461,10 +476,13 @@ enum ImportExportService {
             } catch let validationError as ImportPayloadValidationError {
                 throw localizedValidationError(validationError)
             }
-            return VersionedExportPayload(
+            let result = VersionedExportPayload(
                 payload: payload,
                 storeRevision: endingRevision
             )
+            cachedExportContainer = container
+            cachedExport = result
+            return result
         }
 
         throw NSError(
