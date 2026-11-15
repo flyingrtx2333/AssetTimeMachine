@@ -1747,16 +1747,19 @@ final class RemoteMarketStore: ObservableObject {
         exchangeRates[currency.uppercased()]
     }
 
-    func recordQuoteFetchedAt(for symbol: String) -> Date? {
+    func recordQuoteDateString(for symbol: String) -> String? {
+        // Preserve the quote's market day across device time zones and refreshes.
         let normalizedSymbol = Self.normalizedHistorySymbol(symbol)
         if let kind = AutoPricedAssetKind(rawValue: normalizedSymbol), kind.isCurrency {
-            return exchangeRatesFetchedAt
+            return exchangeRatesFetchedAt.map { MarketDay.string(from: $0) }
         }
-        if let fetchedAt = market(for: normalizedSymbol)?.fetchedAt {
-            return fetchedAt
+        if let quote = market(for: normalizedSymbol) {
+            let date = quote.recordDate.flatMap(MarketDay.parse) ?? quote.fetchedAt
+            return MarketDay.string(from: date)
         }
-        guard let dateText = history(for: normalizedSymbol)?.dates.last else { return nil }
-        return MarketDay.parse(dateText)
+        guard let dateText = history(for: normalizedSymbol)?.dates.last,
+              let date = MarketDay.parse(dateText) else { return nil }
+        return MarketDay.string(from: date)
     }
 
     func history(for symbol: String) -> PublicHistorySeries? {

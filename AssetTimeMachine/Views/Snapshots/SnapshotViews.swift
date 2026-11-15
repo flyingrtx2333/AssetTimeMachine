@@ -2804,7 +2804,6 @@ struct RecordValueEditorSheet: View {
     @State private var unitPriceText: String
     @State private var errorMessage: String?
     @State private var isRefreshingAutoPrice = false
-    @State private var lastManualPriceRefreshAt: Date?
     @State private var manualAutoPriceRefreshTask: Task<Void, Never>?
     @FocusState private var focusedField: RecordValueField?
 
@@ -2874,16 +2873,13 @@ struct RecordValueEditorSheet: View {
         return displayedUnitPriceText
     }
 
-    private var trailingUnitPriceTimestamp: String? {
+    private var trailingUnitPriceDate: String? {
         guard item.valuationMethod == .quantityAndUnitPrice,
               usesAutomaticUnitPrice else {
             return nil
         }
-        if let lastManualPriceRefreshAt {
-            return AppLocalization.format("%@更新", lastManualPriceRefreshAt.recordTimeString)
-        }
-        guard let fetchedAt = item.autoPriceFetchedAt(using: marketStore) else { return nil }
-        return AppLocalization.format("%@更新", fetchedAt.recordTimeString)
+        guard let date = item.autoPriceDateString(using: marketStore) else { return nil }
+        return AppLocalization.format("%@更新", date)
     }
 
     private var quantityUnitTitle: String? {
@@ -3240,7 +3236,7 @@ struct RecordValueEditorSheet: View {
                 HStack(spacing: 8) {
                     Text(isRefreshingAutoPrice
                         ? AppLocalization.string("刷新中")
-                        : trailingUnitPriceTimestamp ?? "—")
+                        : trailingUnitPriceDate ?? "—")
                         .font(AppTypography.caption)
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textSecondary)
@@ -3413,7 +3409,6 @@ struct RecordValueEditorSheet: View {
         }
 
         unitPriceText = latestRate.plainNumberString()
-        lastManualPriceRefreshAt = .now
 
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }
