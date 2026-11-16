@@ -147,7 +147,7 @@ final class NativeHistoryModel: ObservableObject {
             }
             guard NativeStaticTrendCanvas.validatesExtrema(summaries) else {
                 throw NSError(domain: "NativeTrendSampler", code: 1,
-                              userInfo: [NSLocalizedDescriptionKey: "历史曲线采样校验失败"])
+                              userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("历史曲线采样校验失败")])
             }
             generation &+= 1
         } catch {
@@ -217,6 +217,7 @@ struct NativeRootView: View {
         .disabled(cloud.isApplyingLocalData)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(NativePalette.canvas)
+        .background(AppSwitcherPrivacyShield().allowsHitTesting(false))
         .background {
             NativeDraftWindowProtection(hasChanges: { recordEditor.isDirty }, save: {
                 guard recordEditor.save(container: context.container) else {
@@ -371,7 +372,7 @@ struct NativeRootView: View {
                 if !cloud.isWorking && !cloud.requiresLocalOwnershipConfirmation {
                     await cloud.refreshIfNeeded(from: context)
                 }
-                do { try await Task.sleep(for: .seconds(60)) }
+                do { try await Task.sleep(for: .seconds(AssetTimeMachineCloudStore.foregroundCheckInterval)) }
                 catch { return }
             }
         }
@@ -741,10 +742,11 @@ private func money(_ value: Double) -> String {
 }
 
 private func displayDate(_ date: Date) -> String {
-    date.formatted(Date.FormatStyle().year().month().day().locale(Locale(identifier: "zh_CN")))
+    date.formatted(Date.FormatStyle().year().month().day().locale(AppLocalization.currentLocale))
 }
 
 struct NativeTimeMachineView: View {
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var amountsVisible = true
     private struct DetailRow: Identifiable {
         let id: UUID
         let name: String
@@ -804,15 +806,16 @@ struct NativeTimeMachineView: View {
                             HStack(spacing: NativeStyle.Space.sm) {
                                 Button { stepDate(-1) } label: { Image(systemName: "chevron.left") }
                                     .disabled((selectedIndex ?? 0) <= 0)
-                                Text(active.map { displayDate($0.date) } ?? "选择日期").font(NativeStyle.FontRole.body).monospacedDigit()
+                                Text(active.map { displayDate($0.date) } ?? AppLocalization.string("选择日期")).font(NativeStyle.FontRole.body).monospacedDigit()
                                 Button { stepDate(1) } label: { Image(systemName: "chevron.right") }
                                     .disabled(summaries.isEmpty || (selectedIndex ?? 0) >= summaries.count - 1)
                             }.controlSize(.small)
                         Spacer()
                         if history.loading || isExportingVideo { ProgressView().controlSize(.small) }
+                        AmountPrivacyButton()
                         Picker("时间范围", selection: $visibleMonths) {
                             Text("近6个月").tag(6); Text("近1年").tag(12); Text("近5年").tag(60); Text("全部").tag(1200)
-                        }.labelsHidden().frame(width: 120)
+                        }.labelsHidden().frame(width: 160)
                         Button("导出视频", systemImage: "play.rectangle") { startVideoExport() }
                             .modifier(NativeWorkspacePrimary()).disabled(isExportingVideo || summaries.count < 2)
                     }.frame(height: NativeStyle.Control.height)
@@ -822,6 +825,7 @@ struct NativeTimeMachineView: View {
                             Text(AppLocalization.string("净资产") + " "
                                  + money((active?.totalAssets ?? 0) - (active?.totalLiabilities ?? 0))
                                  + (active.map { " · " + displayDate($0.date) } ?? ""))
+                                .financialPrivacy()
                                 .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                                 .monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
                         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -839,6 +843,7 @@ struct NativeTimeMachineView: View {
                                     Text(active.flatMap(NativeGoldEquivalentPlot.value)
                                         .map { $0.formatted(.number.precision(.fractionLength(0...4))) + " g" } ?? "—")
                                         .monospacedDigit()
+                                        .financialPrivacy()
                                 }
                             }
                         }.toggleStyle(.button).tint(NativePalette.accent).controlSize(.small)
@@ -848,6 +853,7 @@ struct NativeTimeMachineView: View {
                         onHover: { local in hoveredIndex = local.map { $0 + chartStart } },
                         onSelect: { selectedIndex = $0 + chartStart; hoveredIndex = nil })
                         .frame(height: min(240, max(160, geometry.size.height * 0.3)))
+                        .financialPrivacy()
                     HStack(spacing: NativeStyle.Space.xxs) {
                         ForEach(dateRailIndices, id: \.self) { index in
                             Button { selectedIndex = index; hoveredIndex = nil } label: {
@@ -860,7 +866,7 @@ struct NativeTimeMachineView: View {
                                             else { Rectangle().fill(NativeHomeStyle.accent).frame(height: 1).matchedGeometryEffect(id: "date", in: dateSelection) }
                                         }
                                     }
-                            }.help(money(summaries[index].totalAssets - summaries[index].totalLiabilities))
+                            }.help(amountsVisible ? money(summaries[index].totalAssets - summaries[index].totalLiabilities) : AppLocalization.string("金额已隐藏"))
                                 .accessibilityAddTraits(selectedIndex == index ? .isSelected : [])
                         }
                     }.animation(NativeStyle.Motion.home(reducedMotion || NativeHomeStyle.previewReduced), value: selectedIndex)
@@ -870,11 +876,11 @@ struct NativeTimeMachineView: View {
                             selectedIndex = index; hoveredIndex = nil
                             if index < chartStart { visibleMonths = 1200 }
                         }
-                    }
+                    }.financialPrivacy()
                     HStack {
                         Text("当天资产明细").font(NativeStyle.FontRole.section)
                         Spacer()
-                        Text("\(detailRows.count) 项").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                        Text(AppLocalization.format("%d 项", detailRows.count)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                     }
                     LazyVStack(spacing: 0) {
                         if selectedSnapshot != nil {
@@ -885,12 +891,13 @@ struct NativeTimeMachineView: View {
                                         Text(entry.name).lineLimit(2)
                                         Spacer()
                                         Text(money(entry.amount)).monospacedDigit()
+                                            .financialPrivacy()
                                     }.font(NativeStyle.FontRole.body).frame(minHeight: NativeStyle.Layout.ledgerRowHeight)
                                 }
                                 Divider()
                             }
                         } else {
-                            Text(detailError ?? "选择日期查看明细").foregroundStyle(NativePalette.secondary)
+                            Text(detailError ?? AppLocalization.string("选择日期查看明细")).foregroundStyle(NativePalette.secondary)
                         }
                     }
                     if let detailError { Text(detailError).font(NativeStyle.FontRole.caption).foregroundStyle(AssetTheme.accentOrange) }
@@ -1029,7 +1036,7 @@ struct NativeTimeMachineView: View {
                 let summary = summaries[index]
                 if abs(amounts.totalAssets - summary.totalAssets) > 0.01
                     || abs(amounts.totalLiabilities - summary.totalLiabilities) > 0.01 {
-                    detailError = "所选日期明细与历史汇总不一致，请重新载入。"
+                    detailError = AppLocalization.string("所选日期明细与历史汇总不一致，请重新载入。")
                     self.selectedSnapshot = nil
                 } else {
                     detailRows = selectedSnapshot.entries
@@ -1055,7 +1062,7 @@ struct NativeTimeMachineView: View {
                 try Task.checkCancellation()
                 let panel = NSSavePanel()
                 panel.allowedContentTypes = [.mpeg4Movie]
-                panel.nameFieldStringValue = "资产时光机趋势.mp4"
+                panel.nameFieldStringValue = "AssetTimeMachine-Trend.mp4"
                 if panel.runModal() == .OK, let destination = panel.url {
                     try FileManager.default.copyItem(at: temporaryURL, to: destination)
                     NSWorkspace.shared.open(destination)

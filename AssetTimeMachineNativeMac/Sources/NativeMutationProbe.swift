@@ -1,4 +1,6 @@
 import Foundation
+import AppKit
+import Combine
 import CryptoKit
 import SwiftData
 
@@ -70,6 +72,63 @@ enum NativeRecordEditorProbe {
             && assetReminder.body == AppLocalization.string("打开资产时光机，查看最新资产记录。")
         results["repeatingStrategyReminderHasNoFrozenAdvice"] = strategyReminder.title == AppLocalization.string("策略更新提醒")
             && strategyReminder.body == AppLocalization.string("打开资产时光机，获取最新调仓建议。")
+        let maskedTest = AssetNotificationService.strategyTestContent(strategyTitle: "fixture", body: "¥12345", includesAmounts: false)
+        let explicitTest = AssetNotificationService.strategyTestContent(strategyTitle: "fixture", body: "¥12345", includesAmounts: true)
+        results["testNotificationHidesAmountsUnlessRequested"] = !maskedTest.body.contains("12345") && explicitTest.body == "¥12345"
+        results["diagnosticsContainNoAccountOrAssetFields"] = !AppSupport.diagnostics.contains("token")
+            && !AppSupport.diagnostics.contains("@") && !AppSupport.diagnostics.contains("snapshot")
+        let privacyWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 160, height: 100),
+            styleMask: [.borderless], backing: .buffered, defer: false)
+        privacyWindow.isReleasedWhenClosed = false
+        let parent = NSView(frame: NSRect(x: 0, y: 0, width: 160, height: 100))
+        privacyWindow.contentView = parent
+        let shield = AppSwitcherPrivacyShield.ShieldAnchor(frame: .zero)
+        parent.addSubview(shield); privacyWindow.orderBack(nil)
+        shield.enabled = true
+        NotificationCenter.default.post(name: NSApplication.willResignActiveNotification, object: NSApp)
+        results["backgroundShieldCoversWindowBeforeSnapshot"] = parent.subviews.contains {
+            $0.identifier?.rawValue == "app.privacy.shield"
+        }
+        NotificationCenter.default.post(name: NSApplication.didBecomeActiveNotification, object: NSApp)
+        results["foregroundRemovesBackgroundShield"] = !parent.subviews.contains {
+            $0.identifier?.rawValue == "app.privacy.shield"
+        }
+        shield.enabled = false
+        NotificationCenter.default.post(name: NSApplication.willResignActiveNotification, object: NSApp)
+        results["backgroundShieldRespectsPreference"] = !parent.subviews.contains {
+            $0.identifier?.rawValue == "app.privacy.shield"
+        }
+        shield.stop()
+        final class PreviousWindowDelegate: NSObject, NSWindowDelegate {
+            var closeChecks = 0
+            func windowShouldClose(_ sender: NSWindow) -> Bool { closeChecks += 1; return false }
+            func windowDidResize(_ notification: Notification) {}
+        }
+        final class WindowDelegateRelay: NSObject, NSWindowDelegate {
+            weak var target: (any NSWindowDelegate)?
+            override func responds(to selector: Selector!) -> Bool {
+                super.responds(to: selector) || (target?.responds(to: selector) ?? false)
+            }
+            override func forwardingTarget(for selector: Selector!) -> Any? { target }
+        }
+        let previous = PreviousWindowDelegate()
+        privacyWindow.delegate = previous
+        let guardCoordinator = NativeDraftWindowProtection.Coordinator(.init(hasChanges: { false }, save: { true }, discard: {}))
+        guardCoordinator.attach(to: privacyWindow)
+        let relay = WindowDelegateRelay(); relay.target = guardCoordinator
+        privacyWindow.delegate = relay
+        guardCoordinator.attach(to: privacyWindow)
+        results["windowDelegateIsNotRewrappedOnViewUpdate"] = privacyWindow.delegate === relay
+            && guardCoordinator.previousDelegate === previous
+        results["wrappedWindowDelegateSelectorDoesNotRecurse"] = relay.responds(to: #selector(NSWindowDelegate.windowDidResize(_:)))
+        results["wrappedWindowDelegatePreservesOriginalCloseDecision"] = !guardCoordinator.windowShouldClose(privacyWindow)
+            && previous.closeChecks == 1
+        guardCoordinator.detach(); privacyWindow.delegate = nil; privacyWindow.close()
+        for (index, value) in [1_234_567.89123, 0.0000123456789, 1.234567891234567].enumerated() {
+            results["iPhoneDraftRetainsPrecision\(index)"] = AssetEditorRecordDraftBuilder.make(
+                usesQuantityAndUnitPrice: true, amountText: "", quantityText: value.recordInputString(),
+                unitPrice: value, forcePositiveAmount: false) == .quantityAndUnitPrice(quantity: value, unitPrice: value)
+        }
         func sample(amount: Double?, quantity: Double? = nil, price: Double? = nil) -> NativeRecordEditor.Row {
             .init(id: UUID(), name: "fixture", category: "资产", group: .financial, icon: nil,
                   method: quantity == nil ? .directAmount : .quantityAndUnitPrice, autoPriceSymbol: nil,
@@ -352,6 +411,7 @@ private final class NativeCloudMockServer: @unchecked Sendable {
             } else if noHead { object = [[String: Any]]() }
             else if historicalPayload != nil {
                 var old = metadata(); old["id"] = historicalBackupID ?? head - 1
+                old["is_latest"] = 0
                 old["storage_url"] = "https://storage.invalid/legacy.json"
                 object = [metadata(), old]
             } else { object = [metadata()] }
@@ -830,6 +890,7 @@ enum NativeCloudSyncProbe {
                 _ = try await ImportExportService.prepareLocalImportJSON(JSONSerialization.data(withJSONObject: malformed))
                 checks["overflowingJSONValuationRejected"] = false
             } catch { checks["overflowingJSONValuationRejected"] = true }
+            checks.merge(try await qualityFollowupChecks(schema: schema)) { _, latest in latest }
             if !ProcessInfo.processInfo.arguments.contains("-macCloudCoreProbeOnly") {
                 checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
                 checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }
@@ -838,6 +899,106 @@ enum NativeCloudSyncProbe {
             return ["checks": checks, "allPassed": checks.values.allSatisfy { $0 }, "count": checks.count,
                     "latestReads": server.latestReads, "uploads": server.uploads, "acceptedUploads": server.acceptedUploads]
         } catch { return ["checks": checks, "allPassed": false, "error": error.localizedDescription] }
+    }
+
+    private static func qualityFollowupChecks(schema: Schema) async throws -> [String: Bool] {
+        var checks: [String: Bool] = [:]
+        let suite = "CloudSyncQuality-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        let previousServer = NativeCloudMockProtocol.server
+        defer { defaults.removePersistentDomain(forName: suite); NativeCloudMockProtocol.server = previousServer }
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+        let context = ModelContext(container); context.autosaveEnabled = false
+        let category = AssetCategory(name: "Synthetic recovery", group: .financial)
+        let item = AssetItem(name: "Synthetic recovery asset", category: category)
+        let day = AssetSnapshot(date: Calendar.current.startOfDay(for: .now))
+        context.insert(category); context.insert(item); context.insert(day)
+        context.insert(AssetEntry(amount: 10, snapshot: day, item: item)); try context.save()
+        func local() async throws -> ExportPayload { try await ImportExportService.exportPayloadCooperatively(from: context).payload }
+        func amount(_ payload: ExportPayload) -> Double? { payload.snapshots.first?.entries.first?.amount }
+        let initial = try await local()
+        let server = NativeCloudMockServer(initial); NativeCloudMockProtocol.server = server
+        let cloud = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+        var phases: Set<CloudSyncPhase> = []
+        let observation = cloud.$syncPhase.sink { phases.insert($0) }
+        defer { observation.cancel(); cloud.setAutomaticSyncActive(false) }
+        await cloud.refreshSession()
+        _ = await cloud.runIsolatedSync(from: context)
+        let draft = ModelContextMutationBarrier.shared.beginEditorDraft()!
+        cloud.scheduleAutoSync(from: context, delayNanoseconds: 0)
+        try await Task.sleep(for: .milliseconds(150))
+        let reads = server.latestReads
+        await cloud.refreshIfNeeded(from: context)
+        checks["draftWaitingHasActionableNonSpinningStatus"] = cloud.syncPhase == .waitingForEdits
+            && cloud.indicatorState == .warning && server.latestReads == reads
+        ModelContextMutationBarrier.shared.finishEditorDraft(draft)
+        for _ in 0..<30 {
+            if cloud.indicatorState == .healthy { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        try SnapshotService.upsertEntry(snapshot: day, item: item, amount: 11, in: context)
+        cloud.scheduleAutoSync(from: context, delayNanoseconds: 0)
+        for _ in 0..<60 {
+            if server.acceptedUploads > 0 && cloud.indicatorState == .healthy { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        checks["savedEditPublishesUploadAndCompletionStages"] = amount(server.payload) == 11
+            && phases.contains(.uploading) && cloud.indicatorState == .healthy
+        try SnapshotService.upsertEntry(snapshot: day, item: item, amount: 12, in: context)
+        server.offline = true
+        _ = await cloud.runIsolatedSync(from: context)
+        server.offline = false
+        let retryStarted = Date()
+        await cloud.retrySync(from: context)
+        for _ in 0..<60 {
+            if amount(server.payload) == 12 && cloud.indicatorState == .healthy { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        checks["manualRetryPublishesSavedEditWithoutBackoffWait"] = amount(server.payload) == 12
+            && cloud.errorMessage == nil && Date().timeIntervalSince(retryStarted) < 3
+        cloud.setAutomaticSyncActive(false)
+        server.change(item.id, to: 20)
+        let inactiveReads = server.latestReads
+        await cloud.refreshIfNeeded(from: context)
+        try await Task.sleep(for: .milliseconds(100))
+        checks["inactiveSyncDoesNotPollOrDownload"] = server.latestReads == inactiveReads
+        cloud.setAutomaticSyncActive(true)
+        let checkStarted = Date()
+        await cloud.refreshIfNeeded(from: context)
+        for _ in 0..<60 {
+            if amount(try await local()) == 20 && cloud.indicatorState == .healthy { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        checks["foregroundRefreshPullsRemoteWithinOneCheck"] = amount(try await local()) == 20
+            && Date().timeIntervalSince(checkStarted) < 3 && AssetTimeMachineCloudStore.foregroundCheckInterval <= 5
+            && phases.contains(.downloading) && phases.contains(.applying)
+        server.historicalPayload = initial; server.historicalBackupID = server.head - 1
+        await cloud.refreshBackupHistory()
+        let old = cloud.backups.first { $0.id != server.head }!
+        let before = try await local(), remote = server.payload, uploads = server.uploads
+        let recovery = try await cloud.prepareBackupRecovery(old)
+        let afterPreview = try await local()
+        checks["historicalPreviewSelectsOlderPayloadWithoutMutation"] = amount(recovery.payload) == 10
+            && SyncMergeService.isSameContent(afterPreview, before)
+            && SyncMergeService.isSameContent(server.payload, remote) && server.uploads == uploads
+        checks["historyStorageNeverReceivesAccountToken"] = server.historicalDownloads > 0 && !server.storageReceivedToken
+        try await cloud.restoreBackup(recovery, into: context)
+        let beforeImage = try await ImportExportService.prepareLocalImportJSON(cloud.exportBeforeJSONImportBackup())
+        checks["selectedHistoricalVersionRestoresRatherThanLatest"] = amount(try await local()) == 10 && amount(server.payload) == 20
+        checks["historicalRecoveryRetainsBeforeImageAndCloudHold"] = cloud.localRestoreNeedsCloudConfirmation
+            && cloud.requiresLocalOwnershipConfirmation && server.uploads == uploads
+            && SyncMergeService.isSameContent(beforeImage, before)
+        let otherAccount = CloudBackupRecovery(backup: old, payload: initial, userID: 12, accountID: recovery.accountID)
+        do { try await cloud.restoreBackup(otherAccount, into: context); checks["recoveryRejectsOtherAccount"] = false }
+        catch { checks["recoveryRejectsOtherAccount"] = amount(try await local()) == 10 && server.uploads == uploads }
+        server.historicalPayload = nil
+        do { _ = try await cloud.prepareBackupRecovery(old); checks["expiredHistoryDoesNotChangeLocalRecords"] = false }
+        catch { checks["expiredHistoryDoesNotChangeLocalRecords"] = amount(try await local()) == 10 && server.uploads == uploads }
+        server.historicalPayload = ExportPayload(exportedAt: initial.exportedAt, categories: initial.categories,
+            items: initial.items + initial.items, snapshots: initial.snapshots, deletions: initial.deletions)
+        do { _ = try await cloud.prepareBackupRecovery(old); checks["corruptHistoryIsRejectedBeforeConfirmation"] = false }
+        catch { checks["corruptHistoryIsRejectedBeforeConfirmation"] = amount(try await local()) == 10 && server.uploads == uploads }
+        return checks
     }
 
     private static func conflictReviewChecks(schema: Schema) async throws -> [String: Bool] {

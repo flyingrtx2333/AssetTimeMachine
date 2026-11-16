@@ -189,10 +189,10 @@ private struct NativeQuantConfigurationView: View {
                 }
                 ForEach(store.candidates) { candidate in
                     HStack {
-                        Text("\(candidate.buyRule.direction.localizedShortTitle) \(candidate.buyRule.days) 天 / \(candidate.sellRule.direction.localizedShortTitle) \(candidate.sellRule.days) 天")
+                        Text(AppLocalization.format("%@ %d 天 / %@ %d 天", candidate.buyRule.direction.localizedShortTitle, candidate.buyRule.days, candidate.sellRule.direction.localizedShortTitle, candidate.sellRule.days))
                         Spacer()
-                        Text("年化 \(candidate.report.annualizedReturn.map(NativeQuantFormat.percent) ?? "—")")
-                        Text("回撤 \(NativeQuantFormat.percent(candidate.report.maxDrawdown))")
+                        Text(AppLocalization.format("年化 %@", candidate.report.annualizedReturn.map(NativeQuantFormat.percent) ?? "—"))
+                        Text(AppLocalization.format("回撤 %@", NativeQuantFormat.percent(candidate.report.maxDrawdown)))
                         Button("采用") { store.apply(candidate) }
                     }.font(NativeStyle.FontRole.caption).padding(.vertical, NativeStyle.Space.sm)
                 }
@@ -248,7 +248,7 @@ private struct NativeQuantConfigurationView: View {
                 Text("资产配置").font(NativeStyle.FontRole.subheading)
                 Spacer()
                 let sum = store.config.cashWeight + store.config.goldWeight + store.config.indexWeights.values.reduce(0, +)
-                Text("合计 \(sum.formatted(.number.precision(.fractionLength(1))))%")
+                Text(AppLocalization.format("合计 %@%%", sum.formatted(.number.precision(.fractionLength(1)))))
                     .font(NativeStyle.FontRole.body).foregroundStyle(abs(sum - 100) < 0.01 ? NativeHomeStyle.secondary : .orange)
                 Button("重置") {
                     store.config.cashWeight = BacktestDefaults.cashWeight; store.config.goldWeight = BacktestDefaults.goldWeight
@@ -342,7 +342,7 @@ private struct NativeQuantConfigurationView: View {
             Picker(label, selection: direction) {
                 ForEach(AdvancedBacktestSignalDirection.allCases) { Text($0.localizedTitle).tag($0) }
             }.labelsHidden()
-            Stepper("连续 \(days.wrappedValue) 天", value: days, in: 1...250).font(NativeStyle.FontRole.caption)
+            Stepper(AppLocalization.format("连续 %d 天", days.wrappedValue), value: days, in: 1...250).font(NativeStyle.FontRole.caption)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func percentInput(_ title: String, value: Binding<Double>) -> some View { numberInput(title, value: value, suffix: "%") }
@@ -566,7 +566,9 @@ private struct NativeQuantAdviceView: View {
     @ObservedObject var market: RemoteMarketStore
     @State private var templateID = StrategyRebalanceDefaults.defaultTemplateID
     @State private var latestSnapshot: AssetSnapshot?
-    @State private var showsAmounts = false
+    @State private var requestsAmounts = false
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var globalAmountsVisible = true
+    private var showsAmounts: Bool { requestsAmounts && globalAmountsVisible }
     @State private var showsLibrary = false
     @State private var showsSources = false
     @State private var reloadToken = 0
@@ -607,7 +609,7 @@ private struct NativeQuantAdviceView: View {
                     Image(systemName: projection.isRefreshing ? "xmark" : "arrow.clockwise")
                 }.accessibilityLabel(projection.isRefreshing ? "取消刷新" : "刷新持仓建议")
                 Button {
-                    showsAmounts.toggle()
+                    requestsAmounts.toggle()
                 } label: {
                     Image(systemName: showsAmounts ? "eye.slash" : "eye")
                 }.accessibilityLabel(showsAmounts ? "隐藏金额" : "显示金额")
@@ -718,14 +720,14 @@ private struct NativeQuantAdviceView: View {
                 latestSnapshot = try context.fetch(descriptor).first
                 await projection.refresh(templateID: templateID, marketStore: market, snapshot: latestSnapshot, force: reloadToken > 0)
                 snapshotError = nil
-            } catch { snapshotError = "无法读取当前持仓：\(error.localizedDescription)" }
+            } catch { snapshotError = AppLocalization.format("无法读取当前持仓：%@", error.localizedDescription) }
         }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { notification in
             guard let saved = notification.object as? ModelContext, saved === context else { return }
             var descriptor = FetchDescriptor<AssetSnapshot>(sortBy: [SortDescriptor(\.date, order: .reverse)])
             descriptor.fetchLimit = 1
             do { latestSnapshot = try context.fetch(descriptor).first; projection.updateSnapshot(latestSnapshot); snapshotError = nil }
-            catch { snapshotError = "无法更新当前持仓：\(error.localizedDescription)" }
+            catch { snapshotError = AppLocalization.format("无法更新当前持仓：%@", error.localizedDescription) }
         }
         .onDisappear { projection.cancel() }
         .sheet(isPresented: $showsLibrary, onDismiss: { strategyPickerFocused = true }) {
@@ -854,7 +856,7 @@ private struct NativeQuantResultView: View {
                 DisclosureGroup("风险信号") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(risk.sourceDetail).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
-                        Text("压力期占比 \(NativeQuantFormat.percent(risk.stressSessionRatio))").font(NativeStyle.FontRole.body)
+                        Text(AppLocalization.format("压力期占比 %@", NativeQuantFormat.percent(risk.stressSessionRatio))).font(NativeStyle.FontRole.body)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, NativeStyle.Space.md)
                 }
             }
@@ -903,13 +905,13 @@ private struct NativeQuantResultView: View {
         var lines = [record.configSummary]
         if let symbols = config.selectedAssetSymbols { lines.append(symbols.joined(separator: " · ")) }
         if let fee = config.feeRate, let slippage = config.slippageRate {
-            lines.append("交易费率 \(fee)% · 滑点 \(slippage)%")
+            lines.append(AppLocalization.format("交易费率 %@%% · 滑点 %@%%", String(fee), String(slippage)))
         }
-        if let max = config.maxPositionRatio { lines.append("仓位上限 \(max)% · 冷却 \(config.cooldownDays ?? 0) 天") }
-        if let initialCash = config.initialCash { lines.append("初始资金 \(NativeHomeStyle.amount(initialCash))") }
+        if let max = config.maxPositionRatio { lines.append(AppLocalization.format("仓位上限 %@%% · 冷却 %d 天", String(max), config.cooldownDays ?? 0)) }
+        if let initialCash = config.initialCash { lines.append(AppLocalization.format("初始资金 %@", NativeHomeStyle.amount(initialCash))) }
         if let buy = config.buyDirectionRawValue, let sell = config.sellDirectionRawValue {
-            lines.append("买入 \(AdvancedBacktestSignalDirection(rawValue: buy)?.localizedTitle ?? buy) \(config.buyDays ?? 1) 天")
-            lines.append("卖出 \(AdvancedBacktestSignalDirection(rawValue: sell)?.localizedTitle ?? sell) \(config.sellDays ?? 1) 天")
+            lines.append(AppLocalization.format("买入 %@ %d 天", AdvancedBacktestSignalDirection(rawValue: buy)?.localizedTitle ?? buy, config.buyDays ?? 1))
+            lines.append(AppLocalization.format("卖出 %@ %d 天", AdvancedBacktestSignalDirection(rawValue: sell)?.localizedTitle ?? sell, config.sellDays ?? 1))
         }
         if let provenance = config.runtimeProvenance { lines.append(provenance.executionVersion) }
         return lines.joined(separator: "\n")
@@ -1000,7 +1002,7 @@ enum NativeQuantFormat {
 enum NativeQuantExport {
     static func write(record: BacktestRecord, onError: (String) -> Void) {
         let panel = NSSavePanel(); panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "回测-\(record.id.uuidString.prefix(8)).json"
+        panel.nameFieldStringValue = "Backtest-\(record.id.uuidString.prefix(8)).json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             // Preserve the existing wire payloads, rather than exporting rendered chart text.
@@ -1017,7 +1019,7 @@ enum NativeQuantExport {
                 "config": try JSONSerialization.jsonObject(with: record.configJSON)]
             let data = try JSONSerialization.data(withJSONObject: metadata, options: [.prettyPrinted, .sortedKeys])
             try data.write(to: url, options: .atomic)
-        } catch { onError("导出失败：\(error.localizedDescription)") }
+        } catch { onError(AppLocalization.format("导出失败：%@", error.localizedDescription)) }
     }
 }
 
@@ -1070,7 +1072,7 @@ private struct NativeQuantForwardValidation: View {
             defer { isLoading = false }
             guard !AppPreviewSession.isActive else { error = "样例不读取实时跟踪数据"; return }
             do { response = try await RemoteMarketClient.fetchForwardValidation() }
-            catch { self.error = "读取失败：\(error.localizedDescription)" }
+            catch { self.error = AppLocalization.format("读取失败：%@", error.localizedDescription) }
         }
     }
 
@@ -1087,11 +1089,11 @@ extension NativeQuantExport {
     }
     static func writePoster(record: BacktestRecord, onError: (String) -> Void) {
         let panel = NSSavePanel(); panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "回测-\(record.id.uuidString.prefix(8)).png"
+        panel.nameFieldStringValue = "Backtest-\(record.id.uuidString.prefix(8)).png"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let data = posterData(record: record) else { onError("图片生成失败"); return }
         do { try data.write(to: url, options: .atomic) }
-        catch { onError("导出失败：\(error.localizedDescription)") }
+        catch { onError(AppLocalization.format("导出失败：%@", error.localizedDescription)) }
     }
 }
 

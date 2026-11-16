@@ -28,14 +28,17 @@ struct SettingsLedgerRule: View {
 }
 
 struct SettingsLedgerHeader: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(AppLocalization.string("资产时光机"))
-                .font(AppTypography.meta)
-                .foregroundStyle(AssetTheme.goldSoft)
+            if !dynamicTypeSize.isAccessibilitySize {
+                Text(AppLocalization.string("资产时光机"))
+                    .font(AppTypography.meta)
+                    .foregroundStyle(AssetTheme.goldSoft)
+            }
 
             Text(AppLocalization.string("设置"))
-                .font(AppTypography.pageHero)
+                .font(.largeTitle.weight(.semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
 
@@ -85,11 +88,12 @@ struct SettingsLedgerExpenseRow: View {
         Text(AppLocalization.string("月开支估算"))
             .font(AppTypography.rowTitle)
             .foregroundStyle(AssetTheme.textPrimary)
-            .fixedSize(horizontal: true, vertical: false)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private var amount: some View {
         Text(value)
+            .financialPrivacy()
             .font(AppTypography.panelHero)
             .monospacedDigit()
             .foregroundStyle(AssetTheme.textPrimary)

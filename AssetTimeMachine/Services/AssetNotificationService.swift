@@ -115,12 +115,10 @@ enum AssetNotificationService {
             center.removePendingNotificationRequests(withIdentifiers: [strategyTestNotificationIdentifier])
             center.removeDeliveredNotifications(withIdentifiers: [strategyTestNotificationIdentifier])
 
-            let content = UNMutableNotificationContent()
-            content.title = AppLocalization.string("调仓建议")
-            content.subtitle = strategyTitle
-            content.body = body ?? AppLocalization.string("打开资产时光机，查看最新策略信号。")
-            content.sound = .default
-            content.threadIdentifier = strategyNotificationIdentifier
+            let preferences = AppPrivacyPreferences.defaults
+            let amountsVisible = preferences.object(forKey: "dashboard.amountsVisible") as? Bool ?? true
+            let content = strategyTestContent(strategyTitle: strategyTitle, body: body,
+                includesAmounts: amountsVisible && preferences.bool(forKey: "app.notifications.includesAmounts"))
 
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
             let request = UNNotificationRequest(identifier: strategyTestNotificationIdentifier, content: content, trigger: trigger)
@@ -152,6 +150,17 @@ enum AssetNotificationService {
         content.title = AppLocalization.string("资产记录提醒")
         content.body = AppLocalization.string("打开资产时光机，查看最新资产记录。")
         content.sound = .default
+        return content
+    }
+
+    static func strategyTestContent(strategyTitle: String, body: String?, includesAmounts: Bool) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = AppLocalization.string("调仓建议")
+        content.subtitle = strategyTitle
+        content.body = includesAmounts ? body ?? AppLocalization.string("打开资产时光机，查看最新策略信号。")
+            : AppLocalization.string("打开资产时光机，查看最新策略信号。")
+        content.sound = .default
+        content.threadIdentifier = strategyNotificationIdentifier
         return content
     }
 

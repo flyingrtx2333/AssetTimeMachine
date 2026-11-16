@@ -4,6 +4,7 @@ import UIKit
 import UserNotifications
 
 struct SettingsView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var appLanguageStore: AppLanguageStore
     @AppStorage(AssetChangePreferences.key, store: AssetChangePreferences.defaults) private var assetChangeColorRaw = AssetChangeColorScheme.region.rawValue
@@ -15,6 +16,9 @@ struct SettingsView: View {
     @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
     @AppStorage("app.strategyNotifications.templateID") private var strategyNotificationTemplateID = StrategyRebalanceDefaults.defaultTemplateID
     @AppStorage("app.strategyNotifications.hour") private var strategyNotificationHour: Int = StrategyNotificationDefaults.defaultHour
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var amountsVisible = true
+    @AppStorage("app.privacy.protectAppSwitcher", store: AppPrivacyPreferences.defaults) private var protectsAppSwitcher = true
+    @AppStorage("app.notifications.includesAmounts", store: AppPrivacyPreferences.defaults) private var notificationIncludesAmounts = false
     @ObservedObject var cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool
     let onSendStrategyTestNotification: () async -> StrategyTestNotificationResult
@@ -30,6 +34,7 @@ struct SettingsView: View {
     @State private var showsStrategyLibrary = false
     @State private var showsMonthlyExpenseEstimator = false
     @State private var showsLocalRecordsTransfer = false
+    @State private var showsSupport = false
     @State private var pendingAppLanguage: AppLanguage?
     #if DEBUG
     @State private var didOpenPreviewSheet = false
@@ -150,14 +155,15 @@ struct SettingsView: View {
                 .contentMargins(.bottom, settingsBottomMargin, for: .scrollContent)
                 .environment(\.defaultMinListRowHeight, settingsRowHeight)
                 #else
+                ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         SettingsLedgerHeader()
                         planningSection
-                        preferencesSection
-                        automationSection
-                        dataSection
-                        supportSection
+                        preferencesSection.id("preferences")
+                        automationSection.id("automation")
+                        dataSection.id("data")
+                        supportSection.id("support")
                     }
                     .padding(.horizontal, 22)
                     .padding(.top, 12)
@@ -167,6 +173,16 @@ struct SettingsView: View {
                 }
                 .id(appLanguageStore.language.rawValue)
                 .clipped()
+                #if DEBUG
+                .task {
+                    let args = ProcessInfo.processInfo.arguments
+                    if let i = args.firstIndex(of: "-previewSettingsAnchor"), args.indices.contains(i + 1) {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        proxy.scrollTo(args[i + 1], anchor: .top)
+                    }
+                }
+                #endif
+                }
                 #endif
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -233,6 +249,7 @@ struct SettingsView: View {
             .navigationDestination(isPresented: $showsLocalRecordsTransfer) {
                 LocalRecordsTransferView(cloudStore: cloudStore)
             }
+            .navigationDestination(isPresented: $showsSupport) { AppSupportView() }
             .alert(AppLocalization.string("退出云同步"), isPresented: $showsLogoutConfirmation) {
                 Button(AppLocalization.string("取消"), role: .cancel) {}
                 Button(AppLocalization.string("退出"), role: .destructive) {
@@ -260,6 +277,7 @@ struct SettingsView: View {
         case "language": showsLanguageSelection = true
         case "expenses": showsMonthlyExpenseEstimator = true
         case "transfer": showsLocalRecordsTransfer = true
+        case "support": showsSupport = true
         default: break
         }
     }
@@ -329,9 +347,11 @@ struct SettingsView: View {
             .settingsSurfaceRow()
             #endif
 
-            HStack(spacing: 12) {
+            (dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(spacing: 12))) {
                 SettingsRowLabel(title: AppLocalization.string("涨跌配色"), systemImage: "paintpalette")
-                Spacer(minLength: 8)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
                 Picker(AppLocalization.string("涨跌配色"), selection: $assetChangeColorRaw) {
                     ForEach(AssetChangeColorScheme.allCases) { scheme in
                         Text(scheme.title).tag(scheme.rawValue)
@@ -339,6 +359,7 @@ struct SettingsView: View {
                 }
                 .labelsHidden()
                 .tint(AssetTheme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .settingsSurfaceRow()
             Button {
@@ -363,6 +384,11 @@ struct SettingsView: View {
             }
             .buttonStyle(SettingsLedgerButtonStyle())
             .settingsSurfaceRow()
+
+            Toggle(AppLocalization.string("隐藏资产金额"), isOn: Binding(get: { !amountsVisible }, set: { amountsVisible = !$0 }))
+                .tint(AssetTheme.gold).settingsSurfaceRow()
+            Toggle(AppLocalization.string("后台预览保护"), isOn: $protectsAppSwitcher)
+                .tint(AssetTheme.gold).settingsSurfaceRow()
         } header: {
             SettingsSectionHeader(title: AppLocalization.string("偏好"))
         }
@@ -440,6 +466,9 @@ struct SettingsView: View {
             .settingsSurfaceRow()
 
             if !StrategyRebalanceDefaults.eligibleTemplates.isEmpty {
+                Toggle(AppLocalization.string("测试通知包含金额"), isOn: $notificationIncludesAmounts)
+                    .disabled(!amountsVisible)
+                    .tint(AssetTheme.gold).settingsSurfaceRow()
                 Button {
                     sendStrategyTestNotification()
                 } label: {
@@ -567,6 +596,16 @@ struct SettingsView: View {
 
     private var supportSection: some View {
         Section {
+            Button { showsSupport = true } label: {
+                SettingsNavigationRow(title: AppLocalization.string("帮助与反馈"), systemImage: "questionmark.circle")
+            }
+            .buttonStyle(SettingsLedgerButtonStyle()).settingsSurfaceRow()
+
+            Link(destination: AppSupport.privacy) {
+                SettingsNavigationRow(title: AppLocalization.string("隐私政策"), systemImage: "hand.raised",
+                    trailingSystemImage: "arrow.up.right.square")
+            }.settingsSurfaceRow()
+
             Button {
                 guard let appStoreReviewURL else { return }
                 openURL(appStoreReviewURL)
@@ -755,14 +794,12 @@ private struct SettingsOverviewItem: View {
                 Text(title)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(value)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(tint)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.78)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let accessorySystemImage {

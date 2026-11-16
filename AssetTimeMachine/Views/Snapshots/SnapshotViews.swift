@@ -756,18 +756,18 @@ struct SnapshotListView: View {
     private func hydrateInputs(from snapshot: AssetSnapshot) {
         for entry in snapshot.entries {
             guard let item = entry.item else { continue }
-            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.plainNumberString() ?? "") : ""
-            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.plainNumberString() ?? "") : ""
-            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.plainNumberString() ?? "") : ""
+            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.recordInputString() ?? "") : ""
+            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.recordInputString() ?? "") : ""
+            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.recordInputString() ?? "") : ""
         }
     }
 
     @MainActor
     private func hydrateInputs(for item: AssetItem, from snapshot: AssetSnapshot) {
         guard let entry = snapshot.entries.first(where: { $0.item?.id == item.id }) else { return }
-        amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.plainNumberString() ?? "") : ""
-        quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.plainNumberString() ?? "") : ""
-        unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.plainNumberString() ?? "") : ""
+        amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.recordInputString() ?? "") : ""
+        quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.recordInputString() ?? "") : ""
+        unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.recordInputString() ?? "") : ""
     }
 
     @MainActor
@@ -812,7 +812,7 @@ struct SnapshotListView: View {
                 continue
             }
 
-            let rateText = rate.plainNumberString()
+            let rateText = rate.recordInputString()
             if unitPriceInputs[item.id] != rateText {
                 unitPriceInputs[item.id] = rateText
             }
@@ -858,6 +858,7 @@ struct RecordHeroMetric: View {
     let title: String
     let value: String
     let valueColor: Color
+    var protectsValue = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -866,6 +867,7 @@ struct RecordHeroMetric: View {
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.84))
 
             Text(value)
+                .financialPrivacy(protectsValue)
                 .font(AppTypography.microValue)
                 .foregroundStyle(valueColor)
                 .monospacedDigit()
@@ -944,6 +946,7 @@ struct RecordSnapshotSections: View {
 }
 
 struct RecordPageHero: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let snapshot: AssetSnapshot
     let totalAssets: Double
     let netAssets: Double
@@ -976,7 +979,8 @@ struct RecordPageHero: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .center, spacing: 14) {
+            (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: 14))) {
                 Text(AppLocalization.string("记录"))
                     .font(AppTypography.sheetTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
@@ -985,8 +989,9 @@ struct RecordPageHero: View {
 
                 if showsActionChips {
                     HStack(spacing: 4) {
+                        AmountPrivacyButton().frame(width: 44, height: 44).foregroundStyle(AssetTheme.goldSoft)
                         Button(action: onToggleZeroBalanceAssets) {
-                            Image(systemName: showsZeroBalanceAssets ? "eye" : "eye.slash")
+                            Image(systemName: showsZeroBalanceAssets ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(showsZeroBalanceAssets ? AssetTheme.goldSoft : AssetTheme.textSecondary)
                                 .frame(width: 44, height: 44)
@@ -1027,6 +1032,8 @@ struct RecordPageHero: View {
                 .foregroundStyle(AssetTheme.textSecondary.opacity(0.92))
 
             totalAssetText
+                .financialPrivacy()
+                .font(AppTypography.pageHero)
                 .foregroundStyle(
                     LinearGradient(
                         colors: [AssetTheme.textPrimary, AssetTheme.goldSoft.opacity(0.84)],
@@ -1034,11 +1041,13 @@ struct RecordPageHero: View {
                         endPoint: .bottom
                     )
                 )
-                .lineLimit(1)
-                .minimumScaleFactor(0.74)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.74)
+                .fixedSize(horizontal: false, vertical: true)
                 .monospacedDigit()
 
-            HStack(alignment: .top, spacing: 12) {
+            (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 12))) {
                 RecordHeroMetric(
                     title: AppLocalization.string("净资产"),
                     value: netAssets.currencyString(),
@@ -1056,7 +1065,8 @@ struct RecordPageHero: View {
                 RecordHeroMetric(
                     title: AppLocalization.string("日期"),
                     value: snapshot.date.recordDateString,
-                    valueColor: AssetTheme.textPrimary
+                    valueColor: AssetTheme.textPrimary,
+                    protectsValue: false
                 )
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1128,13 +1138,15 @@ struct RecordEntryGlyph: View {
 }
 
 struct RecordSectionHeader: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     let amount: String
     var amountColor: Color = AssetTheme.textPrimary
     var accent: Color = AssetTheme.goldSoft
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 10))) {
             Text(AppLocalization.string(title))
                 .font(AppTypography.blockTitle)
                 .foregroundStyle(accent)
@@ -1146,11 +1158,13 @@ struct RecordSectionHeader: View {
                 .frame(height: 1)
 
             Text(amount)
+                .financialPrivacy()
                 .font(AppTypography.bodyStrong)
                 .monospacedDigit()
                 .foregroundStyle(amountColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.82)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
@@ -1252,6 +1266,7 @@ struct RecordLedgerSection: View {
 }
 
 struct RecordLedgerRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let item: AssetItem
     let snapshotEntry: AssetEntry?
     @Binding var amountText: String
@@ -1295,7 +1310,8 @@ struct RecordLedgerRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 10))) {
             Button(action: handleNameTap) {
                 HStack(alignment: .center, spacing: 10) {
                     RecordEntryGlyph(
@@ -1353,6 +1369,7 @@ struct RecordLedgerRow: View {
                 }
             }
             .frame(minWidth: 112, minHeight: 44, alignment: .trailing)
+            .financialPrivacy()
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2755,6 +2772,11 @@ struct AssetItemEditorSheet: View {
 }
 
 struct RecordValueEditorSheet: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .title) private var scaledInputSize: CGFloat = 34
+    @ScaledMetric(relativeTo: .title3) private var scaledUnitSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .title2) private var scaledCurrencySize: CGFloat = 25
+    @ScaledMetric(relativeTo: .headline) private var scaledHeaderSize: CGFloat = 18
     @Environment(\.modelContext) private var modelContext
 
     private enum RecordValueField: Hashable {
@@ -2824,11 +2846,11 @@ struct RecordValueEditorSheet: View {
         self.onSaved = onSaved
 
         let currentEntry = snapshot?.entries.first(where: { $0.item?.id == item.id })
-        _amountText = State(initialValue: currentEntry?.amount?.plainNumberString() ?? "")
-        _quantityText = State(initialValue: currentEntry?.quantity?.plainNumberString() ?? "")
+        _amountText = State(initialValue: currentEntry?.amount?.recordInputString() ?? "")
+        _quantityText = State(initialValue: currentEntry?.quantity?.recordInputString() ?? "")
         _unitPriceText = State(initialValue:
-            currentEntry?.unitPrice?.plainNumberString()
-            ?? (usesLiveMarketPrice ? item.resolvedAutoUnitPrice(using: resolvedMarketStore)?.plainNumberString() : nil)
+            currentEntry?.unitPrice?.recordInputString()
+            ?? (usesLiveMarketPrice ? item.resolvedAutoUnitPrice(using: resolvedMarketStore)?.recordInputString() : nil)
             ?? ""
         )
     }
@@ -2927,6 +2949,17 @@ struct RecordValueEditorSheet: View {
     }
 
     var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView { editorContent }
+                    .scrollBounceBehavior(.basedOnSize)
+                    .frame(maxWidth: quickEditorWidth)
+                    .background(AssetTheme.surface)
+            } else { editorContent }
+        }
+    }
+
+    private var editorContent: some View {
         VStack(spacing: 0) {
             sheetHeader
 
@@ -3048,6 +3081,14 @@ struct RecordValueEditorSheet: View {
     }
 
     private var sheetHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+        if dynamicTypeSize.isAccessibilitySize {
+            Text(AppLocalization.string(item.name))
+                .font(.headline)
+                .foregroundStyle(AssetTheme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+        }
         HStack(spacing: 12) {
             Button(action: onCancel) {
                 Image(systemName: "xmark")
@@ -3061,13 +3102,15 @@ struct RecordValueEditorSheet: View {
 
             Spacer(minLength: 4)
 
-            Text(AppLocalization.string(item.name))
+            if !dynamicTypeSize.isAccessibilitySize {
+                Text(AppLocalization.string(item.name))
                 .font(.system(size: quickHeaderTitleSize, weight: .semibold))
                 .foregroundStyle(AssetTheme.textPrimary)
-                .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 .minimumScaleFactor(0.78)
 
-            Spacer(minLength: 4)
+                Spacer(minLength: 4)
+            }
 
             Button(action: save) {
                 Text(AppLocalization.string("完成"))
@@ -3077,6 +3120,7 @@ struct RecordValueEditorSheet: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+        }
         }
         .padding(.horizontal, quickEditorPadding)
         .padding(.top, quickHeaderTopPadding)
@@ -3102,7 +3146,7 @@ struct RecordValueEditorSheet: View {
         #if targetEnvironment(macCatalyst)
         14
         #else
-        18
+        scaledHeaderSize
         #endif
     }
 
@@ -3115,6 +3159,22 @@ struct RecordValueEditorSheet: View {
     }
 
     private var editorRow: some View {
+        ViewThatFits(in: .horizontal) {
+            if !dynamicTypeSize.isAccessibilitySize { horizontalEditorRow }
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 16) {
+                    AssetItemGlyph(item: item, accent: isLiability ? AssetTheme.negative : AssetTheme.goldSoft,
+                        size: quickGlyphSize).frame(width: quickGlyphFrameSize, height: quickGlyphFrameSize)
+                    inlinePrimaryField
+                }
+                if item.valuationMethod == .quantityAndUnitPrice {
+                    inlineUnitPrice.frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            }
+        }
+    }
+
+    private var horizontalEditorRow: some View {
         HStack(alignment: .center, spacing: 16) {
             AssetItemGlyph(
                 item: item,
@@ -3128,6 +3188,7 @@ struct RecordValueEditorSheet: View {
             if item.valuationMethod == .quantityAndUnitPrice {
                 inlineUnitPrice
                     .frame(minWidth: 116, alignment: .trailing)
+                    .fixedSize(horizontal: true, vertical: true)
             }
         }
     }
@@ -3167,7 +3228,7 @@ struct RecordValueEditorSheet: View {
             .foregroundStyle(AssetTheme.textPrimary)
             .focused($focusedField, equals: .primary)
             .minimumScaleFactor(0.65)
-            .frame(width: inlinePrimaryTextFieldWidth, alignment: .leading)
+            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : inlinePrimaryTextFieldWidth, alignment: .leading)
 
             if let quantityUnitTitle {
                 Text(quantityUnitTitle)
@@ -3191,7 +3252,7 @@ struct RecordValueEditorSheet: View {
         #if targetEnvironment(macCatalyst)
         18
         #else
-        25
+        scaledCurrencySize
         #endif
     }
 
@@ -3199,7 +3260,7 @@ struct RecordValueEditorSheet: View {
         #if targetEnvironment(macCatalyst)
         25
         #else
-        34
+        scaledInputSize
         #endif
     }
 
@@ -3207,7 +3268,7 @@ struct RecordValueEditorSheet: View {
         #if targetEnvironment(macCatalyst)
         15
         #else
-        20
+        scaledUnitSize
         #endif
     }
 
@@ -3218,7 +3279,7 @@ struct RecordValueEditorSheet: View {
                 if let trailingUnitPriceValue {
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(trailingUnitPriceValue)
-                            .font(.system(size: 16, weight: .medium))
+                            .font(AppTypography.rowValue)
                             .monospacedDigit()
                             .foregroundStyle(AssetTheme.textPrimary)
                             .lineLimit(1)
@@ -3240,7 +3301,7 @@ struct RecordValueEditorSheet: View {
                         .font(AppTypography.caption)
                         .monospacedDigit()
                         .foregroundStyle(AssetTheme.textSecondary)
-                        .lineLimit(1)
+                        .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: true)
 
                     refreshPriceButton
                 }
@@ -3281,19 +3342,21 @@ struct RecordValueEditorSheet: View {
     }
 
     private var marketValueRow: some View {
-        HStack(alignment: .firstTextBaseline) {
+        (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))) {
             Text(AppLocalization.string("本次市值"))
-                .font(.system(size: 16, weight: .regular))
+                .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.textSecondary)
 
-            Spacer(minLength: 16)
+            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 16) }
 
             Text(currentMarketValue?.currencyString() ?? "—")
-                .font(.system(size: 27, weight: .medium, design: .rounded))
+                .font(AppTypography.panelHero)
                 .monospacedDigit()
                 .foregroundStyle(AssetTheme.goldSoft)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.72)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -3376,7 +3439,7 @@ struct RecordValueEditorSheet: View {
             if usesAutomaticUnitPrice,
                let autoRate = item.resolvedAutoUnitPrice(using: marketStore) {
                 unitPrice = autoRate
-                unitPriceText = autoRate.plainNumberString()
+                unitPriceText = autoRate.recordInputString()
             } else {
                 unitPrice = normalizedReadonlyNumber(from: unitPriceText)
                     ?? snapshot.entries.first(where: { $0.item?.id == item.id })?.unitPrice
@@ -3408,7 +3471,7 @@ struct RecordValueEditorSheet: View {
             return
         }
 
-        unitPriceText = latestRate.plainNumberString()
+        unitPriceText = latestRate.recordInputString()
 
         guard let snapshot else { return }
         guard !Task.isCancelled else { return }
@@ -3576,21 +3639,24 @@ struct SnapshotArchiveView: View {
 }
 
 struct SnapshotArchiveRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let projection: SnapshotArchiveProjection
 
     var body: some View {
-        HStack(spacing: 12) {
+        (dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 12))) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(projection.date.longDateString)
                     .font(AppTypography.rowTitle)
                     .foregroundStyle(AssetTheme.textPrimary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(AppLocalization.format(
                     "%d 项 · 负债 %@",
                     projection.entryCount,
                     projection.totalLiabilities.currencyString()
                 ))
+                    .financialPrivacy()
                     .font(AppTypography.caption)
                     .foregroundStyle(AssetTheme.textSecondary)
                     .lineLimit(1)
@@ -3599,6 +3665,7 @@ struct SnapshotArchiveRow: View {
             Spacer(minLength: 12)
 
             Text(projection.netAssets.currencyString())
+                .financialPrivacy()
                 .font(AppTypography.rowTitle)
                 .foregroundStyle(AssetTheme.goldSoft)
                 .monospacedDigit()
@@ -3784,9 +3851,9 @@ struct SnapshotDetailView: View {
     private func hydrateDisplayInputs(from snapshot: AssetSnapshot) {
         for entry in snapshot.entries {
             guard let item = entry.item else { continue }
-            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.plainNumberString() ?? "") : ""
-            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.plainNumberString() ?? "") : ""
-            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.plainNumberString() ?? "") : ""
+            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.recordInputString() ?? "") : ""
+            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.recordInputString() ?? "") : ""
+            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.recordInputString() ?? "") : ""
         }
     }
 }

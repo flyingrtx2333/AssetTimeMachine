@@ -13,7 +13,7 @@ private struct TrendVideoPreviewRequest: Identifiable {
 
 struct TimeMachineView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("dashboard.amountsVisible") private var amountsVisible = true
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var amountsVisible = true
     let marketStore: RemoteMarketStore
     let isActive: Bool
     @State private var selectedRange: TimeMachineRange = .sixMonths

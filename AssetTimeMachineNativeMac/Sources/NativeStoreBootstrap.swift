@@ -105,7 +105,7 @@ final class NativeStoreBootstrap {
             let context = ModelContext(opened)
             let postOpenCount = try context.fetchCount(FetchDescriptor<AssetSnapshot>())
             guard postOpenCount == baseline.count else {
-                throw StoreError.validation("打开数据库后记录数改变：\(baseline.count) → \(postOpenCount)")
+                throw StoreError.validation(AppLocalization.format("打开数据库后记录数改变：%d → %d", baseline.count, postOpenCount))
             }
             guard try Self.inspect(url) == baseline else {
                 throw StoreError.validation("打开数据库后记录数量或金额发生改变")
@@ -140,8 +140,8 @@ final class NativeStoreBootstrap {
         case validation(String)
         var errorDescription: String? {
             switch self {
-            case .missing: return "未找到原有资产数据库。为避免以空数据覆盖云端，请先确认旧版应用的数据位置。"
-            case .validation(let detail): return "资产数据库校验失败：\(detail)。未进行同步。"
+            case .missing: return AppLocalization.string("未找到原有资产数据库。为避免以空数据覆盖云端，请先确认旧版应用的数据位置。")
+            case .validation(let detail): return AppLocalization.format("资产数据库校验失败：%@。未进行同步。", AppLocalization.string(detail))
             }
         }
     }
@@ -182,7 +182,7 @@ final class NativeStoreBootstrap {
         guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
               let db else {
             if let db { sqlite3_close(db) }
-            throw StoreError.validation("无法读取 \(url.path)")
+            throw StoreError.validation(AppLocalization.format("无法读取 %@", url.path))
         }
         defer { sqlite3_close(db) }
         let sql = """
@@ -192,7 +192,7 @@ final class NativeStoreBootstrap {
             """
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
-            throw StoreError.validation("无法读取记录数量与金额：\(String(cString: sqlite3_errmsg(db)))")
+            throw StoreError.validation(AppLocalization.format("无法读取记录数量与金额：%@", String(cString: sqlite3_errmsg(db))))
         }
         defer { sqlite3_finalize(statement) }
         guard sqlite3_step(statement) == SQLITE_ROW else { throw StoreError.validation("数据库缺少资产记录") }

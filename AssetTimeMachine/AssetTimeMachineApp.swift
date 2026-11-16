@@ -63,6 +63,7 @@ struct AssetTimeMachineApp: App {
                 .environmentObject(appLanguageStore)
                 .preferredColorScheme(appearanceMode.colorScheme)
                 .statusBarHidden(hidesStatusBarForScreenshots)
+                .background(AppSwitcherPrivacyShield().allowsHitTesting(false))
                 #if targetEnvironment(macCatalyst)
                 .background(MacWindowConfiguration().allowsHitTesting(false))
                 #endif

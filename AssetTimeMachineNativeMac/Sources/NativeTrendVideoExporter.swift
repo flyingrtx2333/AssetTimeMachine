@@ -11,9 +11,9 @@ enum NativeTrendVideoExporter {
         case frameUnavailable
         var errorDescription: String? {
             switch self {
-            case .insufficientHistory: "至少需要两条资产记录才能生成视频"
-            case .writerUnavailable: "无法创建视频文件"
-            case .frameUnavailable: "无法绘制视频画面"
+            case .insufficientHistory: AppLocalization.string("至少需要两条资产记录才能生成视频")
+            case .writerUnavailable: AppLocalization.string("无法创建视频文件")
+            case .frameUnavailable: AppLocalization.string("无法绘制视频画面")
             }
         }
     }

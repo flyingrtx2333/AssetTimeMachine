@@ -75,17 +75,20 @@ struct NativeHomeView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(AppLocalization.string("主资产")).font(NativeStyle.FontRole.bodyStrong)
                     Text(NativeHomeStyle.amount(total)).font(NativeStyle.FontRole.display).monospacedDigit()
+                        .financialPrivacy()
                         .lineLimit(1).minimumScaleFactor(0.75)
                         .contentTransition(reduced ? .opacity : .numericText())
                     HStack(spacing: 6) {
                         Text(AppLocalization.string("净资产") + " " + NativeHomeStyle.amount(net)).monospacedDigit()
+                            .financialPrivacy()
                         if let latest {
                             Text("·")
-                            Text(AppLocalization.format("截至 %@", latest.date.formatted(date: .numeric, time: .omitted)))
+                            Text(AppLocalization.format("截至 %@", latest.date.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLocalization.currentLocale))))
                         }
                     }.font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                         .lineLimit(1).minimumScaleFactor(0.85)
                 }.frame(maxWidth: .infinity, alignment: .leading)
+                AmountPrivacyButton()
                 rangeControl
             }.frame(height: 78, alignment: .top)
             HStack(spacing: 16) {
@@ -98,6 +101,7 @@ struct NativeHomeView: View {
             }.frame(height: 18)
             NativePanoramaTrend(summaries: visibleTrend, revision: "\(history.generation)-\(range)", compact: true)
                 .frame(height: plotHeight + 25)
+                .financialPrivacy()
         }
     }
     private func legend(_ title: String, color: Color) -> some View {
@@ -118,11 +122,12 @@ struct NativeHomeView: View {
             metric("总资产", total)
             metric("负债", debt)
             rule.padding(.top, 8)
-            NativeHomeComposition(snapshot: latestSnapshot, rowHeight: compact ? 24 : 26).padding(.top, 12)
+            NativeHomeComposition(snapshot: latestSnapshot, rowHeight: compact ? 24 : 26).padding(.top, 12).financialPrivacy()
             rule.padding(.top, 12)
             HStack(spacing: 8) {
                 Text("财务自由").font(NativeStyle.FontRole.bodyStrong)
                 Text("\(Int(min(freedom, 1) * 100))%").monospacedDigit()
+                    .financialPrivacy()
                     .contentTransition(reduced ? .opacity : .numericText())
                 Spacer(minLength: 0)
                 Button { parameters = true } label: {
@@ -136,6 +141,7 @@ struct NativeHomeView: View {
             Text(AppLocalization.string(label)).foregroundStyle(NativePalette.secondary)
             Spacer(minLength: 0)
             Text(NativeHomeStyle.amount(value)).monospacedDigit()
+                .financialPrivacy()
                 .lineLimit(1).minimumScaleFactor(0.85)
                 .contentTransition(reduced ? .opacity : .numericText())
         }.font(NativeStyle.FontRole.body).frame(height: 28)
@@ -159,25 +165,26 @@ struct NativeHomeView: View {
             } else {
                 ForEach(Array(history.summaries.suffix(5).reversed().enumerated()), id: \.element.id) { index, record in
                     Button { openRecord(record.id) } label: {
-                        ledgerRow([record.date.formatted(date: .numeric, time: .omitted),
+                        ledgerRow([record.date.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLocalization.currentLocale)),
                                    record.totalAssets.formatted(.number.precision(.fractionLength(2))),
                                    (record.totalAssets - record.totalLiabilities).formatted(.number.precision(.fractionLength(2))),
-                                   record.totalLiabilities.formatted(.number.precision(.fractionLength(2)))], dateWidth: dateWidth)
+                                   record.totalLiabilities.formatted(.number.precision(.fractionLength(2)))], dateWidth: dateWidth, protectAmounts: true)
                             .font(NativeStyle.FontRole.body).monospacedDigit()
                             .frame(height: NativeStyle.Layout.ledgerRowHeight).contentShape(Rectangle())
                             .background(NativePalette.text.opacity(index.isMultiple(of: 2) ? 0 : 0.025))
                             .contentTransition(reduced ? .opacity : .numericText())
                     }.buttonStyle(.plain).foregroundStyle(NativePalette.text)
-                        .help(AppLocalization.format("查看 %@ 的记录", record.date.formatted(date: .numeric, time: .omitted)))
+                        .help(AppLocalization.format("查看 %@ 的记录", record.date.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLocalization.currentLocale))))
                     rule
                 }
             }
         }
     }
-    private func ledgerRow(_ values: [String], dateWidth: CGFloat) -> some View {
+    private func ledgerRow(_ values: [String], dateWidth: CGFloat, protectAmounts: Bool = false) -> some View {
         HStack(spacing: 0) {
             ForEach(values.indices, id: \.self) { index in
                 Text(values[index]).lineLimit(1).minimumScaleFactor(0.85)
+                    .financialPrivacy(protectAmounts && index > 0)
                     .padding(.horizontal, 10)
                     .frame(maxWidth: index == 0 ? nil : .infinity, maxHeight: .infinity,
                            alignment: index == 0 ? .leading : .trailing)
@@ -520,9 +527,9 @@ struct NativePanoramaTrend: View {
                                 .offset(x: p.x * width - 2.5, y: (1 - (value - goldPlot.low) / goldPlot.span) * height - 2.5)
                         }
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(summary.date.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))))
-                            if !netOnly { Text("总资产 " + NativeHomeStyle.amount(summary.totalAssets)) }
-                            Text("净资产 " + NativeHomeStyle.amount(summary.totalAssets - summary.totalLiabilities))
+                            Text(summary.date.formatted(.dateTime.year().month().day().locale(AppLocalization.currentLocale)))
+                            if !netOnly { Text(AppLocalization.format("总资产 %@", NativeHomeStyle.amount(summary.totalAssets))) }
+                            Text(AppLocalization.format("净资产 %@", NativeHomeStyle.amount(summary.totalAssets - summary.totalLiabilities)))
                                 .foregroundStyle(NativeHomeStyle.accent)
                             if showsGoldEquivalent {
                                 Text(AppLocalization.string("等值黄金") + " " + (NativeGoldEquivalentPlot.value(summary)
@@ -564,7 +571,7 @@ struct NativePanoramaTrend: View {
             .overlay(alignment: .topLeading) {
                 if (compact || goldAxisVisible) && !summaries.isEmpty {
                     ForEach(0..<4) { tick in
-                        Text((goldAxisVisible ? "¥" : "") + (domain.low + domain.span * (1 - Double(tick) / 3)).formatted(.number.notation(.compactName).precision(.fractionLength(0...1)).locale(Locale(identifier: "zh_CN"))))
+                        Text((goldAxisVisible ? "¥" : "") + (domain.low + domain.span * (1 - Double(tick) / 3)).formatted(.number.notation(.compactName).precision(.fractionLength(0...1)).locale(AppLocalization.currentLocale)))
                             .font(NativeStyle.FontRole.caption).monospacedDigit().foregroundStyle(NativePalette.secondary)
                             .lineLimit(1).minimumScaleFactor(0.9).frame(width: 50, alignment: .trailing)
                             .offset(y: height * CGFloat(tick) / 3 - 6)
@@ -577,7 +584,7 @@ struct NativePanoramaTrend: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("资产走势")
             .accessibilityValue(summaries.last.map {
-                "总资产 " + NativeHomeStyle.amount($0.totalAssets) + "，净资产 " + NativeHomeStyle.amount($0.totalAssets - $0.totalLiabilities)
+                AppLocalization.format("总资产 %@，净资产 %@", NativeHomeStyle.amount($0.totalAssets), NativeHomeStyle.amount($0.totalAssets - $0.totalLiabilities))
                     + (showsGoldEquivalent ? "，" + AppLocalization.string("等值黄金") + " "
                         + (NativeGoldEquivalentPlot.value($0).map { $0.formatted(.number.precision(.fractionLength(0...4))) + " g" } ?? "—") : "")
             } ?? "暂无资产记录")
@@ -606,7 +613,7 @@ struct NativePanoramaTrend: View {
         ZStack(alignment: .topLeading) {
             Circle().fill(color).frame(width: 7, height: 7).offset(x: width - 3.5, y: point.y * height - 3.5)
             VStack(alignment: .leading, spacing: NativeStyle.Space.xxs) {
-                Text(label).font(NativeStyle.FontRole.micro)
+                Text(AppLocalization.string(label)).font(NativeStyle.FontRole.micro)
                 Text(value.formatted(.number.precision(.fractionLength(2)))).font(NativeStyle.FontRole.inputStrong).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.75).contentTransition(reduced ? .opacity : .numericText())
             }.foregroundStyle(color).frame(width: 80, alignment: .leading)
@@ -624,6 +631,7 @@ struct NativeWorkspaceMetric: View {
         VStack(alignment: .leading, spacing: 7) {
             Text(AppLocalization.string(title)).font(NativeStyle.FontRole.body).foregroundStyle(NativeHomeStyle.secondary)
             Text(primary ? NativeHomeStyle.amount(value) : value.formatted(.number.precision(.fractionLength(2))))
+                .financialPrivacy()
                 .font(primary ? NativeStyle.FontRole.display : NativeStyle.FontRole.metric).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .contentTransition(reduced || NativeHomeStyle.previewReduced ? .opacity : .numericText())

@@ -43,7 +43,7 @@ struct NativeAssetChangeCalendar: View {
                 VStack(alignment: .leading, spacing: 3) {
                     if let day = focused {
                         HStack(spacing: 8) {
-                            Text(day.date.formatted(date: .numeric, time: .omitted))
+                            Text(day.date.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLocalization.currentLocale)))
                             Text(amount(day)).foregroundStyle(day.change.map(colors.color) ?? NativePalette.secondary)
                         }.monospacedDigit()
                         Text(comparison(day)).foregroundStyle(NativePalette.secondary)
@@ -63,7 +63,7 @@ struct NativeAssetChangeCalendar: View {
     }
     private func comparison(_ day: AssetChangeDay) -> String {
         guard let previous = day.previousDate, day.change != nil else { return "" }
-        return AppLocalization.format("较 %@", previous.formatted(date: .numeric, time: .omitted))
+        return AppLocalization.format("较 %@", previous.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLocalization.currentLocale)))
     }
     private func rebuild() {
         data = AssetChangeYear(year: year, summaries: summaries)
@@ -160,7 +160,7 @@ private struct NativeAssetChangeCell: View, Equatable {
             && lhs.selected == rhs.selected && lhs.localeIdentifier == rhs.localeIdentifier
     }
     var body: some View {
-        let dateText: String = day.date.formatted(date: .complete, time: .omitted)
+        let dateText: String = day.date.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(AppLocalization.currentLocale))
         let amountText: String = amount
         let comparisonText: String = comparison
         let detailText = amountText + " " + comparisonText
@@ -193,6 +193,6 @@ private struct NativeAssetChangeCell: View, Equatable {
     }
     private var comparison: String {
         guard let previous = day.previousDate, day.change != nil else { return "" }
-        return AppLocalization.format("较 %@", previous.formatted(date: .numeric, time: .omitted))
+        return AppLocalization.format("较 %@", previous.formatted(Date.FormatStyle(date: .numeric, time: .omitted).locale(AppLocalization.currentLocale)))
     }
 }

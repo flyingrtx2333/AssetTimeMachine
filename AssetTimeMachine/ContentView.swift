@@ -32,7 +32,7 @@ struct ContentView: View {
     @AppStorage("dashboard.monthlySalary") var widgetMonthlySalary: Double = 10000
     @AppStorage("dashboard.annualReturnRate") var widgetAnnualReturnRate: Double = 0.03
     @AppStorage("dashboard.freedomUsesCurrentAssets") var widgetFreedomUsesCurrentAssets = true
-    @AppStorage("dashboard.amountsVisible") var widgetAmountsVisible = true
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) var widgetAmountsVisible = true
     @AppStorage(AppAppearanceMode.defaultsKey) var appearanceModeRawValue = AppAppearanceMode.system.rawValue
     @StateObject var runtimeStore = AppRuntimeStore()
     @State var mountedTabs: Set<AppTab> = [.dashboard]
@@ -189,7 +189,7 @@ struct ContentView: View {
             }
             while !Task.isCancelled {
                 await cloudStore.refreshIfNeeded(from: modelContext)
-                do { try await Task.sleep(for: .seconds(60)) }
+                do { try await Task.sleep(for: .seconds(AssetTimeMachineCloudStore.foregroundCheckInterval)) }
                 catch { return }
             }
         }

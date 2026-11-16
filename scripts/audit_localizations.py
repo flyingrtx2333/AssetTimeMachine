@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT / "AssetTimeMachine"
+NATIVE_SOURCE_ROOT = ROOT / "AssetTimeMachineNativeMac" / "Sources"
 CATALOG_PATH = SOURCE_ROOT / "Localizable.xcstrings"
 LOCALES = ("en", "zh-Hans", "zh-Hant")
 
@@ -46,7 +47,10 @@ def main() -> int:
     format_keys: set[str] = set()
     chinese_literals: set[str] = set()
 
-    for path in SOURCE_ROOT.rglob("*.swift"):
+    paths = list(SOURCE_ROOT.rglob("*.swift")) + [
+        path for path in NATIVE_SOURCE_ROOT.rglob("*.swift") if not path.name.endswith("Probe.swift")
+    ]
+    for path in paths:
         source = path.read_text(errors="ignore")
         localized_keys.update(decoded_literal(match.group(1)) for match in LOCALIZATION_CALL.finditer(source))
         format_keys.update(decoded_literal(match.group(1)) for match in FORMAT_CALL.finditer(source))

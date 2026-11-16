@@ -102,7 +102,7 @@ struct NativeQuantConfiguration: Sendable {
 
 enum NativeQuantError: LocalizedError {
     case invalid(String)
-    var errorDescription: String? { if case .invalid(let message) = self { return message }; return nil }
+    var errorDescription: String? { if case .invalid(let message) = self { return AppLocalization.string(message) }; return nil }
 }
 
 /// The native UI uses the same preparation, engines and record codec as the iPhone app.
@@ -176,13 +176,13 @@ enum NativeQuantCalculation {
                 goldWeight: config.goldWeight, indexWeights: config.indexWeights)
             return record(kind: .allocation, title: "配置回测", points: report.points, totalReturn: report.totalReturn,
                 annualized: report.annualizedReturn, drawdown: report.maxDrawdown, volatility: report.annualizedVolatility,
-                sharpe: report.sharpeRatio, config: configData, summary: "现金 \(config.cashWeight)% · 黄金 \(config.goldWeight)%")
+                sharpe: report.sharpeRatio, config: configData, summary: AppLocalization.format("现金 %@%% · 黄金 %@%%", String(config.cashWeight), String(config.goldWeight)))
         case .dca(let report):
             let payload = BacktestRecordConfigPayload(kind: .dca, dcaAssetSymbol: config.dcaSymbol,
                 dcaContributionAmount: config.contribution, dcaIntervalDays: config.intervalDays)
             let record = record(kind: .dca, title: "定投回测", points: report.points, totalReturn: report.totalReturn,
                 annualized: report.annualizedReturn, drawdown: report.maxDrawdown, volatility: report.annualizedVolatility,
-                sharpe: report.sharpeRatio, config: payload, summary: "\(config.dcaSymbol) · 每 \(config.intervalDays) 天 · \(config.contribution)")
+                sharpe: report.sharpeRatio, config: payload, summary: AppLocalization.format("%@ · 每 %d 天 · %@", config.dcaSymbol, config.intervalDays, String(config.contribution)))
             record.finalValue = report.finalPortfolioValue; record.totalInvested = report.totalInvested
             record.profitLoss = report.profitLoss; record.tradeCount = report.contributionCount
             return record
@@ -193,7 +193,7 @@ enum NativeQuantCalculation {
                 maxPositionRatio: config.maxPosition, cooldownDays: config.cooldown, stopLossRatio: config.stopLoss, takeProfitRatio: config.takeProfit,
                 strategyMode: config.mode, buyDirection: config.buyDirection, buyDays: config.buyDays,
                 sellDirection: config.sellDirection, sellDays: config.sellDays,
-                configSummary: "\(config.mode.localizedTitle) · 费率 \(config.fee)% · 滑点 \(config.slippage)%", strategyReference: reference).record
+                configSummary: AppLocalization.format("%@ · 费率 %@%% · 滑点 %@%%", config.mode.localizedTitle, String(config.fee), String(config.slippage)), strategyReference: reference).record
         }
     }
 
@@ -225,7 +225,7 @@ final class NativeQuantStore: ObservableObject {
 
     func loadRecords(_ context: ModelContext) {
         do { records = try context.fetch(FetchDescriptor<BacktestRecord>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])) }
-        catch { self.error = "无法读取回测记录：\(error.localizedDescription)" }
+        catch { self.error = AppLocalization.format("无法读取回测记录：%@", error.localizedDescription) }
     }
 
     func show(_ kind: BacktestRecordKind) { config.kind = kind; route = "configure"; error = nil }
@@ -337,6 +337,6 @@ final class NativeQuantStore: ObservableObject {
     func delete(_ record: BacktestRecord, context: ModelContext) {
         context.delete(record)
         do { try context.save(); if result?.id == record.id { result = nil }; loadRecords(context) }
-        catch { context.rollback(); self.error = "删除失败：\(error.localizedDescription)" }
+        catch { context.rollback(); self.error = AppLocalization.format("删除失败：%@", error.localizedDescription) }
     }
 }

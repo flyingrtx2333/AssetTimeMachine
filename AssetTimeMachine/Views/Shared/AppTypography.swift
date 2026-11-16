@@ -1,6 +1,13 @@
 import SwiftUI
 
 enum AppTypography {
+    private static func font(_ size: CGFloat, style: Font.TextStyle, weight: Font.Weight) -> Font {
+        #if targetEnvironment(macCatalyst)
+        .system(size: platformSize(size), weight: weight)
+        #else
+        .system(style, design: .default, weight: weight)
+        #endif
+    }
     private static func platformSize(_ iPhoneSize: CGFloat) -> CGFloat {
         #if targetEnvironment(macCatalyst)
         switch iPhoneSize {
@@ -18,45 +25,45 @@ enum AppTypography {
     }
 
     // Editorial hierarchy: neutral SF Pro for structure, restrained weight for calm financial data.
-    static let pageHero = Font.system(size: platformSize(30), weight: .semibold, design: .default)
-    static let pageHeroMinor = Font.system(size: platformSize(18), weight: .medium, design: .default)
-    static let heroValue = Font.system(size: platformSize(42), weight: .semibold, design: .default)
+    static let pageHero = font(30, style: .title, weight: .semibold)
+    static let pageHeroMinor = font(18, style: .title3, weight: .medium)
+    static let heroValue = font(42, style: .largeTitle, weight: .semibold)
 
-    static let sectionTitle = Font.system(size: platformSize(20), weight: .semibold, design: .default)
-    static let blockTitleBold = Font.system(size: platformSize(17), weight: .semibold, design: .default)
-    static let blockTitle = Font.system(size: platformSize(17), weight: .medium, design: .default)
-    static let inputValue = Font.system(size: platformSize(17), weight: .medium, design: .default)
+    static let sectionTitle = font(20, style: .title3, weight: .semibold)
+    static let blockTitleBold = font(17, style: .headline, weight: .semibold)
+    static let blockTitle = font(17, style: .headline, weight: .medium)
+    static let inputValue = font(17, style: .body, weight: .medium)
 
-    static let rowTitle = Font.system(size: platformSize(16), weight: .medium, design: .default)
-    static let rowValue = Font.system(size: platformSize(16), weight: .semibold, design: .default)
-    static let metricValue = Font.system(size: platformSize(16), weight: .semibold, design: .default)
-    static let body = Font.system(size: platformSize(15), weight: .regular, design: .default)
-    static let bodyStrong = Font.system(size: platformSize(15), weight: .medium, design: .default)
+    static let rowTitle = font(16, style: .body, weight: .medium)
+    static let rowValue = font(16, style: .body, weight: .semibold)
+    static let metricValue = font(16, style: .body, weight: .semibold)
+    static let body = font(15, style: .subheadline, weight: .regular)
+    static let bodyStrong = font(15, style: .subheadline, weight: .medium)
 
-    static let meta = Font.system(size: platformSize(14), weight: .regular, design: .default)
-    static let metaStrong = Font.system(size: platformSize(14), weight: .medium, design: .default)
-    static let eyebrow = Font.system(size: platformSize(12), weight: .semibold, design: .default)
-    static let caption = Font.system(size: platformSize(12), weight: .regular, design: .default)
-    static let captionStrong = Font.system(size: platformSize(12), weight: .medium, design: .default)
+    static let meta = font(14, style: .footnote, weight: .regular)
+    static let metaStrong = font(14, style: .footnote, weight: .medium)
+    static let eyebrow = font(12, style: .caption, weight: .semibold)
+    static let caption = font(12, style: .caption, weight: .regular)
+    static let captionStrong = font(12, style: .caption, weight: .medium)
 
-    static let chip = Font.system(size: platformSize(12), weight: .medium, design: .default)
-    static let chipIcon = Font.system(size: platformSize(11), weight: .semibold, design: .default)
-    static let fieldLabel = Font.system(size: platformSize(12), weight: .medium, design: .default)
+    static let chip = font(12, style: .caption, weight: .medium)
+    static let chipIcon = font(11, style: .caption, weight: .semibold)
+    static let fieldLabel = font(12, style: .caption, weight: .medium)
 
-    static let microLabel = Font.system(size: platformSize(10), weight: .regular, design: .default)
-    static let microValue = Font.system(size: platformSize(13), weight: .medium, design: .default)
+    static let microLabel = font(10, style: .caption2, weight: .regular)
+    static let microValue = font(13, style: .footnote, weight: .medium)
 
-    static let chartLegend = Font.system(size: platformSize(11), weight: .medium, design: .default)
-    static let chartLegendMedium = Font.system(size: platformSize(11), weight: .regular, design: .default)
-    static let chartCaption = Font.system(size: platformSize(10.5), weight: .regular, design: .default)
-    static let chartCaptionStrong = Font.system(size: platformSize(10.5), weight: .medium, design: .default)
-    static let chartAxis = Font.system(size: platformSize(10), weight: .regular, design: .default)
-    static let chartAxisCompact = Font.system(size: platformSize(9.5), weight: .regular, design: .default)
-    static let chartAxisCompactStrong = Font.system(size: platformSize(9.5), weight: .medium, design: .default)
-    static let chartAxisMini = Font.system(size: platformSize(9), weight: .regular, design: .default)
-    static let chartAxisStrip = Font.system(size: platformSize(9), weight: .medium, design: .default)
+    static let chartLegend = font(11, style: .caption2, weight: .medium)
+    static let chartLegendMedium = font(11, style: .caption2, weight: .regular)
+    static let chartCaption = font(10.5, style: .caption2, weight: .regular)
+    static let chartCaptionStrong = font(10.5, style: .caption2, weight: .medium)
+    static let chartAxis = font(10, style: .caption2, weight: .regular)
+    static let chartAxisCompact = font(9.5, style: .caption2, weight: .regular)
+    static let chartAxisCompactStrong = font(9.5, style: .caption2, weight: .medium)
+    static let chartAxisMini = font(9, style: .caption2, weight: .regular)
+    static let chartAxisStrip = font(9, style: .caption2, weight: .medium)
 
-    static let sheetTitle = Font.system(size: platformSize(22), weight: .semibold, design: .default)
-    static let sheetTitleSemibold = Font.system(size: platformSize(22), weight: .semibold, design: .default)
-    static let panelHero = Font.system(size: platformSize(28), weight: .semibold, design: .default)
+    static let sheetTitle = font(22, style: .title2, weight: .semibold)
+    static let sheetTitleSemibold = font(22, style: .title2, weight: .semibold)
+    static let panelHero = font(28, style: .title, weight: .semibold)
 }

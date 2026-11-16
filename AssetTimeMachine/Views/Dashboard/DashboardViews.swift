@@ -13,7 +13,7 @@ struct DashboardView: View {
     @AppStorage("dashboard.monthlySalarySeedVersion") private var monthlySalarySeedVersion: Int = 0
     @AppStorage("dashboard.annualReturnRate") private var annualReturnRate: Double = 0.03
     @AppStorage("dashboard.freedomUsesCurrentAssets") private var freedomUsesCurrentAssets = true
-    @AppStorage("dashboard.amountsVisible") private var amountsVisible = true
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var amountsVisible = true
     let marketStore: RemoteMarketStore
     let cloudStore: AssetTimeMachineCloudStore
     let isActive: Bool

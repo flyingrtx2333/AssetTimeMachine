@@ -154,16 +154,22 @@ struct NativeDraftWindowProtection: NSViewRepresentable {
         weak var window: NSWindow?
         weak var previousDelegate: (any NSWindowDelegate)?
         private var isConfirming = false
+        private var isCheckingClose = false
+        private var isForwarding = false
 
         init(_ protection: NativeDraftWindowProtection) { self.protection = protection }
 
         func attach(to newWindow: NSWindow?) {
             guard let newWindow else { return }
-            if window !== newWindow { detach(); window = newWindow }
-            if newWindow.delegate !== self {
-                previousDelegate = newWindow.delegate
-                newWindow.delegate = self
-            }
+            // SwiftUI may wrap an installed delegate. Reinstalling into that same
+            // window would capture the wrapper that already forwards back to us.
+            guard window !== newWindow else { return }
+            detach()
+            window = newWindow
+            if let previous = newWindow.delegate as? Coordinator {
+                previousDelegate = previous.previousDelegate
+            } else { previousDelegate = newWindow.delegate }
+            newWindow.delegate = self
             NativeDraftWindowProtection.windows.add(self)
         }
 
@@ -195,14 +201,24 @@ struct NativeDraftWindowProtection: NSViewRepresentable {
         }
 
         func windowShouldClose(_ sender: NSWindow) -> Bool {
-            confirmChanges() && (previousDelegate?.windowShouldClose?(sender) ?? true)
+            guard !isCheckingClose else { return true }
+            isCheckingClose = true
+            defer { isCheckingClose = false }
+            return confirmChanges() && (previousDelegate?.windowShouldClose?(sender) ?? true)
         }
 
         override func responds(to selector: Selector!) -> Bool {
-            super.responds(to: selector) || (previousDelegate?.responds(to: selector) ?? false)
+            if super.responds(to: selector) { return true }
+            guard !isForwarding, previousDelegate !== self else { return false }
+            isForwarding = true
+            defer { isForwarding = false }
+            return previousDelegate?.responds(to: selector) ?? false
         }
 
         override func forwardingTarget(for selector: Selector!) -> Any? {
+            guard !isForwarding, previousDelegate !== self else { return nil }
+            isForwarding = true
+            defer { isForwarding = false }
             if previousDelegate?.responds(to: selector) == true { return previousDelegate }
             return super.forwardingTarget(for: selector)
         }

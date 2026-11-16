@@ -1,5 +1,13 @@
 import Foundation
 
+extension Double {
+    /// Editable values must round-trip; display formatting may round for readability.
+    nonisolated func recordInputString() -> String {
+        let text = String(self)
+        return text.hasSuffix(".0") ? String(text.dropLast(2)) : text
+    }
+}
+
 nonisolated enum AssetEditorRecordDraft: Equatable, Sendable {
     case directAmount(Double)
     case quantityAndUnitPrice(quantity: Double, unitPrice: Double?)

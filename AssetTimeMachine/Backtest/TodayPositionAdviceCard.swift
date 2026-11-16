@@ -54,6 +54,7 @@ struct TodayPositionAdviceCard: View {
     @StateObject private var adviceStore: StrategyAdviceProjectionStore
     @State private var pendingSnapshotRefreshTask: Task<Void, Never>?
     @State private var showsOperationAmounts = false
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var globalAmountsVisible = true
     @State private var showsStrategyLibrary = false
 
     init(
@@ -374,7 +375,7 @@ struct TodayPositionAdviceCard: View {
                 Text(action.kind.localizedTitle)
                     .foregroundStyle(action.kind.accent)
 
-                if showsOperationAmounts {
+                if showsOperationAmounts && globalAmountsVisible {
                     Text(action.amountText)
                         .font(AppTypography.microLabel.monospacedDigit())
                         .foregroundStyle(AssetTheme.textSecondary)

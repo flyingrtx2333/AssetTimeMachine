@@ -258,12 +258,12 @@ final class NativeRecordEditor: ObservableObject {
         draftToken = nil
     }
     private func failure(_ message: String) -> NSError {
-        NSError(domain: "NativeRecordEditor", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+        NSError(domain: "NativeRecordEditor", code: 1, userInfo: [NSLocalizedDescriptionKey: AppLocalization.string(message)])
     }
     private func number(_ text: String, name: String) throws -> Double? {
         let clean = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: "")
         if clean.isEmpty { return nil }
-        guard let value = Double(clean), value.isFinite else { throw failure("\(name)：请输入有效数字") }
+        guard let value = Double(clean), value.isFinite else { throw failure(AppLocalization.format("%@：请输入有效数字", name)) }
         return value
     }
     @discardableResult
@@ -275,16 +275,16 @@ final class NativeRecordEditor: ObservableObject {
             for row in rows where drafts[row.id] != nil {
                 let draft = drafts[row.id]!
                 if row.method == .quantityAndUnitPrice {
-                    let quantity = try number(draft.quantity, name: row.name + " 数量")
+                    let quantity = try number(draft.quantity, name: row.name + " " + AppLocalization.string("数量"))
                     let price = row.autoPriceSymbol == nil
-                        ? try number(draft.price, name: row.name + " 单价") : row.price
+                        ? try number(draft.price, name: row.name + " " + AppLocalization.string("单价")) : row.price
                     if row.autoPriceSymbol != nil && quantity != nil && price == nil {
-                        throw failure("\(row.name)：这天缺少行情价格")
+                        throw failure(AppLocalization.format("%@：这天缺少行情价格", row.name))
                     }
                     if row.autoPriceSymbol == nil, (quantity == nil) != (price == nil) {
-                        throw failure("\(row.name)：请同时填写数量和单价")
+                        throw failure(AppLocalization.format("%@：请同时填写数量和单价", row.name))
                     }
-                    if let quantity, let price, !(quantity * price).isFinite { throw failure("\(row.name)：金额超出有效范围") }
+                    if let quantity, let price, !(quantity * price).isFinite { throw failure(AppLocalization.format("%@：金额超出有效范围", row.name)) }
                     changes.append((row, nil, quantity, price))
                 } else {
                     changes.append((row, try number(draft.amount, name: row.name), nil, nil))
@@ -298,13 +298,13 @@ final class NativeRecordEditor: ObservableObject {
             let allItems = try context.fetch(FetchDescriptor<AssetItem>())
             for (row, amount, quantity, price) in changes {
                 guard let item = allItems.first(where: { $0.id == row.id }), item.isActive else {
-                    throw failure("\(row.name)：资产已变更，草稿已保留")
+                    throw failure(AppLocalization.format("%@：资产已变更，草稿已保留", row.name))
                 }
                 let current = snapshot.entries.first(where: { $0.item?.id == row.id })
                 guard current?.updatedAt == row.entryUpdatedAt,
                       item.valuationMethod == row.method,
                       item.autoPricedMarketSymbol == row.autoPriceSymbol else {
-                    throw failure("\(row.name)：记录已在其他位置更新，请放弃草稿后重新载入")
+                    throw failure(AppLocalization.format("%@：记录已在其他位置更新，请放弃草稿后重新载入", row.name))
                 }
                 try SnapshotService.upsertEntry(snapshot: snapshot, item: item, amount: amount,
                     quantity: quantity, unitPrice: price, note: row.note, saveChanges: false, in: context)
@@ -342,7 +342,7 @@ struct NativeRecordDateControl: View {
             }.monospacedDigit().lineLimit(1)
         }.buttonStyle(.bordered).controlSize(.regular).fixedSize()
             .accessibilityLabel(AppLocalization.string("选择记录日期"))
-            .accessibilityValue((date ?? .now).formatted(date: .complete, time: .omitted))
+            .accessibilityValue((date ?? .now).formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(AppLocalization.currentLocale)))
             .popover(isPresented: $showsCalendar, arrowEdge: .bottom) {
                 VStack(spacing: 10) {
                     DatePicker(AppLocalization.string("日期"), selection: Binding(
@@ -443,7 +443,7 @@ struct NativeRecordsView: View {
                                 } label: {
                                     HStack(spacing: 8) {
                                         Image(systemName: "chevron.right").rotationEffect(.degrees(showsUnfilled ? 90 : 0))
-                                        Text("未填写 (\(unfilled.count))")
+                                        Text(AppLocalization.format("未填写 (%d)", unfilled.count))
                                         Spacer()
                                     }.padding(.horizontal, 12).frame(height: 28)
                                 }.buttonStyle(.plain).foregroundStyle(NativeHomeStyle.secondary)
@@ -506,6 +506,7 @@ struct NativeRecordsView: View {
         .confirmationDialog("放弃未保存的修改？", isPresented: $confirmsDiscard) {
             Button("放弃修改", role: .destructive) {
                 let destination = pendingDestination
+                confirmsDiscard = false
                 pendingDestination = nil
                 withAnimation(NativeStyle.Motion.records(reduced)) {
                     editor.discard()
@@ -539,8 +540,9 @@ struct NativeRecordsView: View {
             Button { addingGroup = .financial } label: { Label("添加资产", systemImage: "plus") }
                 .buttonStyle(.bordered).controlSize(.regular).disabled(editor.isDirty)
             Spacer(minLength: 8)
+            AmountPrivacyButton()
             if editor.isDirty {
-                Text("修改 \(editor.drafts.count) 项").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
+                Text(AppLocalization.format("修改 %d 项", editor.drafts.count)).font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                 Button("放弃修改") { pendingDestination = nil; confirmsDiscard = true }
                     .buttonStyle(.bordered).controlSize(.regular)
                 Button("保存更改", action: saveChanges)
@@ -558,6 +560,7 @@ struct NativeRecordsView: View {
         HStack(alignment: .firstTextBaseline, spacing: NativeStyle.Space.sm) {
             Text(AppLocalization.string(title)).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
             Text(money(value)).font(emphasized ? NativeStyle.FontRole.bodyStrong : NativeStyle.FontRole.body).monospacedDigit()
+                .financialPrivacy()
                 .lineLimit(1).minimumScaleFactor(0.75)
                 .contentTransition(reduced ? .opacity : .numericText())
         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -589,13 +592,14 @@ struct NativeRecordsView: View {
                         Text("(\(filled.count))").foregroundStyle(NativeHomeStyle.secondary)
                         Spacer()
                         Text(total(group).formatted(.number.precision(.fractionLength(2)))).monospacedDigit()
+                            .financialPrivacy()
                             .contentTransition(reduced ? .opacity : .numericText())
                         Image(systemName: "chevron.down").rotationEffect(.degrees(collapsedGroups.contains(group) ? -90 : 0))
                             .foregroundStyle(NativeHomeStyle.secondary).frame(width: 22)
                     }.font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                         .padding(.horizontal, 12).frame(height: NativeStyle.Layout.ledgerGroupHeight)
                         .contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel(group.displayName + (collapsedGroups.contains(group) ? "，展开" : "，收起"))
+                }.buttonStyle(.plain).accessibilityLabel(AppLocalization.format("%@，%@", group.displayName, AppLocalization.string(collapsedGroups.contains(group) ? "展开" : "收起")))
                 if !collapsedGroups.contains(group) {
                     VStack(spacing: 0) { ForEach(balances) { accountRow($0) } }
                         .transition(disclosureTransition)
@@ -608,11 +612,11 @@ struct NativeRecordsView: View {
                             HStack(spacing: NativeStyle.Space.xs) {
                                 Image(systemName: "chevron.right")
                                     .rotationEffect(.degrees(expandedZeroGroups.contains(group) ? 90 : 0))
-                                Text("零余额 (\(zeroBalances.count))")
+                                Text(AppLocalization.format("零余额 (%d)", zeroBalances.count))
                                 Spacer()
                             }.font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
                                 .padding(.horizontal, NativeStyle.Space.sm).frame(height: NativeStyle.Layout.ledgerRowHeight)
-                        }.accessibilityLabel(group.displayName + "，零余额" + (expandedZeroGroups.contains(group) ? "，收起" : "，展开"))
+                        }.accessibilityLabel(AppLocalization.format("%@，零余额，%@", group.displayName, AppLocalization.string(expandedZeroGroups.contains(group) ? "收起" : "展开")))
                         if expandedZeroGroups.contains(group) {
                             VStack(spacing: 0) { ForEach(zeroBalances) { accountRow($0) } }
                                 .transition(disclosureTransition)
@@ -650,15 +654,10 @@ struct NativeRecordsView: View {
     }
 
     private var savedStatus: String {
-        guard let savedAt = editor.savedAt else { return "已载入本机记录" }
-        if cloud.isSessionPending { return "已存本机 · 正在连接云端" }
-        guard cloud.currentUser != nil, cloud.hasToken else { return "已存本机 · 未登录" }
-        if cloud.requiresLocalOwnershipConfirmation { return "已存本机 · 待确认同步" }
-        if cloud.errorMessage?.isEmpty == false { return "已存本机 · 同步失败" }
-        if cloud.isWorking { return "已存本机 · 正在同步" }
-        if cloud.indicatorState == .checking { return "已存本机 · 等待同步" }
-        if let syncedAt = cloud.lastSyncAt, syncedAt >= savedAt { return "已同步云端" }
-        return "已存本机 · 等待同步"
+        guard editor.savedAt != nil else { return AppLocalization.string("已载入本机记录") }
+        guard cloud.hasToken else { return AppLocalization.string("已存本机 · 未登录") }
+        if cloud.indicatorState == .healthy { return AppLocalization.string("已同步云端") }
+        return cloud.indicatorLabel
     }
 
     private func moveDate(_ offset: Int) {
@@ -794,20 +793,21 @@ private struct NativeLedgerRow: View {
                         .monospacedDigit().padding(.horizontal, 7).frame(width: columns.unitPrice, alignment: .trailing)
                         .lineLimit(1).minimumScaleFactor(0.8)
                         .foregroundStyle(NativeHomeStyle.secondary)
-                        .accessibilityLabel(row.name + " 行情单价，只读")
+                        .accessibilityLabel(AppLocalization.format("%@ 行情单价，只读", row.name))
                         .accessibilityValue(row.price.map { String($0) } ?? "—")
                         .help("当日行情价格")
                 } else {
                     field("单价", text: $draft.price, width: columns.unitPrice)
                 }
                 Text(amountPreview).monospacedDigit().padding(.horizontal, 7).frame(width: columns.amount, alignment: .trailing)
+                    .financialPrivacy()
                     .contentTransition(reduced ? .opacity : .numericText())
                     .animation(NativeStyle.Motion.records(reduced), value: amountPreview)
             }
             Menu { Button("删除资产项目", role: .destructive, action: delete).disabled(!canDelete) }
                 label: { Image(systemName: "ellipsis").foregroundStyle(NativeHomeStyle.secondary).opacity(active ? 1 : 0.3).frame(width: NativeLedgerColumns.menuWidth, height: 26) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-                .accessibilityLabel(row.name + "操作")
+                .accessibilityLabel(AppLocalization.format("%@ 操作", row.name))
         }.font(NativeStyle.FontRole.body).padding(.horizontal, NativeLedgerColumns.horizontalInset).frame(height: NativeStyle.Layout.ledgerRowHeight)
             .background(active ? NativePalette.softGold : (alternating ? NativePalette.surface.opacity(0.55) : .clear))
             .onHover { hovered = $0 }
@@ -830,7 +830,7 @@ private struct NativeLedgerRow: View {
         // string back into the editable binding when focus moves between cells.
         return TextField("—", text: text)
             .textFieldStyle(.plain).multilineTextAlignment(.trailing)
-            .accessibilityLabel("\(row.name) \(name)")
+            .accessibilityLabel(row.name + " " + AppLocalization.string(name))
             .focused($focused, equals: name)
             .font(NativeStyle.FontRole.body).monospacedDigit()
             .foregroundStyle(focused == name ? NativeHomeStyle.text : .clear)
@@ -846,6 +846,7 @@ private struct NativeLedgerRow: View {
             .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).strokeBorder(
                 focused == name ? NativeHomeStyle.accent.opacity(0.85) : NativeHomeStyle.line.opacity(hovered ? 0.7 : 0), lineWidth: 0.8))
             .animation(NativeStyle.Motion.records(reduced), value: focused)
+            .financialPrivacy()
     }
 
 }
@@ -932,7 +933,7 @@ private struct NativeAddItemSheet: View {
                 category = existing
             } else {
                 let categoryName = newCategory.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !categoryName.isEmpty else { error = "请输入分类名称"; return }
+                guard !categoryName.isEmpty else { error = AppLocalization.string("请输入分类名称"); return }
                 category = AssetCategory(name: categoryName, group: selectedGroup)
                 context.insert(category)
             }
@@ -964,6 +965,9 @@ struct NativeSettingsView: View {
     @State private var showsStrategyLibrary = false
     @State private var testMessage: String?
     @State private var isSendingTest = false
+    @State private var showsSupport = false
+    @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var amountsVisible = true
+    @AppStorage("app.privacy.protectAppSwitcher", store: AppPrivacyPreferences.defaults) private var protectsAppSwitcher = true
     @AppStorage("app.notifications.enabled") private var assetNotificationEnabled = false
     @AppStorage("app.notifications.intervalHours") private var notificationInterval = 1.0
     @AppStorage("app.strategyNotifications.enabled") private var strategyNotificationEnabled = false
@@ -1097,7 +1101,7 @@ struct NativeSettingsView: View {
                             Image(systemName: "calculator").foregroundStyle(NativePalette.secondary).frame(width: 22)
                             Text(AppLocalization.string("月开支估算"))
                             Spacer()
-                            Text(monthlyExpense.formatted(.currency(code: "CNY"))).foregroundStyle(NativePalette.secondary)
+                            Text(monthlyExpense.formatted(.currency(code: "CNY"))).foregroundStyle(NativePalette.secondary).financialPrivacy()
                             Image(systemName: "chevron.right").font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                         }.padding(.horizontal, 14).frame(minHeight: 44).contentShape(Rectangle())
                     }.buttonStyle(.plain)
@@ -1124,6 +1128,14 @@ struct NativeSettingsView: View {
                         if let error { Text(error).foregroundStyle(AssetTheme.negative) }
                     }.font(NativeStyle.FontRole.caption).textSelection(.enabled)
                 }
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle(AppLocalization.string("隐藏资产金额"), isOn: Binding(get: { !amountsVisible }, set: { amountsVisible = !$0 }))
+                    Toggle(AppLocalization.string("后台预览保护"), isOn: $protectsAppSwitcher)
+                }.padding(14).background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
+                HStack(spacing: 16) {
+                    Button(AppLocalization.string("帮助与反馈")) { showsSupport = true }
+                    Link(AppLocalization.string("隐私政策"), destination: AppSupport.privacy)
+                }
                 HStack(spacing: 10) {
                     Image(systemName: "info.circle").foregroundStyle(NativePalette.secondary).frame(width: 22)
                     Text(AppLocalization.string("版本"))
@@ -1149,6 +1161,16 @@ struct NativeSettingsView: View {
         }
         .sheet(isPresented: $showsExpenses) {
             NativeExpenseEstimator(monthlyExpense: $monthlyExpense)
+        }
+        .sheet(isPresented: $showsSupport) {
+            VStack(spacing: 0) {
+                HStack {
+                    Text(AppLocalization.string("帮助与反馈")).font(.headline)
+                    Spacer()
+                    Button(AppLocalization.string("完成")) { showsSupport = false }
+                }.padding(16)
+                AppSupportView()
+            }.frame(width: 520, height: 500)
         }
         .sheet(isPresented: $showsStrategyLibrary) {
             NativeQuantStrategyLibrary(selectedID: strategyTemplateID) { template in
@@ -1350,7 +1372,7 @@ struct NativeCloudSyncView: View {
     @ObservedObject var cloud: AssetTimeMachineCloudStore
     @State private var showsLogin = false
     @State private var showsAccountDeletion = false
-    @State private var confirmsRestore = false
+    @State private var recovery: CloudBackupRecovery?
     @State private var confirmsOwnership = false
     @State private var isExporting = false
     @State private var exportMessage: String?
@@ -1365,12 +1387,7 @@ struct NativeCloudSyncView: View {
                    + (cloud.requiresLocalOwnershipConfirmation ? 34 : 0))
     }
     private var title: String {
-        switch cloud.indicatorState {
-        case .healthy: AppLocalization.string("云同步已启用")
-        case .checking: cloud.indicatorLabel
-        case .warning: AppLocalization.string("同步状态需处理")
-        case .idle: AppLocalization.string("启用云同步")
-        }
+        cloud.indicatorState == .idle ? AppLocalization.string("启用云同步") : cloud.indicatorLabel
     }
 
     var body: some View {
@@ -1404,7 +1421,7 @@ struct NativeCloudSyncView: View {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(title).font(NativeStyle.FontRole.bodyStrong)
                                     if let date = cloud.lastSyncAt {
-                                        Text(AppLocalization.format("最近同步 %@", date.formatted(date: .abbreviated, time: .shortened)))
+                                        Text(AppLocalization.format("最近同步 %@", date.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(AppLocalization.currentLocale))))
                                             .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                                     }
                                 }
@@ -1416,6 +1433,10 @@ struct NativeCloudSyncView: View {
                                     .font(NativeStyle.FontRole.body).foregroundStyle(AssetTheme.negative)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .help(error)
+                                if cloud.hasToken {
+                                    Button(AppLocalization.string("重试同步")) { Task { await cloud.retrySync(from: context) } }
+                                        .disabled(busy)
+                                }
                             }
                             if cloud.entryConflictReview != nil {
                                 Button(AppLocalization.string("查看差异")) { showsEntryReview = true }
@@ -1435,7 +1456,7 @@ struct NativeCloudSyncView: View {
                                     HStack {
                                         Text(AppLocalization.string("最近备份")).font(NativeStyle.FontRole.captionStrong).foregroundStyle(NativePalette.secondary)
                                         Spacer()
-                                        Button { Task { await refresh() } } label: {
+                                        Button { Task { await cloud.refreshBackupHistory() } } label: {
                                             Label(AppLocalization.string("刷新"), systemImage: "arrow.clockwise")
                                         }
                                         .buttonStyle(.borderless).controlSize(.small)
@@ -1446,11 +1467,12 @@ struct NativeCloudSyncView: View {
                                             .font(NativeStyle.FontRole.body).foregroundStyle(NativePalette.secondary)
                                             .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                                     } else {
-                                        ForEach(Array(cloud.backups.prefix(3))) { backup in
+                                        ForEach(cloud.backups) { backup in
+                                            Button { previewBackup(backup) } label: {
                                             HStack(spacing: 8) {
                                                 Image(systemName: backup.isLatest == 1 ? "icloud.fill" : "clock.arrow.circlepath")
                                                     .foregroundStyle(NativePalette.secondary).frame(width: 20)
-                                                Text(backup.uploadedAt.formatted(date: .abbreviated, time: .shortened))
+                                                Text(backup.uploadedAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(AppLocalization.currentLocale)))
                                                     .font(NativeStyle.FontRole.body).monospacedDigit().lineLimit(1)
                                                 Spacer(minLength: 8)
                                                 if let size = backup.fileSize {
@@ -1461,8 +1483,10 @@ struct NativeCloudSyncView: View {
                                                     Text(AppLocalization.string("最新")).font(NativeStyle.FontRole.micro)
                                                         .foregroundStyle(NativePalette.accent)
                                                 }
-                                            }.frame(height: 36)
+                                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                                            }.frame(minHeight: 36).contentShape(Rectangle())
                                             .accessibilityElement(children: .combine)
+                                            }.buttonStyle(.plain).disabled(busy)
                                             Divider()
                                         }
                                     }
@@ -1470,7 +1494,9 @@ struct NativeCloudSyncView: View {
                                 HStack(spacing: 8) {
                                     action("导出本机记录", symbol: "square.and.arrow.up") { Task { await exportRecords() } }
                                     if !cloud.backups.isEmpty {
-                                        action("恢复最近一次备份", symbol: "arrow.clockwise.icloud") { confirmsRestore = true }
+                                        action("恢复最近一次备份", symbol: "arrow.clockwise.icloud") {
+                                            if let latest = cloud.backups.first(where: { $0.isLatest == 1 }) { previewBackup(latest) }
+                                        }
                                     }
                                 }
                                 .disabled(busy)
@@ -1510,13 +1536,15 @@ struct NativeCloudSyncView: View {
         } message: {
             Text(AppLocalization.string("确认本机记录属于当前账户？合并前会保留备份；冲突时暂停，不覆盖两端记录。"))
         }
-        .alert(AppLocalization.string("从云端恢复最新备份？"), isPresented: $confirmsRestore) {
-            Button(AppLocalization.string("取消"), role: .cancel) {}
-            Button(AppLocalization.string("恢复备份"), role: .destructive) {
-                Task { await cloud.restoreLatestBackup(into: context) }
-            }
-        } message: {
-            Text(AppLocalization.string("会使用云端最新备份更新本机记录。"))
+        .sheet(item: $recovery) { candidate in
+            CloudBackupRecoveryView(store: cloud, recovery: candidate)
+        }
+    }
+
+    private func previewBackup(_ backup: AssetTimeMachineCloudBackup) {
+        Task {
+            do { recovery = try await cloud.prepareBackupRecovery(backup) }
+            catch { cloud.errorMessage = error.localizedDescription }
         }
     }
 
@@ -1591,7 +1619,7 @@ struct NativeAccountChoice: View {
                         Spacer()
                         Image(systemName: isShowingPassword ? "chevron.down" : "chevron.right")
                     }.frame(height: 28).contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityValue(isShowingPassword ? "已展开" : "已收起")
+                }.buttonStyle(.plain).accessibilityValue(AppLocalization.string(isShowingPassword ? "已展开" : "已收起"))
                 if isShowingPassword {
                     NativeFormRow(title: "账号") {
                         TextField("账号", text: $username).focused($focusedField, equals: .username)
