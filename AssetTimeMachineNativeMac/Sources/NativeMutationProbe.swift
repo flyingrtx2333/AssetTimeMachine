@@ -269,7 +269,7 @@ private final class NativeCloudMockServer: @unchecked Sendable {
     var failNextUploadBeforeAcceptance = false
     init(_ payload: ExportPayload) { self.payload = payload }
 
-    func change(_ itemID: UUID, to amount: Double) {
+    func change(_ itemID: UUID, to amount: Double, hasEditClock: Bool = true) {
         let changed = payload.snapshots.map { snapshot in
             ExportPayload.SnapshotPayload(id: snapshot.id, date: snapshot.date, note: snapshot.note,
                 createdAt: snapshot.createdAt, updatedAt: snapshot.updatedAt,
@@ -281,7 +281,8 @@ private final class NativeCloudMockServer: @unchecked Sendable {
                         quantity: entry.quantity, unitPrice: entry.unitPrice, note: entry.note,
                         createdAt: entry.createdAt, updatedAt: entry.itemID == itemID ? .now : entry.updatedAt,
                         itemID: entry.itemID, inheritedFromEntryID: entry.inheritedFromEntryID,
-                        amountEditedAt: entry.itemID == itemID ? Date.now.timeIntervalSince1970 : entry.amountEditedAt,
+                        amountEditedAt: entry.itemID == itemID
+                            ? (hasEditClock ? Date.now.timeIntervalSince1970 : nil) : entry.amountEditedAt,
                         quantityEditedAt: entry.quantityEditedAt,
                         unitPriceEditedAt: entry.unitPriceEditedAt,
                         noteEditedAt: entry.noteEditedAt)
@@ -433,6 +434,13 @@ enum NativeCloudSyncProbe {
             cloud.currentUser = AssetTimeMachineCloudUser(id: 11, userName: "Synthetic A", userEmail: nil)
             _ = await cloud.runIsolatedSync(from: context)
             checks["initialMatchBindsOwnerWithoutUpload"] = defaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11 && server.uploads == 0 && cloud.errorMessage == nil
+            let restartReads = server.latestReads
+            let restartedSession = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: defaults, isolatedTest: true)
+            await restartedSession.refreshSession()
+            _ = await restartedSession.runIsolatedSync(from: context)
+            checks["acknowledgedHeadSurvivesRestartWithoutFullDownload"] = restartedSession.errorMessage == nil
+                && server.latestReads == restartReads && server.uploads == 0
+                && defaults.integer(forKey: "assettimemachine.cloud.lastVerifiedBackupID") == server.head
             let retainedEntry = snapshot.entries.first { $0.item?.id == bID }
             server.change(bID, to: 25)
             let reads = server.latestReads
@@ -500,6 +508,12 @@ enum NativeCloudSyncProbe {
             refreshed.currentUser = cloud.currentUser
             _ = await refreshed.runIsolatedSync(from: context)
             checks["expiredAccessRefreshesAndRetries"] = server.refreshes == 1 && expired.access == "synthetic-access" && refreshed.errorMessage == nil
+            let sessionRefreshes = server.refreshes
+            let expiredSessionTokens = NativeCloudProbeTokens("synthetic-expired")
+            let expiredSession = AssetTimeMachineCloudStore(tokenStore: expiredSessionTokens, defaults: defaults, isolatedTest: true)
+            await expiredSession.refreshSession()
+            checks["parallelSessionChecksRenewTokenOnce"] = expiredSession.errorMessage == nil
+                && expiredSession.currentUser?.id == 11 && server.refreshes == sessionRefreshes + 1
             let accountPayload = try await local(), accountUploads = server.uploads
             refreshed.currentUser = AssetTimeMachineCloudUser(id: 12, userName: "Synthetic B", userEmail: nil)
             _ = await refreshed.runIsolatedSync(from: context)
@@ -694,6 +708,18 @@ enum NativeCloudSyncProbe {
             _ = await conflict.runIsolatedSync(from: context)
             checks["manualEditAfterQuoteStillUploads"] = conflict.errorMessage == nil && server.uploads == quoteUploads + 1
                 && server.payload.snapshots.flatMap(\.entries).first { $0.itemID == quoteItem.id }?.quantity == 3
+            try SnapshotService.upsertEntry(snapshot: quoteDay, item: quoteItem, amount: nil,
+                quantity: 3.5, unitPrice: 300, in: context)
+            let scheduledAt = Date()
+            conflict.scheduleAutoSync(from: context)
+            for _ in 0..<60 {
+                if conflict.indicatorState == .healthy,
+                   server.payload.snapshots.flatMap(\.entries).first(where: { $0.itemID == quoteItem.id })?.quantity == 3.5 { break }
+                try await Task.sleep(for: .milliseconds(50))
+            }
+            checks["defaultSaveSyncDoesNotWaitSixSeconds"] = Date().timeIntervalSince(scheduledAt) < 3
+                && conflict.errorMessage == nil
+                && server.payload.snapshots.flatMap(\.entries).first { $0.itemID == quoteItem.id }?.quantity == 3.5
             let firstExport = try await local(), repeatedExport = try await local()
             checks["cachedExportKeepsFreshExportDate"] = SyncMergeService.isSameContent(firstExport, repeatedExport)
                 && repeatedExport.exportedAt >= firstExport.exportedAt
@@ -746,6 +772,12 @@ enum NativeCloudSyncProbe {
         func amount(_ payload: ExportPayload, _ item: UUID) -> Double? {
             payload.snapshots.first { $0.id == day.id }?.entries.first { $0.itemID == item }?.amount
         }
+        func legacyEdit(_ amount: Double) throws {
+            try SnapshotService.upsertEntry(snapshot: day, item: a, amount: amount, in: context)
+            // Review covers legacy rows without edit clocks; confirmed edits use latest-wins.
+            day.entries.first { $0.item?.id == a.id }?.amountEditedAt = nil
+            try context.save()
+        }
         let server = NativeCloudMockServer(try await local())
         NativeCloudMockProtocol.server = server
         func store() -> AssetTimeMachineCloudStore {
@@ -756,8 +788,8 @@ enum NativeCloudSyncProbe {
         }
         let cloud = store()
         _ = await cloud.runIsolatedSync(from: context)
-        try SnapshotService.upsertEntry(snapshot: day, item: a, amount: 11, in: context)
-        server.change(a.id, to: 99)
+        try legacyEdit(11)
+        server.change(a.id, to: 99, hasEditClock: false)
         let uploads = server.uploads
         _ = await cloud.runIsolatedSync(from: context)
         guard let initial = cloud.entryConflictReview else { throw URLError(.cannotParseResponse) }
@@ -792,11 +824,11 @@ enum NativeCloudSyncProbe {
         checks["restartRetriesConfirmedCandidateWithoutReasking"] = restarted.errorMessage == nil && restarted.entryConflictReview == nil
             && amount(server.payload, a.id) == 11 && amount(server.payload, b.id) == 33
             && !FileManager.default.fileExists(atPath: pendingFile.path)
-        try SnapshotService.upsertEntry(snapshot: day, item: a, amount: 12, in: context)
-        server.change(a.id, to: 88)
+        try legacyEdit(12)
+        server.change(a.id, to: 88, hasEditClock: false)
         _ = await restarted.runIsolatedSync(from: context)
         guard let review = restarted.entryConflictReview else { throw URLError(.cannotParseResponse) }
-        try SnapshotService.upsertEntry(snapshot: day, item: a, amount: 13, in: context)
+        try legacyEdit(13)
         let beforeStale = server.uploads
         let staleLocal = await restarted.confirmEntryConflicts(reviewID: review.id,
             choices: Dictionary(uniqueKeysWithValues: review.conflicts.map { ($0.id, .remote) }), from: context)

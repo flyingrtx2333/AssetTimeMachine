@@ -170,7 +170,7 @@ struct ContentView: View {
 
             startupMaintenanceTask?.cancel()
             startupMaintenanceTask = Task(priority: .utility) {
-                try? await Task.sleep(for: .milliseconds(1_500))
+                try? await Task.sleep(for: .milliseconds(300))
                 guard !Task.isCancelled else { return }
                 guard !AppPreviewSession.isActive else { return }
                 await cloudStore.refreshIfNeeded(from: modelContext)

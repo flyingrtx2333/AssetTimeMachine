@@ -508,6 +508,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private let refreshTokenKey = "assettimemachine.cloud.refreshToken"
     private let lastUploadedSignatureKey = "assettimemachine.cloud.lastUploadedSignature"
     private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
+    private let lastVerifiedBackupIDKey = "assettimemachine.cloud.lastVerifiedBackupID"
     private let defaults: UserDefaults
     private let localOwnerKey = "assettimemachine.cloud.localOwnerUserID"
     private let localOwnerAccountKey = "assettimemachine.cloud.localOwnerAccountID"
@@ -539,6 +540,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         migrateLegacyTokensIfNeeded()
         cachedAccessToken = self.tokenStore.loadAccessToken()
         cachedRefreshToken = self.tokenStore.loadRefreshToken()
+        if defaults.object(forKey: localOwnerKey) != nil,
+           defaults.string(forKey: localOwnerAccountKey) != nil {
+            lastVerifiedBackupID = defaults.object(forKey: lastVerifiedBackupIDKey) as? Int
+        }
     }
 
     var hasToken: Bool {
@@ -768,6 +773,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             if currentUser == nil {
                 currentUser = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.fetchCurrentUser(token: $0) }
             }
+            lastVerifiedBackupID = remote.id
             try await rememberSync(signature: fingerprint.signature, at: remote.uploadedAt, payload: remote.payload)
             statusMessage = AppLocalization.string("已恢复手机云端数据并完成校验；未上传资产数据")
             errorMessage = nil
@@ -793,7 +799,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     func scheduleAutoSync(
         from context: ModelContext,
         quietly: Bool = true,
-        delayNanoseconds: UInt64 = 6_000_000_000
+        delayNanoseconds: UInt64 = 600_000_000
     ) {
         guard !AppPreviewSession.isActive || isolatedTest,
               !ProcessInfo.processInfo.arguments.contains("-macCloudRecovery"),
@@ -1230,8 +1236,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请稍后再试")]
                 )
             }
-            try await self.rememberSync(signature: fingerprint.signature, at: latest.uploadedAt, payload: latest.payload)
             self.lastVerifiedBackupID = latest.id
+            try await self.rememberSync(signature: fingerprint.signature, at: latest.uploadedAt, payload: latest.payload)
             try self.clearPendingUpload()
             self.requiresLocalOwnershipConfirmation = false
             self.entryConflictReview = nil
@@ -1290,6 +1296,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         defaults.removeObject(forKey: localOwnerAccountKey)
         defaults.removeObject(forKey: lastUploadedSignatureKey)
         defaults.removeObject(forKey: lastSyncAtKey)
+        defaults.removeObject(forKey: lastVerifiedBackupIDKey)
+        lastVerifiedBackupID = nil
         defaults.removeObject(forKey: accountResetRequiredKey)
         lastSyncAt = nil
     }
@@ -1343,6 +1351,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private func clearTokens() {
         currentAccountID = nil
         lastVerifiedBackupID = nil
+        defaults.removeObject(forKey: lastVerifiedBackupIDKey)
         try? tokenStore.clear()
         cachedAccessToken = nil
         cachedRefreshToken = nil
@@ -1374,10 +1383,14 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func loadSessionData() async throws {
-        currentUser = try await withTokenRefresh { token in
-            try await AssetTimeMachineCloudAPI.fetchCurrentUser(token: token)
+        // Retry the batch under one token refresh, rather than racing three refreshes.
+        let (user, account, history) = try await withTokenRefresh { token in
+            async let user = AssetTimeMachineCloudAPI.fetchCurrentUser(token: token)
+            async let account = AssetTimeMachineCloudAPI.accountInfo(token: token)
+            async let history = AssetTimeMachineCloudAPI.fetchHistory(token: token, limit: 8)
+            return try await (user, account, history)
         }
-        let account = try await accountDeletionInfo()
+        currentUser = user
         let owner = defaults.object(forKey: localOwnerKey) as? Int
         let knownAccount = defaults.string(forKey: localOwnerAccountKey)
         let accountChanged = knownAccount.map { $0 != account.accountID } ?? account.hasDeletionHistory
@@ -1391,8 +1404,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try resetAccountSyncMetadata()
         }
         currentAccountID = account.accountID
-        if defaults.object(forKey: localOwnerKey) as? Int != currentUser?.id { lastSyncAt = nil }
-        try await loadHistory()
+        if defaults.object(forKey: localOwnerKey) as? Int != currentUser?.id {
+            lastSyncAt = nil
+            lastVerifiedBackupID = nil
+        }
+        backups = history
     }
 
     private func loadHistory() async throws {
@@ -1794,6 +1810,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private func recordSyncMetadata(signature: String, at date: Date) {
         defaults.set(signature, forKey: lastUploadedSignatureKey)
         defaults.set(date, forKey: lastSyncAtKey)
+        // Only persist an acknowledged head; a normalized/unsent revision keeps nil.
+        defaults.set(lastVerifiedBackupID, forKey: lastVerifiedBackupIDKey)
         lastSyncAt = date
     }
 
