@@ -48,6 +48,7 @@ private final class DeltaProbeServer: @unchecked Sendable {
     let lock = NSLock()
     var accounts: [String: DeltaProbeAccount] = [:]
     var loseNextAcceptedResponse = false
+    var roundNextBootstrapClock = false
 
     private func object<T: Encodable>(_ value: T) throws -> Any {
         try JSONSerialization.jsonObject(with: CloudDocumentCodec.encode(value))
@@ -110,6 +111,21 @@ private final class DeltaProbeServer: @unchecked Sendable {
                     output = metadata(account)
                 }
             } else if path.hasSuffix("/cloud/sync/bootstrap") {
+                if roundNextBootstrapClock {
+                    // Reproduce an old MySQL JSON rendering changing one Double
+                    // after acknowledgment, while retaining the exact same head ID.
+                    for (key, value) in account.values where key.kind == "snapshot" {
+                        guard case .object(var day) = value, case .array(var entries) = day["entries"] else { continue }
+                        for index in entries.indices {
+                            guard case .object(var entry) = entries[index], entry["amountEditedAt"] != nil else { continue }
+                            entry["amountEditedAt"] = .number(1794838029.072898)
+                            entries[index] = .object(entry)
+                        }
+                        day["entries"] = .array(entries); account.values[key] = .object(day)
+                    }
+                    account.history[account.backupID] = try account.payload()
+                    roundNextBootstrapClock = false
+                }
                 output = ["protocol": 2, "account_id": account.accountID, "cursor": account.cursor,
                           "backup": metadata(account), "payload": try object(account.payload()),
                           "versions": Dictionary(uniqueKeysWithValues: account.versions.map { ($0.key.wireKey, $0.value) })]
@@ -292,25 +308,32 @@ enum CloudDeltaProbe {
         AssetTimeMachineCloudAPI.installIsolatedTransport(DeltaProbeProtocol.self)
         var checks: [String: Bool] = [:]
 
-        func fixture(_ name: String) async throws -> Fixture {
+        func fixture(_ name: String, roundedBootstrapClock: Bool = false) async throws -> Fixture {
             let directory = root.appendingPathComponent(name, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let url = directory.appendingPathComponent("records.store")
             let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
             let context = ModelContext(container); context.autosaveEnabled = false
             let (category, items, days) = try seed(context)
+            if roundedBootstrapClock {
+                let day = try context.fetch(FetchDescriptor<AssetSnapshot>()).first { $0.id == days[0] }!
+                day.entries.first { $0.item?.id == items[0] }!.amountEditedAt = 1794838029.0728981
+                try context.save()
+            }
             let suite = "NativeDeltaProbe-" + UUID().uuidString, defaults = UserDefaults(suiteName: suite)!
             suites.append((suite, defaults))
             let server = DeltaProbeServer(), payload = try ImportExportService.exportPayload(from: context)
             server.accounts["a"] = try DeltaProbeAccount(userID: 11, accountID: "synthetic-a", payload: payload)
             server.accounts["b"] = try DeltaProbeAccount(userID: 12, accountID: "synthetic-b", payload: payload)
+            server.roundNextBootstrapClock = roundedBootstrapClock
             DeltaProbeProtocol.server = server
             let tokens = DeltaProbeTokens()
             let cloud = AssetTimeMachineCloudStore(tokenStore: tokens, defaults: defaults, isolatedTest: true)
             cloud.setAutomaticSyncActive(false); stores.append(cloud)
             await cloud.login(username: "a", password: "synthetic")
             _ = await cloud.runIsolatedSync(from: context)
-            guard try CloudReplicaCache.state(scope: "11:synthetic-a", in: ModelContext(container)) != nil else {
+            let adopted = try CloudReplicaCache.state(scope: "11:synthetic-a", in: ModelContext(container))
+            guard roundedBootstrapClock || adopted != nil else {
                 throw NSError(domain: "NativeDeltaProbe", code: 1,
                               userInfo: [NSLocalizedDescriptionKey: "Delta fixture adoption failed: " + (cloud.errorMessage ?? "no replica bookmark")])
             }
@@ -367,6 +390,45 @@ enum CloudDeltaProbe {
             && receiverState?.historyToken == receivedToken && receiverState?.cursor == account.cursor
             && account.accepted == acceptedBeforeRemote && account.legacyReads == reads && account.legacyUploads == uploads
             && SyncMergeService.isSameContent(receivedPayload, receiverPayload)
+
+        let rounded = try await fixture("rounded-legacy-clock", roundedBootstrapClock: true)
+        let roundedAccount = rounded.server.accounts["a"]!
+        let beforeHealing = try ImportExportService.exportPayload(from: rounded.context)
+        let invalidated = try CloudReplicaCache.state(scope: "11:synthetic-a", in: ModelContext(rounded.container))
+        checks["deltaRoundedLegacyClockRetiresOnlyHeadShortcut"] = invalidated == nil
+            && rounded.defaults.object(forKey: "assettimemachine.cloud.lastVerifiedBackupID") == nil
+            && rounded.defaults.integer(forKey: "assettimemachine.cloud.localOwnerUserID") == 11
+            && rounded.defaults.string(forKey: "assettimemachine.cloud.lastUploadedSignature") != nil
+            && roundedAccount.legacyReads == 1 && roundedAccount.legacyUploads == 0
+        _ = await rounded.cloud.runIsolatedSync(from: rounded.context)
+        let healed = try CloudReplicaCache.state(scope: "11:synthetic-a", in: ModelContext(rounded.container))
+        checks["deltaRoundedLegacyClockReconcilesBeforeAdoption"] = rounded.cloud.errorMessage == nil
+            && healed != nil && roundedAccount.legacyReads == 2
+        let healedReads = roundedAccount.legacyReads, healedUploads = roundedAccount.legacyUploads
+        let healedPulls = roundedAccount.deltaPulls
+        _ = await rounded.cloud.runIsolatedSync(from: rounded.context)
+        checks["deltaRoundedLegacyClockUsesIncrementalThirdCycle"] = rounded.cloud.errorMessage == nil
+            && roundedAccount.deltaPulls > healedPulls && roundedAccount.legacyReads == healedReads
+            && roundedAccount.legacyUploads == healedUploads
+        let afterHealing = try ImportExportService.exportPayload(from: rounded.context)
+        func userRecords(_ payload: ExportPayload) throws -> Data {
+            var object = try JSONSerialization.jsonObject(with: CloudDocumentCodec.encode(payload)) as! [String: Any]
+            object.removeValue(forKey: "exportedAt")
+            var snapshots = object["snapshots"] as! [[String: Any]]
+            for index in snapshots.indices {
+                var entries = snapshots[index]["entries"] as! [[String: Any]]
+                for entryIndex in entries.indices {
+                    entries[entryIndex].removeValue(forKey: "amountEditedAt")
+                }
+                snapshots[index]["entries"] = entries.sorted { ($0["id"] as! String) < ($1["id"] as! String) }
+            }
+            object["snapshots"] = snapshots.sorted { ($0["id"] as! String) < ($1["id"] as! String) }
+            for collection in ["categories", "items"] {
+                object[collection] = (object[collection] as! [[String: Any]]).sorted { ($0["id"] as! String) < ($1["id"] as! String) }
+            }
+            return try JSONSerialization.data(withJSONObject: object, options: .sortedKeys)
+        }
+        checks["deltaRoundedLegacyClockPreservesDomainRecords"] = try userRecords(beforeHealing) == userRecords(afterHealing)
 
         let lost = try await fixture("lost-ack"), lostAccount = lost.server.accounts["a"]!
         try edit(lost, amount: 30); lost.server.loseNextAcceptedResponse = true

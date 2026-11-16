@@ -989,14 +989,30 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         do {
             let revision = ModelStoreRevisionClock.shared.currentRevision()
             let bootstrap = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.deltaBootstrap(token: $0) }
+            guard let baseline = try await loadSyncBaseline() else { return }
+            let baselineFingerprint = try await Self.payloadFingerprint(for: baseline)
+            let bootstrapFingerprint = try await Self.payloadFingerprint(for: bootstrap.payload)
             guard bootstrap.protocol == 2, bootstrap.accountID == account,
-                  bootstrap.backup?.id == lastVerifiedBackupID, let baseline = try await loadSyncBaseline(),
-                  try await Self.payloadFingerprint(for: baseline).signature == Self.payloadFingerprint(for: bootstrap.payload).signature,
-                  replicaScope == scope, !context.hasChanges,
+                  bootstrap.backup?.id == lastVerifiedBackupID, replicaScope == scope,
+                  !requiresLocalOwnershipConfirmation, !localRestoreNeedsCloudConfirmation, !context.hasChanges,
                   !ModelContextMutationBarrier.shared.hasPendingWrites,
                   !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
                   ModelStoreRevisionClock.shared.currentRevision() == revision else { return }
+            if baselineFingerprint.signature != bootstrapFingerprint.signature {
+                // An old JSON storage representation may differ from the accepted
+                // local baseline without changing its backup ID. Retire only the
+                // head shortcut so the existing complete three-way review heals it.
+                lastVerifiedBackupID = nil
+                defaults.removeObject(forKey: lastVerifiedBackupIDKey)
+                scheduleAutoSync(from: context, quietly: true, delayNanoseconds: 0)
+                return
+            }
             let values = try await SyncPayloadWork.detached { try CloudDocumentCodec.partition(bootstrap.payload) }
+            guard replicaScope == scope, bootstrap.backup?.id == lastVerifiedBackupID,
+                  !requiresLocalOwnershipConfirmation, !localRestoreNeedsCloudConfirmation, !context.hasChanges,
+                  !ModelContextMutationBarrier.shared.hasPendingWrites,
+                  !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                  ModelStoreRevisionClock.shared.currentRevision() == revision else { return }
             let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
             if let old = try CloudReplicaCache.state(scope: scope, in: metadata) { metadata.delete(old) }
             for old in try CloudReplicaCache.documents(scope: scope, in: metadata).values { metadata.delete(old) }
