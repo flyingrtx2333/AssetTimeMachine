@@ -504,6 +504,59 @@ enum ImportExportService {
     }
 
     @MainActor
+    static func readLocalImportJSON(at url: URL) async throws -> ExportPayload {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let data = try await SyncPayloadWork.detached {
+            let handle = try FileHandle(forReadingFrom: url)
+            defer { try? handle.close() }
+            var result = Data()
+            while let chunk = try handle.read(upToCount: 1_048_576), !chunk.isEmpty {
+                guard result.count + chunk.count <= 50 * 1_048_576 else {
+                    throw NSError(domain: "LocalJSONImport", code: 413,
+                        userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("JSON 备份不能超过 50 MB")])
+                }
+                result.append(chunk)
+            }
+            return result
+        }
+        return try await prepareLocalImportJSON(data)
+    }
+
+    @MainActor
+    static func prepareLocalImportJSON(_ data: Data) async throws -> ExportPayload {
+        let payload = try await SyncPayloadWork.detached {
+            let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(ExportPayload.self, from: data)
+        }
+        return try await prepareLocalImportPayload(payload)
+    }
+
+    @MainActor
+    static func prepareLocalImportPayload(_ decoded: ExportPayload) async throws -> ExportPayload {
+        do {
+            return try await SyncPayloadWork.detached {
+                let payload = try ImportPayloadPreparer.prepare(decoded, checksCancellation: true)
+                guard payload.categories.allSatisfy({ ["financial", "physical", "liability"].contains($0.group) }),
+                      payload.items.allSatisfy({ ["directAmount", "quantityAndUnitPrice"].contains($0.valuationMethod) }),
+                      payload.snapshots.allSatisfy({ snapshot in
+                          snapshot.entries.allSatisfy { entry in
+                              [entry.amount, entry.quantity, entry.unitPrice].compactMap { $0 }.allSatisfy(\.isFinite)
+                                  && ((entry.quantity ?? 0) * (entry.unitPrice ?? 0)).isFinite
+                          }
+                      }) else {
+                    throw NSError(domain: "LocalJSONImport", code: 400,
+                        userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("JSON 备份格式或数值无效")])
+                }
+                return payload
+            }
+        } catch is ImportPayloadValidationError {
+            throw NSError(domain: "LocalJSONImport", code: 400,
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("JSON 备份格式或数值无效")])
+        }
+    }
+
+    @MainActor
     static func importJSON(
         _ data: Data,
         into context: ModelContext,

@@ -123,7 +123,7 @@ final class NativeRecordEditor: ObservableObject {
         var isEmpty: Bool { amount == nil && quantity == nil && (autoPriceSymbol != nil || price == nil) }
         var isZeroBalance: Bool { !isEmpty && total == 0 && (method == .directAmount ? amount == 0 : quantity == 0) }
         var draft: Draft {
-            Draft(amount: amount.map { $0.formatted(.number.locale(Locale(identifier: "en_US")).precision(.fractionLength(2))) } ?? "",
+            Draft(amount: amount.map { String($0) } ?? "",
                   quantity: quantity.map { String($0) } ?? "",
                   price: price.map { String($0) } ?? "")
         }
@@ -132,6 +132,22 @@ final class NativeRecordEditor: ObservableObject {
         var amount: String
         var quantity: String
         var price: String
+
+        func hasSameValues(as other: Draft) -> Bool {
+            Self.sameNumber(amount, other.amount)
+                && Self.sameNumber(quantity, other.quantity)
+                && Self.sameNumber(price, other.price)
+        }
+
+        private static func sameNumber(_ lhs: String, _ rhs: String) -> Bool {
+            func clean(_ value: String) -> String {
+                value.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: "")
+            }
+            let left = clean(lhs), right = clean(rhs)
+            if let a = Double(left), let b = Double(right), a.isFinite, b.isFinite { return a == b }
+            // Blank remains different from zero; invalid input remains available for validation.
+            return left == right
+        }
     }
     @Published private(set) var rows: [Row] = []
     @Published private(set) var drafts: [UUID: Draft] = [:]
@@ -215,6 +231,13 @@ final class NativeRecordEditor: ObservableObject {
         var draft = proposed
         // Market-derived prices belong to the dated snapshot, never to a manual draft.
         if row.autoPriceSymbol != nil { draft.price = row.draft.price }
+        guard !draft.hasSameValues(as: drafts[row.id] ?? row.draft) else { return }
+        if draft.hasSameValues(as: row.draft) {
+            drafts.removeValue(forKey: row.id)
+            error = nil
+            if drafts.isEmpty { releaseDraft() }
+            return
+        }
         if draftToken == nil {
             guard let token = ModelContextMutationBarrier.shared.beginEditorDraft() else {
                 error = "数据正在更新，请稍后编辑"
@@ -222,10 +245,8 @@ final class NativeRecordEditor: ObservableObject {
             }
             draftToken = token
         }
-        if draft == row.draft { drafts.removeValue(forKey: row.id) }
-        else { drafts[row.id] = draft }
+        drafts[row.id] = draft
         error = nil
-        if drafts.isEmpty { releaseDraft() }
     }
     func discard() {
         drafts = [:]
@@ -799,19 +820,28 @@ private struct NativeLedgerRow: View {
         return (q * p).formatted(.number.precision(.fractionLength(2)))
     }
     private func field(_ name: String, text: Binding<String>, width: CGFloat) -> some View {
-        let display = Binding<String>(get: {
-            let raw = text.wrappedValue
-            guard focused != name, !raw.isEmpty,
-                  let value = Double(raw.replacingOccurrences(of: ",", with: "")), value.isFinite else { return raw }
+        let raw = text.wrappedValue
+        let displayed: String = {
+            guard !raw.isEmpty else { return "—" }
+            guard let value = Double(raw.replacingOccurrences(of: ",", with: "")), value.isFinite else { return raw }
             return value.formatted(.number.locale(Locale(identifier: "en_US")).precision(.fractionLength(name == "数量" ? 0...6 : 2...6)))
-        }, set: { text.wrappedValue = $0 })
-        return TextField("—", text: display)
+        }()
+        // Formatting is presentation only. Never feed a rounded/grouped display
+        // string back into the editable binding when focus moves between cells.
+        return TextField("—", text: text)
             .textFieldStyle(.plain).multilineTextAlignment(.trailing)
             .accessibilityLabel("\(row.name) \(name)")
             .focused($focused, equals: name)
             .font(NativeStyle.FontRole.body).monospacedDigit()
-            .foregroundStyle(name == "金额" || focused == name ? NativeHomeStyle.text : NativeHomeStyle.secondary)
+            .foregroundStyle(focused == name ? NativeHomeStyle.text : .clear)
             .padding(.horizontal, 7).frame(width: width, height: NativeStyle.Layout.ledgerFieldHeight)
+            .overlay(alignment: .trailing) {
+                if focused != name {
+                    Text(displayed).font(NativeStyle.FontRole.body).monospacedDigit()
+                        .foregroundStyle(name == "金额" ? NativeHomeStyle.text : NativeHomeStyle.secondary)
+                        .padding(.horizontal, 7).allowsHitTesting(false).accessibilityHidden(true)
+                }
+            }
             .background(NativePalette.canvas.opacity(focused == name ? 1 : 0), in: RoundedRectangle(cornerRadius: 4))
             .overlay(RoundedRectangle(cornerRadius: NativeStyle.Radius.control).strokeBorder(
                 focused == name ? NativeHomeStyle.accent.opacity(0.85) : NativeHomeStyle.line.opacity(hovered ? 0.7 : 0), lineWidth: 0.8))
@@ -1080,8 +1110,12 @@ struct NativeSettingsView: View {
                         Image(systemName: "clock.arrow.circlepath").foregroundStyle(NativePalette.secondary).frame(width: 22)
                         Text(AppLocalization.format("%d 条历史记录", history.summaries.count))
                         Spacer(minLength: 12)
-                        Button("导入记录", action: importJSON).buttonStyle(.bordered).controlSize(.regular)
-                        Button("导出记录", action: exportJSON).buttonStyle(.bordered).controlSize(.regular)
+                        Button(AppLocalization.string("从 JSON 恢复"), action: importJSON).buttonStyle(.bordered).controlSize(.regular)
+                        Button(AppLocalization.string("导出 JSON")) { exportJSON() }.buttonStyle(.bordered).controlSize(.regular)
+                        if cloud.hasBeforeJSONImportBackup {
+                            Button(AppLocalization.string("导出恢复前备份")) { exportJSON(beforeImport: true) }
+                                .buttonStyle(.bordered).controlSize(.regular)
+                        }
                     }.padding(.horizontal, 14).frame(minHeight: 48)
                         .background(NativePalette.surface, in: RoundedRectangle(cornerRadius: 6))
                         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(NativePalette.line, lineWidth: 0.7))
@@ -1136,20 +1170,19 @@ struct NativeSettingsView: View {
             isSendingTest = false
         }
     }
-    private func exportJSON() {
+    private func exportJSON(beforeImport: Bool = false) {
         error = nil
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "AssetTimeMachine-\(Date().formatted(.iso8601.year().month().day().dateSeparator(.dash))).json"
+        panel.nameFieldStringValue = "AssetTimeMachine-" + (beforeImport ? "BeforeRestore-" : "") + Date().recordDateString + ".json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         Task {
             do {
-                let versioned = try await ImportExportService.exportPayloadCooperatively(from: context)
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                try encoder.encode(versioned.payload).write(to: url, options: .atomic)
-                message = "已导出到 \(url.lastPathComponent)"
+                let data = beforeImport
+                    ? try await cloud.exportBeforeJSONImportBackup()
+                    : try await cloud.exportLocalRecords(from: context)
+                try data.write(to: url, options: .atomic)
+                message = AppLocalization.string("备份已导出")
             } catch { self.error = error.localizedDescription }
         }
     }
@@ -1161,11 +1194,22 @@ struct NativeSettingsView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         Task {
             do {
-                let data = try Data(contentsOf: url)
-                try await ImportExportService.importJSON(data, into: context)
+                let payload = try await ImportExportService.readLocalImportJSON(at: url)
+                let confirm = NSAlert()
+                confirm.messageText = AppLocalization.string("确认恢复")
+                confirm.informativeText = url.lastPathComponent + "\n\n"
+                    + AppLocalization.format("%d 个资产项目 · %d 条历史记录", payload.items.count, payload.snapshots.count)
+                    + "\n\n" + AppLocalization.string("将替换本机资产记录，并保留恢复前的 JSON 备份。")
+                if cloud.hasToken || cloud.localRestoreNeedsCloudConfirmation {
+                    confirm.informativeText += "\n" + AppLocalization.string("云端记录不会被替换；自动同步将暂停，待你核对后重新关联。")
+                }
+                confirm.addButton(withTitle: AppLocalization.string("恢复这些记录"))
+                confirm.addButton(withTitle: AppLocalization.string("取消"))
+                guard confirm.runModal() == .alertFirstButtonReturn else { return }
+                try await cloud.restoreLocalRecords(payload, into: context)
                 await history.load(from: context.container, force: true)
-                cloud.scheduleAutoSync(from: context)
-                message = "已导入 \(url.lastPathComponent)"
+                message = AppLocalization.string(cloud.localRestoreNeedsCloudConfirmation
+                    ? "已恢复本机记录，云同步已暂停。请核对后重新关联。" : "JSON 记录已恢复")
             } catch { self.error = error.localizedDescription }
         }
     }

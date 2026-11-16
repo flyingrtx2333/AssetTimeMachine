@@ -503,12 +503,15 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     @Published private(set) var isApplyingLocalData = false
     @Published private(set) var localDataRevision = 0
     @Published private(set) var entryConflictReview: CloudSyncEntryReview?
+    @Published private(set) var localRestoreNeedsCloudConfirmation = false
 
     private let tokenKey = "assettimemachine.cloud.accessToken"
     private let refreshTokenKey = "assettimemachine.cloud.refreshToken"
     private let lastUploadedSignatureKey = "assettimemachine.cloud.lastUploadedSignature"
     private let lastSyncAtKey = "assettimemachine.cloud.lastSyncAt"
     private let lastVerifiedBackupIDKey = "assettimemachine.cloud.lastVerifiedBackupID"
+    private let localRestorePendingKey = "assettimemachine.cloud.localRestorePending"
+    private let beforeJSONImportKey = "assettimemachine.local.beforeJSONImport"
     private let defaults: UserDefaults
     private let localOwnerKey = "assettimemachine.cloud.localOwnerUserID"
     private let localOwnerAccountKey = "assettimemachine.cloud.localOwnerAccountID"
@@ -536,6 +539,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         self.isolatedTest = isolatedTest
         self.tokenStore = tokenStore ?? KeychainTokenStore.shared
         guard !AppPreviewSession.isActive || isolatedTest else { return }
+        localRestoreNeedsCloudConfirmation = defaults.bool(forKey: localRestorePendingKey)
+        requiresLocalOwnershipConfirmation = localRestoreNeedsCloudConfirmation
         lastSyncAt = defaults.object(forKey: lastSyncAtKey) as? Date
         migrateLegacyTokensIfNeeded()
         cachedAccessToken = self.tokenStore.loadAccessToken()
@@ -559,7 +564,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     var indicatorState: AssetTimeMachineCloudIndicatorState {
-        if (errorMessage?.isEmpty == false) || entryConflictReview != nil {
+        if (errorMessage?.isEmpty == false) || entryConflictReview != nil
+            || (localRestoreNeedsCloudConfirmation && hasToken) {
             return .warning
         }
         if isWorking || hasPendingSync || isSessionPending {
@@ -803,6 +809,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     ) {
         guard !AppPreviewSession.isActive || isolatedTest,
               !ProcessInfo.processInfo.arguments.contains("-macCloudRecovery"),
+              !localRestoreNeedsCloudConfirmation,
               currentUser != nil, hasToken else { return }
         hasPendingSync = true
         guard automaticSyncIsActive else { return }
@@ -892,6 +899,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         confirmation: EntryConfirmationRequest? = nil) async -> Bool {
         autoSyncEncounteredTransientFailure = false
         guard !AppPreviewSession.isActive || isolatedTest else { return true }
+        guard !localRestoreNeedsCloudConfirmation else { return true }
         guard hasToken else { return true }
         guard !context.hasChanges,
               !ModelContextMutationBarrier.shared.hasPendingWrites,
@@ -1241,6 +1249,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try self.clearPendingUpload()
             self.requiresLocalOwnershipConfirmation = false
             self.entryConflictReview = nil
+            self.localRestoreNeedsCloudConfirmation = false
+            self.defaults.removeObject(forKey: self.localRestorePendingKey)
             try await self.loadHistoryAfterSync()
             self.statusMessage = AppLocalization.string("最近一次云端备份已恢复")
         }
@@ -1409,6 +1419,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             lastVerifiedBackupID = nil
         }
         backups = history
+        if localRestoreNeedsCloudConfirmation { requiresLocalOwnershipConfirmation = true }
     }
 
     private func loadHistory() async throws {
@@ -1545,6 +1556,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             try await self.saveLocalSafetyBackup(payload.payload)
             try await self.persistSyncBaseline(base)
             self.requiresLocalOwnershipConfirmation = false
+            self.localRestoreNeedsCloudConfirmation = false
+            self.defaults.removeObject(forKey: self.localRestorePendingKey)
         }
         if result == .completed { scheduleAutoSync(from: context, quietly: false, delayNanoseconds: 0) }
     }
@@ -1586,7 +1599,64 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
-    private func saveLocalSafetyBackup(_ payload: ExportPayload) async throws {
+    var hasBeforeJSONImportBackup: Bool {
+        defaults.string(forKey: beforeJSONImportKey).map { FileManager.default.fileExists(atPath: $0) } ?? false
+    }
+
+    func exportBeforeJSONImportBackup() async throws -> Data {
+        guard let path = defaults.string(forKey: beforeJSONImportKey) else { throw CocoaError(.fileNoSuchFile) }
+        return try await SyncPayloadWork.detached { try Data(contentsOf: URL(fileURLWithPath: path)) }
+    }
+
+    /// This explicit local recovery never uploads the imported file or silently
+    /// reconciles it with a different cloud version. Association is a later user choice.
+    func restoreLocalRecords(_ payload: ExportPayload, into context: ModelContext) async throws {
+        guard !AppPreviewSession.isActive || isolatedTest,
+              !isWorking, !context.hasChanges,
+              !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else {
+            throw NSError(domain: "LocalJSONImport", code: 409,
+                userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("请先完成当前编辑，再恢复记录")])
+        }
+        isWorking = true
+        defer { isWorking = false }
+        let payload = try await ImportExportService.prepareLocalImportPayload(payload)
+        autoSyncGeneration &+= 1
+        pendingAutoSyncCoordinatorTask?.cancel()
+        pendingAutoSyncCoordinatorTask = nil
+        autoSyncCoordinatorTaskID = nil
+        hasPendingSync = false
+
+        let before = try await ImportExportService.exportPayloadCooperatively(from: context)
+        let backup = try await saveLocalSafetyBackup(before.payload)
+        defaults.set(backup.path, forKey: beforeJSONImportKey)
+        let owner = defaults.object(forKey: localOwnerKey) as? Int
+        let needsConfirmation = hasToken || owner != nil || localRestoreNeedsCloudConfirmation
+        if needsConfirmation {
+            // Persist before the replacement, so suspension/restart cannot upload an
+            // imported historical version before the user has checked the account.
+            defaults.set(true, forKey: localRestorePendingKey)
+            localRestoreNeedsCloudConfirmation = true
+        }
+        let owners = Set([owner, currentUser?.id].compactMap { $0 })
+        for owner in owners {
+            for file in [try baselineURL(userID: owner), try pendingUploadURL(userID: owner)]
+                where FileManager.default.fileExists(atPath: file.path) {
+                let archived = backup.deletingPathExtension().appendingPathExtension(file.lastPathComponent)
+                try FileManager.default.copyItem(at: file, to: archived)
+                try FileManager.default.removeItem(at: file)
+            }
+        }
+        try resetAccountSyncMetadata()
+        requiresLocalOwnershipConfirmation = needsConfirmation
+        entryConflictReview = nil
+        _ = try await applyCloudPayload(payload, into: context, expectedStoreRevision: before.storeRevision)
+        errorMessage = nil
+        statusMessage = AppLocalization.string("JSON 记录已恢复")
+    }
+
+    @discardableResult
+    private func saveLocalSafetyBackup(_ payload: ExportPayload) async throws -> URL {
         let owner = defaults.object(forKey: localOwnerKey) as? Int ?? 0
         let parent = try baselineURL(userID: owner).deletingLastPathComponent().appendingPathComponent("SafetyBackups")
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true,
@@ -1594,10 +1664,13 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         let file = parent.appendingPathComponent("before-restore-" + UUID().uuidString + ".json")
         try await SyncPayloadWork.detached {
             let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601
-            try encoder.encode(payload).write(to: file, options: .atomic)
+            let data = try encoder.encode(payload)
+            try data.write(to: file, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
+            guard try Data(contentsOf: file) == data else { throw CocoaError(.fileReadCorruptFile) }
         }
         defaults.set(file.path, forKey: "assettimemachine.cloud.lastLocalSafetyBackup")
+        return file
     }
 
     private func baselineURL(userID: Int) throws -> URL {
@@ -2252,7 +2325,7 @@ private struct AssetTimeMachineCloudStatusSymbol: View {
     }
 }
 
-private struct CloudRecordsDocument: FileDocument {
+struct CloudRecordsDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     var data: Data
     init(data: Data) { self.data = data }

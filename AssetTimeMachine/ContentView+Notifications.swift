@@ -125,18 +125,17 @@ extension ContentView {
                 _ = try await AssetNotificationService.refreshStrategySchedule(
                     isEnabled: false,
                     hour: strategyNotificationHour,
-                    strategyTitle: AppLocalization.string("策略提醒"),
-                    body: nil
+                    strategyTitle: AppLocalization.string("策略提醒")
                 )
                 return
             }
 
-            let content = await currentStrategyNotificationContent()
+            let title = StrategyRebalanceDefaults.template(for: strategyNotificationTemplateID)?.title
+                ?? AppLocalization.string("策略提醒")
             let granted = try await AssetNotificationService.refreshStrategySchedule(
                 isEnabled: strategyNotificationEnabled,
                 hour: strategyNotificationHour,
-                strategyTitle: content.title,
-                body: content.body
+                strategyTitle: title
             )
             if strategyNotificationEnabled && !granted {
                 strategyNotificationEnabled = false

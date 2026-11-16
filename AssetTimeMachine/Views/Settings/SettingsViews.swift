@@ -29,6 +29,7 @@ struct SettingsView: View {
     @State private var showsLanguageSelection = false
     @State private var showsStrategyLibrary = false
     @State private var showsMonthlyExpenseEstimator = false
+    @State private var showsLocalRecordsTransfer = false
     @State private var pendingAppLanguage: AppLanguage?
     #if DEBUG
     @State private var didOpenPreviewSheet = false
@@ -229,6 +230,9 @@ struct SettingsView: View {
             .navigationDestination(isPresented: $showsMonthlyExpenseEstimator) {
                 MonthlyExpenseEstimatorView()
             }
+            .navigationDestination(isPresented: $showsLocalRecordsTransfer) {
+                LocalRecordsTransferView(cloudStore: cloudStore)
+            }
             .alert(AppLocalization.string("退出云同步"), isPresented: $showsLogoutConfirmation) {
                 Button(AppLocalization.string("取消"), role: .cancel) {}
                 Button(AppLocalization.string("退出"), role: .destructive) {
@@ -255,6 +259,7 @@ struct SettingsView: View {
         case "cloud": showsCloudSyncModal = true
         case "language": showsLanguageSelection = true
         case "expenses": showsMonthlyExpenseEstimator = true
+        case "transfer": showsLocalRecordsTransfer = true
         default: break
         }
     }
@@ -506,6 +511,15 @@ struct SettingsView: View {
 
     private var dataSection: some View {
         Section {
+            Button { showsLocalRecordsTransfer = true } label: {
+                SettingsNavigationRow(
+                    title: AppLocalization.string("本机备份与恢复"),
+                    systemImage: "externaldrive"
+                )
+            }
+            .buttonStyle(SettingsLedgerButtonStyle())
+            .settingsSurfaceRow()
+
             Button {
                 showsCloudSyncModal = true
             } label: {

@@ -64,6 +64,12 @@ enum NativeRecordEditorProbe {
     static func run(container: ModelContainer) -> [String: Bool] {
         guard AppPreviewSession.isActive else { return ["isolatedStore": false] }
         var results: [String: Bool] = [:]
+        let assetReminder = AssetNotificationService.scheduledAssetContent()
+        let strategyReminder = AssetNotificationService.scheduledStrategyContent(strategyTitle: "fixture-strategy")
+        results["repeatingAssetReminderHasNoFrozenAmounts"] = assetReminder.subtitle.isEmpty
+            && assetReminder.body == AppLocalization.string("打开资产时光机，查看最新资产记录。")
+        results["repeatingStrategyReminderHasNoFrozenAdvice"] = strategyReminder.title == AppLocalization.string("策略更新提醒")
+            && strategyReminder.body == AppLocalization.string("打开资产时光机，获取最新调仓建议。")
         func sample(amount: Double?, quantity: Double? = nil, price: Double? = nil) -> NativeRecordEditor.Row {
             .init(id: UUID(), name: "fixture", category: "资产", group: .financial, icon: nil,
                   method: quantity == nil ? .directAmount : .quantityAndUnitPrice, autoPriceSymbol: nil,
@@ -75,6 +81,9 @@ enum NativeRecordEditorProbe {
             && !sample(amount: nil, price: 10).isZeroBalance
             && !sample(amount: nil, quantity: 10, price: 0).isZeroBalance
             && !sample(amount: -10).isZeroBalance
+        results["amountDraftRetainsFullPrecision"] = Double(sample(amount: 1.234567891).draft.amount) == 1.234567891
+        var blankAmount = sample(amount: 0).draft; blankAmount.amount = ""
+        results["blankAmountIsNotNumericZero"] = !blankAmount.hasSameValues(as: sample(amount: 0).draft)
         do {
             let context = ModelContext(container)
             context.autosaveEnabled = false
@@ -117,6 +126,14 @@ enum NativeRecordEditorProbe {
             editor.load(id: snapshot.id, container: container)
             let cash = editor.rows.first { $0.name == "招商银行活期" }!
             let gold = editor.rows.first { $0.name == "金ETF" }!
+            var formattingOnly = gold.draft
+            formattingOnly.quantity = "200.000"
+            editor.update(gold, draft: formattingOnly)
+            results["numericFormattingDoesNotCreateDraft"] = !editor.isDirty
+                && !ModelContextMutationBarrier.shared.hasBlockingEditorDraft
+            var groupedCash = cash.draft; groupedCash.amount = "12,800.000"
+            editor.update(cash, draft: groupedCash)
+            results["groupingDoesNotCreateDraft"] = !editor.isDirty
             var cashDraft = cash.draft; cashDraft.amount = "13000"
             var goldDraft = gold.draft; goldDraft.quantity = "invalid"
             editor.update(cash, draft: cashDraft)
@@ -126,6 +143,9 @@ enum NativeRecordEditorProbe {
             let fresh = NativeRecordEditor(); fresh.load(id: snapshot.id, container: container)
             results["invalidBatchNoPartialWrite"] = !invalidSaved && fresh.rows.first { $0.id == cash.id }?.amount == 12800
             results["failedSaveRetainsDrafts"] = editor.drafts.count == 2
+            let validationError = editor.error
+            editor.update(gold, draft: goldDraft)
+            results["focusCommitPreservesValidationError"] = validationError != nil && editor.error == validationError
             editor.load(id: snapshot.id, container: container)
             results["reloadRetainsDirtyDraft"] = editor.drafts[cash.id]?.amount == "13000"
             goldDraft.quantity = "210"; goldDraft.price = "100"
@@ -304,7 +324,9 @@ private final class NativeCloudMockServer: @unchecked Sendable {
         let path = request.url!.path
         var status = 200
         var object: Any
-        if path.hasSuffix("/auth/refresh") {
+        if path.hasSuffix("/account/login") {
+            object = ["access_token": "synthetic-access", "refresh_token": "synthetic-refresh", "token_type": "bearer"]
+        } else if path.hasSuffix("/auth/refresh") {
             refreshes += 1
             status = rejectRefresh ? 401 : 200
             object = rejectRefresh ? ["detail": "synthetic expired session"]
@@ -742,6 +764,72 @@ enum NativeCloudSyncProbe {
             cancelledExport.cancel()
             do { _ = try await cancelledExport.value; checks["cachedExportHonorsCancellation"] = false }
             catch is CancellationError { checks["cachedExportHonorsCancellation"] = true }
+            conflict.setAutomaticSyncActive(false)
+            let beforeLocalRestore = try await local()
+            let remoteBeforeLocalRestore = server.payload, uploadsBeforeLocalRestore = server.uploads
+            try await conflict.restoreLocalRecords(otherExport, into: context)
+            checks["JSONRestoreReplacesExistingSeededStore"] = SyncMergeService.isSameContent(try await local(), otherExport)
+            let backupData = try await conflict.exportBeforeJSONImportBackup()
+            let backupPayload = try await ImportExportService.prepareLocalImportJSON(backupData)
+            checks["JSONRestoreKeepsVerifiedBeforeImage"] = SyncMergeService.isSameContent(backupPayload, beforeLocalRestore)
+            checks["JSONRestorePausesCloudWithoutUpload"] = conflict.localRestoreNeedsCloudConfirmation
+                && conflict.requiresLocalOwnershipConfirmation && server.uploads == uploadsBeforeLocalRestore
+                && SyncMergeService.isSameContent(server.payload, remoteBeforeLocalRestore)
+            let readsAfterRestore = server.latestReads
+            _ = await conflict.runIsolatedSync(from: context)
+            let heldAfterRestart = AssetTimeMachineCloudStore(tokenStore: NativeCloudProbeTokens(), defaults: conflictDefaults, isolatedTest: true)
+            heldAfterRestart.currentUser = AssetTimeMachineCloudUser(id: 11, userName: "Synthetic", userEmail: nil)
+            _ = await heldAfterRestart.runIsolatedSync(from: context)
+            checks["JSONRestoreCloudPauseSurvivesRestart"] = heldAfterRestart.localRestoreNeedsCloudConfirmation
+                && server.latestReads == readsAfterRestore && server.uploads == uploadsBeforeLocalRestore
+            heldAfterRestart.logout()
+            await heldAfterRestart.login(username: "synthetic", password: "synthetic")
+            checks["JSONRestoreCloudPauseSurvivesRelogin"] = heldAfterRestart.localRestoreNeedsCloudConfirmation
+                && heldAfterRestart.requiresLocalOwnershipConfirmation && heldAfterRestart.currentUser?.id == 11
+                && server.uploads == uploadsBeforeLocalRestore
+            let invalidImport = ExportPayload(exportedAt: otherExport.exportedAt, categories: otherExport.categories,
+                items: otherExport.items + otherExport.items, snapshots: otherExport.snapshots, deletions: otherExport.deletions)
+            do {
+                try await conflict.restoreLocalRecords(invalidImport, into: context)
+                checks["invalidJSONRestoreDoesNotChangeDataOrBackup"] = false
+            } catch {
+                let unchangedLocal = try await local()
+                let unchangedBackup = try await conflict.exportBeforeJSONImportBackup()
+                checks["invalidJSONRestoreDoesNotChangeDataOrBackup"] = SyncMergeService.isSameContent(unchangedLocal, otherExport)
+                    && unchangedBackup == backupData
+            }
+            let offlineDefaults = UserDefaults(suiteName: suite + "-offline-restore")!
+            defer { offlineDefaults.removePersistentDomain(forName: suite + "-offline-restore") }
+            let offlineTokens = NativeCloudProbeTokens(); try offlineTokens.clear()
+            let offlineRestore = AssetTimeMachineCloudStore(tokenStore: offlineTokens, defaults: offlineDefaults, isolatedTest: true)
+            try await offlineRestore.restoreLocalRecords(beforeLocalRestore, into: context)
+            let offlineExport = try await offlineRestore.exportLocalRecords(from: context)
+            let offlineRoundTrip = try await ImportExportService.prepareLocalImportJSON(offlineExport)
+            checks["offlineJSONExportAndRestoreNeedsNoLogin"] = !offlineRestore.hasToken
+                && SyncMergeService.isSameContent(offlineRoundTrip, beforeLocalRestore)
+                && server.uploads == uploadsBeforeLocalRestore
+            let offlineBeforeData = try await offlineRestore.exportBeforeJSONImportBackup()
+            let offlineBeforePayload = try await ImportExportService.prepareLocalImportJSON(offlineBeforeData)
+            checks["offlineJSONRestoreAlsoRetainsBeforeImage"] = offlineRestore.hasBeforeJSONImportBackup
+                && SyncMergeService.isSameContent(offlineBeforePayload, otherExport)
+            let importEncoder = JSONEncoder(); importEncoder.dateEncodingStrategy = .iso8601
+            var malformed = try JSONSerialization.jsonObject(with: importEncoder.encode(otherExport)) as! [String: Any]
+            var importItems = malformed["items"] as! [[String: Any]]
+            importItems[0]["valuationMethod"] = "unsupported"
+            malformed["items"] = importItems
+            do {
+                _ = try await ImportExportService.prepareLocalImportJSON(JSONSerialization.data(withJSONObject: malformed))
+                checks["unknownJSONValuationMethodRejected"] = false
+            } catch { checks["unknownJSONValuationMethodRejected"] = true }
+            malformed = try JSONSerialization.jsonObject(with: importEncoder.encode(otherExport)) as! [String: Any]
+            var importDays = malformed["snapshots"] as! [[String: Any]]
+            var importEntries = importDays[0]["entries"] as! [[String: Any]]
+            importEntries[0]["quantity"] = 1e300; importEntries[0]["unitPrice"] = 1e300
+            importDays[0]["entries"] = importEntries; malformed["snapshots"] = importDays
+            do {
+                _ = try await ImportExportService.prepareLocalImportJSON(JSONSerialization.data(withJSONObject: malformed))
+                checks["overflowingJSONValuationRejected"] = false
+            } catch { checks["overflowingJSONValuationRejected"] = true }
             if !ProcessInfo.processInfo.arguments.contains("-macCloudCoreProbeOnly") {
                 checks.merge(try await durabilityChecks(schema: schema)) { _, latest in latest }
                 checks.merge(try await logicalDeletionChecks(schema: schema)) { _, latest in latest }

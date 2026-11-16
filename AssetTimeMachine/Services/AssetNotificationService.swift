@@ -44,16 +44,11 @@ enum AssetNotificationService {
             return false
         }
 
-        guard let snapshot else { return true }
-
         center.removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
         center.removeDeliveredNotifications(withIdentifiers: [notificationIdentifier])
+        guard snapshot != nil else { return true }
 
-        let content = UNMutableNotificationContent()
-        content.title = AppLocalization.string("资产播报")
-        content.subtitle = subtitle(for: snapshot)
-        content.body = body(for: snapshot)
-        content.sound = .default
+        let content = scheduledAssetContent()
 
         let interval = max(3600, intervalHours * 3600)
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: true)
@@ -78,8 +73,7 @@ enum AssetNotificationService {
     static func refreshStrategySchedule(
         isEnabled: Bool,
         hour: Int,
-        strategyTitle: String,
-        body: String?
+        strategyTitle: String
     ) async throws -> Bool {
         let center = UNUserNotificationCenter.current()
 
@@ -98,12 +92,7 @@ enum AssetNotificationService {
         center.removePendingNotificationRequests(withIdentifiers: [strategyNotificationIdentifier])
         center.removeDeliveredNotifications(withIdentifiers: [strategyNotificationIdentifier])
 
-        let content = UNMutableNotificationContent()
-        content.title = AppLocalization.string("今日调仓提醒")
-        content.subtitle = strategyTitle
-        content.body = body ?? AppLocalization.string("打开资产时光机，更新最新策略信号。")
-        content.sound = .default
-        content.threadIdentifier = strategyNotificationIdentifier
+        let content = scheduledStrategyContent(strategyTitle: strategyTitle)
 
         var components = DateComponents()
         components.calendar = .autoupdatingCurrent
@@ -127,7 +116,7 @@ enum AssetNotificationService {
             center.removeDeliveredNotifications(withIdentifiers: [strategyTestNotificationIdentifier])
 
             let content = UNMutableNotificationContent()
-            content.title = AppLocalization.string("今日调仓提醒")
+            content.title = AppLocalization.string("调仓建议")
             content.subtitle = strategyTitle
             content.body = body ?? AppLocalization.string("打开资产时光机，查看最新策略信号。")
             content.sound = .default
@@ -156,20 +145,23 @@ enum AssetNotificationService {
         }
     }
 
-    private static func subtitle(for snapshot: AssetNotificationSnapshot) -> String {
-        AppLocalization.format(
-            "总资产 %@ · 净资产 %@",
-            snapshot.totalAssets.currencyString(),
-            snapshot.netAssets.currencyString()
-        )
+    // Repeated local notifications cannot fetch a new price or recompute advice when
+    // delivered. Only the explicitly requested, non-repeating test may contain advice.
+    static func scheduledAssetContent() -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = AppLocalization.string("资产记录提醒")
+        content.body = AppLocalization.string("打开资产时光机，查看最新资产记录。")
+        content.sound = .default
+        return content
     }
 
-    private static func body(for snapshot: AssetNotificationSnapshot) -> String {
-        return AppLocalization.format(
-            "负债 %@。金融 %@ · 实物 %@",
-            snapshot.totalLiabilities.currencyString(),
-            snapshot.financialAssets.currencyString(),
-            snapshot.physicalAssets.currencyString()
-        )
+    static func scheduledStrategyContent(strategyTitle: String) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = AppLocalization.string("策略更新提醒")
+        content.subtitle = strategyTitle
+        content.body = AppLocalization.string("打开资产时光机，获取最新调仓建议。")
+        content.sound = .default
+        content.threadIdentifier = strategyNotificationIdentifier
+        return content
     }
 }

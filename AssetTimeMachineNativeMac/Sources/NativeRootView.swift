@@ -57,7 +57,7 @@ final class NativeNotificationCoordinator: ObservableObject {
                 do {
                     let title = StrategyRebalanceDefaults.template(for: selectedID)?.title ?? AppLocalization.string("策略提醒")
                     let strategyGranted = try await AssetNotificationService.refreshStrategySchedule(isEnabled: strategy,
-                        hour: selectedHour, strategyTitle: title, body: nil)
+                        hour: selectedHour, strategyTitle: title)
                     if strategy && !strategyGranted && current == generation { defaults.set(false, forKey: "app.strategyNotifications.enabled") }
                     await updateAuthorization()
                 } catch { self.error = error.localizedDescription }
@@ -217,6 +217,20 @@ struct NativeRootView: View {
         .disabled(cloud.isApplyingLocalData)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(NativePalette.canvas)
+        .background {
+            NativeDraftWindowProtection(hasChanges: { recordEditor.isDirty }, save: {
+                guard recordEditor.save(container: context.container) else {
+                    page = .records
+                    return false
+                }
+                Task {
+                    await history.load(from: context.container, force: true)
+                    cloud.scheduleAutoSync(from: context)
+                }
+                return true
+            }, discard: { recordEditor.discard() })
+                .frame(width: 0, height: 0)
+        }
         .transition(.opacity)
         .background {
             NativeWindowToolbar(page: $page, cloudSymbol: cloud.indicatorState.cloudSymbolName,

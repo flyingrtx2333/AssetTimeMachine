@@ -4,6 +4,7 @@ import AuthenticationServices
 
 @main
 struct AssetTimeMachineNativeApp: App {
+    @NSApplicationDelegateAdaptor(NativeDraftApplicationDelegate.self) private var draftDelegate
     @State private var store = NativeStoreBootstrap()
     @State private var startsOffline = false
     @AppStorage("app.appearanceMode") private var appearanceMode = "system"
@@ -117,6 +118,106 @@ struct AssetTimeMachineNativeApp: App {
         default: NSApp.appearance = nil
         }
     }
+}
+
+@MainActor
+final class NativeDraftApplicationDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        NativeDraftWindowProtection.confirmAllWindows() ? .terminateNow : .terminateCancel
+    }
+}
+
+/// Preserve SwiftUI's window delegate while adding the same save decision to close and quit.
+struct NativeDraftWindowProtection: NSViewRepresentable {
+    let hasChanges: () -> Bool
+    let save: () -> Bool
+    let discard: () -> Void
+    @MainActor private static let windows = NSHashTable<Coordinator>.weakObjects()
+
+    @MainActor static func confirmAllWindows() -> Bool {
+        for coordinator in windows.allObjects where coordinator.window != nil {
+            if !coordinator.confirmChanges() { return false }
+        }
+        return true
+    }
+
+    final class Anchor: NSView {
+        weak var owner: Coordinator?
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            owner?.attach(to: window)
+        }
+    }
+
+    @MainActor final class Coordinator: NSObject, NSWindowDelegate {
+        var protection: NativeDraftWindowProtection
+        weak var window: NSWindow?
+        weak var previousDelegate: (any NSWindowDelegate)?
+        private var isConfirming = false
+
+        init(_ protection: NativeDraftWindowProtection) { self.protection = protection }
+
+        func attach(to newWindow: NSWindow?) {
+            guard let newWindow else { return }
+            if window !== newWindow { detach(); window = newWindow }
+            if newWindow.delegate !== self {
+                previousDelegate = newWindow.delegate
+                newWindow.delegate = self
+            }
+            NativeDraftWindowProtection.windows.add(self)
+        }
+
+        func detach() {
+            if let window, window.delegate === self { window.delegate = previousDelegate }
+            NativeDraftWindowProtection.windows.remove(self)
+            window = nil
+        }
+
+        func confirmChanges() -> Bool {
+            guard !isConfirming else { return false }
+            window?.makeFirstResponder(nil)
+            guard protection.hasChanges() else { return true }
+            isConfirming = true
+            defer { isConfirming = false }
+            window?.makeKeyAndOrderFront(nil)
+            let alert = NSAlert()
+            alert.messageText = AppLocalization.string("保存未完成的修改？")
+            alert.informativeText = AppLocalization.string("关闭后，未保存的修改将丢失。")
+            alert.addButton(withTitle: AppLocalization.string("保存更改"))
+            alert.addButton(withTitle: AppLocalization.string("放弃修改"))
+            let cancel = alert.addButton(withTitle: AppLocalization.string("取消"))
+            cancel.keyEquivalent = "\u{1b}"
+            switch alert.runModal() {
+            case .alertFirstButtonReturn: return protection.save()
+            case .alertSecondButtonReturn: protection.discard(); return true
+            default: return false
+            }
+        }
+
+        func windowShouldClose(_ sender: NSWindow) -> Bool {
+            confirmChanges() && (previousDelegate?.windowShouldClose?(sender) ?? true)
+        }
+
+        override func responds(to selector: Selector!) -> Bool {
+            super.responds(to: selector) || (previousDelegate?.responds(to: selector) ?? false)
+        }
+
+        override func forwardingTarget(for selector: Selector!) -> Any? {
+            if previousDelegate?.responds(to: selector) == true { return previousDelegate }
+            return super.forwardingTarget(for: selector)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeNSView(context: Context) -> Anchor {
+        let anchor = Anchor(); anchor.owner = context.coordinator
+        return anchor
+    }
+    func updateNSView(_ view: Anchor, context: Context) {
+        context.coordinator.protection = self
+        context.coordinator.attach(to: view.window)
+    }
+    static func dismantleNSView(_ view: Anchor, coordinator: Coordinator) { coordinator.detach() }
 }
 
 private struct NativeCloudRecoveryView: View {
