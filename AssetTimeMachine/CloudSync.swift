@@ -225,8 +225,32 @@ enum AssetTimeMachineCloudAPI {
                           body: CloudAccountDeletionRequest(identityToken: identityToken, authorizationCode: authorizationCode))
     }
 
-    static func fetchHistory(token: String, limit: Int = 10) async throws -> [AssetTimeMachineCloudBackup] {
-        try await request(path: "/api/v1/asset-time-machine/cloud/history?limit=\(limit)", token: token)
+    static func fetchHistory(token: String, limit: Int = 10, materialize: Bool = false) async throws -> [AssetTimeMachineCloudBackup] {
+        try await request(path: "/api/v1/asset-time-machine/cloud/history?limit=\(limit)&materialize=\(materialize ? "true" : "false")", token: token)
+    }
+
+    static func deltaBootstrap(token: String) async throws -> CloudDeltaBootstrap {
+        try await request(path: "/api/v1/asset-time-machine/cloud/sync/bootstrap", token: token)
+    }
+
+    static func deltaPull(token: String, accountID: String, since: Int64, through: Int64? = nil) async throws -> CloudDeltaPull {
+        var components = URLComponents()
+        components.queryItems = [URLQueryItem(name: "account_id", value: accountID), URLQueryItem(name: "since", value: String(since))]
+        if let through { components.queryItems?.append(URLQueryItem(name: "through", value: String(through))) }
+        return try await request(path: "/api/v1/asset-time-machine/cloud/sync/changes?" + (components.percentEncodedQuery ?? ""), token: token)
+    }
+
+    static func deltaCommit(token: String, body: CloudDeltaRequest) async throws -> CloudDeltaAck {
+        try await request(path: "/api/v1/asset-time-machine/cloud/sync/commit", method: "POST", token: token, body: body)
+    }
+
+    static func deltaRequest(accountID: String, cursor: Int64, changes: [CloudDeltaChange]) -> CloudDeltaRequest {
+        .init(protocol: 2, accountID: accountID, cursor: cursor, requestID: UUID().uuidString,
+              changes: changes, deviceName: deviceName, appVersion: appVersion)
+    }
+
+    static func backupPayload(token: String, id: Int) async throws -> ExportPayload {
+        try await request(path: "/api/v1/asset-time-machine/cloud/sync/backups/\(id)", token: token)
     }
 
     static func downloadBackupPayload(at url: URL) async throws -> ExportPayload {
@@ -372,7 +396,10 @@ enum AssetTimeMachineCloudAPI {
             throw NSError(
                 domain: "AssetTimeMachineCloudAPI",
                 code: httpResponse.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: detail?.isEmpty == false ? detail! : AppLocalization.string("云同步请求失败")]
+                userInfo: [
+                    NSLocalizedDescriptionKey: detail?.isEmpty == false ? AppLocalization.string(detail!) : AppLocalization.string("云同步请求失败"),
+                    "cloudRawDetail": detail ?? ""
+                ]
             )
         }
     }
@@ -544,6 +571,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private var autoSyncRequestedDelayNanoseconds: UInt64 = 0
     private var automaticSyncIsActive = true
     private var autoSyncEncounteredTransientFailure = false
+    private var deltaUnsupported = false
+    private let deltaResetKey = "assettimemachine.cloud.deltaResetID"
 
     init(tokenStore: CloudTokenStore? = nil, defaults: UserDefaults = .standard, isolatedTest: Bool = false) {
         precondition(!isolatedTest || (AppPreviewSession.isActive && tokenStore != nil
@@ -934,6 +963,307 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
     }
 
+    private var replicaScope: String? {
+        guard let userID = currentUser?.id, let account = currentAccountID else { return nil }
+        return String(userID) + ":" + account
+    }
+
+    private func replicaBookmark(_ scope: String, container: ModelContainer) throws -> CloudReplicaBookmark? {
+        let context = ModelContext(container)
+        guard let state = try CloudReplicaCache.state(scope: scope, in: context),
+              state.resetID == (defaults.string(forKey: deltaResetKey) ?? "0") else { return nil }
+        return .init(cursor: state.cursor, historyToken: state.historyToken, pendingRequest: state.pendingRequest)
+    }
+
+    private func historyScan(_ container: ModelContainer, after token: Data?, collect: Bool = true) async throws -> CloudDeltaHistoryScan {
+        try await BackgroundTaskWork.run {
+            try await CloudDeltaHistoryReader(modelContainer: container).scan(after: token, collectChanges: collect)
+        }
+    }
+
+    private func enableDeltaIfSupported(from context: ModelContext, historyToken: Data?) async {
+        guard !deltaUnsupported, let historyToken, let scope = replicaScope, let account = currentAccountID,
+              !requiresLocalOwnershipConfirmation, !localRestoreNeedsCloudConfirmation,
+              !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return }
+        do {
+            let revision = ModelStoreRevisionClock.shared.currentRevision()
+            let bootstrap = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.deltaBootstrap(token: $0) }
+            guard bootstrap.protocol == 2, bootstrap.accountID == account,
+                  bootstrap.backup?.id == lastVerifiedBackupID, let baseline = try await loadSyncBaseline(),
+                  try await Self.payloadFingerprint(for: baseline).signature == Self.payloadFingerprint(for: bootstrap.payload).signature,
+                  replicaScope == scope, !context.hasChanges,
+                  !ModelContextMutationBarrier.shared.hasPendingWrites,
+                  !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+                  ModelStoreRevisionClock.shared.currentRevision() == revision else { return }
+            let values = try await SyncPayloadWork.detached { try CloudDocumentCodec.partition(bootstrap.payload) }
+            let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
+            if let old = try CloudReplicaCache.state(scope: scope, in: metadata) { metadata.delete(old) }
+            for old in try CloudReplicaCache.documents(scope: scope, in: metadata).values { metadata.delete(old) }
+            metadata.insert(CloudReplicaState(scope: scope, resetID: defaults.string(forKey: deltaResetKey) ?? "0",
+                                             cursor: bootstrap.cursor, historyToken: historyToken))
+            var rows: [CloudDeltaDocument] = []
+            for (wireKey, version) in bootstrap.versions {
+                let key = try CloudDocumentKey(wireKey: wireKey)
+                rows.append(.init(kind: key.kind, id: key.id, version: version, value: values[key] ?? .null))
+            }
+            try CloudReplicaCache.update(rows, scope: scope, in: metadata)
+            try metadata.save()
+        } catch {
+            // Capability adoption is optional; a successful legacy sync remains successful.
+            if [404, 405, URLError.unsupportedURL.rawValue].contains((error as NSError).code) { deltaUnsupported = true }
+        }
+    }
+
+    private func prepareLegacyFromReplica(scope: String, container: ModelContainer) async throws {
+        let metadata = ModelContext(container); metadata.author = "atm.cloud.replica"
+        guard let state = try CloudReplicaCache.state(scope: scope, in: metadata), state.pendingRequest == nil else {
+            throw CloudDeltaControl.deferred
+        }
+        let values = try CloudReplicaCache.values(CloudReplicaCache.documents(scope: scope, in: metadata))
+        let payload = try await SyncPayloadWork.detached { try CloudDocumentCodec.payload(values) }
+        try await persistSyncBaseline(payload)
+        lastVerifiedBackupID = nil
+        let fingerprint = try await Self.payloadFingerprint(for: payload)
+        recordSyncMetadata(signature: fingerprint.signature, at: lastSyncAt ?? .now)
+        state.resetID = "retired"
+        try metadata.save()
+    }
+
+    private func updateDeltaSyncMetadata(_ backup: AssetTimeMachineCloudBackup?) {
+        guard let backup else { return }
+        lastVerifiedBackupID = backup.id
+        defaults.set(backup.id, forKey: lastVerifiedBackupIDKey)
+        defaults.set(backup.uploadedAt, forKey: lastSyncAtKey)
+        lastSyncAt = backup.uploadedAt
+        backups = [backup] + backups.filter { $0.id != backup.id && $0.isLatest != 1 }
+        statusMessage = AppLocalization.string("双向同步完成")
+    }
+
+    private func finishDeltaPending(_ pending: CloudDeltaPending, encoded: Data, scope: String,
+                                    container: ModelContainer) async throws {
+        guard currentAccountID == pending.request.accountID else { throw CloudDeltaControl.deferred }
+        syncPhase = .uploading
+        let ack: CloudDeltaAck
+        do {
+            ack = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.deltaCommit(token: $0, body: pending.request) }
+        } catch {
+            let apiError = error as NSError
+            let rawDetail = apiError.userInfo["cloudRawDetail"] as? String ?? apiError.localizedDescription
+            if apiError.code == 409 && !rawDetail.contains("重复请求") {
+                // A definitive CAS rejection precedes any write. Keep the history
+                // bookmark so the same local changes can be rebased, with a new ID.
+                let metadata = ModelContext(container); metadata.author = "atm.cloud.replica"
+                if let state = try CloudReplicaCache.state(scope: scope, in: metadata), state.pendingRequest == encoded {
+                    state.pendingRequest = nil; try metadata.save()
+                }
+                throw CloudDeltaControl.deferred
+            }
+            throw error
+        }
+        let expected = Dictionary(uniqueKeysWithValues: pending.request.changes.map { ($0.key, $0.value) })
+        guard ack.protocol == 2, ack.accountID == pending.request.accountID,
+              ack.cursor == pending.request.cursor + 1, ack.documents.count == expected.count,
+              Set(ack.documents.map(\.key)).count == expected.count,
+              ack.documents.allSatisfy({ $0.version == ack.cursor && expected[$0.key] == $0.value }),
+              replicaScope == scope else { throw CocoaError(.coderReadCorrupt) }
+        let metadata = ModelContext(container); metadata.author = "atm.cloud.replica"
+        guard let state = try CloudReplicaCache.state(scope: scope, in: metadata), state.pendingRequest == encoded else {
+            throw CloudDeltaControl.deferred
+        }
+        try CloudReplicaCache.update(ack.documents, scope: scope, in: metadata)
+        state.cursor = ack.cursor; state.historyToken = pending.historyToken; state.pendingRequest = nil
+        try metadata.save()
+        // User models are untouched: an edit saved while the upload was in flight
+        // remains in native history after the captured request's bookmark.
+        updateDeltaSyncMetadata(ack.backup)
+    }
+
+    private func applyDeltaDocuments(_ documents: [CloudDeltaDocument], cursor: Int64,
+                                     scope: String, into context: ModelContext,
+                                     expectedRevision: UInt64) async throws {
+        // Deletions can affect unsent records outside a day chunk through model
+        // cascade rules or logical aliases. Reuse the complete three-way review.
+        if documents.contains(where: { $0.kind == "deletion" || $0.value == .null }) {
+            throw CloudDeltaControl.legacy
+        }
+        let metadata = ModelContext(context.container)
+        let baseCatalog = try CloudReplicaCache.values(CloudReplicaCache.documents(scope: scope, kinds: ["category", "item"], in: metadata))
+        let ids = Set(documents.filter { $0.kind == "snapshot" }.compactMap { UUID(uuidString: $0.id) })
+        let local = try ImportExportService.exportDays(ids, from: context)
+        var desired = try CloudDocumentCodec.partition(local)
+        let localCatalog = desired.filter { ["category", "item"].contains($0.key.kind) }
+        for document in documents {
+            let base = try CloudReplicaCache.value(CloudReplicaCache.document(scope: scope, key: document.key, in: metadata))
+            let here = desired[document.key] ?? .null
+            if document.kind != "header" {
+                let oldUser = try CloudDocumentCodec.userContent(base, key: document.key, catalog: baseCatalog)
+                let localUser = try CloudDocumentCodec.userContent(here, key: document.key, catalog: localCatalog)
+                let remoteUser = try CloudDocumentCodec.userContent(document.value, key: document.key, catalog: baseCatalog)
+                if oldUser != localUser && localUser != remoteUser { throw CloudDeltaControl.legacy }
+                if document.kind == "snapshot", base == .null, document.value != .null {
+                    let incoming = try CloudDocumentCodec.decode(ExportPayload.SnapshotPayload.self, from: CloudDocumentCodec.encode(document.value))
+                    let day = Calendar.current.startOfDay(for: incoming.date)
+                    let end = Calendar.current.date(byAdding: .day, value: 1, to: day)!
+                    let sameDay = try context.fetch(FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.date >= day && $0.date < end }))
+                    if sameDay.contains(where: { $0.id != incoming.id }) { throw CloudDeltaControl.legacy }
+                }
+                desired[document.key] = document.value
+            }
+        }
+        let payload = try CloudDocumentCodec.payload(desired)
+        let exclusiveID = try ModelContextMutationBarrier.shared.beginExclusiveDrain()
+        isApplyingLocalData = true; syncPhase = .applying
+        defer {
+            ModelContextMutationBarrier.shared.finishExclusive(exclusiveID)
+            isApplyingLocalData = false
+        }
+        try await ModelContextMutationBarrier.shared.enterExclusive(exclusiveID)
+        guard !context.hasChanges, ModelStoreRevisionClock.shared.currentRevision() == expectedRevision else {
+            throw CloudDeltaControl.deferred
+        }
+        let previousAuthor = context.author; context.author = "atm.cloud.delta"
+        defer { context.author = previousAuthor }
+        do {
+            _ = try await ImportExportService.importPayloadCooperatively(payload, into: context, replaceExisting: true,
+                expectedStoreRevision: expectedRevision, replacingSnapshotIDs: ids, saveChanges: false)
+            guard let state = try CloudReplicaCache.state(scope: scope, in: context), state.pendingRequest == nil else {
+                throw CloudDeltaControl.deferred
+            }
+            try CloudReplicaCache.update(documents, scope: scope, in: context)
+            state.cursor = cursor
+            try context.save()
+            localDataRevision &+= 1
+        } catch { context.rollback(); throw error }
+    }
+
+    private func runDeltaCycle(scope: String, context: ModelContext) async throws {
+        guard let accountID = currentAccountID,
+              var bookmark = try replicaBookmark(scope, container: context.container) else { throw CloudDeltaControl.legacy }
+        if let encoded = bookmark.pendingRequest {
+            let pending = try CloudDocumentCodec.decode(CloudDeltaPending.self, from: encoded)
+            try await finishDeltaPending(pending, encoded: encoded, scope: scope, container: context.container)
+            guard let next = try replicaBookmark(scope, container: context.container) else { throw CloudDeltaControl.deferred }
+            bookmark = next
+        }
+        let revisionBeforePull = ModelStoreRevisionClock.shared.currentRevision()
+        var cursor = bookmark.cursor, through: Int64?, incoming: [CloudDocumentKey: CloudDeltaDocument] = [:]
+        var latestBackup: AssetTimeMachineCloudBackup?
+        var pages = 0
+        repeat {
+            syncPhase = .checking
+            let page: CloudDeltaPull
+            do {
+                page = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.deltaPull(
+                    token: $0, accountID: accountID, since: cursor, through: through) }
+            } catch {
+                if [404, 405, 409].contains((error as NSError).code) { throw CloudDeltaControl.legacy }
+                throw error
+            }
+            guard page.protocol == 2, page.accountID == accountID, page.revision >= cursor,
+                  through == nil || through == page.revision else { throw CocoaError(.coderReadCorrupt) }
+            through = page.revision
+            for batch in page.batches {
+                guard batch.revision == cursor + 1,
+                      Set(batch.documents.map(\.key)).count == batch.documents.count,
+                      batch.documents.allSatisfy({ $0.version == batch.revision }) else { throw CocoaError(.coderReadCorrupt) }
+                for document in batch.documents { incoming[document.key] = document }
+                cursor = batch.revision
+            }
+            guard page.cursor == cursor, page.hasMore == (cursor < page.revision) else { throw CocoaError(.coderReadCorrupt) }
+            latestBackup = page.backup
+            pages += 1
+            guard pages <= 4096, !(page.hasMore && page.batches.isEmpty) else { throw CocoaError(.coderReadCorrupt) }
+            if !page.hasMore { break }
+        } while true
+        guard replicaScope == scope, !context.hasChanges,
+              !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+              ModelStoreRevisionClock.shared.currentRevision() == revisionBeforePull else { throw CloudDeltaControl.deferred }
+        if !incoming.isEmpty {
+            try await applyDeltaDocuments(Array(incoming.values), cursor: cursor, scope: scope,
+                                          into: context, expectedRevision: revisionBeforePull)
+        } else if cursor != bookmark.cursor {
+            let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
+            guard let state = try CloudReplicaCache.state(scope: scope, in: metadata) else { throw CloudDeltaControl.deferred }
+            state.cursor = cursor; try metadata.save()
+        }
+        updateDeltaSyncMetadata(latestBackup)
+        guard let current = try replicaBookmark(scope, container: context.container) else { throw CloudDeltaControl.deferred }
+        let revisionBeforeExport = ModelStoreRevisionClock.shared.currentRevision()
+        let scan: CloudDeltaHistoryScan
+        do { scan = try await historyScan(context.container, after: current.historyToken) }
+        catch { throw CloudDeltaControl.legacy }
+        guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+              ModelStoreRevisionClock.shared.currentRevision() == revisionBeforeExport else { throw CloudDeltaControl.deferred }
+        guard scan.hasLocalChanges else {
+            if scan.token != current.historyToken {
+                let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
+                guard let state = try CloudReplicaCache.state(scope: scope, in: metadata),
+                      state.cursor == cursor, state.pendingRequest == nil else { throw CloudDeltaControl.deferred }
+                state.historyToken = scan.token
+                try metadata.save()
+            }
+            return
+        }
+        let local: ExportPayload
+        if scan.requiresFullExport { local = try await ImportExportService.exportPayloadCooperatively(from: context).payload }
+        else { local = try ImportExportService.exportDays(scan.snapshotIDs, from: context) }
+        guard !context.hasChanges, ModelStoreRevisionClock.shared.currentRevision() == revisionBeforeExport else { throw CloudDeltaControl.deferred }
+        let candidates = try CloudDocumentCodec.partition(local)
+        let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
+        let catalog = candidates.filter { ["category", "item"].contains($0.key.kind) }
+        let baseRows = try CloudReplicaCache.documents(scope: scope,
+            kinds: scan.requiresFullExport ? nil : ["category", "item", "deletion"], in: metadata)
+        var keys = Set(candidates.keys).union(baseRows.keys).filter { $0.kind != "header" }
+        if !scan.requiresFullExport {
+            keys = keys.filter { $0.kind != "snapshot" || UUID(uuidString: $0.id).map { scan.snapshotIDs.contains($0) } == true }
+        }
+        var changes: [CloudDeltaChange] = []
+        for key in keys.sorted(by: { $0.wireKey < $1.wireKey }) {
+            let row = try baseRows[key] ?? CloudReplicaCache.document(scope: scope, key: key, in: metadata)
+            let prior = try CloudReplicaCache.value(row), value = candidates[key] ?? .null
+            if try CloudDocumentCodec.userContent(prior, key: key, catalog: catalog)
+                != CloudDocumentCodec.userContent(value, key: key, catalog: catalog) {
+                changes.append(.init(kind: key.kind, id: key.id, baseVersion: row?.version ?? 0, value: value))
+            }
+        }
+        guard let state = try CloudReplicaCache.state(scope: scope, in: metadata), state.cursor == cursor,
+              state.pendingRequest == nil else { throw CloudDeltaControl.deferred }
+        if changes.isEmpty {
+            state.historyToken = scan.token; try metadata.save()
+            return
+        }
+        let request = AssetTimeMachineCloudAPI.deltaRequest(accountID: accountID, cursor: cursor, changes: changes)
+        let pending = CloudDeltaPending(request: request, historyToken: scan.token)
+        let encoded = try CloudDocumentCodec.encode(pending)
+        state.pendingRequest = encoded; try metadata.save()
+        try await finishDeltaPending(pending, encoded: encoded, scope: scope, container: context.container)
+    }
+
+    /// nil means a verified legacy reconciliation is required. Transient failures
+    /// keep the same durable request so an uncertain acceptance cannot be replayed.
+    private func incrementalSyncIfAvailable(from context: ModelContext) async -> Bool? {
+        guard let scope = replicaScope, !requiresLocalOwnershipConfirmation,
+              defaults.object(forKey: localOwnerKey) as? Int == currentUser?.id,
+              defaults.string(forKey: localOwnerAccountKey) == currentAccountID,
+              !defaults.bool(forKey: accountResetRequiredKey),
+              (try? replicaBookmark(scope, container: context.container)) != nil else { return nil }
+        var fallback = false, deferred = false
+        let result = await perform { [self] in
+            do { try await runDeltaCycle(scope: scope, context: context) }
+            catch CloudDeltaControl.legacy {
+                try await prepareLegacyFromReplica(scope: scope, container: context.container)
+                fallback = true
+            } catch CloudDeltaControl.deferred { deferred = true }
+        }
+        if fallback { return nil }
+        if deferred || result == .skippedBusy || result == .cancelled { return false }
+        if result == .retryableFailure { autoSyncEncounteredTransientFailure = true; return false }
+        return true
+    }
+
     @discardableResult
     private func autoSyncIfNeeded(from context: ModelContext, quietly: Bool,
         confirmation: EntryConfirmationRequest? = nil) async -> Bool {
@@ -944,6 +1274,10 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         guard !context.hasChanges,
               !ModelContextMutationBarrier.shared.hasPendingWrites,
               !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { return false }
+
+        if confirmation == nil, let result = await incrementalSyncIfAvailable(from: context) { return result }
+        let usesHistory = !deltaUnsupported && !context.container.configurations.contains(where: { $0.isStoredInMemoryOnly })
+        let initialHistory = usesHistory ? try? await historyScan(context.container, after: nil, collect: false) : nil
 
         for attempt in 0..<3 {
             guard !context.hasChanges,
@@ -1226,6 +1560,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             if syncResult == .completed, let completedLocalSignature {
                 lastAutoSyncAttemptSignature = completedLocalSignature
                 entryConflictReview = nil
+                await enableDeltaIfSupported(from: context, historyToken: initialHistory?.token)
             }
             if syncResult == .skippedBusy {
                 return false
@@ -1299,7 +1634,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
     func refreshBackupHistory() async {
         guard !AppPreviewSession.isActive || isolatedTest, hasToken else { return }
-        await perform { [self] in try await self.loadHistory() }
+        await perform { [self] in
+            self.backups = try await self.withTokenRefresh {
+                try await AssetTimeMachineCloudAPI.fetchHistory(token: $0, limit: 100, materialize: true)
+            }
+        }
     }
 
     func retrySync(from context: ModelContext) async {
@@ -1321,7 +1660,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         isWorking = true; syncPhase = .downloading
         defer { isWorking = false; syncPhase = .idle }
         // Only use a storage URL obtained from this account's fresh authenticated list.
-        let history = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.fetchHistory(token: $0, limit: 100) }
+        let history = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.fetchHistory(token: $0, limit: 100, materialize: true) }
         guard let selected = history.first(where: { $0.id == backup.id }) else {
             throw NSError(domain: "CloudBackupRecovery", code: 404,
                 userInfo: [NSLocalizedDescriptionKey: AppLocalization.string("此备份已不可用，请刷新列表")])
@@ -1333,7 +1672,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             let latest = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.downloadLatest(token: $0) }
             guard latest.id == selected.id else { throw URLError(.resourceUnavailable) }
             payload = latest.payload
-        } else { throw URLError(.resourceUnavailable) }
+        } else {
+            payload = try await withTokenRefresh { try await AssetTimeMachineCloudAPI.backupPayload(token: $0, id: selected.id) }
+        }
         let prepared = try await ImportExportService.prepareLocalImportPayload(payload)
         guard currentUser?.id == userID, currentAccountID == accountID, hasToken else {
             throw URLError(.userAuthenticationRequired)
@@ -1391,6 +1732,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func resetAccountSyncMetadata() throws {
+        defaults.set(UUID().uuidString, forKey: deltaResetKey)
         defaults.set(true, forKey: accountResetRequiredKey)
         if let userID = currentUser?.id {
             for file in [try baselineURL(userID: userID), try pendingUploadURL(userID: userID)] {
@@ -1961,6 +2303,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     }
 
     private func persistSyncBaseline(_ payload: ExportPayload) async throws {
+        // Any explicit full restore/reconciliation supersedes a previous delta cursor.
+        defaults.set(UUID().uuidString, forKey: deltaResetKey)
         guard let userID = currentUser?.id else { throw URLError(.userAuthenticationRequired) }
         let file = try baselineURL(userID: userID)
         try await SyncPayloadWork.detached {
@@ -2005,6 +2349,9 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         try await Task.sleep(for: .milliseconds(20))
         try await ModelContextMutationBarrier.shared.enterExclusive(exclusiveID)
 
+        let previousAuthor = context.author
+        context.author = "atm.cloud.legacy"
+        defer { context.author = previousAuthor }
         let committedStoreRevision = try await ImportExportService.importPayloadCooperatively(
             payload,
             into: context,

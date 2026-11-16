@@ -458,3 +458,40 @@ final class SyncDeletionTombstone {
         SyncDeletedEntityKind(rawValue: entityKindRawValue)
     }
 }
+
+/// Account-scoped synchronization metadata. Domain records and their UUIDs are unchanged.
+@Model
+final class CloudReplicaState {
+    #Index<CloudReplicaState>([\.scope])
+    var scope: String
+    var resetID: String
+    var cursor: Int64
+    var historyToken: Data?
+    var pendingRequest: Data?
+
+    init(scope: String, resetID: String, cursor: Int64, historyToken: Data?) {
+        self.scope = scope
+        self.resetID = resetID
+        self.cursor = cursor
+        self.historyToken = historyToken
+        self.pendingRequest = nil
+    }
+}
+
+@Model
+final class CloudReplicaDocument {
+    #Index<CloudReplicaDocument>([\.scope, \.kind, \.recordID])
+    var scope: String
+    var kind: String
+    var recordID: String
+    var version: Int64
+    var value: Data?
+
+    init(scope: String, kind: String, recordID: String, version: Int64, value: Data?) {
+        self.scope = scope
+        self.kind = kind
+        self.recordID = recordID
+        self.version = version
+        self.value = value
+    }
+}

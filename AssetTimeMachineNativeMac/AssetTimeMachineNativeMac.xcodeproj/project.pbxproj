@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A88800012FA0000000000003 /* CloudDeltaProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88800012FA0000000000004 /* CloudDeltaProbe.swift */; };
+        A88800012FA0000000000001 /* CloudDeltaSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88800012FA0000000000002 /* CloudDeltaSync.swift */; };
         A77700012FA0000000000001 /* AppPrivacy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77700012FA0000000000002 /* AppPrivacy.swift */; };
         A77700012FA0000000000003 /* AppSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77700012FA0000000000004 /* AppSupport.swift */; };
         A77700012FA0000000000005 /* AssetEditorRecordDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77700012FA0000000000006 /* AssetEditorRecordDraft.swift */; };
@@ -57,6 +59,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+        A88800012FA0000000000004 /* CloudDeltaProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../AssetTimeMachine/CloudDeltaProbe.swift; sourceTree = SOURCE_ROOT; };
+        A88800012FA0000000000002 /* CloudDeltaSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../AssetTimeMachine/CloudDeltaSync.swift; sourceTree = SOURCE_ROOT; };
         A77700012FA0000000000002 /* AppPrivacy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../AssetTimeMachine/AppPrivacy.swift; sourceTree = SOURCE_ROOT; };
         A77700012FA0000000000004 /* AppSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../AssetTimeMachine/AppSupport.swift; sourceTree = SOURCE_ROOT; };
         A77700012FA0000000000006 /* AssetEditorRecordDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../AssetTimeMachine/Services/AssetEditorRecordDraft.swift; sourceTree = SOURCE_ROOT; };
@@ -176,6 +180,8 @@
 			isa = PBXGroup;
 			children = (
 				A77700012FA0000000000002 /* AppPrivacy.swift */,
+                A88800012FA0000000000004 /* CloudDeltaProbe.swift */,
+                A88800012FA0000000000002 /* CloudDeltaSync.swift */,
 				A77700012FA0000000000004 /* AppSupport.swift */,
 				51FB2156B08D19A4495A62D9 /* AppFormatters.swift */,
 			);
@@ -311,6 +317,8 @@
 			buildActionMask = 2147483647;
 			files = (
                 A77700012FA0000000000001 /* AppPrivacy.swift in Sources */,
+                A88800012FA0000000000003 /* CloudDeltaProbe.swift in Sources */,
+                A88800012FA0000000000001 /* CloudDeltaSync.swift in Sources */,
                 A77700012FA0000000000003 /* AppSupport.swift in Sources */,
                 A77700012FA0000000000005 /* AssetEditorRecordDraft.swift in Sources */,
 				A84CF296251D56F973FC4AB3 /* AdvancedBacktestDataSupport.swift in Sources */,

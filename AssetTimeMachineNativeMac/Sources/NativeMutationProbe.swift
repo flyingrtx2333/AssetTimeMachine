@@ -266,7 +266,7 @@ enum NativeRecordEditorProbe {
 
     private static func calendarChecks() throws -> [String: Bool] {
         let schema = Schema([AssetCategory.self, AssetItem.self, AssetSnapshot.self, AssetEntry.self,
-                             BacktestRecord.self, SyncDeletionTombstone.self])
+                             BacktestRecord.self, SyncDeletionTombstone.self, CloudReplicaState.self, CloudReplicaDocument.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
         let context = ModelContext(container); context.autosaveEnabled = false
         let calendar = Calendar.current
@@ -485,8 +485,9 @@ enum NativeCloudSyncProbe {
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite); AssetTimeMachineCloudAPI.removeIsolatedTransport(); NativeCloudMockProtocol.server = nil }
         do {
+            checks.merge(try await CloudDeltaProbe.run(), uniquingKeysWith: { first, _ in first })
             let schema = Schema([AssetCategory.self, AssetItem.self, AssetSnapshot.self, AssetEntry.self,
-                                 BacktestRecord.self, SyncDeletionTombstone.self])
+                                 BacktestRecord.self, SyncDeletionTombstone.self, CloudReplicaState.self, CloudReplicaDocument.self])
             let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
             let context = ModelContext(container); context.autosaveEnabled = false
             let category = AssetCategory(name: "Synthetic", group: .financial)

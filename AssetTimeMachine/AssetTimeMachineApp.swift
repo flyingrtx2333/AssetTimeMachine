@@ -53,11 +53,21 @@ struct AssetTimeMachineApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
+                #if DEBUG && targetEnvironment(simulator)
+                if ProcessInfo.processInfo.arguments.contains("-cloudDeltaProbe") {
+                    CloudDeltaProbeHostView()
+                } else if modelBootstrap.persistentStoreError == nil {
+                    ContentView()
+                } else {
+                    PersistentStoreUnavailableView()
+                }
+                #else
                 if modelBootstrap.persistentStoreError == nil {
                     ContentView()
                 } else {
                     PersistentStoreUnavailableView()
                 }
+                #endif
             }
                 .environment(\.locale, appLanguageStore.language.locale)
                 .environmentObject(appLanguageStore)
@@ -79,6 +89,8 @@ private struct AppModelContainerBootstrap {
     private static var isPreviewSession: Bool {
         #if DEBUG && targetEnvironment(macCatalyst)
         ProcessInfo.processInfo.arguments.contains("-macPreview")
+        #elseif DEBUG && targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-cloudDeltaProbe")
         #else
         false
         #endif
@@ -104,6 +116,8 @@ private struct AppModelContainerBootstrap {
             AssetEntry.self,
             BacktestRecord.self,
             SyncDeletionTombstone.self,
+            CloudReplicaState.self,
+            CloudReplicaDocument.self,
         ])
 
         do {

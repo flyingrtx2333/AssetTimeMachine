@@ -492,6 +492,44 @@ enum ImportExportService {
         )
     }
 
+    /// Incremental exports read the small catalogs and only the affected days.
+    @MainActor
+    static func exportDays(_ ids: Set<UUID>, from context: ModelContext) throws -> ExportPayload {
+        let selected = Array(ids)
+        let categories = try context.fetch(FetchDescriptor<AssetCategory>()).map {
+            ExportPayload.CategoryPayload(id: $0.id, name: $0.name, group: $0.group.rawValue, createdAt: $0.createdAt)
+        }
+        let items = try context.fetch(FetchDescriptor<AssetItem>()).map {
+            ExportPayload.ItemPayload(id: $0.id, name: $0.name, note: $0.note,
+                iconName: (($0.iconName ?? "").isEmpty ? nil : $0.iconName),
+                valuationMethod: $0.valuationMethod.rawValue, autoPricedAssetKind: $0.marketAssetSymbol,
+                quantStrategyProxySymbol: $0.quantStrategyProxySymbol, sortOrder: $0.sortOrder,
+                isActive: $0.isActive, createdAt: $0.createdAt, updatedAt: $0.updatedAt, categoryID: $0.category?.id)
+        }
+        let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>(predicate: #Predicate { selected.contains($0.id) })).map { snapshot in
+            ExportPayload.SnapshotPayload(id: snapshot.id, date: snapshot.date, note: snapshot.note,
+                createdAt: snapshot.createdAt, updatedAt: snapshot.updatedAt,
+                goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY, goldAnchorPriceDate: snapshot.goldAnchorPriceDate,
+                btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD, btcAnchorPriceDate: snapshot.btcAnchorPriceDate,
+                nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD, nasdaqAnchorPriceDate: snapshot.nasdaqAnchorPriceDate,
+                usdPerCNY: snapshot.usdPerCNY, usdPerCNYDate: snapshot.usdPerCNYDate,
+                marketAnchorsUpdatedAt: snapshot.marketAnchorsUpdatedAt,
+                entries: snapshot.entries.map { entry in
+                    ExportPayload.EntryPayload(id: entry.id, amount: entry.amount, quantity: entry.quantity,
+                        unitPrice: entry.unitPrice, note: entry.note, createdAt: entry.createdAt, updatedAt: entry.updatedAt,
+                        itemID: entry.item?.id, inheritedFromEntryID: entry.inheritedFromEntryID,
+                        amountEditedAt: entry.amountEditedAt, quantityEditedAt: entry.quantityEditedAt,
+                        unitPriceEditedAt: entry.unitPriceEditedAt, noteEditedAt: entry.noteEditedAt)
+                })
+        }
+        let deletions = try context.fetch(FetchDescriptor<SyncDeletionTombstone>()).compactMap { tombstone -> ExportPayload.DeletionPayload? in
+            guard let kind = tombstone.entityKind else { return nil }
+            return .init(entityID: tombstone.entityID, entityKind: kind.rawValue, deletedAt: tombstone.deletedAt,
+                         snapshotDate: tombstone.snapshotDate, itemID: tombstone.itemID)
+        }
+        return .init(exportedAt: .now, categories: categories, items: items, snapshots: snapshots, deletions: deletions)
+    }
+
     @MainActor
     static func exportJSON(from context: ModelContext, prettyPrinted: Bool = true) throws -> Data {
         let payload = try exportPayload(from: context)
@@ -583,7 +621,9 @@ enum ImportExportService {
         _ payload: ExportPayload,
         into context: ModelContext,
         replaceExisting: Bool = false,
-        expectedStoreRevision: UInt64? = nil
+        expectedStoreRevision: UInt64? = nil,
+        replacingSnapshotIDs: Set<UUID>? = nil,
+        saveChanges: Bool = true
     ) async throws -> UInt64 {
         let preparedPayload: ExportPayload
         do {
@@ -610,7 +650,9 @@ enum ImportExportService {
             preparedPayload,
             into: context,
             replaceExisting: replaceExisting,
-            expectedStoreRevision: validatedStoreRevision
+            expectedStoreRevision: validatedStoreRevision,
+            replacingSnapshotIDs: replacingSnapshotIDs,
+            saveChanges: saveChanges
         )
         MacMemoryRelief.scheduleAfterHeavyOperation()
         // Capture the exact revision synchronously after the atomic save. Callers must
@@ -624,7 +666,9 @@ enum ImportExportService {
         _ payload: ExportPayload,
         into context: ModelContext,
         replaceExisting: Bool,
-        expectedStoreRevision: UInt64
+        expectedStoreRevision: UInt64,
+        replacingSnapshotIDs: Set<UUID>? = nil,
+        saveChanges: Bool = true
     ) async throws {
         let previousAutosaveSetting = context.autosaveEnabled
         context.autosaveEnabled = false
@@ -638,8 +682,19 @@ enum ImportExportService {
                 return
             }
             let existingItems = try context.fetch(FetchDescriptor<AssetItem>())
-            let existingSnapshots = try context.fetch(FetchDescriptor<AssetSnapshot>())
-            let existingEntries = try context.fetch(FetchDescriptor<AssetEntry>())
+            let existingSnapshots: [AssetSnapshot]
+            let existingEntries: [AssetEntry]
+            if let replacingSnapshotIDs {
+                let ids = Array(replacingSnapshotIDs)
+                existingSnapshots = try context.fetch(FetchDescriptor<AssetSnapshot>(predicate: #Predicate { ids.contains($0.id) }))
+                existingEntries = try context.fetch(FetchDescriptor<AssetEntry>(predicate: #Predicate {
+                    if let snapshot = $0.snapshot { return ids.contains(snapshot.id) }
+                    else { return false }
+                }))
+            } else {
+                existingSnapshots = try context.fetch(FetchDescriptor<AssetSnapshot>())
+                existingEntries = try context.fetch(FetchDescriptor<AssetEntry>())
+            }
             let existingTombstones = try context.fetch(FetchDescriptor<SyncDeletionTombstone>())
             try Task.checkCancellation()
 
@@ -1068,7 +1123,7 @@ enum ImportExportService {
             guard ModelStoreRevisionClock.shared.currentRevision() == expectedStoreRevision else {
                 throw ImportExportConsistencyError.storeChanged
             }
-            if context.hasChanges {
+            if context.hasChanges && saveChanges {
                 try context.save()
             }
         } catch {

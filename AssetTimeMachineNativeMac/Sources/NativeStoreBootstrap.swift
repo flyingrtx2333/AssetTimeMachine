@@ -39,7 +39,7 @@ final class NativeStoreBootstrap {
     init(createFresh: Bool = false) {
         let schema = Schema([
             AssetCategory.self, AssetItem.self, AssetSnapshot.self, AssetEntry.self,
-            BacktestRecord.self, SyncDeletionTombstone.self
+            BacktestRecord.self, SyncDeletionTombstone.self, CloudReplicaState.self, CloudReplicaDocument.self
         ])
         do {
             let arguments = ProcessInfo.processInfo.arguments

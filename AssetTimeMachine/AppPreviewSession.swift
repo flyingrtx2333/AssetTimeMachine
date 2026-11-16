@@ -8,6 +8,8 @@ enum AppPreviewSession {
         ProcessInfo.processInfo.arguments.contains("-macPerfStorePath")
         #elseif DEBUG && targetEnvironment(macCatalyst)
         ProcessInfo.processInfo.arguments.contains("-macPreview")
+        #elseif DEBUG && targetEnvironment(simulator)
+        ProcessInfo.processInfo.arguments.contains("-cloudDeltaProbe")
         #else
         false
         #endif
