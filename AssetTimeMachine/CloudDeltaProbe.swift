@@ -384,6 +384,50 @@ enum CloudDeltaProbe {
             try account.payload().snapshots.first { $0.id == day }?.entries.first { $0.itemID == item }?.amount
         }
 
+        for automatic in [false, true] {
+            let name = automatic ? "quantity" : "amount"
+            let local = try await fixture("local-inheritance-atomic-" + name,
+                inheritanceDaysAgo: 1, automaticQuantity: automatic)
+            let child = try inheritedDays(local)[0]
+            let item = try local.context.fetch(FetchDescriptor<AssetItem>()).first { $0.id == local.itemIDs[0] }!
+            let source = try local.context.fetch(FetchDescriptor<AssetSnapshot>()).first { $0.id == local.dayIDs[1] }!
+            let sourceEntry = source.entries.first { $0.item?.id == item.id }!
+            let childEntry = child.entries.first { $0.item?.id == item.id }!
+            if automatic { childEntry.unitPrice = 12; try local.context.save() }
+            let account = local.server.accounts["a"]!, reads = account.legacyReads, pulls = account.deltaPulls
+            try SnapshotService.upsertEntry(snapshot: source, item: item,
+                amount: automatic ? nil : 455, quantity: automatic ? 45.5 : nil,
+                unitPrice: automatic ? 11 : nil, saveChanges: false, in: local.context)
+            let beforeCommit = try ModelContainer(for: schema,
+                configurations: [ModelConfiguration(schema: schema, url: local.url)])
+            let beforeContext = ModelContext(beforeCommit); beforeContext.autosaveEnabled = false
+            let beforeEntries = try beforeContext.fetch(FetchDescriptor<AssetEntry>())
+            let oldSource = beforeEntries.first { $0.snapshot?.id == source.id && $0.item?.id == item.id }
+            let oldChild = beforeEntries.first { $0.snapshot?.id == child.id && $0.item?.id == item.id }
+            let stagedValues = automatic
+                ? sourceEntry.quantity == 45.5 && childEntry.quantity == 45.5 && childEntry.unitPrice == 12
+                : sourceEntry.amount == 455 && childEntry.amount == 455
+            let diskStillOld = automatic
+                ? oldSource?.quantity == 40 && oldSource?.unitPrice == 10 && oldChild?.quantity == 40 && oldChild?.unitPrice == 12
+                : oldSource?.amount == 400 && oldChild?.amount == 400
+            checks["localInheritedRebaseStagesAtomically-" + name] = local.context.hasChanges && stagedValues
+                && childEntry.inheritedFromEntryID == sourceEntry.id && diskStillOld
+            try local.context.save()
+            let afterCommit = try ModelContainer(for: schema,
+                configurations: [ModelConfiguration(schema: schema, url: local.url)])
+            let afterContext = ModelContext(afterCommit); afterContext.autosaveEnabled = false
+            let committed = try afterContext.fetch(FetchDescriptor<AssetEntry>())
+            let savedSource = committed.first { $0.snapshot?.id == source.id && $0.item?.id == item.id }
+            let savedChild = committed.first { $0.snapshot?.id == child.id && $0.item?.id == item.id }
+            let diskUpdated = automatic
+                ? savedSource?.quantity == 45.5 && savedSource?.unitPrice == 11
+                    && savedChild?.quantity == 45.5 && savedChild?.unitPrice == 12
+                : savedSource?.amount == 455 && savedChild?.amount == 455
+            checks["localInheritedRebaseCommitsTogetherWithoutNetwork-" + name] = !local.context.hasChanges && diskUpdated
+                && savedChild?.inheritedFromEntryID == sourceEntry.id && account.accepted == 0 && account.legacyUploads == 0
+                && account.legacyReads == reads && account.deltaPulls == pulls
+        }
+
         let inheritance = try await fixture("inheritance-startup", inheritanceDaysAgo: 1)
         let inheritanceAccount = inheritance.server.accounts["a"]!
         let today = try inheritedDays(inheritance)[0]
