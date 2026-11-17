@@ -1224,6 +1224,97 @@ enum SyncDeletionService {
 }
 
 nonisolated enum SyncMergeService {
+    nonisolated struct InheritedRebaseResult: Sendable {
+        let payload: ExportPayload
+        let changedSnapshotIDs: Set<UUID>
+    }
+
+    /// Rebase only copies proven against a real earlier version, before any
+    /// source is updated. Retaining those edges lets offline chains follow once.
+    static func rebasedInheritance(in payload: ExportPayload, provenBy: [ExportPayload]) -> InheritedRebaseResult {
+        typealias Row = (snapshot: Int, entry: Int, date: Date, value: ExportPayload.EntryPayload)
+        let automaticItems = automaticPriceItemIDs(in: [payload] + provenBy)
+        let liveIDs = Set(payloadApplyingDeletions(payload).snapshots.flatMap(\.entries).map(\.id))
+        var grouped: [UUID: [Row]] = [:]
+        for (snapshotIndex, snapshot) in payload.snapshots.enumerated() {
+            for (entryIndex, entry) in snapshot.entries.enumerated() where liveIDs.contains(entry.id) {
+                grouped[entry.id, default: []].append((snapshotIndex, entryIndex, snapshot.date, entry))
+            }
+        }
+        // Ambiguous duplicate IDs cannot establish a safe copy edge.
+        let rows = grouped.compactMapValues { $0.count == 1 ? $0.first : nil }
+        var versions: [UUID: [(date: Date, entry: ExportPayload.EntryPayload)]] = [:]
+        for context in [payload] + provenBy {
+            let candidates = payloadApplyingDeletions(context).snapshots.flatMap { snapshot in
+                snapshot.entries.map { (date: snapshot.date, entry: $0) }
+            }
+            for (id, candidates) in Dictionary(grouping: candidates, by: { $0.entry.id }) where candidates.count == 1 {
+                versions[id, default: []].append(candidates[0])
+            }
+        }
+        func sameCopy(_ left: ExportPayload.EntryPayload, _ right: ExportPayload.EntryPayload, automatic: Bool) -> Bool {
+            left.amount == right.amount && left.quantity == right.quantity && left.note == right.note
+                && left.amountEditedAt == right.amountEditedAt && left.quantityEditedAt == right.quantityEditedAt
+                && left.noteEditedAt == right.noteEditedAt
+                && (automatic || (left.unitPrice == right.unitPrice && left.unitPriceEditedAt == right.unitPriceEditedAt))
+        }
+        // Malformed provenance must not become a partially accepted cycle merely
+        // because one of its edges happens to point to an earlier day.
+        var invalidAncestry: Set<UUID> = [], visited: Set<UUID> = []
+        for id in rows.keys {
+            var path: [UUID] = [], positions: [UUID: Int] = [:], cursor: UUID? = id
+            while let id = cursor, let row = rows[id] {
+                if invalidAncestry.contains(id) || positions[id] != nil {
+                    invalidAncestry.formUnion(path); break
+                }
+                if visited.contains(id) { break }
+                positions[id] = path.count; path.append(id)
+                cursor = row.value.inheritedFromEntryID
+            }
+            visited.formUnion(path)
+        }
+        var edges: [UUID: UUID] = [:]
+        for (id, row) in rows {
+            guard !invalidAncestry.contains(id), let sourceID = row.value.inheritedFromEntryID,
+                  !invalidAncestry.contains(sourceID), let source = rows[sourceID], source.date < row.date,
+                  let itemID = row.value.itemID, source.value.itemID == itemID else { continue }
+            let automatic = automaticItems.contains(itemID)
+            if versions[sourceID, default: []].contains(where: {
+                $0.date < row.date && $0.entry.itemID == itemID && sameCopy(row.value, $0.entry, automatic: automatic)
+            }) { edges[id] = sourceID }
+        }
+        var entries = payload.snapshots.map(\.entries), changed: Set<UUID> = []
+        for (id, row) in rows.sorted(by: {
+            $0.value.date == $1.value.date ? $0.key.uuidString < $1.key.uuidString : $0.value.date < $1.value.date
+        }) {
+            guard let sourceID = edges[id], let location = rows[sourceID] else { continue }
+            let source = entries[location.snapshot][location.entry], entry = entries[row.snapshot][row.entry]
+            let automatic = entry.itemID.map { automaticItems.contains($0) } == true
+            guard !sameCopy(entry, source, automatic: automatic) else { continue }
+            entries[row.snapshot][row.entry] = .init(id: entry.id, amount: source.amount, quantity: source.quantity,
+                unitPrice: automatic ? entry.unitPrice : source.unitPrice, note: source.note,
+                createdAt: entry.createdAt, updatedAt: max(entry.updatedAt, source.updatedAt, payload.exportedAt), itemID: entry.itemID,
+                inheritedFromEntryID: entry.inheritedFromEntryID, amountEditedAt: source.amountEditedAt,
+                quantityEditedAt: source.quantityEditedAt,
+                unitPriceEditedAt: automatic ? entry.unitPriceEditedAt : source.unitPriceEditedAt,
+                noteEditedAt: source.noteEditedAt)
+            changed.insert(payload.snapshots[row.snapshot].id)
+        }
+        guard !changed.isEmpty else { return .init(payload: payload, changedSnapshotIDs: []) }
+        let snapshots = payload.snapshots.enumerated().map { index, snapshot in
+            guard changed.contains(snapshot.id) else { return snapshot }
+            return ExportPayload.SnapshotPayload(id: snapshot.id, date: snapshot.date, note: snapshot.note,
+                createdAt: snapshot.createdAt, updatedAt: max(snapshot.updatedAt, entries[index].map(\.updatedAt).max() ?? snapshot.updatedAt),
+                goldAnchorPriceCNY: snapshot.goldAnchorPriceCNY, goldAnchorPriceDate: snapshot.goldAnchorPriceDate,
+                btcAnchorPriceUSD: snapshot.btcAnchorPriceUSD, btcAnchorPriceDate: snapshot.btcAnchorPriceDate,
+                nasdaqAnchorPriceUSD: snapshot.nasdaqAnchorPriceUSD, nasdaqAnchorPriceDate: snapshot.nasdaqAnchorPriceDate,
+                usdPerCNY: snapshot.usdPerCNY, usdPerCNYDate: snapshot.usdPerCNYDate,
+                marketAnchorsUpdatedAt: snapshot.marketAnchorsUpdatedAt, entries: entries[index])
+        }
+        return .init(payload: .init(exportedAt: payload.exportedAt, categories: payload.categories, items: payload.items,
+                                   snapshots: snapshots, deletions: payload.deletions), changedSnapshotIDs: changed)
+    }
+
     static func mergedPayload(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload? = nil) -> ExportPayload {
         let localNormalized = normalized(local)
         let remoteNormalized = normalized(remote)
@@ -1353,7 +1444,9 @@ nonisolated enum SyncMergeService {
               unresolvedDeletionIdentities(in: remote, knownBy: [baseline]).isEmpty else { throw Conflict.divergentEdits }
         // Agreement is already a common ancestor, including legacy duplicate rows.
         // An older baseline must not turn identical replicas into a false conflict.
-        if isSameContent(local, remote) { return normalized(payloadApplyingDeletions(remote)) }
+        if isSameContent(local, remote) {
+            return normalized(rebasedInheritance(in: payloadApplyingDeletions(remote), provenBy: [local, remote, baseline]).payload)
+        }
         let automaticItems = automaticPriceItemIDs(local: local, remote: remote, baseline: baseline)
         let localInheritance = inheritedEntries(in: local, automaticItems: automaticItems)
         let remoteInheritance = inheritedEntries(in: remote, automaticItems: automaticItems)
@@ -1426,10 +1519,11 @@ nonisolated enum SyncMergeService {
         }
         try checkDeletedEdits(deleting: local, other: remote)
         try checkDeletedEdits(deleting: remote, other: local)
-        return normalized(payloadApplyingDeletions(ExportPayload(
+        let payload = payloadApplyingDeletions(ExportPayload(
             exportedAt: max(local.exportedAt, remote.exportedAt), categories: categories,
             items: items, snapshots: snapshots,
-            deletions: mergeDeletions(local: local.deletionRecords, remote: remote.deletionRecords))))
+            deletions: mergeDeletions(local: local.deletionRecords, remote: remote.deletionRecords)))
+        return normalized(rebasedInheritance(in: payload, provenBy: [local, remote, baseline]).payload)
     }
 
     /// A common ancestor allows independent fields to merge without a device-clock
@@ -1477,7 +1571,11 @@ nonisolated enum SyncMergeService {
     }
 
     private static func automaticPriceItemIDs(local: ExportPayload, remote: ExportPayload, baseline: ExportPayload) -> Set<UUID> {
-        let groups = Dictionary(grouping: local.items + remote.items + baseline.items, by: \.id)
+        automaticPriceItemIDs(in: [local, remote, baseline])
+    }
+
+    private static func automaticPriceItemIDs(in payloads: [ExportPayload]) -> Set<UUID> {
+        let groups = Dictionary(grouping: payloads.flatMap(\.items), by: \.id)
         return Set(groups.compactMap { id, versions in
             guard let first = versions.first, first.valuationMethod == "quantityAndUnitPrice",
                   let symbol = first.autoPricedAssetKind, !symbol.isEmpty,

@@ -88,6 +88,47 @@ enum SnapshotService {
         return try context.fetch(descriptor).first
     }
 
+    /// Follow explicit copy links only; selecting descendants does not authorize
+    /// changing them. The shared rebase checks their original values and clocks.
+    @MainActor
+    static func inheritedSnapshotIDs(dependingOn entryIDs: Set<UUID>, in context: ModelContext) throws -> Set<UUID> {
+        var frontier = entryIDs, visited = entryIDs, snapshots: Set<UUID> = []
+        while !frontier.isEmpty {
+            let sources = Array(frontier)
+            let rows = try context.fetch(FetchDescriptor<AssetEntry>(predicate: #Predicate { entry in
+                if let source = entry.inheritedFromEntryID { return sources.contains(source) }
+                else { return false }
+            }))
+            frontier.removeAll(keepingCapacity: true)
+            for row in rows where visited.insert(row.id).inserted {
+                if let snapshot = row.snapshot { snapshots.insert(snapshot.id) }
+                frontier.insert(row.id)
+            }
+        }
+        return snapshots
+    }
+
+    @MainActor
+    private static func applyInheritedRebase(_ result: SyncMergeService.InheritedRebaseResult,
+                                             in context: ModelContext) throws {
+        guard !result.changedSnapshotIDs.isEmpty else { return }
+        let ids = Array(result.changedSnapshotIDs)
+        let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>(predicate: #Predicate { ids.contains($0.id) }))
+        let payloads = Dictionary(result.payload.snapshots.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for snapshot in snapshots {
+            guard let payload = payloads[snapshot.id] else { continue }
+            let rows = Dictionary(grouping: snapshot.entries, by: \.id)
+            for entry in payload.entries {
+                guard let matches = rows[entry.id], matches.count == 1, let row = matches.first else { continue }
+                row.amount = entry.amount; row.quantity = entry.quantity; row.unitPrice = entry.unitPrice
+                row.note = entry.note; row.updatedAt = entry.updatedAt
+                row.amountEditedAt = entry.amountEditedAt; row.quantityEditedAt = entry.quantityEditedAt
+                row.unitPriceEditedAt = entry.unitPriceEditedAt; row.noteEditedAt = entry.noteEditedAt
+            }
+            snapshot.updatedAt = payload.updatedAt
+        }
+    }
+
     @MainActor
     @discardableResult
     static func ensureEntriesExist(for snapshot: AssetSnapshot, in context: ModelContext) throws -> Bool {
@@ -135,6 +176,9 @@ enum SnapshotService {
             // Saving an inherited value confirms it even when the number is unchanged.
             guard didChange || existing.inheritedFromEntryID != nil else { return }
 
+            let descendantDays = try inheritedSnapshotIDs(dependingOn: [existing.id], in: context)
+            let before = descendantDays.isEmpty ? nil : try ImportExportService.exportDays([snapshot.id], from: context)
+
             let confirmingCopy = existing.inheritedFromEntryID != nil && !didChange
             if valuesDiffer(existing.amount, amount) || (confirmingCopy && amount != nil) { existing.amountEditedAt = userEditTime }
             if valuesDiffer(existing.quantity, quantity) || (confirmingCopy && quantity != nil) { existing.quantityEditedAt = userEditTime }
@@ -148,6 +192,10 @@ enum SnapshotService {
             existing.note = note
             existing.inheritedFromEntryID = nil
             existing.updatedAt = .now
+            if let before {
+                let current = try ImportExportService.exportDays(descendantDays.union([snapshot.id]), from: context)
+                try applyInheritedRebase(SyncMergeService.rebasedInheritance(in: current, provenBy: [before]), in: context)
+            }
         } else {
             guard amount != nil || quantity != nil || unitPrice != nil || !note.isEmpty else {
                 return

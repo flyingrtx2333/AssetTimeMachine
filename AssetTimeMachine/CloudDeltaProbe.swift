@@ -166,14 +166,29 @@ private final class DeltaProbeServer: @unchecked Sendable {
         return (status, try JSONSerialization.data(withJSONObject: output))
     }
 
-    func remoteAmount(_ amount: Double, dayID: UUID, itemID: UUID, account name: String = "a") throws {
+    func remoteAmount(_ amount: Double, dayID: UUID, itemID: UUID, account name: String = "a",
+                      editClock: TimeInterval? = nil) throws {
         lock.lock(); defer { lock.unlock() }
         let account = accounts[name]!, key = CloudDocumentKey(kind: "snapshot", id: dayID.uuidString)
         guard case .object(var day) = account.values[key], case .array(var entries) = day["entries"] else { throw CocoaError(.coderReadCorrupt) }
         for index in entries.indices {
             guard case .object(var entry) = entries[index], entry["itemID"] == .string(itemID.uuidString) else { continue }
-            entry["amount"] = .number(amount); entry["amountEditedAt"] = .null
+            entry["amount"] = .number(amount); entry["amountEditedAt"] = editClock.map(CloudJSON.number) ?? .null
             entry["updatedAt"] = .string("2026-11-16T08:00:00Z"); entries[index] = .object(entry)
+        }
+        day["entries"] = .array(entries); day["updatedAt"] = .string("2026-11-16T08:00:00Z")
+        _ = try account.commit([key: .object(day)])
+    }
+
+    func remoteQuantity(_ quantity: Double, price: Double, dayID: UUID, itemID: UUID) throws {
+        lock.lock(); defer { lock.unlock() }
+        let account = accounts["a"]!, key = CloudDocumentKey(kind: "snapshot", id: dayID.uuidString)
+        guard case .object(var day) = account.values[key], case .array(var entries) = day["entries"] else { throw CocoaError(.coderReadCorrupt) }
+        for index in entries.indices {
+            guard case .object(var entry) = entries[index], entry["itemID"] == .string(itemID.uuidString) else { continue }
+            entry["amount"] = .null; entry["quantity"] = .number(quantity); entry["unitPrice"] = .number(price)
+            entry["quantityEditedAt"] = .number(200); entry["updatedAt"] = .string("2026-11-16T08:00:00Z")
+            entries[index] = .object(entry)
         }
         day["entries"] = .array(entries); day["updatedAt"] = .string("2026-11-16T08:00:00Z")
         _ = try account.commit([key: .object(day)])
@@ -308,13 +323,29 @@ enum CloudDeltaProbe {
         AssetTimeMachineCloudAPI.installIsolatedTransport(DeltaProbeProtocol.self)
         var checks: [String: Bool] = [:]
 
-        func fixture(_ name: String, roundedBootstrapClock: Bool = false) async throws -> Fixture {
+        func fixture(_ name: String, roundedBootstrapClock: Bool = false,
+                     inheritanceDaysAgo: Int? = nil, automaticQuantity: Bool = false) async throws -> Fixture {
             let directory = root.appendingPathComponent(name, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let url = directory.appendingPathComponent("records.store")
             let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
             let context = ModelContext(container); context.autosaveEnabled = false
             let (category, items, days) = try seed(context)
+            if let inheritanceDaysAgo {
+                let snapshots = try context.fetch(FetchDescriptor<AssetSnapshot>())
+                let sourceDate = Calendar.current.date(byAdding: .day, value: -inheritanceDaysAgo,
+                                                       to: Calendar.current.startOfDay(for: .now))!
+                let source = snapshots.first { $0.id == days[1] }!
+                source.date = sourceDate
+                snapshots.first { $0.id == days[0] }!.date = Calendar.current.date(byAdding: .day, value: -1, to: sourceDate)!
+                let item = try context.fetch(FetchDescriptor<AssetItem>()).first { $0.id == items[0] }!
+                let entry = source.entries.first { $0.item?.id == item.id }!
+                if automaticQuantity {
+                    item.valuationMethod = .quantityAndUnitPrice; item.autoPricedAssetKind = .gold
+                    entry.amount = nil; entry.quantity = 40; entry.unitPrice = 10; entry.quantityEditedAt = 100
+                } else { entry.amount = 400; entry.amountEditedAt = 100 }
+                try context.save()
+            }
             if roundedBootstrapClock {
                 let day = try context.fetch(FetchDescriptor<AssetSnapshot>()).first { $0.id == days[0] }!
                 day.entries.first { $0.item?.id == items[0] }!.amountEditedAt = 1794838029.0728981
@@ -339,6 +370,177 @@ enum CloudDeltaProbe {
             }
             return Fixture(container: container, context: context, url: url, defaults: defaults, tokens: tokens,
                            cloud: cloud, server: server, categoryID: category, itemIDs: items, dayIDs: days)
+        }
+
+        func inheritedDays(_ fixture: Fixture, count: Int = 1) throws -> [AssetSnapshot] {
+            let source = try fixture.context.fetch(FetchDescriptor<AssetSnapshot>()).first { $0.id == fixture.dayIDs[1] }!
+            return try (1...count).map { offset in
+                try SnapshotService.createSnapshot(on: Calendar.current.date(byAdding: .day, value: offset, to: source.date)!,
+                                                   in: fixture.context)
+            }
+        }
+
+        func remoteAmount(_ account: DeltaProbeAccount, day: UUID, item: UUID) throws -> Double? {
+            try account.payload().snapshots.first { $0.id == day }?.entries.first { $0.itemID == item }?.amount
+        }
+
+        let inheritance = try await fixture("inheritance-startup", inheritanceDaysAgo: 1)
+        let inheritanceAccount = inheritance.server.accounts["a"]!
+        let today = try inheritedDays(inheritance)[0]
+        let sourceEntry = try inheritance.context.fetch(FetchDescriptor<AssetEntry>()).first {
+            $0.snapshot?.id == inheritance.dayIDs[1] && $0.item?.id == inheritance.itemIDs[0]
+        }!
+        let todayEntry = today.entries.first { $0.item?.id == inheritance.itemIDs[0] }!
+        checks["deltaStartupTodayCopiesCachedYesterdayWithProvenance"] = todayEntry.amount == 400
+            && todayEntry.inheritedFromEntryID == sourceEntry.id
+        try inheritance.server.remoteAmount(455, dayID: inheritance.dayIDs[1], itemID: inheritance.itemIDs[0], editClock: 200)
+        _ = await inheritance.cloud.runIsolatedSync(from: inheritance.context)
+        let afterInheritance = ModelContext(inheritance.container)
+        let inheritedYesterday = try amount(afterInheritance, day: inheritance.dayIDs[1], item: inheritance.itemIDs[0])
+        let inheritedToday = try amount(afterInheritance, day: today.id, item: inheritance.itemIDs[0])
+        checks["deltaStartupPullRebasesGenuineInheritedToday"] = inheritance.cloud.errorMessage == nil
+            && inheritedYesterday == 455 && inheritedToday == 455
+        let sentInheritance = inheritanceAccount.attempts.flatMap(\.changes)
+        let inheritedRemoteToday = try remoteAmount(inheritanceAccount, day: today.id, item: inheritance.itemIDs[0])
+        checks["deltaInheritedRepairUploadsOnlyAffectedToday"] = inheritanceAccount.accepted == 1
+            && inheritanceAccount.legacyReads == 1 && inheritanceAccount.legacyUploads == 0
+            && sentInheritance.count == 1 && sentInheritance.first?.kind == "snapshot"
+            && sentInheritance.first?.id == today.id.uuidString && inheritedRemoteToday == 455
+        checks["deltaInheritedRepairPreservesUnrelatedDay"] = try amount(afterInheritance,
+            day: inheritance.dayIDs[0], item: inheritance.itemIDs[0]) == 10
+            && remoteAmount(inheritanceAccount, day: inheritance.dayIDs[0], item: inheritance.itemIDs[0]) == 10
+        let inheritedPayload = try ImportExportService.exportPayload(from: afterInheritance)
+        let inheritedAccepted = inheritanceAccount.accepted, inheritedReads = inheritanceAccount.legacyReads
+        _ = await inheritance.cloud.runIsolatedSync(from: inheritance.context)
+        let inheritedReopened = try ModelContainer(for: schema,
+            configurations: [ModelConfiguration(schema: schema, url: inheritance.url)])
+        let inheritedReopenedContext = ModelContext(inheritedReopened); inheritedReopenedContext.autosaveEnabled = false
+        _ = try SnapshotService.createSnapshot(on: today.date, in: inheritedReopenedContext)
+        let inheritedRestarted = AssetTimeMachineCloudStore(tokenStore: inheritance.tokens,
+            defaults: inheritance.defaults, isolatedTest: true)
+        inheritedRestarted.setAutomaticSyncActive(false); stores.append(inheritedRestarted)
+        await inheritedRestarted.refreshSession(); _ = await inheritedRestarted.runIsolatedSync(from: inheritedReopenedContext)
+        let inheritedAfterRestart = try ImportExportService.exportPayload(from: inheritedReopenedContext)
+        checks["deltaInheritedRepairSurvivesIdlePullDayReopenAndRestart"] = inheritedRestarted.errorMessage == nil
+            && inheritanceAccount.accepted == inheritedAccepted && inheritanceAccount.legacyReads == inheritedReads
+            && SyncMergeService.isSameContent(inheritedPayload, inheritedAfterRestart)
+            && inheritedAfterRestart.snapshots.first { $0.id == today.id }?.entries.first {
+                $0.itemID == inheritance.itemIDs[0]
+            }?.amount == 455
+
+        let chain = try await fixture("inheritance-chain", inheritanceDaysAgo: 3)
+        let chainDays = try inheritedDays(chain, count: 3), chainAccount = chain.server.accounts["a"]!
+        try chain.server.remoteAmount(455, dayID: chain.dayIDs[1], itemID: chain.itemIDs[0], editClock: 200)
+        _ = await chain.cloud.runIsolatedSync(from: chain.context)
+        let chainContext = ModelContext(chain.container), chainRemote = try chainAccount.payload()
+        let chainLocalValues = try chainDays.map { try amount(chainContext, day: $0.id, item: chain.itemIDs[0]) }
+        checks["deltaInheritedRepairRebasesEntireCopiedDayChain"] = chain.cloud.errorMessage == nil
+            && chainLocalValues.allSatisfy { $0 == 455 } && chainDays.allSatisfy { day in
+                chainRemote.snapshots.first { $0.id == day.id }?.entries.first { $0.itemID == chain.itemIDs[0] }?.amount == 455
+            }
+        let chainChanges = chainAccount.attempts.flatMap(\.changes)
+        checks["deltaInheritedChainUploadsOnlyItsDescendantDays"] = chainAccount.accepted == 1
+            && chainAccount.legacyUploads == 0 && chainChanges.count == chainDays.count
+            && chainChanges.allSatisfy { $0.kind == "snapshot" }
+            && Set(chainChanges.map(\.id)) == Set(chainDays.map { $0.id.uuidString })
+
+        for (name, value) in [("manual-edit", 500.0), ("confirmed-copy", 400.0), ("explicit-zero", 0.0)] {
+            let manual = try await fixture("inheritance-" + name, inheritanceDaysAgo: 1)
+            let child = try inheritedDays(manual)[0]
+            let item = try manual.context.fetch(FetchDescriptor<AssetItem>()).first { $0.id == manual.itemIDs[0] }!
+            try SnapshotService.upsertEntry(snapshot: child, item: item, amount: value, in: manual.context)
+            let confirmed = child.entries.first { $0.item?.id == item.id }!.inheritedFromEntryID == nil
+            try manual.server.remoteAmount(455, dayID: manual.dayIDs[1], itemID: item.id, editClock: 200)
+            _ = await manual.cloud.runIsolatedSync(from: manual.context)
+            let current = ModelContext(manual.container), account = manual.server.accounts["a"]!
+            let localValue = try amount(current, day: child.id, item: item.id)
+            let serverValue = try remoteAmount(account, day: child.id, item: item.id)
+            let localSource = try amount(current, day: manual.dayIDs[1], item: item.id)
+            let currentEntry = try current.fetch(FetchDescriptor<AssetEntry>()).first {
+                $0.snapshot?.id == child.id && $0.item?.id == item.id
+            }
+            checks["deltaInheritedRepairPreserves-" + name] = confirmed && manual.cloud.errorMessage == nil
+                && localValue == value && serverValue == value && localSource == 455
+                && currentEntry?.inheritedFromEntryID == nil
+        }
+
+        let quantity = try await fixture("inheritance-auto-quantity", inheritanceDaysAgo: 1, automaticQuantity: true)
+        let quantityDay = try inheritedDays(quantity)[0]
+        let copiedQuantity = quantityDay.entries.first { $0.item?.id == quantity.itemIDs[0] }!
+        copiedQuantity.unitPrice = 12; copiedQuantity.updatedAt = .now
+        quantityDay.updatedAt = .now; try quantity.context.save()
+        try quantity.server.remoteQuantity(45.5, price: 11, dayID: quantity.dayIDs[1], itemID: quantity.itemIDs[0])
+        _ = await quantity.cloud.runIsolatedSync(from: quantity.context)
+        let quantityContext = ModelContext(quantity.container)
+        let repairedQuantity = try quantityContext.fetch(FetchDescriptor<AssetEntry>()).first {
+            $0.snapshot?.id == quantityDay.id && $0.item?.id == quantity.itemIDs[0]
+        }
+        let remoteQuantityDay = try quantity.server.accounts["a"]!.payload().snapshots.first { $0.id == quantityDay.id }
+        let remoteQuantity = remoteQuantityDay?.entries.first { $0.itemID == quantity.itemIDs[0] }
+        checks["deltaInheritedQuantityRepairPreservesChildDatedQuote"] = quantity.cloud.errorMessage == nil
+            && repairedQuantity?.quantity == 45.5 && repairedQuantity?.unitPrice == 12
+            && repairedQuantity?.inheritedFromEntryID != nil && remoteQuantity?.quantity == 45.5
+            && remoteQuantity?.unitPrice == 12
+
+        for provenCopy in [true, false] {
+            let name = provenCopy ? "proven-copy" : "unproven-marker"
+            let broken = try await fixture("inheritance-existing-245-" + name, inheritanceDaysAgo: 1)
+            let child = try inheritedDays(broken)[0], account = broken.server.accounts["a"]!
+            let childEntry = child.entries.first { $0.item?.id == broken.itemIDs[0] }!
+            if !provenCopy {
+                // A marker by itself is insufficient: this value no longer equals
+                // the acknowledged source, even though its old clocks still match.
+                childEntry.amount = 399; try broken.context.save()
+            }
+            let oldBaseline = FileManager.default.temporaryDirectory
+                .appendingPathComponent("CloudSyncProbe-" + String(ObjectIdentifier(broken.defaults).hashValue))
+                .appendingPathComponent("account-11.json")
+            let baseline = try CloudDocumentCodec.decode(ExportPayload.self, from: Data(contentsOf: oldBaseline))
+            let baselineSource = baseline.snapshots.first { $0.id == broken.dayIDs[1] }?
+                .entries.first { $0.itemID == broken.itemIDs[0] }?.amount
+            let childPayload = try ImportExportService.exportDays([child.id], from: broken.context).snapshots[0]
+            let childDocument = try account.commit([.init(kind: "snapshot", id: child.id.uuidString):
+                                                     CloudDocumentCodec.json(childPayload)])
+            try broken.server.remoteAmount(455, dayID: broken.dayIDs[1], itemID: broken.itemIDs[0], editClock: 200)
+            let sourceDocument = account.batches.last!.1
+            let remoteSource = try account.payload().snapshots.first { $0.id == broken.dayIDs[1] }!
+            let remoteSourceEntry = remoteSource.entries.first { $0.itemID == broken.itemIDs[0] }!
+            let imported = ModelContext(broken.container); imported.autosaveEnabled = false; imported.author = "atm.cloud.delta"
+            let importedSource = try imported.fetch(FetchDescriptor<AssetSnapshot>()).first { $0.id == broken.dayIDs[1] }!
+            let importedEntry = importedSource.entries.first { $0.item?.id == broken.itemIDs[0] }!
+            importedEntry.amount = remoteSourceEntry.amount; importedEntry.amountEditedAt = remoteSourceEntry.amountEditedAt
+            importedEntry.updatedAt = remoteSourceEntry.updatedAt; importedSource.updatedAt = remoteSource.updatedAt
+            try CloudReplicaCache.update(childDocument + sourceDocument, scope: "11:synthetic-a", in: imported)
+            let importedState = try CloudReplicaCache.state(scope: "11:synthetic-a", in: imported)!
+            importedState.cursor = account.cursor
+            try imported.save()
+            // Model 245 having acknowledged every transaction: there is no dirty
+            // day to trigger a repair, and both server and replica already hold it.
+            let consumed = try await CloudDeltaHistoryReader(modelContainer: broken.container).scan(after: nil, collectChanges: false)
+            let consumedMetadata = ModelContext(broken.container); consumedMetadata.author = "atm.cloud.replica"
+            try CloudReplicaCache.state(scope: "11:synthetic-a", in: consumedMetadata)!.historyToken = consumed.token
+            try consumedMetadata.save()
+            broken.defaults.removeObject(forKey: "assettimemachine.cloud.inheritedRebase.v1.11:synthetic-a")
+            broken.cloud.setAutomaticSyncActive(false)
+            let upgradedContainer = try ModelContainer(for: schema,
+                configurations: [ModelConfiguration(schema: schema, url: broken.url)])
+            let upgradedContext = ModelContext(upgradedContainer); upgradedContext.autosaveEnabled = false
+            let upgradedCloud = AssetTimeMachineCloudStore(tokenStore: broken.tokens, defaults: broken.defaults, isolatedTest: true)
+            upgradedCloud.setAutomaticSyncActive(false); stores.append(upgradedCloud)
+            await upgradedCloud.refreshSession(); _ = await upgradedCloud.runIsolatedSync(from: upgradedContext)
+            let upgradedValue = try amount(ModelContext(upgradedContainer), day: child.id, item: broken.itemIDs[0])
+            let upgradedRemote = try remoteAmount(account, day: child.id, item: broken.itemIDs[0])
+            let expected = provenCopy ? 455.0 : 399.0
+            checks["deltaExisting245Repair-" + name] = baselineSource == 400 && upgradedCloud.errorMessage == nil
+                && upgradedValue == expected && upgradedRemote == expected && account.accepted == (provenCopy ? 1 : 0)
+                && account.legacyReads == 1 && account.legacyUploads == 0
+            let repairedPayload = try ImportExportService.exportPayload(from: upgradedContext)
+            let accepted = account.accepted, pullCount = account.deltaPulls
+            _ = await upgradedCloud.runIsolatedSync(from: upgradedContext)
+            let stablePayload = try ImportExportService.exportPayload(from: upgradedContext)
+            checks["deltaExisting245RepairIsStable-" + name] = upgradedCloud.errorMessage == nil
+                && account.accepted == accepted && account.deltaPulls > pullCount
+                && SyncMergeService.isSameContent(repairedPayload, stablePayload)
         }
 
         let ordinary = try await fixture("ordinary")

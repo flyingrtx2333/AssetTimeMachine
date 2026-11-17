@@ -573,6 +573,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private var autoSyncEncounteredTransientFailure = false
     private var deltaUnsupported = false
     private let deltaResetKey = "assettimemachine.cloud.deltaResetID"
+    private let inheritedRebaseKeyPrefix = "assettimemachine.cloud.inheritedRebase.v1."
 
     init(tokenStore: CloudTokenStore? = nil, defaults: UserDefaults = .standard, isolatedTest: Bool = false) {
         precondition(!isolatedTest || (AppPreviewSession.isActive && tokenStore != nil
@@ -1105,8 +1106,16 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         }
         let metadata = ModelContext(context.container)
         let baseCatalog = try CloudReplicaCache.values(CloudReplicaCache.documents(scope: scope, kinds: ["category", "item"], in: metadata))
-        let ids = Set(documents.filter { $0.kind == "snapshot" }.compactMap { UUID(uuidString: $0.id) })
-        let local = try ImportExportService.exportDays(ids, from: context)
+        let incomingIDs = Set(documents.filter { $0.kind == "snapshot" }.compactMap { UUID(uuidString: $0.id) })
+        let incomingLocal = try ImportExportService.exportDays(incomingIDs, from: context)
+        var sourceIDs = Set(incomingLocal.snapshots.flatMap(\.entries).map(\.id))
+        for document in documents where document.kind == "snapshot" {
+            let snapshot = try CloudDocumentCodec.decode(ExportPayload.SnapshotPayload.self, from: CloudDocumentCodec.encode(document.value))
+            sourceIDs.formUnion(snapshot.entries.map(\.id))
+        }
+        let descendantIDs = try SnapshotService.inheritedSnapshotIDs(dependingOn: sourceIDs, in: context)
+        let ids = incomingIDs.union(descendantIDs)
+        let local = descendantIDs.isSubset(of: incomingIDs) ? incomingLocal : try ImportExportService.exportDays(ids, from: context)
         var desired = try CloudDocumentCodec.partition(local)
         let localCatalog = desired.filter { ["category", "item"].contains($0.key.kind) }
         for document in documents {
@@ -1127,7 +1136,11 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 desired[document.key] = document.value
             }
         }
-        let payload = try CloudDocumentCodec.payload(desired)
+        let incomingPayload = try CloudDocumentCodec.payload(desired)
+        let rebase = try await SyncPayloadWork.detached {
+            SyncMergeService.rebasedInheritance(in: incomingPayload, provenBy: [local])
+        }
+        let payload = rebase.payload
         let exclusiveID = try ModelContextMutationBarrier.shared.beginExclusiveDrain()
         isApplyingLocalData = true; syncPhase = .applying
         defer {
@@ -1135,21 +1148,74 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             isApplyingLocalData = false
         }
         try await ModelContextMutationBarrier.shared.enterExclusive(exclusiveID)
-        guard !context.hasChanges, ModelStoreRevisionClock.shared.currentRevision() == expectedRevision else {
+        guard replicaScope == scope, !context.hasChanges,
+              ModelStoreRevisionClock.shared.currentRevision() == expectedRevision else {
             throw CloudDeltaControl.deferred
         }
-        let previousAuthor = context.author; context.author = "atm.cloud.delta"
+        let previousAuthor = context.author
+        // Repaired days are new local work. Keep them in native history so the
+        // following delta export sends them; received source days compare equal.
+        context.author = rebase.changedSnapshotIDs.isEmpty ? "atm.cloud.delta" : "atm.inheritance.rebase"
         defer { context.author = previousAuthor }
         do {
             _ = try await ImportExportService.importPayloadCooperatively(payload, into: context, replaceExisting: true,
                 expectedStoreRevision: expectedRevision, replacingSnapshotIDs: ids, saveChanges: false)
-            guard let state = try CloudReplicaCache.state(scope: scope, in: context), state.pendingRequest == nil else {
+            guard replicaScope == scope,
+                  let state = try CloudReplicaCache.state(scope: scope, in: context), state.pendingRequest == nil else {
                 throw CloudDeltaControl.deferred
             }
             try CloudReplicaCache.update(documents, scope: scope, in: context)
             state.cursor = cursor
             try context.save()
             localDataRevision &+= 1
+        } catch { context.rollback(); throw error }
+    }
+
+    /// Repair a stale copy left by an earlier app only when its old acknowledged
+    /// source proves the copy. Run once per replica reset, never on every poll.
+    private func repairInheritedCopiesOnce(scope: String, context: ModelContext) async throws {
+        let resetID = defaults.string(forKey: deltaResetKey) ?? "0"
+        let key = inheritedRebaseKeyPrefix + scope
+        guard defaults.string(forKey: key) != resetID else { return }
+        guard replicaScope == scope, !requiresLocalOwnershipConfirmation, !localRestoreNeedsCloudConfirmation,
+              defaults.object(forKey: localOwnerKey) as? Int == currentUser?.id,
+              defaults.string(forKey: localOwnerAccountKey) == currentAccountID,
+              !defaults.bool(forKey: accountResetRequiredKey), !context.hasChanges,
+              !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft else { throw CloudDeltaControl.deferred }
+        var inherited = FetchDescriptor<AssetEntry>(predicate: #Predicate { $0.inheritedFromEntryID != nil })
+        inherited.fetchLimit = 1
+        guard try !context.fetch(inherited).isEmpty else { defaults.set(resetID, forKey: key); return }
+        let exported = try await ImportExportService.exportPayloadCooperatively(from: context)
+        let baseline = try? await loadSyncBaseline()
+        let repaired = try await SyncPayloadWork.detached {
+            SyncMergeService.rebasedInheritance(in: exported.payload, provenBy: baseline.map { [$0] } ?? [])
+        }
+        guard replicaScope == scope, (defaults.string(forKey: deltaResetKey) ?? "0") == resetID,
+              !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
+              !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
+              ModelStoreRevisionClock.shared.currentRevision() == exported.storeRevision else { throw CloudDeltaControl.deferred }
+        guard !repaired.changedSnapshotIDs.isEmpty else { defaults.set(resetID, forKey: key); return }
+        let payload = ExportPayload(exportedAt: repaired.payload.exportedAt,
+            categories: repaired.payload.categories, items: repaired.payload.items,
+            snapshots: repaired.payload.snapshots.filter { repaired.changedSnapshotIDs.contains($0.id) },
+            deletions: repaired.payload.deletionRecords)
+        let exclusiveID = try ModelContextMutationBarrier.shared.beginExclusiveDrain()
+        isApplyingLocalData = true; syncPhase = .applying
+        defer { ModelContextMutationBarrier.shared.finishExclusive(exclusiveID); isApplyingLocalData = false }
+        try await ModelContextMutationBarrier.shared.enterExclusive(exclusiveID)
+        guard replicaScope == scope, !context.hasChanges,
+              ModelStoreRevisionClock.shared.currentRevision() == exported.storeRevision else { throw CloudDeltaControl.deferred }
+        let previousAuthor = context.author; context.author = "atm.inheritance.rebase"
+        defer { context.author = previousAuthor }
+        do {
+            _ = try await ImportExportService.importPayloadCooperatively(payload, into: context, replaceExisting: true,
+                expectedStoreRevision: exported.storeRevision, replacingSnapshotIDs: repaired.changedSnapshotIDs,
+                saveChanges: false)
+            guard replicaScope == scope else { throw CloudDeltaControl.deferred }
+            try context.save()
+            localDataRevision &+= 1
+            defaults.set(resetID, forKey: key)
         } catch { context.rollback(); throw error }
     }
 
@@ -1162,6 +1228,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             guard let next = try replicaBookmark(scope, container: context.container) else { throw CloudDeltaControl.deferred }
             bookmark = next
         }
+        try await repairInheritedCopiesOnce(scope: scope, context: context)
         let revisionBeforePull = ModelStoreRevisionClock.shared.currentRevision()
         var cursor = bookmark.cursor, through: Int64?, incoming: [CloudDocumentKey: CloudDeltaDocument] = [:]
         var latestBackup: AssetTimeMachineCloudBackup?
