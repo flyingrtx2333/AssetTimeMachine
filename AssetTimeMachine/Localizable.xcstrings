@@ -33471,6 +33471,29 @@
         }
       }
     },
+    "较期初": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Since period start"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "较期初"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "較期初"
+          }
+        }
+      }
+    },
     "较上次变化": {
       "extractionState": "manual",
       "localizations": {

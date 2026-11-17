@@ -745,6 +745,22 @@ private func displayDate(_ date: Date) -> String {
     date.formatted(Date.FormatStyle().year().month().day().locale(AppLocalization.currentLocale))
 }
 
+struct NativeTimeMachineComparison {
+    let amount: Double?
+    let percentage: Double?
+
+    init(current: Double?, baseline: Double?) {
+        guard let current, let baseline, current.isFinite, baseline.isFinite,
+              (current - baseline).isFinite else {
+            amount = nil; percentage = nil
+            return
+        }
+        amount = current - baseline
+        let ratio = baseline == 0 ? nil : amount.map { $0 / abs(baseline) }
+        percentage = ratio.flatMap { $0.isFinite ? $0 : nil }
+    }
+}
+
 struct NativeTimeMachineView: View {
     @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var amountsVisible = true
     private struct DetailRow: Identifiable {
@@ -830,7 +846,10 @@ struct NativeTimeMachineView: View {
                                 .monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
                         }.frame(maxWidth: .infinity, alignment: .leading)
                         NativeWorkspaceMetric(title: "负债", value: active?.totalLiabilities ?? 0).frame(maxWidth: 120)
-                        NativeWorkspaceMetric(title: "较上次", value: activeDifference).frame(maxWidth: 120)
+                        NativeWorkspaceMetric(title: "较上次", value: previousComparison.amount,
+                            detail: comparisonPercentage(previousComparison.percentage)).frame(maxWidth: 120)
+                        NativeWorkspaceMetric(title: "较期初", value: periodComparison.amount,
+                            detail: comparisonPercentage(periodComparison.percentage)).frame(maxWidth: 120)
                     }
                     HStack(spacing: 16) {
                         Label { Text("总资产") } icon: { Circle().fill(NativePalette.chartSecondary).frame(width: 6, height: 6) }
@@ -967,10 +986,23 @@ struct NativeTimeMachineView: View {
             }
         }
     }
-    private var activeDifference: Double {
-        guard let index = activeIndex, index > 0 else { return 0 }
-        let current = summaries[index], previous = summaries[index - 1]
-        return current.totalAssets - current.totalLiabilities - previous.totalAssets + previous.totalLiabilities
+    private var activeNetAssets: Double? {
+        active.map { $0.totalAssets - $0.totalLiabilities }
+    }
+    private var previousComparison: NativeTimeMachineComparison {
+        let previous = activeIndex.flatMap { index -> Double? in
+            guard summaries.indices.contains(index - 1) else { return nil }
+            return summaries[index - 1].totalAssets - summaries[index - 1].totalLiabilities
+        }
+        return NativeTimeMachineComparison(current: activeNetAssets, baseline: previous)
+    }
+    private var periodComparison: NativeTimeMachineComparison {
+        let first = (activeIndex.map { $0 >= chartStart } == true)
+            ? chartData.first.map { $0.totalAssets - $0.totalLiabilities } : nil
+        return NativeTimeMachineComparison(current: activeNetAssets, baseline: first)
+    }
+    private func comparisonPercentage(_ value: Double?) -> String {
+        value.map { $0.formatted(.percent.precision(.fractionLength(2)).sign(strategy: .always(includingZero: false))) } ?? "—"
     }
     private func stepDate(_ delta: Int) {
         guard !summaries.isEmpty else { return }

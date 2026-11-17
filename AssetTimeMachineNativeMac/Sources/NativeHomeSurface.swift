@@ -624,17 +624,24 @@ struct NativePanoramaTrend: View {
 
 struct NativeWorkspaceMetric: View {
     let title: String
-    let value: Double
+    let value: Double?
     var primary = false
+    var detail: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduced
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             Text(AppLocalization.string(title)).font(NativeStyle.FontRole.body).foregroundStyle(NativeHomeStyle.secondary)
-            Text(primary ? NativeHomeStyle.amount(value) : value.formatted(.number.precision(.fractionLength(2))))
+                .lineLimit(1).minimumScaleFactor(0.75)
+            Text(value.map { primary ? NativeHomeStyle.amount($0) : $0.formatted(.number.precision(.fractionLength(2))) } ?? "—")
                 .financialPrivacy()
                 .font(primary ? NativeStyle.FontRole.display : NativeStyle.FontRole.metric).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.7)
                 .contentTransition(reduced || NativeHomeStyle.previewReduced ? .opacity : .numericText())
+            if let detail {
+                Text(detail).font(NativeStyle.FontRole.caption).foregroundStyle(NativeHomeStyle.secondary)
+                    .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                    .financialPrivacy()
+            }
         }.frame(maxWidth: .infinity, alignment: .leading)
             .animation(NativeStyle.Motion.home(reduced || NativeHomeStyle.previewReduced), value: value)
     }
