@@ -132,7 +132,18 @@ struct MarketAssetLogoView: View {
         Self.logoStyle(symbol: symbol, sectionID: sectionID, title: title)
     }
 
+    // Bundled category artwork is shared by iOS and Mac and stays stable offline.
+    private var bundledLogoName: String? {
+        switch symbol {
+        case "sp500": "icon_sp500"
+        case "nasdaq": "icon_nasdaq"
+        case "gold", "gold_cny", "gold_usd": "icon_gold"
+        default: nil
+        }
+    }
+
     private var remoteLogoURL: URL? {
+        guard bundledLogoName == nil else { return nil }
         let explicitLogoURL = logoURL?.trimmingCharacters(in: .whitespacesAndNewlines)
         let resolvedLogoURL = explicitLogoURL?.isEmpty == false
             ? explicitLogoURL
@@ -157,6 +168,28 @@ struct MarketAssetLogoView: View {
     }
 
     var body: some View {
+        Group {
+            if let bundledLogoName {
+                Image(bundledLogoName).resizable().scaledToFit()
+            } else {
+                fallbackLogo
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+        .task(id: remoteLogoURL?.absoluteString) {
+            guard let remoteLogoURL else {
+                remoteImage = nil
+                return
+            }
+            remoteImage = await MarketAssetLogoImageLoader.image(
+                for: remoteLogoURL,
+                pointSize: max(48, size * displayScale)
+            )
+        }
+    }
+
+    private var fallbackLogo: some View {
         ZStack {
             backgroundShape
 
@@ -190,17 +223,6 @@ struct MarketAssetLogoView: View {
         .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: size * 0.3, style: .continuous))
         .shadow(color: style.colors.last?.opacity(0.18) ?? .clear, radius: size * 0.1, y: size * 0.04)
-        .accessibilityHidden(true)
-        .task(id: remoteLogoURL?.absoluteString) {
-            guard let remoteLogoURL else {
-                remoteImage = nil
-                return
-            }
-            remoteImage = await MarketAssetLogoImageLoader.image(
-                for: remoteLogoURL,
-                pointSize: max(48, size * displayScale)
-            )
-        }
     }
 
     private var displayScale: CGFloat {
