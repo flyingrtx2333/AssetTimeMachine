@@ -33,7 +33,7 @@ nonisolated struct AssetTimeMachineCloudUser: Codable, Sendable {
     }
 }
 
-nonisolated struct AssetTimeMachineCloudBackup: Codable, Identifiable, Sendable {
+nonisolated struct AssetTimeMachineCloudBackup: Codable, Identifiable, Sendable, Equatable {
     let id: Int
     let fileName: String?
     let fileSize: Int?
@@ -867,7 +867,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     func scheduleAutoSync(
         from context: ModelContext,
         quietly: Bool = true,
-        delayNanoseconds: UInt64 = 600_000_000
+        delayNanoseconds: UInt64 = 120_000_000
     ) {
         guard !AppPreviewSession.isActive || isolatedTest,
               !ProcessInfo.processInfo.arguments.contains("-macCloudRecovery"),
@@ -1019,12 +1019,13 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             for old in try CloudReplicaCache.documents(scope: scope, in: metadata).values { metadata.delete(old) }
             metadata.insert(CloudReplicaState(scope: scope, resetID: defaults.string(forKey: deltaResetKey) ?? "0",
                                              cursor: bootstrap.cursor, historyToken: historyToken))
-            var rows: [CloudDeltaDocument] = []
             for (wireKey, version) in bootstrap.versions {
                 let key = try CloudDocumentKey(wireKey: wireKey)
-                rows.append(.init(kind: key.kind, id: key.id, version: version, value: values[key] ?? .null))
+                let value = values[key] ?? .null
+                let data = value == .null ? nil : try CloudDocumentCodec.encode(value)
+                metadata.insert(CloudReplicaDocument(scope: scope, kind: key.kind, recordID: key.id,
+                                                     version: version, value: data))
             }
-            try CloudReplicaCache.update(rows, scope: scope, in: metadata)
             try metadata.save()
         } catch {
             // Capability adoption is optional; a successful legacy sync remains successful.
@@ -1049,12 +1050,19 @@ final class AssetTimeMachineCloudStore: ObservableObject {
 
     private func updateDeltaSyncMetadata(_ backup: AssetTimeMachineCloudBackup?) {
         guard let backup else { return }
-        lastVerifiedBackupID = backup.id
-        defaults.set(backup.id, forKey: lastVerifiedBackupIDKey)
-        defaults.set(backup.uploadedAt, forKey: lastSyncAtKey)
-        lastSyncAt = backup.uploadedAt
-        backups = [backup] + backups.filter { $0.id != backup.id && $0.isLatest != 1 }
-        statusMessage = AppLocalization.string("双向同步完成")
+        if lastVerifiedBackupID != backup.id {
+            lastVerifiedBackupID = backup.id
+            defaults.set(backup.id, forKey: lastVerifiedBackupIDKey)
+        }
+        if lastSyncAt != backup.uploadedAt {
+            lastSyncAt = backup.uploadedAt
+            defaults.set(backup.uploadedAt, forKey: lastSyncAtKey)
+        }
+        if backups.first != backup {
+            backups = [backup] + backups.filter { $0.id != backup.id && $0.isLatest != 1 }
+        }
+        let message = AppLocalization.string("双向同步完成")
+        if statusMessage != message { statusMessage = message }
     }
 
     private func finishDeltaPending(_ pending: CloudDeltaPending, encoded: Data, scope: String,
@@ -1307,6 +1315,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         for key in keys.sorted(by: { $0.wireKey < $1.wireKey }) {
             let row = try baseRows[key] ?? CloudReplicaCache.document(scope: scope, key: key, in: metadata)
             let prior = try CloudReplicaCache.value(row), value = candidates[key] ?? .null
+            guard prior != value else { continue }
             if try CloudDocumentCodec.userContent(prior, key: key, catalog: catalog)
                 != CloudDocumentCodec.userContent(value, key: key, catalog: catalog) {
                 changes.append(.init(kind: key.kind, id: key.id, baseVersion: row?.version ?? 0, value: value))

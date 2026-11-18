@@ -186,6 +186,7 @@ actor CloudDeltaHistoryReader {
         } else { descriptor = HistoryDescriptor() }
         let transactions = try modelContext.fetchHistory(descriptor)
         var snapshots: Set<UUID> = [], catalog = false, full = false, changed = false
+        var entryIDs: Set<PersistentIdentifier> = [], dayIDs: Set<PersistentIdentifier> = []
         if collectChanges {
             for transaction in transactions {
                 try Task.checkCancellation()
@@ -201,16 +202,37 @@ actor CloudDeltaHistoryReader {
                             full = true; changed = true
                         }
                     case .insert, .update:
-                        let model = modelContext.model(for: change.changedPersistentIdentifier)
-                        if let entry = model as? AssetEntry {
-                            if let id = entry.snapshot?.id { snapshots.insert(id) } else { full = true }
-                            changed = true
-                        } else if let snapshot = model as? AssetSnapshot { snapshots.insert(snapshot.id); changed = true }
-                        else if model is AssetCategory || model is AssetItem { catalog = true; changed = true }
-                        else if model is SyncDeletionTombstone { full = true; changed = true }
+                        let id = change.changedPersistentIdentifier
+                        switch id.entityName {
+                        case "AssetEntry": entryIDs.insert(id)
+                        case "AssetSnapshot": dayIDs.insert(id)
+                        case "AssetCategory", "AssetItem": catalog = true
+                        case "SyncDeletionTombstone": full = true
+                        default: continue
+                        }
+                        changed = true
                     @unknown default: full = true; changed = true
                     }
                 }
+            }
+        }
+        // History identifiers may outlive their rows. Fetch live rows before
+        // reading relationships; a missing row requires the full local comparison.
+        if !full {
+            for batch in Self.batches(entryIDs) {
+                let entries = try modelContext.fetch(FetchDescriptor<AssetEntry>(
+                    predicate: #Predicate { batch.contains($0.persistentModelID) }))
+                let parents = entries.compactMap { $0.snapshot?.id }
+                guard parents.count == batch.count else { full = true; break }
+                snapshots.formUnion(parents)
+            }
+        }
+        if !full {
+            for batch in Self.batches(dayIDs) {
+                let days = try modelContext.fetch(FetchDescriptor<AssetSnapshot>(
+                    predicate: #Predicate { batch.contains($0.persistentModelID) }))
+                guard days.count == batch.count else { full = true; break }
+                snapshots.formUnion(days.map(\.id))
             }
         }
         // Remote domain imports are processed too. Exclude replica-only saves so
@@ -219,6 +241,13 @@ actor CloudDeltaHistoryReader {
         return CloudDeltaHistoryScan(token: try checkpoint.map { try JSONEncoder().encode($0.token) } ?? tokenData,
                                      snapshotIDs: snapshots, catalogChanged: catalog, requiresFullExport: full,
                                      hasLocalChanges: changed)
+    }
+
+    private static func batches(_ ids: Set<PersistentIdentifier>) -> [[PersistentIdentifier]] {
+        let values = Array(ids)
+        return stride(from: 0, to: values.count, by: 400).map {
+            Array(values[$0..<min($0 + 400, values.count)])
+        }
     }
 }
 

@@ -384,6 +384,24 @@ enum CloudDeltaProbe {
             try account.payload().snapshots.first { $0.id == day }?.entries.first { $0.itemID == item }?.amount
         }
 
+        // A later remote deletion can invalidate an earlier local insert/update.
+        // Its transaction is filtered, so the reader must resolve live rows safely.
+        let stale = try await fixture("stale-history")
+        let reader = CloudDeltaHistoryReader(modelContainer: stale.container)
+        let start = try await reader.scan(after: nil, collectChanges: false)
+        let day = AssetSnapshot(date: .now)
+        stale.context.insert(day)
+        let entry = AssetEntry(amount: 1, snapshot: day)
+        stale.context.insert(entry)
+        try stale.context.save()
+        let live = try await reader.scan(after: start.token)
+        checks["deltaLiveHistoryExportsOnlyChangedDay"] = !live.requiresFullExport && live.snapshotIDs == [day.id]
+        stale.context.author = "atm.cloud.delta"
+        stale.context.delete(day)
+        try stale.context.save()
+        let missing = try await reader.scan(after: start.token)
+        checks["deltaInvalidatedHistoryUsesFullComparison"] = missing.hasLocalChanges && missing.requiresFullExport
+
         for automatic in [false, true] {
             let name = automatic ? "quantity" : "amount"
             let local = try await fixture("local-inheritance-atomic-" + name,
