@@ -570,10 +570,12 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     private var autoSyncGeneration = 0
     private var autoSyncRequestedDelayNanoseconds: UInt64 = 0
     private var automaticSyncIsActive = true
+    private var isBackgroundSyncPoll = false
     private var autoSyncEncounteredTransientFailure = false
     private var deltaUnsupported = false
     private let deltaResetKey = "assettimemachine.cloud.deltaResetID"
     private let inheritedRebaseKeyPrefix = "assettimemachine.cloud.inheritedRebase.v1."
+    private let freshExportKeyPrefix = "assettimemachine.cloud.freshExport.v1."
 
     init(tokenStore: CloudTokenStore? = nil, defaults: UserDefaults = .standard, isolatedTest: Bool = false) {
         precondition(!isolatedTest || (AppPreviewSession.isActive && tokenStore != nil
@@ -612,13 +614,17 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             || (requiresLocalOwnershipConfirmation && hasToken) || syncPhase == .waitingForEdits {
             return .warning
         }
-        if isWorking || hasPendingSync || isSessionPending {
+        if (isWorking && !isSilentCloudCheck) || hasPendingSync || isSessionPending {
             return .checking
         }
         if currentUser != nil {
             return hasCompletedInitialSync ? .healthy : .checking
         }
         return .idle
+    }
+
+    private var isSilentCloudCheck: Bool {
+        isBackgroundSyncPoll && !hasPendingSync && (syncPhase == .idle || syncPhase == .checking)
     }
 
     var indicatorLabel: String {
@@ -628,7 +634,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         switch syncPhase {
         case .queued: return AppLocalization.string("已存本机，等待云同步")
         case .waitingForEdits: return AppLocalization.string("请先保存或放弃当前编辑")
-        case .checking: return AppLocalization.string("正在检查云端更新")
+        case .checking:
+            if !isSilentCloudCheck { return AppLocalization.string("正在检查云端更新") }
         case .downloading: return AppLocalization.string("正在下载云端记录")
         case .applying: return AppLocalization.string("正在更新本机记录")
         case .uploading: return AppLocalization.string("已存本机，正在上传")
@@ -667,7 +674,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         let shouldAttemptRefresh = !hasLoadedInitialState || (hasToken && currentUser == nil && !isWorking)
         guard shouldAttemptRefresh else {
             if currentUser != nil, !isWorking, pendingAutoSyncCoordinatorTask == nil {
-                scheduleAutoSync(from: context, quietly: true, delayNanoseconds: 0)
+                scheduleAutoSync(from: context, quietly: true, delayNanoseconds: 0, backgroundPoll: true)
             }
             return
         }
@@ -867,14 +874,17 @@ final class AssetTimeMachineCloudStore: ObservableObject {
     func scheduleAutoSync(
         from context: ModelContext,
         quietly: Bool = true,
-        delayNanoseconds: UInt64 = 120_000_000
+        delayNanoseconds: UInt64 = 120_000_000,
+        backgroundPoll: Bool = false
     ) {
         guard !AppPreviewSession.isActive || isolatedTest,
               !ProcessInfo.processInfo.arguments.contains("-macCloudRecovery"),
               !localRestoreNeedsCloudConfirmation,
               currentUser != nil, hasToken else { return }
-        hasPendingSync = true
-        if !isWorking { syncPhase = .queued }
+        if !backgroundPoll {
+            hasPendingSync = true
+            if !isWorking { syncPhase = .queued }
+        }
         guard automaticSyncIsActive else { return }
         autoSyncGeneration &+= 1
         autoSyncRequestedDelayNanoseconds = delayNanoseconds
@@ -884,6 +894,12 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         autoSyncCoordinatorTaskID = taskID
         pendingAutoSyncCoordinatorTask = Task { [weak self] in
             guard let self else { return }
+            self.isBackgroundSyncPoll = backgroundPoll
+            defer {
+                if self.autoSyncCoordinatorTaskID == nil || self.autoSyncCoordinatorTaskID == taskID {
+                    self.isBackgroundSyncPoll = false
+                }
+            }
             var waitingGeneration = self.autoSyncGeneration
             var nextDelayNanoseconds = delayNanoseconds
             var transientFailures = 0
@@ -1027,6 +1043,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                                                      version: version, value: data))
             }
             try metadata.save()
+            defaults.set(defaults.string(forKey: deltaResetKey) ?? "0", forKey: freshExportKeyPrefix + scope)
         } catch {
             // Capability adoption is optional; a successful legacy sync remains successful.
             if [404, 405, URLError.unsupportedURL.rawValue].contains((error as NSError).code) { deltaUnsupported = true }
@@ -1115,15 +1132,15 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         let metadata = ModelContext(context.container)
         let baseCatalog = try CloudReplicaCache.values(CloudReplicaCache.documents(scope: scope, kinds: ["category", "item"], in: metadata))
         let incomingIDs = Set(documents.filter { $0.kind == "snapshot" }.compactMap { UUID(uuidString: $0.id) })
-        let incomingLocal = try ImportExportService.exportDays(incomingIDs, from: context)
+        let incomingLocal = try ImportExportService.exportDays(incomingIDs, from: metadata)
         var sourceIDs = Set(incomingLocal.snapshots.flatMap(\.entries).map(\.id))
         for document in documents where document.kind == "snapshot" {
             let snapshot = try CloudDocumentCodec.decode(ExportPayload.SnapshotPayload.self, from: CloudDocumentCodec.encode(document.value))
             sourceIDs.formUnion(snapshot.entries.map(\.id))
         }
-        let descendantIDs = try SnapshotService.inheritedSnapshotIDs(dependingOn: sourceIDs, in: context)
+        let descendantIDs = try SnapshotService.inheritedSnapshotIDs(dependingOn: sourceIDs, in: metadata)
         let ids = incomingIDs.union(descendantIDs)
-        let local = descendantIDs.isSubset(of: incomingIDs) ? incomingLocal : try ImportExportService.exportDays(ids, from: context)
+        let local = descendantIDs.isSubset(of: incomingIDs) ? incomingLocal : try ImportExportService.exportDays(ids, from: metadata)
         var desired = try CloudDocumentCodec.partition(local)
         let localCatalog = desired.filter { ["category", "item"].contains($0.key.kind) }
         for document in documents {
@@ -1138,7 +1155,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                     let incoming = try CloudDocumentCodec.decode(ExportPayload.SnapshotPayload.self, from: CloudDocumentCodec.encode(document.value))
                     let day = Calendar.current.startOfDay(for: incoming.date)
                     let end = Calendar.current.date(byAdding: .day, value: 1, to: day)!
-                    let sameDay = try context.fetch(FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.date >= day && $0.date < end }))
+                    let sameDay = try metadata.fetch(FetchDescriptor<AssetSnapshot>(predicate: #Predicate { $0.date >= day && $0.date < end }))
                     if sameDay.contains(where: { $0.id != incoming.id }) { throw CloudDeltaControl.legacy }
                 }
                 desired[document.key] = document.value
@@ -1279,16 +1296,18 @@ final class AssetTimeMachineCloudStore: ObservableObject {
             guard let state = try CloudReplicaCache.state(scope: scope, in: metadata) else { throw CloudDeltaControl.deferred }
             state.cursor = cursor; try metadata.save()
         }
-        updateDeltaSyncMetadata(latestBackup)
         guard let current = try replicaBookmark(scope, container: context.container) else { throw CloudDeltaControl.deferred }
         let revisionBeforeExport = ModelStoreRevisionClock.shared.currentRevision()
+        let resetID = defaults.string(forKey: deltaResetKey) ?? "0"
+        let freshExportKey = freshExportKeyPrefix + scope
+        let needsFullComparison = defaults.string(forKey: freshExportKey) != resetID
         let scan: CloudDeltaHistoryScan
         do { scan = try await historyScan(context.container, after: current.historyToken) }
         catch { throw CloudDeltaControl.legacy }
         guard !context.hasChanges, !ModelContextMutationBarrier.shared.hasPendingWrites,
               !ModelContextMutationBarrier.shared.hasBlockingEditorDraft,
               ModelStoreRevisionClock.shared.currentRevision() == revisionBeforeExport else { throw CloudDeltaControl.deferred }
-        guard scan.hasLocalChanges else {
+        guard needsFullComparison || scan.hasLocalChanges else {
             if scan.token != current.historyToken {
                 let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
                 guard let state = try CloudReplicaCache.state(scope: scope, in: metadata),
@@ -1296,19 +1315,26 @@ final class AssetTimeMachineCloudStore: ObservableObject {
                 state.historyToken = scan.token
                 try metadata.save()
             }
+            updateDeltaSyncMetadata(latestBackup)
             return
         }
         let local: ExportPayload
-        if scan.requiresFullExport { local = try await ImportExportService.exportPayloadCooperatively(from: context).payload }
-        else { local = try ImportExportService.exportDays(scan.snapshotIDs, from: context) }
+        let fullComparison = needsFullComparison || scan.requiresFullExport
+        if fullComparison {
+            local = try await ImportExportService.exportPayloadCooperatively(from: context).payload
+        } else {
+            // The records editor saves in a different context. A UI context can
+            // still hold the old entries even after their history is visible.
+            local = try ImportExportService.exportDays(scan.snapshotIDs, from: ModelContext(context.container))
+        }
         guard !context.hasChanges, ModelStoreRevisionClock.shared.currentRevision() == revisionBeforeExport else { throw CloudDeltaControl.deferred }
         let candidates = try CloudDocumentCodec.partition(local)
         let metadata = ModelContext(context.container); metadata.author = "atm.cloud.replica"
         let catalog = candidates.filter { ["category", "item"].contains($0.key.kind) }
         let baseRows = try CloudReplicaCache.documents(scope: scope,
-            kinds: scan.requiresFullExport ? nil : ["category", "item", "deletion"], in: metadata)
+            kinds: fullComparison ? nil : ["category", "item", "deletion"], in: metadata)
         var keys = Set(candidates.keys).union(baseRows.keys).filter { $0.kind != "header" }
-        if !scan.requiresFullExport {
+        if !fullComparison {
             keys = keys.filter { $0.kind != "snapshot" || UUID(uuidString: $0.id).map { scan.snapshotIDs.contains($0) } == true }
         }
         var changes: [CloudDeltaChange] = []
@@ -1325,6 +1351,8 @@ final class AssetTimeMachineCloudStore: ObservableObject {
               state.pendingRequest == nil else { throw CloudDeltaControl.deferred }
         if changes.isEmpty {
             state.historyToken = scan.token; try metadata.save()
+            if needsFullComparison { defaults.set(resetID, forKey: freshExportKey) }
+            updateDeltaSyncMetadata(latestBackup)
             return
         }
         let request = AssetTimeMachineCloudAPI.deltaRequest(accountID: accountID, cursor: cursor, changes: changes)
@@ -1332,6 +1360,7 @@ final class AssetTimeMachineCloudStore: ObservableObject {
         let encoded = try CloudDocumentCodec.encode(pending)
         state.pendingRequest = encoded; try metadata.save()
         try await finishDeltaPending(pending, encoded: encoded, scope: scope, container: context.container)
+        if needsFullComparison { defaults.set(resetID, forKey: freshExportKey) }
     }
 
     /// nil means a verified legacy reconciliation is required. Transient failures

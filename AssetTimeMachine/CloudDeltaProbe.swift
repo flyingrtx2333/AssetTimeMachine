@@ -608,12 +608,35 @@ enum CloudDeltaProbe {
         let ordinary = try await fixture("ordinary")
         let account = ordinary.server.accounts["a"]!
         checks["deltaLegacyHeadAdoptedWithoutUpload"] = account.legacyReads == 1 && account.legacyUploads == 0
-        try edit(ordinary, amount: 12)
+        let cachedDay = try ordinary.context.fetch(FetchDescriptor<AssetSnapshot>())
+            .first { $0.id == ordinary.dayIDs[0] }!
+        let cachedEntry = cachedDay.entries.first { $0.item?.id == ordinary.itemIDs[0] }!
+        _ = cachedEntry.amount
+        let editor = ModelContext(ordinary.container)
+        let editedDay = try editor.fetch(FetchDescriptor<AssetSnapshot>())
+            .first { $0.id == ordinary.dayIDs[0] }!
+        let editedItem = try editor.fetch(FetchDescriptor<AssetItem>())
+            .first { $0.id == ordinary.itemIDs[0] }!
+        try SnapshotService.upsertEntry(snapshot: editedDay, item: editedItem, amount: 337, in: editor)
         _ = await ordinary.cloud.runIsolatedSync(from: ordinary.context)
+        checks["deltaCrossContextSaveReachesCloud"] = try remoteAmount(account, day: ordinary.dayIDs[0],
+            item: ordinary.itemIDs[0]) == 337
+        withExtendedLifetime(cachedEntry) {}
         checks["deltaOneAmountEditSendsOnlyItsDay"] = account.accepted == 1 && account.legacyUploads == 0
             && account.attempts.last?.changes.count == 1 && account.attempts.last?.changes.first?.kind == "snapshot"
             && account.attempts.last?.changes.first?.id == ordinary.dayIDs[0].uuidString
         checks["deltaOtherDayPreserved"] = try amount(ordinary.context, day: ordinary.dayIDs[1], item: ordinary.itemIDs[0]) == 11
+        try SnapshotService.upsertEntry(snapshot: editedDay, item: editedItem, amount: 338, in: editor)
+        let consumedEdit = try await CloudDeltaHistoryReader(modelContainer: ordinary.container)
+            .scan(after: nil, collectChanges: false)
+        let olderReplica = ModelContext(ordinary.container)
+        olderReplica.author = "atm.cloud.replica"
+        try CloudReplicaCache.state(scope: "11:synthetic-a", in: olderReplica)!.historyToken = consumedEdit.token
+        try olderReplica.save()
+        ordinary.defaults.removeObject(forKey: "assettimemachine.cloud.freshExport.v1.11:synthetic-a")
+        _ = await ordinary.cloud.runIsolatedSync(from: ordinary.context)
+        checks["deltaCrossContextPreviouslySkippedEditRecovers"] = try remoteAmount(account,
+            day: ordinary.dayIDs[0], item: ordinary.itemIDs[0]) == 338
         let reads = account.legacyReads, uploads = account.legacyUploads, pulls = account.deltaPulls
         ordinary.cloud.setAutomaticSyncActive(false)
         let reopened = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: ordinary.url)])

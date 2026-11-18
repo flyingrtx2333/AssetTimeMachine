@@ -152,9 +152,6 @@ struct SnapshotListView: View {
     @Query private var categories: [AssetCategory]
 
     @State private var currentSnapshotID: UUID?
-    @State private var amountInputs: [UUID: String] = [:]
-    @State private var quantityInputs: [UUID: String] = [:]
-    @State private var unitPriceInputs: [UUID: String] = [:]
     @State private var didPrepare = false
     @State private var isPreparingInitialSnapshot = false
     @State private var showsSnapshotArchive = false
@@ -294,9 +291,6 @@ struct SnapshotListView: View {
                         RecordSnapshotSections(
                             layout: layout,
                             highlightedItemID: onboardingSavedItemID,
-                            amountInputs: $amountInputs,
-                            quantityInputs: $quantityInputs,
-                            unitPriceInputs: $unitPriceInputs,
                             onEdit: { item in
                                 dismissKeyboard()
                                 presentAssetItemEditor(item)
@@ -392,9 +386,6 @@ struct SnapshotListView: View {
                                 editingRecordItem = nil
                             },
                             onSaved: {
-                                if let snapshot = currentSnapshot {
-                                    hydrateInputs(for: item, from: snapshot)
-                                }
                                 dismissKeyboard()
                                 finishRecordEditorDraft()
                                 editingRecordItem = nil
@@ -550,9 +541,6 @@ struct SnapshotListView: View {
 
                 try AssetItemService.deleteItem(storedItem, in: modelContext)
 
-                amountInputs[itemID] = nil
-                quantityInputs[itemID] = nil
-                unitPriceInputs[itemID] = nil
                 cachedItemsByID[itemID] = nil
                 itemsByIDCacheToken = ""
                 refreshCachedListLayout()
@@ -588,10 +576,7 @@ struct SnapshotListView: View {
     }
 
     @MainActor
-    private func handleAssetItemSaved(_ item: AssetItem) {
-        if let snapshot = currentSnapshot {
-            hydrateInputs(for: item, from: snapshot)
-        }
+    private func handleAssetItemSaved(_: AssetItem) {
         refreshCachedListLayout()
     }
 
@@ -599,9 +584,6 @@ struct SnapshotListView: View {
     private func handleOnboardingAssetSaved(_ item: AssetItem) {
         guard onboardingSessionID != nil else { return }
         onboardingSavedItemID = item.id
-        if let snapshot = currentSnapshot {
-            hydrateInputs(for: item, from: snapshot)
-        }
         refreshCachedListLayout()
         onOnboardingCompleted()
     }
@@ -688,7 +670,6 @@ struct SnapshotListView: View {
             let snapshot = try SnapshotService.createSnapshot(on: .now, inheritPrevious: true, createMissingEntries: true, in: modelContext)
             if currentSnapshotID == nil {
                 currentSnapshotID = snapshot.id
-                hydrateInputs(from: snapshot)
             }
             refreshCachedListLayout()
             await SnapshotAnchorService.captureLiveAnchorsIfPossible(for: snapshot, marketStore: marketStore, in: modelContext)
@@ -715,7 +696,6 @@ struct SnapshotListView: View {
                     unitPrice: unitPrice,
                     in: modelContext
                 )
-                hydrateInputs(for: debugAutoPricedItem, from: snapshot)
             }
             if shouldOpenQuickEdit {
                 presentRecordEditor(for: debugAutoPricedItem)
@@ -742,7 +722,6 @@ struct SnapshotListView: View {
                 unitPrice: unitPrice,
                 in: modelContext
             )
-            hydrateInputs(for: item, from: snapshot)
             if shouldOpenQuickEdit {
                 presentRecordEditor(for: item)
             }
@@ -751,24 +730,6 @@ struct SnapshotListView: View {
         }
     }
     #endif
-
-    @MainActor
-    private func hydrateInputs(from snapshot: AssetSnapshot) {
-        for entry in snapshot.entries {
-            guard let item = entry.item else { continue }
-            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.recordInputString() ?? "") : ""
-            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.recordInputString() ?? "") : ""
-            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.recordInputString() ?? "") : ""
-        }
-    }
-
-    @MainActor
-    private func hydrateInputs(for item: AssetItem, from snapshot: AssetSnapshot) {
-        guard let entry = snapshot.entries.first(where: { $0.item?.id == item.id }) else { return }
-        amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.recordInputString() ?? "") : ""
-        quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.recordInputString() ?? "") : ""
-        unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.recordInputString() ?? "") : ""
-    }
 
     @MainActor
     private func scheduleAutoRateSync(delayNanoseconds: UInt64) {
@@ -810,11 +771,6 @@ struct SnapshotListView: View {
 
             guard let rate = liveUnitPrice else {
                 continue
-            }
-
-            let rateText = rate.recordInputString()
-            if unitPriceInputs[item.id] != rateText {
-                unitPriceInputs[item.id] = rateText
             }
 
             let currentRate = entry.unitPrice ?? 0
@@ -880,9 +836,6 @@ struct RecordHeroMetric: View {
 struct RecordSnapshotSections: View {
     let layout: SnapshotListLayout
     var highlightedItemID: UUID? = nil
-    @Binding var amountInputs: [UUID: String]
-    @Binding var quantityInputs: [UUID: String]
-    @Binding var unitPriceInputs: [UUID: String]
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
     var onDelete: ((AssetItem) -> Void)? = nil
@@ -911,9 +864,6 @@ struct RecordSnapshotSections: View {
                     items: items,
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
                     highlightedItemID: highlightedItemID,
-                    amountInputs: $amountInputs,
-                    quantityInputs: $quantityInputs,
-                    unitPriceInputs: $unitPriceInputs,
                     onEdit: onEdit,
                     onEditValue: onEditValue,
                     onDelete: onDelete,
@@ -931,9 +881,6 @@ struct RecordSnapshotSections: View {
                     items: items,
                     snapshotEntriesByItemID: layout.displayEntriesByItemID,
                     highlightedItemID: highlightedItemID,
-                    amountInputs: $amountInputs,
-                    quantityInputs: $quantityInputs,
-                    unitPriceInputs: $unitPriceInputs,
                     onEdit: onEdit,
                     onEditValue: onEditValue,
                     onDelete: onDelete,
@@ -1174,9 +1121,6 @@ struct RecordLedgerSection: View {
     let items: [AssetItem]
     let snapshotEntriesByItemID: [UUID: AssetEntry]
     let highlightedItemID: UUID?
-    @Binding var amountInputs: [UUID: String]
-    @Binding var quantityInputs: [UUID: String]
-    @Binding var unitPriceInputs: [UUID: String]
     let onEdit: (AssetItem) -> Void
     let onEditValue: (AssetItem) -> Void
     var onDelete: ((AssetItem) -> Void)? = nil
@@ -1210,18 +1154,6 @@ struct RecordLedgerSection: View {
                     RecordLedgerRow(
                         item: item,
                         snapshotEntry: snapshotEntriesByItemID[item.id],
-                        amountText: Binding(
-                            get: { amountInputs[item.id] ?? "" },
-                            set: { amountInputs[item.id] = $0 }
-                        ),
-                        quantityText: Binding(
-                            get: { quantityInputs[item.id] ?? "" },
-                            set: { quantityInputs[item.id] = $0 }
-                        ),
-                        unitPriceText: Binding(
-                            get: { unitPriceInputs[item.id] ?? "" },
-                            set: { unitPriceInputs[item.id] = $0 }
-                        ),
                         accent: accent,
                         isHighlighted: item.id == highlightedItemID,
                         onEdit: { onEdit(item) },
@@ -1269,9 +1201,6 @@ struct RecordLedgerRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let item: AssetItem
     let snapshotEntry: AssetEntry?
-    @Binding var amountText: String
-    @Binding var quantityText: String
-    @Binding var unitPriceText: String
     let accent: Color
     let isHighlighted: Bool
     let onEdit: () -> Void
@@ -1282,10 +1211,10 @@ struct RecordLedgerRow: View {
     private var resolvedAmount: Double? {
         switch item.valuationMethod {
         case .directAmount:
-            return normalizedNumber(from: amountText) ?? snapshotEntry?.amount
+            return snapshotEntry?.amount
         case .quantityAndUnitPrice:
-            guard let quantity = normalizedNumber(from: quantityText) ?? snapshotEntry?.quantity,
-                  let unitPrice = normalizedNumber(from: unitPriceText) ?? snapshotEntry?.unitPrice else {
+            guard let quantity = snapshotEntry?.quantity,
+                  let unitPrice = snapshotEntry?.unitPrice else {
                 return nil
             }
             return quantity * unitPrice
@@ -1294,7 +1223,7 @@ struct RecordLedgerRow: View {
 
     private var quantityDisplayText: String? {
         guard item.valuationMethod == .quantityAndUnitPrice else { return nil }
-        let value = normalizedNumber(from: quantityText) ?? snapshotEntry?.quantity
+        let value = snapshotEntry?.quantity
         let number = value?.plainNumberString() ?? "—"
         guard let unit = item.persistedQuantityUnitTitle, !unit.isEmpty else { return number }
         return "\(number) \(unit)"
@@ -1305,7 +1234,7 @@ struct RecordLedgerRow: View {
         case .directAmount:
             resolvedAmount != nil
         case .quantityAndUnitPrice:
-            (normalizedNumber(from: quantityText) ?? snapshotEntry?.quantity) != nil
+            snapshotEntry?.quantity != nil
         }
     }
 
@@ -1389,12 +1318,6 @@ struct RecordLedgerRow: View {
         } else {
             onEditValue()
         }
-    }
-
-    private func normalizedNumber(from text: String) -> Double? {
-        let raw = text.replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty, let value = Double(raw), value.isFinite else { return nil }
-        return value
     }
 }
 
@@ -3718,9 +3641,6 @@ struct SnapshotDetailView: View {
     let snapshot: AssetSnapshot
     @State private var editingEntry: AssetEntry?
     @State private var entryEditorDraftID: UUID?
-    @State private var amountInputs: [UUID: String] = [:]
-    @State private var quantityInputs: [UUID: String] = [:]
-    @State private var unitPriceInputs: [UUID: String] = [:]
 
     private var layout: SnapshotListLayout {
         SnapshotRecordLayoutBuilder.make(
@@ -3757,9 +3677,6 @@ struct SnapshotDetailView: View {
 
                     RecordSnapshotSections(
                         layout: layout,
-                        amountInputs: $amountInputs,
-                        quantityInputs: $quantityInputs,
-                        unitPriceInputs: $unitPriceInputs,
                         onEdit: { _ in },
                         onEditValue: { _ in },
                         isReadOnly: true,
@@ -3787,7 +3704,7 @@ struct SnapshotDetailView: View {
                         .ignoresSafeArea()
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            dismissEntryEditor(refreshDisplay: false)
+                            dismissEntryEditor()
                         }
 
                     VStack(spacing: 0) {
@@ -3798,10 +3715,10 @@ struct SnapshotDetailView: View {
                             snapshot: snapshot,
                             usesLiveMarketPrice: false,
                             onCancel: {
-                                dismissEntryEditor(refreshDisplay: false)
+                                dismissEntryEditor()
                             },
                             onSaved: {
-                                dismissEntryEditor(refreshDisplay: true)
+                                dismissEntryEditor()
                             }
                         )
                     }
@@ -3812,9 +3729,6 @@ struct SnapshotDetailView: View {
             }
         }
         .animation(.spring(response: 0.22, dampingFraction: 0.92), value: editingEntry?.id)
-        .onAppear {
-            hydrateDisplayInputs(from: snapshot)
-        }
         .onDisappear {
             finishEntryEditorDraft()
         }
@@ -3839,21 +3753,9 @@ struct SnapshotDetailView: View {
     }
 
     @MainActor
-    private func dismissEntryEditor(refreshDisplay: Bool) {
-        if refreshDisplay {
-            hydrateDisplayInputs(from: snapshot)
-        }
+    private func dismissEntryEditor() {
         dismissActiveKeyboard()
         editingEntry = nil
         finishEntryEditorDraft()
-    }
-
-    private func hydrateDisplayInputs(from snapshot: AssetSnapshot) {
-        for entry in snapshot.entries {
-            guard let item = entry.item else { continue }
-            amountInputs[item.id] = item.valuationMethod == .directAmount ? (entry.amount?.recordInputString() ?? "") : ""
-            quantityInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.quantity?.recordInputString() ?? "") : ""
-            unitPriceInputs[item.id] = item.valuationMethod == .quantityAndUnitPrice ? (entry.unitPrice?.recordInputString() ?? "") : ""
-        }
     }
 }
