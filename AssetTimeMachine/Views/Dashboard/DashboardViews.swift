@@ -140,9 +140,6 @@ struct DashboardView: View {
                 requestDashboardDataRefresh(
                     delayNanoseconds: hasLoadedDashboardData ? 120_000_000 : 0
                 )
-                #if !targetEnvironment(macCatalyst)
-                scheduleCloudAutoSync()
-                #endif
             } else {
                 cancelDashboardWork()
             }
@@ -193,16 +190,6 @@ struct DashboardView: View {
             .presentationDragIndicator(.visible)
             #endif
         }
-    }
-
-    @MainActor
-    private func scheduleCloudAutoSync(delayNanoseconds: UInt64 = 6_000_000_000) {
-        guard cloudStore.currentUser != nil, !AppPreviewSession.isActive else { return }
-        cloudStore.scheduleAutoSync(
-            from: modelContext,
-            quietly: true,
-            delayNanoseconds: delayNanoseconds
-        )
     }
 
     @MainActor
