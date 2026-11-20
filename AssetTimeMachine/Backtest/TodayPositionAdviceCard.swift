@@ -56,6 +56,7 @@ struct TodayPositionAdviceCard: View {
     @State private var showsOperationAmounts = false
     @AppStorage("dashboard.amountsVisible", store: AppPrivacyPreferences.defaults) private var globalAmountsVisible = true
     @State private var showsStrategyLibrary = false
+    @State private var selectedTrendAsset: MarketAssetTrendSelection?
 
     init(
         marketStore: RemoteMarketStore,
@@ -144,6 +145,11 @@ struct TodayPositionAdviceCard: View {
             }
             .presentationDetents([.fraction(0.72), .large])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $selectedTrendAsset) { asset in
+            MarketAssetTrendSheet(asset: asset, market: marketStore)
+                .presentationDetents([.height(456), .large])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -352,6 +358,17 @@ struct TodayPositionAdviceCard: View {
     }
 
     private func actionRow(_ action: StrategyRebalanceAction) -> some View {
+        Button {
+            selectedTrendAsset = MarketAssetTrendSelection(symbol: action.symbol, title: action.title)
+        } label: {
+            actionRowContent(action)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(AppLocalization.string("查看走势"))
+        .accessibilityIdentifier("marketAssetTrend.\(action.symbol)")
+    }
+
+    private func actionRowContent(_ action: StrategyRebalanceAction) -> some View {
         HStack(alignment: .center, spacing: 8) {
             HStack(spacing: 7) {
                 Circle()
@@ -362,6 +379,10 @@ struct TodayPositionAdviceCard: View {
                     .font(AppTypography.captionStrong)
                     .foregroundStyle(AssetTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(AppTypography.microLabel)
+                    .accessibilityHidden(true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -388,6 +409,8 @@ struct TodayPositionAdviceCard: View {
         .font(AppTypography.caption.monospacedDigit())
         .foregroundStyle(AssetTheme.textSecondary)
         .padding(.vertical, 9)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 
     private func cashActionRow(advice: StrategyRebalanceAdvice) -> some View {

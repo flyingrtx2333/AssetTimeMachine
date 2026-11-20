@@ -571,6 +571,7 @@ private struct NativeQuantAdviceView: View {
     private var showsAmounts: Bool { requestsAmounts && globalAmountsVisible }
     @State private var showsLibrary = false
     @State private var showsSources = false
+    @State private var selectedTrendAsset: MarketAssetTrendSelection?
     @State private var reloadToken = 0
     @FocusState private var strategyPickerFocused: Bool
     @State private var snapshotError: String?
@@ -641,23 +642,15 @@ private struct NativeQuantAdviceView: View {
                     .font(NativeStyle.FontRole.caption).foregroundStyle(NativePalette.secondary)
                     .padding(.horizontal, 10).frame(height: 26).background(NativePalette.sidebar)
                     ForEach(Array(projection.actions.enumerated()), id: \.element.id) { index, action in
-                        HStack(spacing: 12) {
-                            HStack(spacing: 6) {
-                                if let asset = market.assetDescriptor(for: action.symbol) {
-                                    MarketAssetLogoView(asset: asset, size: 20)
-                                } else {
-                                    MarketAssetLogoView(symbol: action.symbol, sectionID: "other", title: action.title, size: 20)
-                                }
-                                Text(action.title).lineLimit(1).help(action.title)
-                            }.frame(maxWidth: .infinity, alignment: .leading)
-                            NativeQuantWeightCell(weight: action.currentWeight, amount: action.currentAmount,
-                                                  showsAmounts: showsAmounts, target: false)
-                            NativeQuantWeightCell(weight: action.targetWeight, amount: action.targetAmount,
-                                                  showsAmounts: showsAmounts, target: true)
-                            Text(action.kind.title).foregroundStyle(action.kind.accent).frame(width: 72, alignment: .trailing)
-                            if showsAmounts { Text(action.amountText).monospacedDigit().frame(width: 104, alignment: .trailing) }
+                        Button {
+                            selectedTrendAsset = MarketAssetTrendSelection(symbol: action.symbol, title: action.title)
+                        } label: {
+                            actionRowContent(action)
                         }
-                        .padding(.horizontal, 10).frame(minHeight: showsAmounts ? 38 : 28)
+                        .buttonStyle(NativeHomeButtonStyle())
+                        .help(AppLocalization.string("查看走势"))
+                        .accessibilityHint(AppLocalization.string("查看走势"))
+                        .accessibilityIdentifier("marketAssetTrend.\(action.symbol)")
                         .background(index.isMultiple(of: 2) ? NativePalette.surface : NativePalette.sidebar.opacity(0.45))
                     }
                     HStack(spacing: 12) {
@@ -737,6 +730,35 @@ private struct NativeQuantAdviceView: View {
                 showsLibrary = false
             }
         }
+        .sheet(item: $selectedTrendAsset) { asset in
+            MarketAssetTrendSheet(asset: asset, market: market)
+        }
+    }
+
+    private func actionRowContent(_ action: StrategyRebalanceAction) -> some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 6) {
+                if let asset = market.assetDescriptor(for: action.symbol) {
+                    MarketAssetLogoView(asset: asset, size: 20)
+                } else {
+                    MarketAssetLogoView(symbol: action.symbol, sectionID: "other", title: action.title, size: 20)
+                }
+                Text(action.title).lineLimit(1)
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(NativeStyle.FontRole.caption)
+                    .foregroundStyle(NativePalette.secondary)
+                    .accessibilityHidden(true)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            NativeQuantWeightCell(weight: action.currentWeight, amount: action.currentAmount,
+                                  showsAmounts: showsAmounts, target: false)
+            NativeQuantWeightCell(weight: action.targetWeight, amount: action.targetAmount,
+                                  showsAmounts: showsAmounts, target: true)
+            Text(action.kind.title).foregroundStyle(action.kind.accent).frame(width: 72, alignment: .trailing)
+            if showsAmounts { Text(action.amountText).monospacedDigit().frame(width: 104, alignment: .trailing) }
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: showsAmounts ? 38 : 28)
+        .contentShape(Rectangle())
     }
 }
 
